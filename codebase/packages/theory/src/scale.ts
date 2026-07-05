@@ -25,6 +25,12 @@ export type ScaleType = keyof typeof SCALE_FORMULAS
 
 export const SCALE_TYPES = Object.keys(SCALE_FORMULAS) as ScaleType[]
 
+/** A concrete scale, mirroring Chord: a spelled root plus a type. */
+export interface Scale {
+  root: Note
+  type: ScaleType
+}
+
 /**
  * Spell a scale as correctly-named notes. A string root is a programmer
  * convenience and throws if unparseable, matching spellChord.

@@ -24,4 +24,10 @@ export {
   type Chord,
   type ChordQuality,
 } from './chord'
-export { SCALE_TYPES, spellScale, type ScaleType } from './scale'
+export { SCALE_TYPES, spellScale, type Scale, type ScaleType } from './scale'
+export {
+  arpeggioPositions,
+  notePositions,
+  scalePositions,
+  type PositionedNote,
+} from './positions'
