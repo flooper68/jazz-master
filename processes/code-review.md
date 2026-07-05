@@ -7,7 +7,9 @@ Every work item is reviewed before it ships — including agent-implemented ones
 1. Stage the diff (`git add -A; git diff --cached` view) so the review sees the complete change.
 2. Run an independent review pass — in Claude Code, launch the `code-reviewer` agent on the changes; for UI-heavy diffs additionally the `ui-code-reviewer` agent. The implementer re-reading their own diff is not a review.
 3. If the diff touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md`.
-4. Walk the checklist below.
+4. Walk the checklist below in two passes:
+   - **Spec:** did the diff implement the work item and verification honestly?
+   - **Standards:** does the diff improve or preserve code health under `processes/development-practices.md` and CLAUDE.md?
 5. Every finding is either **fixed now** or **filed** as `work/issues/ISSUE-###` with a one-line justification for deferring. Findings are never silently dropped.
 
 ## Checklist
@@ -18,12 +20,14 @@ Every work item is reviewed before it ships — including agent-implemented ones
 
 **Correctness**
 - [ ] Logic errors, edge cases (theory code: enharmonics, all twelve keys, boundary frets)
-- [ ] New logic has meaningful tests; tests assert behavior, not implementation details
+- [ ] New logic has meaningful tests; tests assert public behavior, not implementation details
+- [ ] React render logic is pure/idempotent; side effects are in event handlers or justified Effects
 
 **Architecture**
 - [ ] `codebase/packages/theory/` stays pure — no React/DOM imports, zero runtime deps in its `package.json`
 - [ ] Reuses existing utilities/components instead of duplicating them
 - [ ] Architectural decisions in this diff have an ADR
+- [ ] Package/store/component boundaries follow `processes/development-practices.md`
 
 **Security/privacy**
 - [ ] No secrets, private data, or unintended network access introduced
@@ -33,6 +37,8 @@ Every work item is reviewed before it ships — including agent-implemented ones
 
 **Conventions** (see CLAUDE.md)
 - [ ] Naming, exports, chord-quality notation, TypeScript strictness (`any` only with a reason)
+- [ ] Type-only imports/exports used where appropriate; Vite-only transpilation is backed by `tsc -b` in `bun run check`
+- [ ] Tailwind classes are complete/literal enough for v4 detection; design tokens belong in `@theme`
 - [ ] Comments only where the code can't speak for itself
 
 **Housekeeping**

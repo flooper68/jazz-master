@@ -22,6 +22,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Situation | Process |
 |---|---|
 | "Do the next task" / implement anything | `processes/dev-loop.md` |
+| Writing React/TypeScript/Tailwind code | `processes/development-practices.md` |
 | "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
 | Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
@@ -68,7 +69,11 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `
 ## Conventions
 
 - TypeScript everywhere; no `any` without an annotated reason
+- Follow `processes/development-practices.md` for React, TypeScript, Tailwind, testing, and agent workflow standards; adopted practices there trace to `research/RES-010-development-best-practices.md` and `RES-005`
 - Named exports preferred; default export only for route pages and `App`
 - Music notation in code: `b`/`#` in identifiers (`Bb`, `F#`); Unicode `♭`/`♯` only in rendered UI text
 - Chord qualities in code: `maj7`, `m7`, `7`, `m7b5`, `dim7` (lowercase, as guitarists write them)
 - Logic lives in `codebase/packages/theory/` or plain functions/hooks; components stay thin
+- React render logic stays pure/idempotent; prefer derived render data and event handlers before `useEffect`, and use Effects only for external synchronization
+- Tailwind v4 tokens live in `apps/web/src/index.css` under `@theme`; keep class names complete/literal so Tailwind can detect them
+- Tests verify public behavior: theory through package exports, UI through Testing Library role/label/text queries and user interactions

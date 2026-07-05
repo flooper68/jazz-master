@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — development practices research distilled (TASK-005)
+
+Added RES-010 and `processes/development-practices.md`, grounding React 19/TypeScript/Vite/Tailwind/Bun conventions in cited sources plus RES-005. Code review now runs explicit Spec and Standards passes; CLAUDE.md routes implementation work to the new practices doc. No app code changed.
+
 ## 2026-07-06 — persistence layer shipped (TASK-008); EPIC-001 (foundation) complete
 
 `defineStore<T>` typed localStorage stores in `apps/web/src/storage/` — versioned `{ version, data }` envelope, migration hook, never-throw reads (corrupt/missing/version-ahead → default + warn). Convention set: no direct `localStorage` outside `src/storage/`. Review gotcha: after an `'x' in value` narrowing, strict TS rejects casting to an unrelated shape — narrow on each key (`'version' in value`) instead of `value as { version: unknown }`. Foundation epic is done; the guided-practice slice (TASK-011/016) and EPIC-013 platform track are unblocked.
