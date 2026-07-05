@@ -1,4 +1,5 @@
 import { STRING_NUMBERS, type FretRange, type GuitarString } from '../theory'
+import { displayAccidentals } from './notation'
 
 export interface FretboardHighlight {
   string: GuitarString
@@ -28,11 +29,6 @@ const SINGLE_MARKER_FRETS = [3, 5, 7, 9, 15, 17, 19, 21]
 const DOUBLE_MARKER_FRETS = [12, 24]
 
 const ROLE_FILL = { root: 'fill-amber-500', other: 'fill-zinc-200' }
-
-/** Lowercase b is always a flat in note/degree labels; B natural is uppercase. */
-function displayAccidentals(label: string): string {
-  return label.replace(/b/g, '♭').replace(/#/g, '♯')
-}
 
 /** y of a string line; tab convention — string 1 (high E) on top. */
 function stringY(string: GuitarString): number {
