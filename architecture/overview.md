@@ -35,6 +35,10 @@ Dependency direction: `pages → components → theory`. Nothing imports upward;
 
 Bun (runtime, packages) · Vite 8 (build) · React 19 · TypeScript · Tailwind v4 (CSS-config via `@theme`) · Vitest + Testing Library (jsdom) · oxlint. See ADR-001. The single verification gate is `bun run check`.
 
+## Routing
+
+react-router v8, library mode. `BrowserRouter` wraps `App` in `src/main.tsx`; `App.tsx` owns the route table (a `Layout` route with nested children per practice module, plus a `*` → `NotFoundPage` catch-all). `src/components/Layout.tsx` is the persistent shell (sidebar nav via `NavLink`, content via `<Outlet>`). Tests mount `App` in a `MemoryRouter`.
+
 ## Current state (2026-07-05)
 
-Scaffold only: app shell placeholder in `src/App.tsx`, one smoke test. The layers above are the *intended* shape; EPIC-001 tasks (TASK-001..004) build them.
+App shell done (TASK-001): routing + sidebar nav + stub pages for the five modules under `src/pages/`. Theory core, fretboard, and persistence are still to come — EPIC-001 tasks TASK-002..004 build them.
