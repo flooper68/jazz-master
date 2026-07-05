@@ -58,3 +58,8 @@ versioned + corrupt-tolerant). Convention documented in CLAUDE.md, AGENTS.md, an
 architecture/overview.md. `bun run check` green (393 tests); grep for `localStorage` outside
 `src/storage/` clean. No React hook yet — deferred to first consumer per task context.
 This was EPIC-001's last open task — epic closed in the same change.
+Review observations needing no action, recorded for posterity: a store value serializing to
+`undefined` drops the `data` key and reads back as the default (fine for our object-shaped
+stores), and `Store.name` is currently unused API surface kept as a debugging affordance.
+Ship note: a concurrent session's commit `5b63bcd` swept this task's staged in-flight files
+onto main before review completed (see INS-008); the reviewed final state landed in `12851f7`.
