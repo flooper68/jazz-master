@@ -2,7 +2,7 @@
 id: TASK-008
 title: Typed localStorage persistence layer
 epic: EPIC-001
-status: in-progress
+status: done
 depends_on: []
 created: 2026-07-05
 ---
@@ -21,12 +21,12 @@ EPIC-001 lists persistence as scope but no task existed. Everything in the new p
 
 ## Acceptance criteria
 
-- [ ] Typed `get`/`set` per named store; TypeScript rejects writing the wrong shape
-- [ ] Corrupt or missing data never throws to callers — returns the store's default and logs
-- [ ] Schema `version` stored per store with a migration hook (test with a fake v1→v2 migration)
-- [ ] No direct `localStorage` access outside `src/storage/` (convention documented in CLAUDE.md or architecture overview)
-- [ ] Unit tests cover round-trip, defaults, corrupt JSON, and migration
-- [ ] `bun run check` passes
+- [x] Typed `get`/`set` per named store; TypeScript rejects writing the wrong shape
+- [x] Corrupt or missing data never throws to callers — returns the store's default and logs
+- [x] Schema `version` stored per store with a migration hook (test with a fake v1→v2 migration)
+- [x] No direct `localStorage` access outside `src/storage/` (convention documented in CLAUDE.md or architecture overview)
+- [x] Unit tests cover round-trip, defaults, corrupt JSON, and migration
+- [x] `bun run check` passes
 
 ## Verification
 
@@ -45,3 +45,16 @@ to first consumer per task context). Convention (no direct `localStorage` outsid
 `src/storage/`) documented in architecture/overview.md + CLAUDE.md. Measurable aim: baseline —
 no durable state possible; target — typed stores with migration, exhaustively unit-tested,
 verification = storage suite green + grep clean.
+
+### 2026-07-06 — done
+Shipped `defineStore` as planned: 14 tests covering round-trip, envelope shape, fresh defaults,
+corrupt JSON, malformed envelope, read/write failures (disabled storage, quota), update, reset,
+and v1→v2 migration (happy path, throwing migration, missing migration, version-from-the-future).
+Independent code review (code-reviewer agent + security checklist) found one blocker — a strict-TS
+error in the `isEnvelope` guard — fixed by narrowing on `'version' in value` instead of a cast.
+Review also prompted the read-throws test (SSR/TASK-021 safety) and moving a migration assertion
+out of the callback. Security/privacy checklist: no concerns (no deps, no network, typed +
+versioned + corrupt-tolerant). Convention documented in CLAUDE.md, AGENTS.md, and
+architecture/overview.md. `bun run check` green (393 tests); grep for `localStorage` outside
+`src/storage/` clean. No React hook yet — deferred to first consumer per task context.
+This was EPIC-001's last open task — epic closed in the same change.

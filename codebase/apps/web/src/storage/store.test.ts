@@ -77,6 +77,14 @@ describe('defineStore', () => {
     expect(store.get()).toEqual({ instrument: 'guitar', minutesPerDay: 20 })
   })
 
+  it('returns the default and warns when the read itself throws (disabled storage, SSR)', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('storage disabled', 'SecurityError')
+    })
+    expect(profileStore().get()).toEqual({ instrument: 'guitar', minutesPerDay: 20 })
+    expect(console.warn).toHaveBeenCalledOnce()
+  })
+
   it('does not throw when the write fails (quota exceeded)', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota exceeded', 'QuotaExceededError')
@@ -93,13 +101,15 @@ describe('defineStore', () => {
       styles: string[]
     }
 
+    const migratedFrom: number[] = []
+
     const v2Store = () =>
       defineStore<ProfileV2>({
         name: 'profile',
         version: 2,
         defaultValue: () => ({ instrument: 'guitar', minutesPerDay: 20, styles: [] }),
         migrate: (persisted, fromVersion) => {
-          expect(fromVersion).toBe(1)
+          migratedFrom.push(fromVersion)
           const old = persisted as Profile
           return { ...old, styles: ['bebop'] }
         },
@@ -108,7 +118,9 @@ describe('defineStore', () => {
     it('migrates v1 data to v2 and persists the migrated value', () => {
       profileStore().set({ instrument: 'archtop', minutesPerDay: 45 })
 
+      migratedFrom.length = 0
       expect(v2Store().get()).toEqual({ instrument: 'archtop', minutesPerDay: 45, styles: ['bebop'] })
+      expect(migratedFrom).toEqual([1])
       expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({
         version: 2,
         data: { instrument: 'archtop', minutesPerDay: 45, styles: ['bebop'] },

@@ -47,7 +47,8 @@ function isEnvelope(value: unknown): value is Envelope {
     typeof value === 'object' &&
     value !== null &&
     'data' in value &&
-    typeof (value as { version: unknown }).version === 'number'
+    'version' in value &&
+    typeof value.version === 'number'
   )
 }
 

@@ -2,7 +2,7 @@
 id: EPIC-001
 title: Foundation — app shell, theory core, fretboard
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-05
 ---
 
@@ -46,7 +46,7 @@ A developer can `import { spellChord } from '@/theory'`, get correct notes for `
 
 ## Current status
 
-In progress. TASK-001 through TASK-004 and TASK-009 are done; TASK-008 and TASK-010 remain the next foundation backlog.
+Done (2026-07-06). All listed tasks shipped: TASK-001 (shell/routing), TASK-002/009/010 (theory core incl. scales, modes, arpeggios, fretboard positions), TASK-003 (Fretboard), TASK-004 (ChordDiagram), TASK-008 (typed localStorage persistence). Done-when assessment: met — `spellChord` from `@jazz-master/theory` returns correct notes for `Cmaj7` and renders on `<Fretboard>`, all tested and navigable from the shell. Persistence landed as `defineStore` in `apps/web/src/storage/` (ADR-002; extraction to a package deferred per ADR-005).
 
 ## Last reviewed
 
