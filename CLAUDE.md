@@ -21,6 +21,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Situation | Process |
 |---|---|
 | "Do the next task" / implement anything | `processes/dev-loop.md` |
+| "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
 | Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
 | Inspect the product, find problems | `processes/qa-product-review.md` |

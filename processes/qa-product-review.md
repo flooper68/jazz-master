@@ -5,7 +5,7 @@ A periodic inspection of the *running product* that generates the raw material f
 ## When
 
 - After an epic reaches `done`
-- Every ~5 shipped tasks, or
+- Every ~5 shipped tasks (cadence enforced by `processes/heartbeat.md`, which schedules the review as a task when due), or
 - On demand ("run a QA review")
 - After security/privacy-sensitive product slices, such as storage, import/export, audio recording, or browser permissions
 

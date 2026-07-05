@@ -25,6 +25,7 @@ This is the canonical map from source material to actionable work. Only tasks an
 | Completed research | consuming task or `processes/knowledge-maintenance.md` | implementation/doc/process change, `TASK-*`, ADR, defer/reject/no-action |
 | Stale docs, stale research, unprocessed notes | `processes/knowledge-maintenance.md` | linked work, pruned/deferred decisions, index updates |
 | Multiple ready candidates | `processes/prioritization.md` | next task or issue to run through the dev loop |
+| Everything accumulated since the last beat (owner-triggered) | `processes/heartbeat.md` | triaged inboxes, scheduled hygiene `TASK-*` (QA review, knowledge sweep, security review), next 1–3 recommendation in `work/HEARTBEAT.md` |
 
 Provenance is kept with `source:` for notes/insights/issues/reviews and `research:` for completed `RES-*` files.
 

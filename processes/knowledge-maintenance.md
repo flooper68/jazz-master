@@ -2,7 +2,7 @@
 
 Keeps the repo's markdown knowledge system useful by pruning stale flow items, linting links/frontmatter by inspection, and feeding research or notes into concrete next actions. This is the repo's lightweight knowledge-pruning process from `research/RES-003-karpathy-llm-wiki-skill.md` and `research/RES-006-knowledge-pruning-and-triage.md`, implemented without a separate wiki or build system.
 
-Use this after QA reviews, after owner-requested research, after raw notes are added, when the dev loop finds no actionable work, and periodically after about ten shipped tasks.
+Use this after QA reviews, after owner-requested research, after raw notes are added, when the dev loop finds no actionable work, and periodically after about ten shipped tasks. The periodic cadence is enforced by `processes/heartbeat.md`, which schedules the sweep as a task when it comes due.
 
 ## Principles
 
