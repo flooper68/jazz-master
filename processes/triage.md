@@ -2,6 +2,10 @@
 
 Turns the raw inboxes — `work/insights/` (`status: new`) and `work/issues/` (`status: open`) — into actionable, prioritized work. Run when the inbox has items, after feedback intake, after every QA review, or when the dev loop finds nothing actionable.
 
+Product judgment follows `processes/product-practices.md`: do not promote a
+plausible idea into implementation work until its problem framing, goal fit, and
+evidence are clear enough for a future agent to verify.
+
 ## Steps
 
 For each inbox item, oldest first:
@@ -14,8 +18,17 @@ For each inbox item, oldest first:
 4. Decide:
    - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`. Product-facing tasks carry a `## Problem brief` (template in `work/README.md`).
    - **Reject** → `status: rejected`, with a written reason (the reason is the value — it prevents re-litigating the idea later).
-   - **Defer** → stays `new` with a note on what would change the decision and when to revisit.
+   - **Defer** → stays `new` with a dated note on missing evidence, revisit trigger, and what would change the decision.
 5. Never delete insight files.
+
+### Insight aging
+
+During each triage pass, also inspect previously deferred `status: new` insights:
+
+- Keep the insight open only if the missing evidence is still realistically obtainable and the revisit trigger still matters to current goals.
+- Reject solution-only, duplicated, or goal-irrelevant insights rather than carrying them as backlog debt.
+- Reject an insight that still lacks enough problem framing after two triage passes or roughly 60 days, unless the owner explicitly keeps it open.
+- If an old insight becomes relevant again through fresh evidence, update its note before accepting it so the decision can be audited.
 
 ### Issues (`status: open`)
 

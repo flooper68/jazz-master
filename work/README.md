@@ -103,6 +103,13 @@ source: NOTE-0XX | REV-0XX    # optional provenance
 The idea, in as little as two sentences. Where it came from. Why it might matter.
 For product-facing observations, note the current condition, desired condition, and
 evidence when known — triage needs these before it can accept the insight into a task.
+
+## Product framing   # optional; include when known
+Current condition:
+Desired condition:
+Affected user/workflow:
+Evidence:
+Validation need: dogfood | external user | research/spike | direct task candidate
 ```
 
 ### Issue
@@ -146,6 +153,14 @@ Follow the format in `processes/qa-product-review.md`.
 Completable in one focused session; verifiable without human judgment where possible. If it grows mid-flight, split it: ship a slice, file follow-ups, link them.
 
 Product-facing tasks distinguish **output** (what will be built) from **outcome** (what should improve for the user, from baseline to target) — that is what the Problem brief carries. Framing guidance: `research/RES-008-organizational-problem-identification-measurement-solving-frameworks.md`.
+
+Quality bar for product-facing tasks, adapted from `processes/product-practices.md`:
+
+- Outcome before output: name the behavior, product state, or workflow quality that should improve.
+- Small and vertical: one shippable path, not a grab-bag of adjacent improvements.
+- Bounded: out-of-scope items and no-gos are explicit when ambiguity could cause scope creep.
+- Testable: acceptance criteria are objective and verification can be run by a future agent.
+- Traceable: source insight, issue, note, research, or strategy context is linked.
 
 Attach each task to an existing epic unless there is a clear reason it is standalone. Tasks created from feedback, issues, insights, notes, reviews, or research must preserve provenance in `source:` or `research:`.
 

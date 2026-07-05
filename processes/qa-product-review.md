@@ -37,11 +37,14 @@ Harder and more valuable than defect-hunting. Ask, per the vision:
 - Would an intermediate jazz guitarist actually use this four times a week? What's the friction?
 - What's the smallest missing thing that would make the current state genuinely useful?
 - Is progress visible to the user (mastery, streaks, tempo milestones)?
+- What product outcome should improve if this finding becomes work?
+- What evidence supports the finding: dogfooding, external user feedback, reproduced app behavior, analytics, or research?
+- Does this need direct implementation, a discovery/validation step, or rejection as not-now?
 
 ### 4. File the findings
 
 - Defects → `work/issues/ISSUE-###.md` (with repro, severity)
-- Product gaps, ideas, friction observations → `work/insights/INS-###.md`. Where the review produced enough evidence, record a **baseline observation** (the current condition as seen in this review) and a **candidate target state** — this seeds the problem brief triage needs (RES-008).
+- Product gaps, ideas, friction observations → `work/insights/INS-###.md`. Where the review produced enough evidence, record a **baseline observation** (the current condition as seen in this review), a **candidate target state**, the **affected practice workflow**, and the **validation need** (`dogfood`, `external user`, `research/spike`, or `direct task candidate`) — this seeds the problem brief triage needs (RES-008 / RES-011).
 - Raw feedback batches or review notes worth preserving → `notes/NOTE-###.md`, with extracted work linked
 - Do NOT fix anything during the review — the review only observes and files. Fixes go through the dev loop.
 
@@ -82,3 +85,7 @@ The handoff is not complete until the report lists:
 - top product frictions
 - recommended next 1-3 work items
 - anything that needs owner confirmation
+
+Product handoff quality bar: a future triage pass should be able to decide
+accept / reject / defer from the report and filed items without reconstructing
+the whole review session.
