@@ -46,7 +46,7 @@ A developer can `import { spellChord } from '@/theory'`, get correct notes for `
 
 ## Current status
 
-In progress. TASK-001 through TASK-004 are done; TASK-008, TASK-009, and TASK-010 remain the next foundation backlog.
+In progress. TASK-001 through TASK-004 and TASK-009 are done; TASK-008 and TASK-010 remain the next foundation backlog.
 
 ## Last reviewed
 

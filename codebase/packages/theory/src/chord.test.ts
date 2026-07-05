@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { noteName, parseChord, parseNote, spellChord } from './index'
+import {
+  arpeggio,
+  CHORD_QUALITIES,
+  noteName,
+  parseChord,
+  parseNote,
+  spellChord,
+} from './index'
 
 function spell(root: string, quality: Parameters<typeof spellChord>[1]) {
   return spellChord(root, quality).map(noteName).join(' ')
@@ -129,6 +136,25 @@ describe('spellChord', () => {
 
   it('throws on an unparseable root string', () => {
     expect(() => spellChord('H', 'maj7')).toThrow()
+  })
+})
+
+describe('arpeggio', () => {
+  it.each(CHORD_QUALITIES)(
+    'spells every %s arpeggio in ascending chord-tone order',
+    (quality) => {
+      for (const [root, expected] of TABLES[quality]) {
+        expect(arpeggio(root, quality).map(noteName).join(' ')).toBe(expected)
+      }
+    },
+  )
+
+  it('spells the Eb7 arpeggio with Db, not C#', () => {
+    expect(arpeggio('Eb', '7').map(noteName)).toEqual(['Eb', 'G', 'Bb', 'Db'])
+  })
+
+  it('throws on an unparseable root string', () => {
+    expect(() => arpeggio('H', 'maj7')).toThrow()
   })
 })
 

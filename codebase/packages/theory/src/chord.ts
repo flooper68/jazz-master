@@ -35,6 +35,14 @@ export function spellChord(root: Note | string, quality: ChordQuality): Note[] {
   )
 }
 
+/**
+ * Chord tones in ascending order (root, third, fifth, seventh/sixth) — the
+ * arpeggio of a quality is its chord formula played melodically.
+ */
+export function arpeggio(root: Note | string, quality: ChordQuality): Note[] {
+  return spellChord(root, quality)
+}
+
 // Longest qualities first so m7b5 wins over m7, maj7 over 7.
 const CHORD_SYMBOL_PATTERN = /^([A-G](?:bb|b|##|#)?)(maj7|m7b5|dim7|m7|m6|7|6)$/
 

@@ -17,9 +17,11 @@ export {
   type Tuning,
 } from './fretboard'
 export {
+  arpeggio,
   CHORD_QUALITIES,
   parseChord,
   spellChord,
   type Chord,
   type ChordQuality,
 } from './chord'
+export { SCALE_TYPES, spellScale, type ScaleType } from './scale'
