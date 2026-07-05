@@ -26,7 +26,7 @@ RES-002 recommendation 6, deliberately **last and gated**: RES-002 says durable 
 - [ ] A tRPC procedure returns a successful round-trip result from Railway Postgres on deployed Workers
 - [ ] Database credentials appear in no source file, client bundle, or build output
 - [ ] Database access exists only behind tRPC context/procedures — nothing under `src/app/`, `src/components/`, `src/pages/`, or `src/theory/` imports database code
-- [ ] Local dev story documented (Hyperdrive local connection string or direct-to-Railway fallback for `wrangler dev`)
+- [ ] Local dev story documented (Hyperdrive local connection string pointed at the TASK-028 Docker Compose Postgres; direct-to-Railway only as fallback)
 - [ ] `architecture/overview.md` updated with the data path: SPA → tRPC → Worker → Hyperdrive → Railway
 - [ ] `bun run check` passes
 

@@ -12,7 +12,7 @@ flowchart TD
         pages[apps/web/src/pages/ — route-level modules]
         components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
-        storage[(localStorage — progress, sessions, repertoire)]
+        storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
     pages --> components
     pages --> theory
@@ -27,7 +27,7 @@ flowchart TD
 | Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | Pages | `codebase/apps/web/src/pages/` | One per practice module; own their route, compose components. |
-| Persistence | (planned, EPIC-001) | localStorage behind a typed wrapper so a real backend can replace it later. |
+| Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
 
 Dependency direction: `pages → components → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours.
 
@@ -62,6 +62,10 @@ react-router v8, library mode. `BrowserRouter` wraps `App` in `apps/web/src/main
 
 `codebase/packages/theory/src/` — `note.ts` (Note = letter + accidental, parse/format/pitch class), `interval.ts` (named-interval table; `transpose` moves the letter then derives the accidental, so spelling is correct by construction), `chord.ts` (formulas as interval stacks; `spellChord`, `parseChord`). Public API is the `index.ts` barrel only; parse functions return `null` on bad input, `spellChord` throws on a bad root string (programmer error). Names beyond double accidentals are unrepresentable — `noteName` throws.
 
-## Current state (2026-07-05)
+## Persistence (TASK-008)
 
-App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002): notes, intervals, chord spelling/parsing for maj7 · 7 · m7 · m7b5 · dim7 · 6 · m6, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Next: the EPIC-013 platform track (ADR-006 / TASK-020 onward).
+`apps/web/src/storage/` exposes `defineStore<T>({ name, version, defaultValue, migrate? })`, returning a typed `Store<T>` (`get`/`set`/`update`/`reset`). Values persist under `jazz-master:<name>` in a `{ version, data }` envelope. Reads never throw: missing keys, corrupt JSON, malformed envelopes, versions from the future, and failed migrations all fall back to `defaultValue()` with a `console.warn`. When the persisted version is older, `migrate(persisted, fromVersion)` upgrades the data and the result is written back. **Convention: no direct `localStorage` access outside `src/storage/`** — every feature defines a store, so a backend can later replace the wrapper (ADR-002). Extraction to `packages/storage` waits for a second consumer (ADR-005); React hooks over stores are deferred to first use.
+
+## Current state (2026-07-06)
+
+App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001. Next: the EPIC-013 platform track (ADR-006 / TASK-020 onward) and the guided-practice slice (EPIC-008/011/012).

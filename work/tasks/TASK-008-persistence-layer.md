@@ -2,7 +2,7 @@
 id: TASK-008
 title: Typed localStorage persistence layer
 epic: EPIC-001
-status: backlog
+status: in-progress
 depends_on: []
 created: 2026-07-05
 ---
@@ -31,3 +31,17 @@ EPIC-001 lists persistence as scope but no task existed. Everything in the new p
 ## Verification
 
 `bun run test` — storage suite green. Grep `localStorage` outside `src/storage/` returns nothing.
+
+## Log
+
+### 2026-07-06 — claimed (agent)
+Plan: `apps/web/src/storage/` with a `defineStore<T>({ name, version, defaultValue, migrate? })`
+factory returning a typed `Store<T>` (`get`/`set`/`update`/`reset`). Values persist under
+`jazz-master:<name>` in a `{ version, data }` envelope. Read path never throws: missing key,
+corrupt JSON, malformed envelope, version-ahead, or failed migration all fall back to
+`defaultValue()` with a `console.warn`. `migrate(persisted, fromVersion)` runs when the stored
+version is older; the migrated value is written back. Pure logic, no React hook yet (deferred
+to first consumer per task context). Convention (no direct `localStorage` outside
+`src/storage/`) documented in architecture/overview.md + CLAUDE.md. Measurable aim: baseline —
+no durable state possible; target — typed stores with migration, exhaustively unit-tested,
+verification = storage suite green + grep clean.

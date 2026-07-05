@@ -59,7 +59,7 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `
 
 - Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `apps/web/src/index.css`, no config file) · Vitest + Testing Library · oxlint
 - Monorepo (ADR-005): `codebase/apps/web` (this app) + `codebase/packages/theory` (`@jazz-master/theory`, consumed as `workspace:*`)
-- Local-first: no backend, no accounts; localStorage behind a typed wrapper (ADR-002)
+- Local-first: no backend, no accounts; all persistence via typed stores (`defineStore`) in `apps/web/src/storage/` — **never touch `localStorage` directly outside that directory** (ADR-002)
 - `codebase/packages/theory/` — pure domain core, **zero runtime deps in its package.json, no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
 - `apps/web/src/components/` (reusable UI) · `apps/web/src/pages/` (one per practice module) · dependency direction `pages → components → @jazz-master/theory`
 - Tests colocated: `Foo.tsx` → `Foo.test.tsx`

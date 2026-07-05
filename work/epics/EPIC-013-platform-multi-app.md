@@ -21,6 +21,7 @@ The owner has decided the product grows beyond one web app — document creation
 - Monorepo restructure: `codebase/` split, Bun workspaces, `@jazz-master/theory` extraction, root shim (ADR-005 / TASK-026–027)
 - Platform migration per RES-002: Astro shell + SPA island, TanStack Router, tRPC scaffold, Workers deploy (TASK-020–024)
 - Gated database path: Hyperdrive → Railway Postgres (TASK-025, pulled only when a feature needs server persistence)
+- Local dev database: Postgres via Docker Compose mirroring the future Railway instance (TASK-028, pulled alongside TASK-025)
 
 ## Out of scope
 
@@ -38,6 +39,7 @@ The owner has decided the product grows beyond one web app — document creation
 - TASK-023 — tRPC scaffold with typed /trpc/health endpoint
 - TASK-024 — Deploy the Astro app to Cloudflare Workers
 - TASK-025 — Hyperdrive → Railway Postgres (GATED)
+- TASK-028 — Local Postgres for development via Docker Compose (pull alongside TASK-025)
 
 ## Done when
 
