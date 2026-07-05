@@ -1,5 +1,5 @@
 import { Fretboard, type FretboardHighlight } from '../components/Fretboard'
-import { noteName, pitchClass, positionsOf, spellChord } from '../theory'
+import { noteName, pitchClass, positionsOf, spellChord } from '@jazz-master/theory'
 
 // Temporary TASK-003 demo: Cmaj7 chord tones in open position.
 const chordNotes = spellChord('C', 'maj7')

@@ -29,7 +29,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 3. Plan
 
 - Read the item fully, its epic, and any linked research (`research/RES-*.md`) or ADRs.
-- Read the code the task touches. Reuse before writing new — check `src/theory/` and `src/components/` first.
+- Read the code the task touches. Reuse before writing new — check `codebase/packages/theory/` and `codebase/apps/web/src/components/` first.
 - If the task has a research phase, run `processes/deep-research.md` first; findings land in `research/`.
 - If the task touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md` in the plan.
 - For product-facing tasks, restate the measurable aim (baseline → target, from the item's Problem brief or Goal) and name the verification signal in the plan before implementing (RES-008). If the item has neither, derive one and note it in the Log.
@@ -38,7 +38,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 4. Implement
 
 - Small increments; keep `bun run test:watch` running.
-- Theory-core (`src/theory/`) work is test-first: failing case, then make it pass.
+- Theory-core (`codebase/packages/theory/`) work is test-first: failing case, then make it pass.
 - Stay in scope. Ideas, discovered bugs, tempting refactors → `work/insights/` or `work/issues/` in step 9, not now.
 
 ### 5. Review

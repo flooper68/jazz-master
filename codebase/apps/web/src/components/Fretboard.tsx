@@ -1,4 +1,4 @@
-import { STRING_NUMBERS, type FretRange, type GuitarString } from '../theory'
+import { STRING_NUMBERS, type FretRange, type GuitarString } from '@jazz-master/theory'
 import { displayAccidentals } from './notation'
 
 export interface FretboardHighlight {

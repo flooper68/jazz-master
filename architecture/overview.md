@@ -9,9 +9,9 @@ Jazz Master is a local-first single-page app. No backend, no accounts: all state
 ```mermaid
 flowchart TD
     subgraph Browser
-        pages[src/pages/ — route-level modules]
-        components[src/components/ — Fretboard, ChordDiagram, layout]
-        theory[src/theory/ — pure domain core: notes, intervals, chords, fretboard math]
+        pages[apps/web/src/pages/ — route-level modules]
+        components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
+        theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(localStorage — progress, sessions, repertoire)]
     end
     pages --> components
@@ -24,29 +24,31 @@ flowchart TD
 
 | Layer | Path | Rule |
 |---|---|---|
-| Domain core | `src/theory/` | Pure TypeScript. **No React, no DOM, no side effects.** Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
-| Components | `src/components/` | Reusable, thin; music knowledge comes from `theory/`, never inlined. |
-| Pages | `src/pages/` | One per practice module; own their route, compose components. |
+| Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
+| Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
+| Pages | `codebase/apps/web/src/pages/` | One per practice module; own their route, compose components. |
 | Persistence | (planned, EPIC-001) | localStorage behind a typed wrapper so a real backend can replace it later. |
 
-Dependency direction: `pages → components → theory`. Nothing imports upward; `theory` imports nothing of ours.
+Dependency direction: `pages → components → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours.
 
-## Repository layout (ADR-005 — accepted, migration pending TASK-027)
+## Repository layout (ADR-005, landed with TASK-027)
 
-Target: the repo root holds only the knowledge system (strategy/processes/work/notes/research/architecture/artifacts) plus a delegating shim `package.json`; all code moves under `codebase/`, a Bun-workspaces monorepo:
+The repo root holds only the knowledge system (strategy/processes/work/notes/research/architecture/artifacts) — **no `package.json` at the root** (owner decision during TASK-027; ADR-005's original root-shim idea is amended there). All code lives under `codebase/`, a Bun-workspaces monorepo:
 
 ```
 codebase/
   package.json          # workspace root: apps/*, packages/*; lockfile + node_modules here
+  tsconfig.base.json    # shared compiler options; per-workspace tsconfigs extend it
+  vitest.config.ts      # test.projects: all workspaces run from one `bun run test`
   packages/theory/      # @jazz-master/theory — the pure domain core, zero runtime deps
-  apps/web/             # the current app (later the Astro shell, TASK-021)
+  apps/web/             # the app (later the Astro shell, TASK-021)
 ```
 
-Future apps (CLI, docs, presentations) are added as `apps/*` directories. Package extraction requires a second concrete consumer or provable purity; `packages/ui`, `packages/storage`, and `packages/config` are deferred with triggers recorded in ADR-005. `bun run check` from the repo root remains THE gate (shim → `bun --cwd codebase run check`). **Current state: not yet migrated — code still lives at the root under `src/` as described above.**
+Future apps (CLI, docs, presentations) are added as `apps/*` directories. Package extraction requires a second concrete consumer or provable purity; `packages/ui`, `packages/storage`, and `packages/config` are deferred with triggers recorded in ADR-005. All bun commands run from `codebase/` — from the repo root use `bun run --cwd codebase <script>`.
 
 ## Toolchain
 
-Bun (runtime, packages) · Vite 8 (build) · React 19 · TypeScript · Tailwind v4 (CSS-config via `@theme`) · Vitest + Testing Library (jsdom) · oxlint. See ADR-001. The single verification gate is `bun run check`.
+Bun (runtime, packages, workspaces) · Vite 8 (build) · React 19 · TypeScript (project references: `apps/web` → `packages/theory`, which is `composite` and emits declarations only) · Tailwind v4 (CSS-config via `@theme`, scoped to `apps/web`) · Vitest + Testing Library (jsdom in `apps/web`; node defaults in packages) · oxlint. See ADR-001. The single verification gate is `bun run check` (run in `codebase/`).
 
 ## Knowledge system
 
@@ -54,12 +56,12 @@ The repo is also the product operating system. `strategy/` sets direction, `proc
 
 ## Routing
 
-react-router v8, library mode. `BrowserRouter` wraps `App` in `src/main.tsx`; `App.tsx` owns the route table (a `Layout` route with nested children per practice module, plus a `*` → `NotFoundPage` catch-all). `src/components/Layout.tsx` is the persistent shell (sidebar nav via `NavLink`, content via `<Outlet>`). Tests mount `App` in a `MemoryRouter`.
+react-router v8, library mode. `BrowserRouter` wraps `App` in `apps/web/src/main.tsx`; `App.tsx` owns the route table (a `Layout` route with nested children per practice module, plus a `*` → `NotFoundPage` catch-all). `apps/web/src/components/Layout.tsx` is the persistent shell (sidebar nav via `NavLink`, content via `<Outlet>`). Tests mount `App` in a `MemoryRouter`.
 
 ## Theory core
 
-`src/theory/` — `note.ts` (Note = letter + accidental, parse/format/pitch class), `interval.ts` (named-interval table; `transpose` moves the letter then derives the accidental, so spelling is correct by construction), `chord.ts` (formulas as interval stacks; `spellChord`, `parseChord`). Public API is the `index.ts` barrel only; parse functions return `null` on bad input, `spellChord` throws on a bad root string (programmer error). Names beyond double accidentals are unrepresentable — `noteName` throws.
+`codebase/packages/theory/src/` — `note.ts` (Note = letter + accidental, parse/format/pitch class), `interval.ts` (named-interval table; `transpose` moves the letter then derives the accidental, so spelling is correct by construction), `chord.ts` (formulas as interval stacks; `spellChord`, `parseChord`). Public API is the `index.ts` barrel only; parse functions return `null` on bad input, `spellChord` throws on a bad root string (programmer error). Names beyond double accidentals are unrepresentable — `noteName` throws.
 
 ## Current state (2026-07-05)
 
-App shell done (TASK-001): routing + sidebar nav + stub pages under `src/pages/`. Theory core done (TASK-002): notes, intervals, chord spelling/parsing for maj7 · 7 · m7 · m7b5 · dim7 · 6 · m6, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. ADR-005 accepted (TASK-026): the monorepo restructure under `codebase/` (TASK-027) is next, followed by the EPIC-013 platform track.
+App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002): notes, intervals, chord spelling/parsing for maj7 · 7 · m7 · m7b5 · dim7 · 6 · m6, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Next: the EPIC-013 platform track (ADR-006 / TASK-020 onward).

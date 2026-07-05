@@ -11,7 +11,7 @@ created: 2026-07-05
 
 ## Goal
 
-Extend `src/theory/` with correctly spelled scales/modes and arpeggios, so lesson content (EPIC-008) can be generated from theory rather than hand-typed note lists.
+Extend `codebase/packages/theory/` with correctly spelled scales/modes and arpeggios, so lesson content (EPIC-008) can be generated from theory rather than hand-typed note lists.
 
 ## Context
 

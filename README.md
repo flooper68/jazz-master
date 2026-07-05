@@ -7,6 +7,7 @@ A web app that helps guitarists practice jazz — chord voicings, ii–V–I dri
 Requires [Bun](https://bun.sh).
 
 ```sh
+cd codebase      # all code lives here (Bun-workspaces monorepo)
 bun install
 bun run dev      # start the dev server
 bun run check    # typecheck + lint + test + build
@@ -29,7 +30,7 @@ The repo carries its own knowledge system — the project is developed by a huma
 | `notes/` | Raw feedback, meetings, observations, and owner notes before they are processed into work |
 | `research/` | Persisted deep-research results feeding the docs above |
 | `artifacts/` | Human-facing rendered companions such as presentations, visual reports, and exports |
-| `src/` | The app: `theory/` (pure domain core) · `components/` · `pages/` |
+| `codebase/` | The code — Bun workspaces: `apps/web` (the app) · `packages/theory` (pure domain core) |
 | `CLAUDE.md` / `AGENTS.md` | Agent indexes — start here |
 
 ## How inputs become work

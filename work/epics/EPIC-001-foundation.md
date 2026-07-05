@@ -19,7 +19,7 @@ Every pillar (voicings, progressions, repertoire, ear training) needs to name no
 ## Scope
 
 - App shell: routing, layout, navigation between practice modules
-- Theory core (`src/theory/`): pitch classes, notes, intervals, chord spelling (maj7, m7, 7, m7b5, dim7, alterations), key/scale basics
+- Theory core (`codebase/packages/theory/`): pitch classes, notes, intervals, chord spelling (maj7, m7, 7, m7b5, dim7, alterations), key/scale basics
 - Fretboard model: strings/frets/tuning, mapping notes to positions
 - Rendering: SVG `<Fretboard>` and `<ChordDiagram>` components
 - Local persistence layer (localStorage wrapper) for later progress tracking

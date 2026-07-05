@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-05 — monorepo restructure shipped (TASK-027); no root package.json
+
+Code moved to `codebase/` (apps/web + packages/theory as `@jazz-master/theory`, project references, single Vitest `projects` config). All 37 files moved with `git mv`; 210 tests unchanged. Owner overrode ADR-005's root-shim: the repo root has **no** `package.json` — commands run via `bun run --cwd codebase <script>` (ADR-005 amended in place). Gotchas: Bun's `--filter` needs a `./`-prefixed path glob (`--filter './apps/*'`), and `bun --cwd codebase run x` parses wrong — it's `bun run --cwd codebase x`. Bun 1.3 installs workspaces isolated (per-workspace `node_modules` symlinks), so `@types/node` is only visible where declared.
+
 ## 2026-07-05 — ADR-005 accepted: codebase/ split + Bun workspaces (EPIC-013 created)
 
 Owner decided the product grows into multiple apps (doc creation, presentations, CLIs). ADR-005 records the target: knowledge stays at the repo root, all code moves under `codebase/` as a Bun-workspaces monorepo (`apps/web`, `packages/theory`), root `package.json` becomes a delegating shim so `bun run check` at the root stays THE gate. Package extraction gated on a second consumer or purity (`ui`/`storage`/`config` deferred with triggers). EPIC-013 created and adopted the orphaned platform tasks TASK-020–025; the Astro/Workers ADR (TASK-020) renumbered to ADR-006; the physical restructure is TASK-027, sequenced after TASK-004 completes and before the Astro shell (TASK-021).

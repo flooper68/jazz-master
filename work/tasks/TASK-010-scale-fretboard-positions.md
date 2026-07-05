@@ -15,7 +15,7 @@ Given a scale or arpeggio and a fretboard position (fret window), produce the or
 
 ## Context
 
-TASK-003 gives `noteAt`/`positionsOf`; TASK-009 gives scale/arpeggio spelling. Exercises (TASK-011/012) need "play C major, position 2, ascending and descending": a deterministic mapping from (notes × fret window) to an ordered path across the strings. Lives in `src/theory/` (pure). Start with one clear position system (e.g. anchored fret windows of ~4–5 frets); CAGED/3-notes-per-string labeling can come later — design so the position system is a parameter, not baked in.
+TASK-003 gives `noteAt`/`positionsOf`; TASK-009 gives scale/arpeggio spelling. Exercises (TASK-011/012) need "play C major, position 2, ascending and descending": a deterministic mapping from (notes × fret window) to an ordered path across the strings. Lives in `codebase/packages/theory/` (pure). Start with one clear position system (e.g. anchored fret windows of ~4–5 frets); CAGED/3-notes-per-string labeling can come later — design so the position system is a parameter, not baked in.
 
 ## Acceptance criteria
 

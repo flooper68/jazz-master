@@ -15,7 +15,7 @@ The heart of the product loop: start a lesson, be guided exercise by exercise (d
 
 ## Context
 
-Runner UI on the Practice page (`src/pages/PracticePage.tsx` + components). Per exercise: show what to play (fretboard via TASK-003 rendering the TASK-010 positions; tempo target as text until the metronome exists), a countdown or repetition counter, and self-grade buttons — got it / shaky / missed — then advance. End of lesson: summary screen, session persisted.
+Runner UI on the Practice page (`codebase/apps/web/src/pages/PracticePage.tsx` + components). Per exercise: show what to play (fretboard via TASK-003 rendering the TASK-010 positions; tempo target as text until the metronome exists), a countdown or repetition counter, and self-grade buttons — got it / shaky / missed — then advance. End of lesson: summary screen, session persisted.
 
 This task also defines the **session record** (the contract EPIC-011 planner and EPIC-012 history consume): id, timestamp, lesson id, per-exercise grades, duration, and an optional `score` slot reserved for EPIC-010. Store it via TASK-008 storage under a `sessions` store. Keep session-flow state in a plain reducer/hook, components thin.
 

@@ -13,6 +13,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly |
 | Research | `research/` | Persisted deep-research results (`RES-*`) — check before re-researching anything |
 | Artifacts | `artifacts/` | Human-facing outputs: presentations, visual reports, exports. Markdown docs remain canonical. |
+| Code | `codebase/` | All executable code — Bun-workspaces monorepo (`apps/*`, `packages/*`). The root has **no** `package.json`. |
 
 `work/README.md` is the canonical map for how feedback, QA, notes, and research become actionable tasks/issues.
 
@@ -44,20 +45,23 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 
 ## Commands
 
+All bun commands run in `codebase/` (the repo root has no `package.json`) — from the root, use `bun run --cwd codebase <script>`:
+
 ```
-bun run dev          # dev server
-bun run check        # typecheck + lint + test + build — THE verification gate
-bun run test         # vitest run (test:watch for watch mode)
+bun run --cwd codebase dev      # dev server
+bun run --cwd codebase check    # typecheck + lint + test + build — THE verification gate
+bun run --cwd codebase test     # vitest run, all workspaces (test:watch for watch mode)
 ```
 
-Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`.
+Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `codebase/` (single lockfile + node_modules there).
 
 ## Stack & architecture (detail: architecture/overview.md)
 
-- Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `src/index.css`, no config file) · Vitest + Testing Library · oxlint
+- Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `apps/web/src/index.css`, no config file) · Vitest + Testing Library · oxlint
+- Monorepo (ADR-005): `codebase/apps/web` (this app) + `codebase/packages/theory` (`@jazz-master/theory`, consumed as `workspace:*`)
 - Local-first: no backend, no accounts; localStorage behind a typed wrapper (ADR-002)
-- `src/theory/` — pure domain core, **no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
-- `src/components/` (reusable UI) · `src/pages/` (one per practice module) · dependency direction `pages → components → theory`
+- `codebase/packages/theory/` — pure domain core, **zero runtime deps in its package.json, no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
+- `apps/web/src/components/` (reusable UI) · `apps/web/src/pages/` (one per practice module) · dependency direction `pages → components → @jazz-master/theory`
 - Tests colocated: `Foo.tsx` → `Foo.test.tsx`
 
 ## Conventions
@@ -66,4 +70,4 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`.
 - Named exports preferred; default export only for route pages and `App`
 - Music notation in code: `b`/`#` in identifiers (`Bb`, `F#`); Unicode `♭`/`♯` only in rendered UI text
 - Chord qualities in code: `maj7`, `m7`, `7`, `m7b5`, `dim7` (lowercase, as guitarists write them)
-- Logic lives in `src/theory/` or plain functions/hooks; components stay thin
+- Logic lives in `codebase/packages/theory/` or plain functions/hooks; components stay thin

@@ -21,7 +21,7 @@ Every work item is reviewed before it ships — including agent-implemented ones
 - [ ] New logic has meaningful tests; tests assert behavior, not implementation details
 
 **Architecture**
-- [ ] `src/theory/` stays pure — no React/DOM imports
+- [ ] `codebase/packages/theory/` stays pure — no React/DOM imports, zero runtime deps in its `package.json`
 - [ ] Reuses existing utilities/components instead of duplicating them
 - [ ] Architectural decisions in this diff have an ADR
 
