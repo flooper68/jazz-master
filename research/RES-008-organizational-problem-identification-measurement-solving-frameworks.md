@@ -2,6 +2,7 @@
 id: RES-008
 title: Organizational problem identification, measurement, and solving frameworks
 status: complete
+task: TASK-007
 created: 2026-07-05
 stale_when: "A specific Jazz Master operating process is created from this research, or major new evidence changes common practice in strategy execution / continuous improvement frameworks."
 ---

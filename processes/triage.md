@@ -10,11 +10,12 @@ For each inbox item, oldest first:
 
 1. Understand it; check it isn't already covered by an existing epic/task/rejected insight (search `work/` for keywords).
 2. Judge against `strategy/`: does it serve the vision and current goals? Is now the time?
-3. Decide:
-   - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`.
+3. Check problem framing (RES-008): before an insight becomes a task, the **current condition, desired condition, affected user/workflow, and evidence** must be clear — from the insight itself or one quick round of investigation. If they aren't, defer the insight noting what's missing; do not fabricate implementation work around a vague symptom.
+4. Decide:
+   - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`. Product-facing tasks carry a `## Problem brief` (template in `work/README.md`).
    - **Reject** → `status: rejected`, with a written reason (the reason is the value — it prevents re-litigating the idea later).
    - **Defer** → stays `new` with a note on what would change the decision and when to revisit.
-4. Never delete insight files.
+5. Never delete insight files.
 
 ### Issues (`status: open`)
 

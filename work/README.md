@@ -66,6 +66,17 @@ created: YYYY-MM-DD
 ## Goal
 One outcome-oriented sentence.
 
+## Problem brief
+<!-- Required for product-facing work or when the problem statement is ambiguous;
+     omit for purely technical/internal tasks where Goal + Context suffice. (RES-008) -->
+Current condition:
+Desired condition:
+Affected user/workflow:
+Evidence:
+Baseline:
+Target:
+How we will know it improved:
+
 ## Context
 What the implementer needs; link epics, research, code paths.
 
@@ -89,6 +100,8 @@ source: NOTE-0XX | REV-0XX    # optional provenance
 ---
 
 The idea, in as little as two sentences. Where it came from. Why it might matter.
+For product-facing observations, note the current condition, desired condition, and
+evidence when known — triage needs these before it can accept the insight into a task.
 ```
 
 ### Issue
@@ -130,6 +143,8 @@ Follow the format in `processes/qa-product-review.md`.
 ## Writing a good task
 
 Completable in one focused session; verifiable without human judgment where possible. If it grows mid-flight, split it: ship a slice, file follow-ups, link them.
+
+Product-facing tasks distinguish **output** (what will be built) from **outcome** (what should improve for the user, from baseline to target) — that is what the Problem brief carries. Framing guidance: `research/RES-008-organizational-problem-identification-measurement-solving-frameworks.md`.
 
 Attach each task to an existing epic unless there is a clear reason it is standalone. Tasks created from feedback, issues, insights, notes, reviews, or research must preserve provenance in `source:` or `research:`.
 

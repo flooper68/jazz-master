@@ -41,7 +41,7 @@ Harder and more valuable than defect-hunting. Ask, per the vision:
 ### 4. File the findings
 
 - Defects → `work/issues/ISSUE-###.md` (with repro, severity)
-- Product gaps, ideas, friction observations → `work/insights/INS-###.md`
+- Product gaps, ideas, friction observations → `work/insights/INS-###.md`. Where the review produced enough evidence, record a **baseline observation** (the current condition as seen in this review) and a **candidate target state** — this seeds the problem brief triage needs (RES-008).
 - Raw feedback batches or review notes worth preserving → `notes/NOTE-###.md`, with extracted work linked
 - Do NOT fix anything during the review — the review only observes and files. Fixes go through the dev loop.
 

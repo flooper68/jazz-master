@@ -32,6 +32,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 - Read the code the task touches. Reuse before writing new — check `src/theory/` and `src/components/` first.
 - If the task has a research phase, run `processes/deep-research.md` first; findings land in `research/`.
 - If the task touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md` in the plan.
+- For product-facing tasks, restate the measurable aim (baseline → target, from the item's Problem brief or Goal) and name the verification signal in the plan before implementing (RES-008). If the item has neither, derive one and note it in the Log.
 - Append a short plan to the item's **Log**. If the item is too large, split it: narrow to a shippable slice, file follow-up tasks.
 
 ### 4. Implement

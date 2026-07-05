@@ -43,3 +43,9 @@ bun run check
 ```
 
 Read-through: run a mock triage of three invented insights using only the updated docs; decisions should be derivable, not vibes.
+
+## Log
+
+### 2026-07-05 — RES-008 process changes pre-applied (owner-directed)
+
+The owner asked to incorporate the latest research into the processes, so RES-008's five "suggested process changes" were applied ahead of this task: `## Problem brief` added to the task template and insight guidance in `work/README.md`; a problem-framing gate added to insight acceptance in `processes/triage.md`; a measurable-aim preference added to `processes/prioritization.md`; baseline/target capture added to filing in `processes/qa-product-review.md`; and a measurable-aim restatement added to the Plan step of `processes/dev-loop.md`. Remaining scope when this task is claimed: create `processes/product-practices.md`, decide whether the still-open research questions (prioritization frameworks at solo scale, insight aging/kill criteria, validation with early users, human+AI failure modes) need a further RES pass, and run the mock-triage read-through.

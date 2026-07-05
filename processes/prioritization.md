@@ -28,6 +28,9 @@ Then prefer work that scores well on these questions:
 | Risk reduction | Does it test an assumption, unblock later work, or remove fragility? |
 | Size | Can it ship in one focused session? |
 | Leverage | Does it enable several later tasks or simplify repeated work? |
+| Measurable aim | Does it state a baseline and target (or observable before/after state), not just an output? (RES-008) |
+
+Between equally sized candidates, prefer the one with a measurable aim — a stated baseline → target — over one with only an output description.
 
 ## Steps
 
