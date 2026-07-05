@@ -1,7 +1,7 @@
 ---
 id: TASK-022
 title: Migrate SPA routing from React Router to TanStack Router
-epic: none            # platform migration — candidate new epic, owner to decide
+epic: EPIC-013
 status: backlog
 depends_on: [TASK-021]
 research: RES-002
@@ -17,6 +17,8 @@ The `/app/*` SPA uses TanStack Router with file-based routes and type-safe navig
 ## Context
 
 RES-002 recommendation 3. TanStack route files live under `src/app/routes` (never `src/pages`, which Astro owns) with the route tree rooted at `/app`. The `@tanstack/router-plugin` Vite plugin is added through Astro's `vite.plugins` passthrough, ordered before the React plugin, with `autoCodeSplitting: true`. RES-002 flags this plugin/codegen wiring as the riskiest mechanical part and notes it is a single-source inference (neither TanStack nor Astro documents the combination) — so **spike the codegen first**: prove `routeTree.gen.ts` generation works inside `astro dev`/`astro build` before migrating any routes. If the plugin cannot run under Astro, stop, file the finding as an insight, and fall back to TanStack's code-based routing rather than inventing a workaround.
+
+**ADR-005 note (2026-07-05):** paths in this task predate the TASK-027 restructure — read every `src/...` path as `codebase/apps/web/src/...` (e.g. route files under `codebase/apps/web/src/app/routes`), and the Verification grep as `grep -r "react-router" codebase/apps/web/src/ codebase/apps/web/package.json`.
 
 ## Acceptance criteria
 

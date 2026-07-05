@@ -1,7 +1,7 @@
 ---
 id: TASK-024
 title: Deploy the Astro app to Cloudflare Workers
-epic: none            # platform migration — candidate new epic, owner to decide
+epic: EPIC-013
 status: backlog
 depends_on: [TASK-021, TASK-023]
 research: RES-002
@@ -17,6 +17,8 @@ The app runs on Cloudflare Workers: SSR landing page, `/app/*` SPA, and `/trpc/h
 ## Context
 
 RES-002 recommendation 1: target Workers, **not Pages** — the current Astro Cloudflare adapter no longer supports Pages. Keep an explicit `wrangler.jsonc` (this project will need custom bindings later — Hyperdrive in TASK-025) with `nodejs_compat` and a `compatibility_date`. Add a `bun run deploy` script wrapping `wrangler deploy`, and document a local Workers-runtime preview (`wrangler dev` / the adapter's preview) so Workers-specific breakage is catchable before deploying. Deployment stays manual/owner-triggered in this slice — no CI deploy pipeline (file an insight if that seems worth doing). Secrets note: nothing secret exists yet in this slice; the task must not introduce any. Completes the RES-002 first-slice target: landing SSR + working SPA + typed health endpoint on Workers, `bun run check` still the gate.
+
+**ADR-005 note (2026-07-05):** after the TASK-027 restructure, `wrangler.jsonc` lives in `codebase/apps/web/`; the `deploy` script is defined there and exposed through the workspace root (and root shim) so `bun run deploy` works from the repo root.
 
 ## Acceptance criteria
 

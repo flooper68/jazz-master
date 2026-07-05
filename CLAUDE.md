@@ -55,6 +55,7 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`.
 ## Stack & architecture (detail: architecture/overview.md)
 
 - Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `src/index.css`, no config file) · Vitest + Testing Library · oxlint
+- **In migration (ADR-005, lands with TASK-027):** all code moves under `codebase/` as a Bun-workspaces monorepo — `apps/web` (this app) + `packages/theory` (`@jazz-master/theory`), root `package.json` becomes a delegating shim. Until TASK-027 ships, code lives under `src/` as described below.
 - Local-first: no backend, no accounts; localStorage behind a typed wrapper (ADR-002)
 - `src/theory/` — pure domain core, **no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
 - `src/components/` (reusable UI) · `src/pages/` (one per practice module) · dependency direction `pages → components → theory`

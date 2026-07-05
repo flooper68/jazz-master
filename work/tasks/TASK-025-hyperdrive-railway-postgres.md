@@ -1,7 +1,7 @@
 ---
 id: TASK-025
 title: Connect Workers to Railway Postgres through Cloudflare Hyperdrive
-epic: none            # platform migration — candidate new epic, owner to decide
+epic: EPIC-013
 status: backlog       # GATED — do not start until a feature task actually needs server-side persistence
 depends_on: [TASK-024]
 research: RES-002
@@ -17,6 +17,8 @@ tRPC procedures can query a Railway PostgreSQL database through a Cloudflare Hyp
 ## Context
 
 RES-002 recommendation 6, deliberately **last and gated**: RES-002 says durable state moves to Postgres only when a specific task requires it. Pull this task only alongside the first feature that needs cross-device persistence; until then it stays in backlog. Setup: provision a Railway Postgres service, use its TCP-proxy external connection (mind egress billing), create a Hyperdrive config pointing at it, and add the `hyperdrive` binding to `wrangler.jsonc`. The connection is used via `env.HYPERDRIVE.connectionString` with `pg` or `postgres.js` inside tRPC context (`src/server/trpc/context.ts`) only. Hard boundaries from the research: the Railway `DATABASE_URL` never reaches browser code or the repo (Wrangler secret / dashboard only); React never connects to the database; all access goes through Worker-side tRPC procedures. A `dbHealth`-style procedure (`SELECT 1` / version) is the whole product surface of this task — no schema, no migrations, no feature data.
+
+**ADR-005 note (2026-07-05):** paths predate the TASK-027 restructure — read `src/...` as `codebase/apps/web/src/...`; the boundary criterion covers `codebase/apps/web/src/{app,components,pages}/` and `codebase/packages/theory/`, and the Verification grep runs over `codebase/apps/web/src/` and its build output.
 
 ## Acceptance criteria
 

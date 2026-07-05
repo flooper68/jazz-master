@@ -31,6 +31,19 @@ flowchart TD
 
 Dependency direction: `pages → components → theory`. Nothing imports upward; `theory` imports nothing of ours.
 
+## Repository layout (ADR-005 — accepted, migration pending TASK-027)
+
+Target: the repo root holds only the knowledge system (strategy/processes/work/notes/research/architecture/artifacts) plus a delegating shim `package.json`; all code moves under `codebase/`, a Bun-workspaces monorepo:
+
+```
+codebase/
+  package.json          # workspace root: apps/*, packages/*; lockfile + node_modules here
+  packages/theory/      # @jazz-master/theory — the pure domain core, zero runtime deps
+  apps/web/             # the current app (later the Astro shell, TASK-021)
+```
+
+Future apps (CLI, docs, presentations) are added as `apps/*` directories. Package extraction requires a second concrete consumer or provable purity; `packages/ui`, `packages/storage`, and `packages/config` are deferred with triggers recorded in ADR-005. `bun run check` from the repo root remains THE gate (shim → `bun --cwd codebase run check`). **Current state: not yet migrated — code still lives at the root under `src/` as described above.**
+
 ## Toolchain
 
 Bun (runtime, packages) · Vite 8 (build) · React 19 · TypeScript · Tailwind v4 (CSS-config via `@theme`) · Vitest + Testing Library (jsdom) · oxlint. See ADR-001. The single verification gate is `bun run check`.
@@ -49,4 +62,4 @@ react-router v8, library mode. `BrowserRouter` wraps `App` in `src/main.tsx`; `A
 
 ## Current state (2026-07-05)
 
-App shell done (TASK-001): routing + sidebar nav + stub pages under `src/pages/`. Theory core done (TASK-002): notes, intervals, chord spelling/parsing for maj7 · 7 · m7 · m7b5 · dim7 · 6 · m6, 12-key test coverage. Fretboard (TASK-003), chord diagrams (TASK-004), and persistence are next.
+App shell done (TASK-001): routing + sidebar nav + stub pages under `src/pages/`. Theory core done (TASK-002): notes, intervals, chord spelling/parsing for maj7 · 7 · m7 · m7b5 · dim7 · 6 · m6, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. ADR-005 accepted (TASK-026): the monorepo restructure under `codebase/` (TASK-027) is next, followed by the EPIC-013 platform track.

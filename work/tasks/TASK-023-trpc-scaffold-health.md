@@ -1,7 +1,7 @@
 ---
 id: TASK-023
 title: tRPC scaffold with typed /trpc/health endpoint and shared React Query client
-epic: none            # platform migration — candidate new epic, owner to decide
+epic: EPIC-013
 status: backlog
 depends_on: [TASK-021]
 research: RES-002
@@ -17,6 +17,8 @@ A working end-to-end typed API surface: a tRPC `health` procedure served from an
 ## Context
 
 RES-002 recommendations 4 and 5. Server shape from the research: `src/server/trpc/context.ts` (request context; no database yet), `src/server/trpc/router.ts` (root `appRouter`), `src/server/trpc/routers/` (empty or `system.ts` for health), and `src/pages/trpc/[trpc].ts` using tRPC's fetch adapter with an `ALL` Astro handler. Client side: `src/app/trpc.ts` typed client utilities and `src/app/providers.tsx` wrapping the SPA with **one** `QueryClientProvider` reused by the tRPC provider — never two query caches. Use a Zod input/output on the health procedure so the validation pattern is established. Scope guard (RES-002 rec 8): no auth, no persistence, no database — health/scaffolding only; the SPA keeps localStorage for all practice state.
+
+**ADR-005 note (2026-07-05):** paths in this task predate the TASK-027 restructure — read every `src/...` path as `codebase/apps/web/src/...` (server shape under `codebase/apps/web/src/server/trpc/`, client under `codebase/apps/web/src/app/`).
 
 ## Acceptance criteria
 

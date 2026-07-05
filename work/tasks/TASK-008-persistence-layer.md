@@ -17,6 +17,8 @@ A typed wrapper around localStorage (per ADR-002) that every feature uses for pe
 
 EPIC-001 lists persistence as scope but no task existed. Everything in the new product direction (planner, history, dashboard, lesson progress) reads and writes durable state, so this is now on the critical path. Suggested shape: `src/storage/` with a small store API — per-key namespaces (e.g. `profile`, `sessions`), each with a typed schema, a schema `version`, and a migration hook. Pure logic; React integration (a hook) can be a thin layer on top or deferred to first use.
 
+**ADR-005 note (2026-07-05):** this wrapper is built inside the web app (after TASK-027: `codebase/apps/web/src/storage/`). Extraction to `packages/storage` is deliberately deferred — the trigger (a second app needing persistence) is recorded in ADR-005. Do not create a package for it in this task.
+
 ## Acceptance criteria
 
 - [ ] Typed `get`/`set` per named store; TypeScript rejects writing the wrong shape

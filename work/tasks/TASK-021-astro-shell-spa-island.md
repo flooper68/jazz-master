@@ -1,9 +1,9 @@
 ---
 id: TASK-021
 title: Host the existing React SPA inside Astro under /app/*
-epic: none            # platform migration — candidate new epic, owner to decide
+epic: EPIC-013
 status: backlog
-depends_on: [TASK-020]
+depends_on: [TASK-020, TASK-027]
 research: RES-002
 created: 2026-07-05
 ---
@@ -17,6 +17,8 @@ The project builds and runs as an Astro app: Astro serves a landing page at `/`,
 ## Context
 
 First implementation step of the RES-002 migration (recommendation 2 and 8). Convert the Vite project to Astro with `@astrojs/react` and the `@astrojs/cloudflare` adapter (`output: 'server'`, Workers target — configured now, deployed in TASK-024). Mount the existing React `App` from an Astro catch-all page `src/pages/app/[...path].astro` using `client:only="react"` so Astro never SSRs the practice app. The SPA keeps React Router in this task (TanStack migration is TASK-022); its routes move under the `/app` basename. Public pages live in Astro's `src/pages`; a minimal landing page at `/` linking into `/app` is enough. `src/theory/` stays pure — no Astro imports there ever. Keep `bun run check` as THE gate; rewire its build step to `astro build` and confirm typecheck/lint/test still cover the React code.
+
+**ADR-005 note (2026-07-05):** this task now runs after the TASK-027 restructure — the project being converted is the `codebase/apps/web` workspace, and every `src/...` path in this task reads as `codebase/apps/web/src/...`. "`src/theory/` stays pure" reads as "`codebase/packages/theory` stays pure" (no Astro imports there ever). `bun run check` still runs from the repo root via the shim.
 
 ## Acceptance criteria
 
