@@ -41,6 +41,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 4. Code and its tracker updates (task status, Log, criteria) ship **in the same commit**.
 5. Every work item is **reviewed** (independent agent pass) and **tested** (check + the item's Verification steps) before it is **pushed**.
 6. Update `architecture/` when the shape of the system changes: ADR for decisions, LOG.md for notable events.
+7. **Finished work is committed and pushed — never left sitting in the working tree.** Before reporting done or ending a session, `git status --short` and `git log origin/main..HEAD` must both be empty (the end-of-run check in `processes/git-workflow.md`). Applies to knowledge-only work exactly as to code.
 
 ## Commands
 
