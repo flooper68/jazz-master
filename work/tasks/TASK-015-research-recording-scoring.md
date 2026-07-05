@@ -4,7 +4,6 @@ title: Research browser audio recording & pitch-detection feasibility
 epic: EPIC-010
 status: backlog
 depends_on: []
-research: RES-009
 created: 2026-07-05
 ---
 
@@ -16,7 +15,7 @@ Know, before building any UI, whether credible in-browser scoring of guitar take
 
 ## Context
 
-Recording + scoring is VIS-001's declared riskiest bet. Run `processes/deep-research.md` -> `research/RES-009-audio-recording-scoring.md`. (RES-009 follows the planned notation research RES-008.)
+Recording + scoring is VIS-001's declared riskiest bet. Run `processes/deep-research.md`, using the next available `RES-###` ID at claim time, for audio recording and scoring feasibility.
 
 Questions to answer:
 1. Monophonic guitar pitch detection in the browser — which algorithms/libraries (autocorrelation/YIN/CREPE-style, Web Audio + WASM/ML options) actually work on electric and acoustic guitar signals, and how accurately?
@@ -28,11 +27,11 @@ Questions to answer:
 
 ## Acceptance criteria
 
-- [ ] `research/RES-009-audio-recording-scoring.md` exists with cited findings on all six questions and a clear go / staged-go / no-go recommendation
+- [ ] A `research/RES-###-audio-recording-scoring.md` file exists with cited findings on all six questions and a clear go / staged-go / no-go recommendation
 - [ ] Recommended v1 scope stated (e.g. "monophonic lines only, offline analysis after the take")
 - [ ] Follow-up EPIC-010 tasks filed per the recommendation (a throwaway spike task is an acceptable first follow-up); EPIC-010 file updated
 - [ ] If the answer is "not credibly feasible," VIS-001 impact is written up as a proposal to the owner — strategy is not edited by the agent
 
 ## Verification
 
-RES-009 exists, answers the six questions with sources, and EPIC-010 reflects the outcome.
+The recording/scoring research file exists, answers the six questions with sources, and EPIC-010 reflects the outcome.

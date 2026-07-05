@@ -37,7 +37,7 @@ Bun (runtime, packages) · Vite 8 (build) · React 19 · TypeScript · Tailwind 
 
 ## Knowledge system
 
-The repo is also the product operating system. `strategy/` sets direction, `processes/` defines executable playbooks, `work/` tracks lifecycle-managed epics/tasks/insights/issues/reviews, `notes/` preserves raw feedback and observations, `research/` stores completed research, and `architecture/` records system shape and decisions. See ADR-003 and ADR-004.
+The repo is also the product operating system. `strategy/` sets direction, `processes/` defines executable playbooks, `work/` tracks lifecycle-managed epics/tasks/insights/issues/reviews, `notes/` preserves raw feedback and observations, `research/` stores completed research, `architecture/` records system shape and decisions, and `artifacts/` stores human-facing rendered outputs such as presentations and visual reports. Markdown files remain the canonical source for agent-facing instructions and project knowledge. See ADR-003 and ADR-004.
 
 ## Routing
 

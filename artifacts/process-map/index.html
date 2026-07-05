@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jazz Master Process Map</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="deck" aria-live="polite">
+      <header class="deck-header">
+        <div>
+          <p class="eyebrow">Jazz Master operating system</p>
+          <h1 id="slide-title">Process Map</h1>
+        </div>
+        <nav class="deck-controls" aria-label="Presentation controls">
+          <button id="prev-slide" type="button" aria-label="Previous slide">Prev</button>
+          <span id="slide-count" class="slide-count">1 / 5</span>
+          <button id="next-slide" type="button" aria-label="Next slide">Next</button>
+        </nav>
+      </header>
+
+      <section class="slide is-active" data-title="Process Map">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="kicker">One repo, three loops</p>
+            <h2>Raw observations become work, work ships through gates, and product review feeds the next round.</h2>
+            <p>
+              The process system separates capture, decision, execution, and review so agents do not turn every idea into scope creep.
+            </p>
+          </div>
+          <div class="loop-diagram" aria-label="High-level process loop">
+            <div class="loop-node intake">Capture</div>
+            <div class="loop-node decide">Decide</div>
+            <div class="loop-node execute">Execute</div>
+            <div class="loop-node review">Review</div>
+            <div class="loop-core">Jazz Master<br>knowledge repo</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Trigger To Process">
+        <div class="two-column">
+          <div>
+            <p class="kicker">Routing table</p>
+            <h2>Start with the trigger, then choose the process.</h2>
+            <p>Each process has a narrow job. This keeps raw feedback, backlog decisions, implementation, and shipping from blending together.</p>
+          </div>
+          <div class="trigger-list" id="trigger-list"></div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="End-To-End Flow">
+        <p class="kicker">Default path</p>
+        <h2>Most product work follows this path.</h2>
+        <div class="pipeline" aria-label="End-to-end flow">
+          <article>
+            <span>1</span>
+            <h3>Intake</h3>
+            <p>Owner notes, QA findings, feedback, or observations become durable files.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <h3>Triage</h3>
+            <p>Insights and issues are accepted, rejected, deferred, confirmed, or turned into tasks.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <h3>Prioritize</h3>
+            <p>Actionable tasks and issues are ranked by blockers, owner direction, practice value, evidence, and size.</p>
+          </article>
+          <article>
+            <span>4</span>
+            <h3>Dev loop</h3>
+            <p>Pick, claim, plan, implement, review, test, record, ship, reflect.</p>
+          </article>
+          <article>
+            <span>5</span>
+            <h3>QA review</h3>
+            <p>The running app is inspected, and new issues or insights feed the next cycle.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Gates And Outputs">
+        <div class="matrix">
+          <div>
+            <p class="kicker">Quality gates</p>
+            <h2>Nothing ships just because it was implemented.</h2>
+            <ul class="check-list">
+              <li>Independent code review before ship.</li>
+              <li>`bun run check` is the required gate before push.</li>
+              <li>Item verification steps must be executed literally.</li>
+              <li>Security review is required for sensitive surfaces.</li>
+              <li>Code and tracker updates ship in the same commit.</li>
+            </ul>
+          </div>
+          <div class="output-stack">
+            <div><strong>Source</strong><span>notes, feedback, QA, research</span></div>
+            <div><strong>Work</strong><span>tasks, issues, insights, reviews</span></div>
+            <div><strong>Knowledge</strong><span>processes, architecture, ADRs, research</span></div>
+            <div><strong>Artifacts</strong><span>rendered visual outputs for humans</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Artifacts Rule">
+        <div class="artifact-rule">
+          <p class="kicker">New convention</p>
+          <h2>Markdown is source of truth. Artifacts are rendered companions.</h2>
+          <div class="rule-cards">
+            <article>
+              <h3>Use Markdown for</h3>
+              <p>Agent instructions, processes, work items, research, ADRs, and architecture maps.</p>
+            </article>
+            <article>
+              <h3>Use artifacts for</h3>
+              <p>Interactive visuals, decks, reports, screenshots, exports, and human walkthroughs.</p>
+            </article>
+            <article>
+              <h3>Organize under</h3>
+              <p>`artifacts/&lt;slug&gt;/` with a README, source links, opening steps, and maintenance note.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
+

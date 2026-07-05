@@ -10,3 +10,7 @@ Review findings from TASK-001 (code-reviewer + ui-code-reviewer agents) filed ra
 1. **PageHeading dedup** — the `h1` class string `font-display text-2xl font-bold tracking-tight` is repeated in all seven page stubs. When the first real page is built, extract a `PageHeading` component so typography can't drift.
 2. **Skip-to-content link** — with a persistent sidebar, keyboard users tab through all nav items on every page. Add a visually-hidden skip link targeting `<main>` once the shell carries more nav.
 3. **No colocated `Layout.test.tsx`** — Layout is covered transitively by `App.test.tsx` (persistence, active state, click navigation). Fine for now; revisit if Layout grows behavior of its own.
+
+## Triage note
+
+2026-07-05 — Deferred. Keep this as an insight rather than creating a task while the affected pages are still stubs. Revisit when the first real practice page lands, when `Layout` gains behavior beyond navigation, or before a broader app-shell polish pass.

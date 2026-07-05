@@ -35,9 +35,17 @@ Objective feedback closes the practice loop and feeds honest progress tracking. 
 
 ## Tasks
 
-- TASK-015 — Research browser audio recording & pitch-detection feasibility
+- TASK-015 — Research browser audio recording & pitch-detection feasibility (assigns the next available RES ID when claimed)
 - (implementation tasks created after the research lands)
 
 ## Done when
 
 A user records a monophonic scale exercise and gets a credible score with per-note feedback, and that score appears in their practice history.
+
+## Current status
+
+Backlog. Feasibility research is still the blocking first step; no `RES-*` ID is reserved before TASK-015 is claimed.
+
+## Last reviewed
+
+2026-07-05 — Knowledge maintenance pass removed the stale `RES-009` placeholder because that ID now belongs to visual-artifact skill research.

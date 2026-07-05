@@ -2,7 +2,7 @@
 id: RES-002
 title: Astro on Cloudflare Workers with SPA app shell, TanStack Router, tRPC, React Query, and Hyperdrive
 status: complete
-task: none              # requested directly by owner
+task: TASK-020          # requested directly by owner; consumed by TASK-020–TASK-025 (migration slice)
 created: 2026-07-05
 stale_when: >
   Astro 7, TanStack Router v2, tRPC v12, or major Cloudflare Workers/Hyperdrive

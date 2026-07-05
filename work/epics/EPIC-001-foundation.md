@@ -35,8 +35,19 @@ Every pillar (voicings, progressions, repertoire, ear training) needs to name no
 - TASK-002 — Music theory core: notes, intervals, chord spelling
 - TASK-003 — Fretboard model and SVG fretboard component
 - TASK-004 — Chord diagram component
+- TASK-008 — Typed localStorage persistence layer
+- TASK-009 — Theory core: scales, modes, and arpeggios
+- TASK-010 — Scale & arpeggio fretboard positions
 - (more as discovered)
 
 ## Done when
 
 A developer can `import { spellChord } from '@/theory'`, get correct notes for `Cmaj7`, and render them on a `<Fretboard>` — all covered by tests, navigable from the app shell.
+
+## Current status
+
+In progress. TASK-001 and TASK-002 are done; TASK-003, TASK-004, TASK-008, TASK-009, and TASK-010 remain the next foundation backlog.
+
+## Last reviewed
+
+2026-07-05 — Knowledge maintenance pass confirmed all current foundation tasks are attached to this epic and dependencies remain valid.

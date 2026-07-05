@@ -3,9 +3,10 @@
 Persisted results of deep research (`processes/deep-research.md`). Research is a first-class deliverable: files here let future work act on past findings instead of re-searching.
 
 - Files: `RES-###-<slug>.md`, sequential IDs, never deleted.
-- A task that includes research links its result via `research: RES-###` frontmatter.
+- A task that includes completed research links its result via `research: RES-###` frontmatter.
+- Do not reserve future research IDs in backlog tasks. Pick the next available ID when the research file is created, then update the consuming task.
 - Before starting new research, check whether an existing RES file already covers (part of) the topic.
-- Completed research must feed forward through a consuming task, process/architecture update, rejected/deferred decision, or `processes/knowledge-maintenance.md` follow-up.
+- Completed research must feed forward through a consuming task, process/architecture update, rejected/deferred decision, or `processes/knowledge-maintenance.md` follow-up. See `work/README.md` for the canonical intake-to-action workflow.
 
 ## File format
 

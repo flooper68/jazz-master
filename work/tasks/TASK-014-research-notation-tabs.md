@@ -4,7 +4,6 @@ title: Research notation + tab rendering approach
 epic: EPIC-009
 status: backlog
 depends_on: []
-research: RES-008
 created: 2026-07-05
 ---
 
@@ -16,7 +15,7 @@ A decided, ADR-recorded approach for rendering standard notation + tablature in 
 
 ## Context
 
-Run `processes/deep-research.md` -> `research/RES-008-notation-tab-rendering.md`. (RES-008 is the next available research ID after the existing RES-007.)
+Run `processes/deep-research.md`, using the next available `RES-###` ID at claim time, for notation/tab rendering.
 
 Candidates to evaluate at minimum: **VexFlow**, **alphaTab**, **OpenSheetMusicDisplay**, and **custom SVG over our theory core** (our needs are narrow: short exercises, not full scores).
 
@@ -24,11 +23,11 @@ Decision criteria, in order: (1) we control enharmonic spelling — the renderer
 
 ## Acceptance criteria
 
-- [ ] `research/RES-008-notation-tab-rendering.md` exists per the deep-research process: cited comparison of the candidates against the criteria, with a recommendation
+- [ ] A `research/RES-###-notation-tab-rendering.md` file exists per the deep-research process: cited comparison of the candidates against the criteria, with a recommendation
 - [ ] ADR drafted in `architecture/decisions/` recording the choice and its consequences
 - [ ] Follow-up implementation tasks for EPIC-009 filed (component task at minimum), sized from the findings
 - [ ] EPIC-009 file updated with the task list
 
 ## Verification
 
-RES-008 and the ADR exist and are internally consistent; EPIC-009 lists concrete next tasks.
+The notation rendering research file and the ADR exist and are internally consistent; EPIC-009 lists concrete next tasks.

@@ -33,7 +33,7 @@ The dashboard is the app's front door: today's plan, streak, recent scores, and 
 
 ## Tasks
 
-- TASK-018 — Practice history: session record model and history page
+- TASK-018 — Practice history page (session record model is defined by TASK-013's runner)
 - TASK-019 — Dashboard v1
 - (more as discovered)
 

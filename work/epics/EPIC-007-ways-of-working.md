@@ -31,8 +31,16 @@ This project is built primarily by AI agents in loops. The process docs in `proc
 
 - TASK-005 — Research & document development best practices
 - TASK-006 — Research & document testing & QA best practices
-- TASK-007 — Research & document product practices
+- TASK-007 — Research & document product practices (fed by RES-008)
 
 ## Done when
 
 All three RES files exist with cited findings; `processes/` docs are updated from their recommendations; an agent running the dev loop, a QA review, or triage is guided by researched practice, not guesswork.
+
+## Current status
+
+In progress. Related direct research exists for agentic development workflow (`RES-005`), knowledge maintenance (`RES-006`), Markdown/HTML documentation boundaries (`RES-007`), and problem framing (`RES-008`), but TASK-005/TASK-006 still need their focused research-and-distill passes.
+
+## Last reviewed
+
+2026-07-05 — Knowledge maintenance pass removed stale placeholder research IDs and linked `RES-008` to TASK-007 as the concrete feed-forward path.

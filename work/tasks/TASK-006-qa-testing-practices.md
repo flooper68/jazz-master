@@ -4,7 +4,6 @@ title: Research & document testing & QA best practices
 epic: EPIC-007
 status: backlog
 depends_on: []
-research: RES-002
 created: 2026-07-05
 ---
 
@@ -16,7 +15,7 @@ A researched testing strategy (what to test at which level, with what tools) and
 
 ## Context
 
-We have Vitest + Testing Library and a `bun run check` gate, plus a first-principles QA process (`processes/qa-product-review.md`). Run `processes/deep-research.md` first → `research/RES-002-qa-testing-best-practices.md`, then distill.
+We have Vitest + Testing Library and a `bun run check` gate, plus a first-principles QA process (`processes/qa-product-review.md`). Run `processes/deep-research.md` first, using the next available `RES-###` ID at claim time, then distill.
 
 Suggested research questions:
 1. Test-level split (unit / component / e2e) for a Vite React SPA with a pure domain core — where does each defect class get caught cheapest?
@@ -29,7 +28,7 @@ Suggested research questions:
 
 ## Acceptance criteria
 
-- [ ] `research/RES-002-qa-testing-best-practices.md` complete per `research/README.md` format
+- [ ] A `research/RES-###-qa-testing-best-practices.md` file is complete per `research/README.md` format
 - [ ] `processes/testing-strategy.md` created: what gets unit/component/e2e coverage here, naming/location conventions, what is deliberately not tested and why
 - [ ] `processes/qa-product-review.md` inspection steps upgraded from findings (a11y sweep, exploratory structure, console/network checks)
 - [ ] Tooling recommendations either adopted in this task (if config-only) or filed as insights/tasks (if substantial) — no dangling "we should someday"

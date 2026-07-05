@@ -34,9 +34,17 @@ The desired practice flow shows "both notes and tabs." Fretboard/diagram views (
 
 ## Tasks
 
-- TASK-014 — Research notation + tab rendering approach (→ ADR)
+- TASK-014 — Research notation + tab rendering approach (→ ADR; assigns the next available RES ID when claimed)
 - (implementation tasks created after the research lands)
 
 ## Done when
 
 A scale or arpeggio exercise in the practice runner shows correct, readable staff notation with aligned tablature, with enharmonic spelling identical to the theory core's.
+
+## Current status
+
+Backlog. The planned notation research has not started; no `RES-*` ID is reserved before the task is claimed.
+
+## Last reviewed
+
+2026-07-05 — Knowledge maintenance pass removed the stale `RES-008` placeholder because that ID now belongs to product/problem-framing research.

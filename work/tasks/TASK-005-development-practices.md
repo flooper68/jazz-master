@@ -4,7 +4,6 @@ title: Research & document development best practices
 epic: EPIC-007
 status: backlog
 depends_on: []
-research: RES-001
 created: 2026-07-05
 ---
 
@@ -16,7 +15,9 @@ Ground the project's development practices in researched, current best practice:
 
 ## Context
 
-The v1 process docs (`processes/dev-loop.md`, `processes/code-review.md`) and CLAUDE.md conventions were written from first principles. This task runs `processes/deep-research.md` first, then upgrades those docs from the findings. Research result → `research/RES-001-development-best-practices.md`.
+The v1 process docs (`processes/dev-loop.md`, `processes/code-review.md`) and CLAUDE.md conventions were written from first principles. This task runs `processes/deep-research.md` first, using the next available `RES-###` ID at claim time, then upgrades those docs from the findings.
+
+Related completed research: `research/RES-005-matt-pocock-agentic-coding-workflow.md` should be considered during distillation, but it does not replace the broader React/TypeScript development-practices research this task calls for.
 
 Suggested research questions (refine when framing):
 1. Project/folder structure and module boundaries for React + TS apps with a pure domain core — current consensus?
@@ -28,11 +29,11 @@ Suggested research questions (refine when framing):
 
 ## Acceptance criteria
 
-- [ ] `research/RES-001-development-best-practices.md` complete per the format in `research/README.md` (cited findings, recommendations, rejected alternatives, staleness note)
+- [ ] A `research/RES-###-development-best-practices.md` file is complete per the format in `research/README.md` (cited findings, recommendations, rejected alternatives, staleness note)
 - [ ] `processes/development-practices.md` created: the distilled, project-specific practices (structure, React/TS/Tailwind idioms, commit hygiene)
 - [ ] `processes/code-review.md` checklist updated where research contradicts or extends it
 - [ ] CLAUDE.md Conventions section updated; conflicts between old and new conventions resolved explicitly, not left ambiguous
-- [ ] Every adopted practice traceable to a RES-001 finding
+- [ ] Every adopted practice traceable to the new development-practices research or `RES-005` when that research is the source
 - [ ] `bun run check` passes
 
 ## Verification

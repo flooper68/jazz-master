@@ -4,7 +4,7 @@ title: Research & document product practices
 epic: EPIC-007
 status: backlog
 depends_on: []
-research: RES-003
+research: RES-008
 created: 2026-07-05
 ---
 
@@ -16,7 +16,7 @@ Researched product practice for this project's shape — a solo owner directing 
 
 ## Context
 
-Triage (`processes/triage.md`) and the product half of QA review (`processes/qa-product-review.md`) currently run on intuition. Run `processes/deep-research.md` first → `research/RES-003-product-best-practices.md`, then distill.
+Triage (`processes/triage.md`) and the product half of QA review (`processes/qa-product-review.md`) currently run on intuition. `research/RES-008-organizational-problem-identification-measurement-solving-frameworks.md` already covers problem framing, measurement, and improvement loops for this task. When claimed, decide whether RES-008 is sufficient or whether a narrower product-practices research pass is still needed; any new research uses the next available `RES-###` ID.
 
 Suggested research questions:
 1. Lightweight prioritization frameworks (RICE/ICE/opportunity scoring/cost-of-delay) — which survive at solo scale, and what do they degenerate into when one person fills in all the numbers?
@@ -28,7 +28,8 @@ Suggested research questions:
 
 ## Acceptance criteria
 
-- [ ] `research/RES-003-product-best-practices.md` complete per `research/README.md` format
+- [ ] `RES-008` recommendations are either adopted, adapted, rejected, or explicitly deferred in the updated process docs
+- [ ] If additional product-practices research is needed, a `research/RES-###-product-best-practices.md` file is complete per `research/README.md` format
 - [ ] `processes/product-practices.md` created: prioritization approach, work-item quality bar, validation guidance for this project
 - [ ] `processes/triage.md` updated with the adopted prioritization/aging rules
 - [ ] Product-judgment section of `processes/qa-product-review.md` upgraded from findings

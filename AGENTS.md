@@ -12,6 +12,9 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Work | `work/` | Flow items: epics, tasks, insights, issues, reviews — formats in `work/README.md` |
 | Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly |
 | Research | `research/` | Persisted deep-research results (`RES-*`) — check before re-researching anything |
+| Artifacts | `artifacts/` | Human-facing outputs: presentations, visual reports, exports. Markdown docs remain canonical. |
+
+`work/README.md` is the canonical map for how feedback, QA, notes, and research become actionable tasks/issues.
 
 ## Which process, when
 
@@ -27,6 +30,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | A task needs research first | `processes/deep-research.md` → result in `research/` |
 | Security/privacy-sensitive change | `processes/security-review.md` |
 | Prune/lint stale knowledge and feed research forward | `processes/knowledge-maintenance.md` |
+| Create a presentation, document, rendered visual, or export | `processes/artifact-creation.md` |
 
 ## Hard rules
 

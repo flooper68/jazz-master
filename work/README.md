@@ -13,7 +13,20 @@ work/
 
 ## How work flows
 
-Visions (`strategy/`) spawn epics; epics spawn tasks; only tasks/issues are directly implemented (via `processes/dev-loop.md`). Raw notes and feedback live in `notes/` and are processed by `processes/feedback-intake.md`. QA reviews (`processes/qa-product-review.md`) file insights and issues; triage (`processes/triage.md`) turns those into tasks; prioritization (`processes/prioritization.md`) orders the next work. Provenance is kept via `source:` frontmatter.
+This is the canonical map from source material to actionable work. Only tasks and confirmed issues are directly implemented by `processes/dev-loop.md`; everything else is intake, evidence, prioritization, or durable context.
+
+| Source | Process | Actionable outcome |
+|---|---|---|
+| Vision and goals | Human owner, then epics/tasks | `EPIC-*` and `TASK-*` |
+| Owner notes, user feedback, agent observations | `processes/feedback-intake.md` | `NOTE-*`, `INS-*`, `ISSUE-*`, or already-agreed `TASK-*` |
+| New insights | `processes/triage.md` | accepted insight with `outcome: [TASK-*]`, rejected, or deferred |
+| Open issues | `processes/triage.md` | confirmed issue, direct fix candidate, or linked `TASK-*` |
+| QA/product reviews | `processes/qa-product-review.md` then triage | `REV-*` plus filed `INS-*`, `ISSUE-*`, or `NOTE-*` |
+| Completed research | consuming task or `processes/knowledge-maintenance.md` | implementation/doc/process change, `TASK-*`, ADR, defer/reject/no-action |
+| Stale docs, stale research, unprocessed notes | `processes/knowledge-maintenance.md` | linked work, pruned/deferred decisions, index updates |
+| Multiple ready candidates | `processes/prioritization.md` | next task or issue to run through the dev loop |
+
+Provenance is kept with `source:` for notes/insights/issues/reviews and `research:` for completed `RES-*` files.
 
 ## Conventions (all item types)
 
@@ -44,7 +57,7 @@ epic: EPIC-0XX
 status: backlog
 depends_on: []
 source: INS-0XX | ISSUE-0XX | NOTE-0XX   # optional provenance
-research: RES-0XX             # optional, if a research phase feeds it
+research: RES-0XX             # optional, only after the RES file exists
 created: YYYY-MM-DD
 ---
 
@@ -118,4 +131,6 @@ Follow the format in `processes/qa-product-review.md`.
 
 Completable in one focused session; verifiable without human judgment where possible. If it grows mid-flight, split it: ship a slice, file follow-ups, link them.
 
-Attach each task to an existing epic unless there is a clear reason it is standalone. Tasks created from feedback, issues, insights, notes, or research should preserve provenance in `source:` or `research:`.
+Attach each task to an existing epic unless there is a clear reason it is standalone. Tasks created from feedback, issues, insights, notes, reviews, or research must preserve provenance in `source:` or `research:`.
+
+Do not reserve future research IDs in backlog tasks. If a task needs research first, say so in Context and assign the `RES-###` when `processes/deep-research.md` actually creates the file.
