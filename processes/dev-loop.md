@@ -20,7 +20,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 - Candidates: `work/tasks/*.md` with `status: backlog` whose `depends_on` are all `done`, plus `work/issues/*.md` with `status: confirmed` and no linked task.
 - Priority order: `blocker` issues → owner instruction → `processes/prioritization.md` ranking → tasks in in-progress epics (lowest ID first) → `major` issues → the rest.
-- If nothing is actionable: run `processes/triage.md` on the insights/issues inbox, then `processes/knowledge-maintenance.md` if notes/research/stale docs may contain work, or report "no actionable work" with the reason.
+- If nothing is actionable: run `processes/triage.md` on the insights/issues inbox, then `processes/knowledge-maintenance.md` if notes/research/stale docs may contain work, or report "no actionable work" with the reason. Any files these produce are committed and pushed (`work:` prefix) before the session ends.
 
 ### 2. Claim
 
@@ -61,10 +61,13 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 8. Ship
 
 - Follow `processes/git-workflow.md`: one work item = one commit, `TASK-###: <summary>` (or `ISSUE-###:`), pushed to `main`. Code and tracker updates move together in that commit. Never ship with a red `bun run check`.
+- Actually run `git push` and confirm it reached `origin/main` — committing without pushing is not shipping. The end-of-run check in `processes/git-workflow.md` (clean `git status`, empty `git log origin/main..HEAD`) must pass before you report the item as done.
 
 ### 9. Reflect
 
-- File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`. Loop back to 1 if in a multi-iteration session.
+- File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`.
+- These files land *after* the ship commit, so they need their own `work:` commit — commit and push them before ending the session or looping. Never leave filed items sitting uncommitted.
+- Loop back to 1 if in a multi-iteration session. Before ending any session, run the end-of-run check in `processes/git-workflow.md`.
 
 ## Log format (inside work items)
 
@@ -89,7 +92,7 @@ deferred — filed TASK-009. bun run check green, pushed.
 2. Reviewed per `processes/code-review.md`.
 3. `bun run check` green; new logic has tests (theory core: exhaustive — all twelve keys, enharmonics).
 4. No scope creep; discoveries filed.
-5. Pushed to `main`; the work item's Log tells a reviewer what happened without reading the diff.
+5. Pushed to `main` and verified — the end-of-run check in `processes/git-workflow.md` passes (clean tree, nothing ahead of `origin/main`); the work item's Log tells a reviewer what happened without reading the diff.
 6. Meaningful product work states what changed for the user and what should be watched in the next QA review.
 
 ## Roles

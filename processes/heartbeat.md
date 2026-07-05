@@ -71,9 +71,9 @@ Append a ledger entry to `work/HEARTBEAT.md`:
 - Owner decisions needed: <batched questions, or "none">
 ```
 
-Ship everything as one commit: `work: heartbeat YYYY-MM-DD`.
+Commit everything the beat produced — ledger entry, inline triage edits, scheduled tasks, filed retro items — as one commit, `work: heartbeat YYYY-MM-DD`, and **push it to `main`** per `processes/git-workflow.md`. Run its end-of-run check: the beat is not done while `git status` is dirty or the commit sits unpushed.
 
-Then report to the owner: the same digest, leading with **next up** and **decisions needed**.
+Only after the push succeeds, report to the owner: the same digest, leading with **next up** and **decisions needed**.
 
 ## Guardrails
 
@@ -82,3 +82,4 @@ Then report to the owner: the same digest, leading with **next up** and **decisi
 - Keep the actionable queue small — triage's rule applies to the heartbeat too. A beat that schedules nothing and confirms priorities is a successful beat.
 - Never edit `strategy/`; batch strategy-shaped observations as owner questions in the report.
 - The ledger records decisions and skips *with reasons* so a future beat (or the owner) can audit the cadence without reconstructing history.
+- **The report comes after the push.** A beat that ends with uncommitted or unpushed changes is incomplete — the end-of-run check in `processes/git-workflow.md` is part of step 6, not optional.

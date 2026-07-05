@@ -21,6 +21,17 @@ git commit -m "TASK-003: add fretboard model and SVG component"
 git push origin main
 ```
 
+## End-of-run check — every process, every session
+
+Work is not shipped until it is on `origin/main`. Before reporting results to the owner or ending a session, verify both:
+
+```sh
+git status --short              # must be empty — no uncommitted files
+git log origin/main..HEAD       # must be empty — no unpushed commits
+```
+
+If either shows anything, commit (with the correct message prefix) and push first. Reporting "done" while changes sit uncommitted or unpushed is a process failure — this applies to knowledge-only work (heartbeat, triage, notes, insights) exactly as it does to code.
+
 ## When something bad ships anyway
 
 - Broken `main` is a `blocker` issue: file `ISSUE-###`, fix forward immediately (revert commit is fine: `git revert <sha>`), note it in `architecture/LOG.md`.
