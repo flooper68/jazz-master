@@ -5,6 +5,7 @@ Persisted results of deep research (`processes/deep-research.md`). Research is a
 - Files: `RES-###-<slug>.md`, sequential IDs, never deleted.
 - A task that includes research links its result via `research: RES-###` frontmatter.
 - Before starting new research, check whether an existing RES file already covers (part of) the topic.
+- Completed research must feed forward through a consuming task, process/architecture update, rejected/deferred decision, or `processes/knowledge-maintenance.md` follow-up.
 
 ## File format
 

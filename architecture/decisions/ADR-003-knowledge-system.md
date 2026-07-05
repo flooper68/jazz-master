@@ -13,7 +13,7 @@ Development is executed largely by AI agents in loops. Agents need durable, grep
 
 ## Decision
 
-All knowledge lives as markdown in the repo, in six layers: `strategy/`, `processes/`, `architecture/`, `work/` (epics, tasks, insights, issues, reviews), `research/`. Flow items carry YAML frontmatter with globally unique IDs (`VIS- EPIC- TASK- INS- ISSUE- REV- ADR- RES-`) and statuses; `CLAUDE.md` is the index. Code and tracker updates ship in the same commit, so the repo is always self-consistent.
+The repo stores project knowledge as markdown in layered directories. The original lifecycle-managed layers are `strategy/`, `processes/`, `architecture/`, `work/` (epics, tasks, insights, issues, reviews), and `research/`. Flow items carry YAML frontmatter with globally unique IDs (`VIS- EPIC- TASK- INS- ISSUE- REV- ADR- RES-`) and statuses; `CLAUDE.md` and `AGENTS.md` are the indexes. Code and tracker updates ship in the same commit, so the repo is always self-consistent.
 
 ## Consequences
 
@@ -21,3 +21,7 @@ All knowledge lives as markdown in the repo, in six layers: `strategy/`, `proces
 - No dashboards/queries — acceptable at this scale; revisit if item count makes grep painful.
 - Discipline required: statuses and Logs must be updated in the same commit as code (enforced by process, `processes/git-workflow.md` rule 4).
 - GitHub Issues stays unused for now to keep one source of truth; external bug reports, if they ever arrive, get transcribed into `work/issues/`.
+
+## Related decisions
+
+- ADR-004 extends this system with `notes/` as raw source material and adds the closed-loop feedback, prioritization, security, and knowledge-maintenance processes.

@@ -6,14 +6,15 @@ Every work item is reviewed before it ships — including agent-implemented ones
 
 1. Stage the diff (`git add -A; git diff --cached` view) so the review sees the complete change.
 2. Run an independent review pass — in Claude Code, launch the `code-reviewer` agent on the changes; for UI-heavy diffs additionally the `ui-code-reviewer` agent. The implementer re-reading their own diff is not a review.
-3. Walk the checklist below.
-4. Every finding is either **fixed now** or **filed** as `work/issues/ISSUE-###` with a one-line justification for deferring. Findings are never silently dropped.
+3. If the diff touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md`.
+4. Walk the checklist below.
+5. Every finding is either **fixed now** or **filed** as `work/issues/ISSUE-###` with a one-line justification for deferring. Findings are never silently dropped.
 
 ## Checklist
 
 **Contract**
 - [ ] Acceptance criteria ticked in the task file are actually met by this diff
-- [ ] Scope respected — nothing unrelated snuck in; discoveries filed as insights/issues instead
+- [ ] Scope respected — nothing unrelated snuck in; discoveries filed as notes/insights/issues instead
 
 **Correctness**
 - [ ] Logic errors, edge cases (theory code: enharmonics, all twelve keys, boundary frets)
@@ -23,6 +24,12 @@ Every work item is reviewed before it ships — including agent-implemented ones
 - [ ] `src/theory/` stays pure — no React/DOM imports
 - [ ] Reuses existing utilities/components instead of duplicating them
 - [ ] Architectural decisions in this diff have an ADR
+
+**Security/privacy**
+- [ ] No secrets, private data, or unintended network access introduced
+- [ ] User input is rendered safely; imports/parsers handle malformed data
+- [ ] Storage changes are typed, migration-safe, and tolerate corrupt/missing data
+- [ ] Dependency changes are intentional and justified
 
 **Conventions** (see CLAUDE.md)
 - [ ] Naming, exports, chord-quality notation, TypeScript strictness (`any` only with a reason)
@@ -35,5 +42,6 @@ Every work item is reviewed before it ships — including agent-implemented ones
 ## Severity guidance
 
 - **Must fix before ship:** correctness bugs, contract violations, theory-core impurity.
+- **Must fix before ship:** secret exposure, unsafe rendering of user input, data-loss risk.
 - **Fix or file:** convention drift, missing edge-case tests, naming.
 - **File as insight:** "this could be designed better" ideas.

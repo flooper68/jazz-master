@@ -23,11 +23,12 @@ The repo carries its own knowledge system — the project is developed by a huma
 | Where | What |
 |---|---|
 | `strategy/` | Vision and goals — why we build |
-| `processes/` | Playbooks: dev loop, code review, git workflow, QA/product review, triage, deep research |
+| `processes/` | Playbooks: dev loop, code review, git workflow, QA/product review, feedback intake, triage, prioritization, security review, knowledge maintenance, deep research |
 | `architecture/` | System overview, ADRs, engineering log |
 | `work/` | Epics, tasks, insights inbox, issues, QA reports ([formats](work/README.md)) |
+| `notes/` | Raw feedback, meetings, observations, and owner notes before they are processed into work |
 | `research/` | Persisted deep-research results feeding the docs above |
 | `src/` | The app: `theory/` (pure domain core) · `components/` · `pages/` |
-| `CLAUDE.md` | The index — start here (agents do) |
+| `CLAUDE.md` / `AGENTS.md` | Agent indexes — start here |
 
 Start with the vision: [`strategy/VIS-001-jazz-master.md`](strategy/VIS-001-jazz-master.md).

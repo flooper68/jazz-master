@@ -1,6 +1,6 @@
 # Process: triage
 
-Turns the raw inboxes — `work/insights/` (`status: new`) and `work/issues/` (`status: open`) — into actionable, prioritized work. Run when the inbox has items, after every QA review, or when the dev loop finds nothing actionable.
+Turns the raw inboxes — `work/insights/` (`status: new`) and `work/issues/` (`status: open`) — into actionable, prioritized work. Run when the inbox has items, after feedback intake, after every QA review, or when the dev loop finds nothing actionable.
 
 ## Steps
 
@@ -13,7 +13,7 @@ For each inbox item, oldest first:
 3. Decide:
    - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`.
    - **Reject** → `status: rejected`, with a written reason (the reason is the value — it prevents re-litigating the idea later).
-   - **Defer** → stays `new` with a note on what would change the decision.
+   - **Defer** → stays `new` with a note on what would change the decision and when to revisit.
 4. Never delete insight files.
 
 ### Issues (`status: open`)
@@ -25,6 +25,10 @@ For each inbox item, oldest first:
    - Bigger → create `TASK-###` with `source: ISSUE-###`, link it from the issue.
 4. `blocker` severity jumps the queue — it outranks all tasks in the pick order.
 5. Closing an issue as `wontfix` requires a written reason.
+
+### Prioritize
+
+After inbox items are processed, run `processes/prioritization.md` when new tasks/issues could affect next work. Keep the actionable queue small: do not create tasks for every accepted idea unless the task is genuinely useful now.
 
 ## Authority
 

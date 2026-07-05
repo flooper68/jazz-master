@@ -1,0 +1,75 @@
+# Process: knowledge maintenance
+
+Keeps the repo's markdown knowledge system useful by pruning stale flow items, linting links/frontmatter by inspection, and feeding research or notes into concrete next actions. This is the repo's lightweight knowledge-pruning process from `research/RES-003-karpathy-llm-wiki-skill.md` and `research/RES-006-knowledge-pruning-and-triage.md`, implemented without a separate wiki or build system.
+
+Use this after QA reviews, after owner-requested research, after raw notes are added, when the dev loop finds no actionable work, and periodically after about ten shipped tasks.
+
+## Principles
+
+- Markdown files are the source of truth; no generated site, dashboard, or external tracker is required.
+- Preserve raw sources and citations. Summaries, tasks, and ADRs link back to notes, research, reviews, or source work.
+- Keep `work/` actionable. Raw context belongs in `notes/`; lifecycle-managed work belongs in `work/`.
+- Keep the queue small. Accepting an idea does not automatically mean creating a task today.
+- Pruning means deciding, not deleting. Close, reject, defer, merge, or link with reasons.
+- Do not rewrite completed research as the new source of truth; feed recommendations forward into explicit outcomes.
+
+## Scope
+
+- `notes/NOTE-*` raw notes with `processed: false`
+- `work/insights/INS-*` with `status: new`
+- `work/issues/ISSUE-*` with `status: open` or stale `confirmed`
+- `work/tasks/TASK-*` stuck or no longer aligned
+- `work/epics/EPIC-*` task lists and Done-when sections
+- `research/RES-*` recommendations and `stale_when`
+- `architecture/overview.md`, `architecture/LOG.md`, and ADRs
+- `processes/`, `AGENTS.md`, `CLAUDE.md`, and `work/README.md`
+
+## Steps
+
+1. **Inventory.** List recently changed docs and all open/new/blocked flow items.
+2. **Check structure.** Verify filenames, sequential IDs, frontmatter status, required sections, and obvious broken links.
+3. **Process notes.** For each unprocessed note, extract issues, insights, tasks, ADR candidates, or no-action decisions. Set `processed: true` only when every action is linked or explicitly dismissed.
+4. **Run triage where needed.** Use `processes/triage.md` for new insights and open issues; do not duplicate its rules here.
+5. **Feed research forward.** For each completed `RES-*`, confirm every recommendation is implemented, filed, rejected, deferred, or explicitly marked no-action. If `stale_when` has triggered, file a task or insight to refresh it.
+6. **Refresh epics and tasks.** Attach orphan tasks to an epic or explain why they are standalone. Update epic task lists, last-reviewed notes, and Done-when assessments.
+7. **Prune the actionable queue.** Reject stale ideas with reasons, defer with a concrete revisit trigger, merge duplicates by cross-linking, and keep the next-work list small.
+8. **Update indexes.** If process names, folders, or architecture rules changed, update `AGENTS.md`, `CLAUDE.md`, `work/README.md`, `research/README.md`, and `architecture/overview.md` as appropriate.
+
+## Routing table
+
+Classify each source fragment before creating or updating files:
+
+| Source fragment | Output |
+|---|---|
+| Product idea, opportunity, friction, or unmet user need | `INS-###` or accept/reject/defer an existing insight |
+| Reproducible product defect | `ISSUE-###` |
+| One-session implementation unit | `TASK-###` |
+| Pillar-sized product area | propose an epic; create `EPIC-###` only when authorized |
+| System-shaping technical choice | `ADR-###` or a task to write one |
+| Research recommendation not yet acted on | task, process edit, ADR, or explicit no-action note |
+| Meeting discussion, owner note, feedback batch, or observation context | `NOTE-###`, with extracted work linked |
+| Duplicate, stale, or no-longer-relevant item | merge/reject/wontfix/defer with reason |
+
+## Decision outcomes
+
+Every inspected item should end in one of these states:
+
+- Created or linked `TASK-###`
+- Created or linked `ISSUE-###`, `INS-###`, `EPIC-###`, `ADR-###`, or `RES-###`
+- Rejected or `wontfix` with reason
+- Deferred with revisit trigger
+- No action because already covered, with link
+- Needs owner decision, with the exact question recorded
+
+## Output
+
+- Updated docs and flow items in one knowledge-maintenance commit, usually `work: maintain knowledge <date>`.
+- A short summary of priority changes, stale research, and any owner decisions needed.
+
+## Guardrails
+
+- Never edit `strategy/`; propose changes to the owner.
+- Never delete files to prune. Terminal statuses and cross-links are the archive.
+- Do not rewrite research summaries as the new source of truth; link to the original `RES-*`.
+- Do not create tasks for every accepted idea. Create tasks only when they are useful next work or unblock planned work.
+- High-impact pruning, such as rejecting major product directions or creating epics, should get an independent review or owner confirmation before shipping.

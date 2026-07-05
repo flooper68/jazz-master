@@ -13,14 +13,14 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 │   6. TEST      bun run check + the item's Verification steps
 │   7. RECORD    tick acceptance criteria, write the Log, set status
 │   8. SHIP      commit + push to main (per processes/git-workflow.md)
-└── 9. REFLECT   file insights/issues for anything discovered; loop
+└── 9. REFLECT   file insights/issues/notes for anything discovered; loop
 ```
 
 ### 1. Pick
 
 - Candidates: `work/tasks/*.md` with `status: backlog` whose `depends_on` are all `done`, plus `work/issues/*.md` with `status: confirmed` and no linked task.
-- Priority order: `blocker` issues → tasks in in-progress epics (lowest ID first) → `major` issues → the rest. The user's explicit instruction always overrides.
-- If nothing is actionable: run `processes/triage.md` on the insights/issues inbox, or derive next tasks from an in-progress epic's Scope, or report "no actionable work" with the reason.
+- Priority order: `blocker` issues → owner instruction → `processes/prioritization.md` ranking → tasks in in-progress epics (lowest ID first) → `major` issues → the rest.
+- If nothing is actionable: run `processes/triage.md` on the insights/issues inbox, then `processes/knowledge-maintenance.md` if notes/research/stale docs may contain work, or report "no actionable work" with the reason.
 
 ### 2. Claim
 
@@ -31,6 +31,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 - Read the item fully, its epic, and any linked research (`research/RES-*.md`) or ADRs.
 - Read the code the task touches. Reuse before writing new — check `src/theory/` and `src/components/` first.
 - If the task has a research phase, run `processes/deep-research.md` first; findings land in `research/`.
+- If the task touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md` in the plan.
 - Append a short plan to the item's **Log**. If the item is too large, split it: narrow to a shippable slice, file follow-up tasks.
 
 ### 4. Implement
@@ -62,7 +63,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ### 9. Reflect
 
-- File new insight/issue/task files for everything discovered. Loop back to 1 if in a multi-iteration session.
+- File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`. Loop back to 1 if in a multi-iteration session.
 
 ## Log format (inside work items)
 
@@ -88,6 +89,7 @@ deferred — filed TASK-009. bun run check green, pushed.
 3. `bun run check` green; new logic has tests (theory core: exhaustive — all twelve keys, enharmonics).
 4. No scope creep; discoveries filed.
 5. Pushed to `main`; the work item's Log tells a reviewer what happened without reading the diff.
+6. Meaningful product work states what changed for the user and what should be watched in the next QA review.
 
 ## Roles
 

@@ -7,6 +7,7 @@ A periodic inspection of the *running product* that generates the raw material f
 - After an epic reaches `done`
 - Every ~5 shipped tasks, or
 - On demand ("run a QA review")
+- After security/privacy-sensitive product slices, such as storage, import/export, audio recording, or browser permissions
 
 ## Steps
 
@@ -22,9 +23,11 @@ A periodic inspection of the *running product* that generates the raw material f
 - Re-verify recently shipped tasks' acceptance criteria *in the app*, not in the code.
 - Quality sweep on each screen:
   - browser console clean (no errors/warnings)
+  - relevant network panel clean; no unexpected external calls
   - usable at phone width (~375px) and desktop
   - keyboard navigation works for interactive elements; obvious a11y misses (missing labels, contrast)
   - empty states, loading states, nonsense input
+  - stored/local data survives refresh and corrupt/missing data fails gracefully where relevant
 
 ### 3. Product judgment
 
@@ -39,6 +42,7 @@ Harder and more valuable than defect-hunting. Ask, per the vision:
 
 - Defects → `work/issues/ISSUE-###.md` (with repro, severity)
 - Product gaps, ideas, friction observations → `work/insights/INS-###.md`
+- Raw feedback batches or review notes worth preserving → `notes/NOTE-###.md`, with extracted work linked
 - Do NOT fix anything during the review — the review only observes and files. Fixes go through the dev loop.
 
 ### 5. Write the report
@@ -70,4 +74,11 @@ Ordered suggestion for what triage should prioritize.
 
 ### 6. Hand off
 
-Ship the report + filed items (`REV-###:` commit). Then run or request `processes/triage.md` so findings become actionable work.
+Ship the report + filed items (`REV-###:` commit). Then run or request `processes/triage.md` and `processes/prioritization.md` so findings become ordered actionable work.
+
+The handoff is not complete until the report lists:
+
+- top defects
+- top product frictions
+- recommended next 1-3 work items
+- anything that needs owner confirmation
