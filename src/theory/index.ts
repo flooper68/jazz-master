@@ -7,6 +7,16 @@ export {
 } from './note'
 export { transpose, type IntervalName } from './interval'
 export {
+  noteAt,
+  positionsOf,
+  STANDARD_TUNING,
+  STRING_NUMBERS,
+  type FretboardPosition,
+  type FretRange,
+  type GuitarString,
+  type Tuning,
+} from './fretboard'
+export {
   CHORD_QUALITIES,
   parseChord,
   spellChord,
