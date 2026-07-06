@@ -6,6 +6,7 @@ sources:
   - strategy/goals.md
   - architecture/overview.md
   - architecture/decisions/ADR-002-local-first.md
+  - architecture/decisions/ADR-006-astro-workers-hybrid-platform.md
   - work/tasks/TASK-016-profile-onboarding.md
   - work/tasks/TASK-017-daily-plan-generator.md
   - work/epics/EPIC-013-platform-multi-app.md
@@ -32,7 +33,7 @@ Each pillar maps to an epic (VIS-001): foundation (EPIC-001), chord voicings (00
 
 ## How it works under the hood
 
-Everything runs client-side; there is no backend and no account (ADR-002 — "logging in" means a local profile). Domain logic — notes, intervals, chord spelling, scales, arpeggios, fretboard positions, with enharmonics correct by construction — lives in the pure `@jazz-master/theory` package; curriculum content (exercises and lessons in `apps/web/src/content/`) references theory constructs rather than hard-coding notes, so a lesson is "the Bb major scale in position II", not a note list; pages compose reusable components (Fretboard, ChordDiagram) which render what theory computes; all persistence goes through typed localStorage stores in `apps/web/src/storage/` (details: architecture/overview.md). The EPIC-013 platform track (Astro on Cloudflare Workers, ADR-006 when written) may change the shell; the local-first product model stands until an ADR says otherwise.
+Everything runs client-side; there is no backend and no account (ADR-002 — "logging in" means a local profile). Domain logic — notes, intervals, chord spelling, scales, arpeggios, fretboard positions, with enharmonics correct by construction — lives in the pure `@jazz-master/theory` package; curriculum content (exercises and lessons in `apps/web/src/content/`) references theory constructs rather than hard-coding notes, so a lesson is "the Bb major scale in position II", not a note list; pages compose reusable components (Fretboard, ChordDiagram) which render what theory computes; all persistence goes through typed localStorage stores in `apps/web/src/storage/` (details: architecture/overview.md). The EPIC-013 platform track will change the shell: ADR-006 (proposed, awaiting owner acceptance) targets Astro on Cloudflare Workers with the React app as an SPA island under `/app/*` and a tRPC API — while explicitly keeping this local-first product model (practice state stays in localStorage; no accounts).
 
 ## Built today vs pending (as of 2026-07-06)
 

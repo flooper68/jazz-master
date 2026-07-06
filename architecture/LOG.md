@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — ADR-006 written: Astro/Workers hybrid platform target (TASK-020)
+
+The EPIC-013 platform decision is now recorded: Astro on Cloudflare Workers (not Pages), the React app as a `client:only` SPA island under `/app/*`, TanStack Router scoped inside it, tRPC on an Astro catch-all route with one shared React Query client, and Hyperdrive → Railway Postgres gated behind TASK-025. Once accepted it supersedes ADR-002's "no backend" assumption while keeping its local-first UX. Status `proposed` — owner acceptance is a deferred grill (three open questions in the ADR), and TASK-021+ implementation waits on it.
+
 ## 2026-07-06 — work-status report process added (TASK-034)
 
 Added a read-only status report process and `bun run --cwd codebase work:status` facts command. The command derives active/proposed/blocked work, inbox counts, ready backlog, shipped-since-heartbeat, cadence flags, and repo hygiene from frontmatter and git. Work lifecycle vocabulary now has structured `deferred`, `gated`, and `proposed` states for the report to query.

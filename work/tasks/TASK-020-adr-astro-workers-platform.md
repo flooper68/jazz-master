@@ -2,7 +2,8 @@
 id: TASK-020
 title: Write ADR-006 — hybrid Astro SSR + SPA on Cloudflare Workers with tRPC and Hyperdrive
 epic: EPIC-013
-status: backlog
+status: blocked
+blocked_reason: ADR-006 is written but `proposed` — awaiting owner acceptance via its deferred-grill questions; all other criteria met
 depends_on: [TASK-026]
 research: RES-002
 created: 2026-07-05
@@ -22,14 +23,22 @@ RES-002 recommendation 7 requires an ADR because this changes the system shape: 
 
 ## Acceptance criteria
 
-- [ ] `architecture/decisions/ADR-006-*.md` exists, following the format of existing ADRs
-- [ ] States context, decision, consequences, and considered-and-rejected alternatives (full Astro rewrite, global `/*` SPA catch-all, direct DB access, Pages deployment)
-- [ ] Explicitly records the relationship to ADR-002 (what is superseded, what is kept)
-- [ ] Defines the migration slicing: infrastructure-only first slice; no auth or persistence in it
-- [ ] `architecture/overview.md` and `CLAUDE.md` stack section reference the new target architecture (marked as in-migration)
-- [ ] Backlog items citing ADR-002's "no backend" as fact (TASK-016, EPIC-010, EPIC-011) get their justification wording updated to the ADR-006 framing — decisions in them are unchanged
-- [ ] Owner has reviewed and accepted the ADR
+- [x] `architecture/decisions/ADR-006-*.md` exists, following the format of existing ADRs
+- [x] States context, decision, consequences, and considered-and-rejected alternatives (full Astro rewrite, global `/*` SPA catch-all, direct DB access, Pages deployment)
+- [x] Explicitly records the relationship to ADR-002 (what is superseded, what is kept)
+- [x] Defines the migration slicing: infrastructure-only first slice; no auth or persistence in it
+- [x] `architecture/overview.md` and `CLAUDE.md` stack section reference the new target architecture (marked as in-migration)
+- [x] Backlog items citing ADR-002's "no backend" as fact (TASK-016, EPIC-010, EPIC-011) get their justification wording updated to the ADR-006 framing — decisions in them are unchanged
+- [ ] Owner has reviewed and accepted the ADR — **pending**; the ADR is `proposed` with its deferred-grill questions recorded under "Open questions"
 
 ## Verification
 
 Read ADR-006 against RES-002 recommendations 1–8 — every recommendation is either adopted, adapted, or explicitly deferred with a reason. Owner confirms acceptance.
+
+## Log
+
+### 2026-07-06 — claimed (agent)
+Plan: write `architecture/decisions/ADR-006-astro-workers-hybrid-platform.md` (status `proposed` — owner absent, so acceptance is a deferred grill per `processes/grilling.md`; questions recorded in the ADR under "Open questions"). Cover the five load-bearing choices + rejected alternatives from RES-002, the ADR-002 supersede/keep split, and the infra-only first slice. Same change: mark the target architecture as in-migration in `architecture/overview.md` and AGENTS.md (CLAUDE.md symlink), reword the ADR-002-as-fact justifications in TASK-016 / EPIC-010 / EPIC-011 (decisions unchanged), one line in `architecture/LOG.md`. Knowledge-only change — no code, testing-strategy layer n/a; gate is `bun run check` (must stay green) + reading the ADR against RES-002 recs 1–8. Task will end `blocked: awaiting owner acceptance`, which correctly holds TASK-021+ until the owner accepts.
+
+### 2026-07-06 — written, blocked on owner acceptance
+ADR-006 written as planned; also updated `wiki/product/overview.md` (its "ADR-006 when written" sentence — same-commit rule in `processes/wiki-maintenance.md`) + `wiki/log.md`, and EPIC-013's Current status. Verification done: RES-002 recs 1–8 all covered — 1–5 and 8 adopted as decisions 1–4 + the slicing section, 6 (Hyperdrive) adopted but deferred behind TASK-025's gate, 7 is the ADR itself; the coverage line is in the ADR. `bun run --cwd codebase check` green (knowledge-only diff). All criteria ticked except owner acceptance → status `blocked`, three deferred-grill questions recorded in the ADR (operational commitment timing, Railway-vs-alternatives never compared, landing-page scope). Next owner session should open with those; on acceptance, flip ADR-006 to `accepted`, remove its Open-questions section, set this task `done`, and unblock TASK-021.

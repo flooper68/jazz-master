@@ -71,7 +71,8 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `
 
 - Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `apps/web/src/index.css`, no config file) · Vitest + Testing Library · oxlint
 - Monorepo (ADR-005): `codebase/apps/web` (this app) + `codebase/packages/theory` (`@jazz-master/theory`, consumed as `workspace:*`)
-- Local-first: no backend, no accounts; all persistence via typed stores (`defineStore`) in `apps/web/src/storage/` — **never touch `localStorage` directly outside that directory** (ADR-002)
+- Local-first: no backend features yet, no accounts; all persistence via typed stores (`defineStore`) in `apps/web/src/storage/` — **never touch `localStorage` directly outside that directory** (ADR-002)
+- In migration to the ADR-006 target platform (proposed, EPIC-013): Astro on Cloudflare Workers, current React app as a client-only SPA island under `/app/*`, tRPC API routes, gated Hyperdrive → Railway Postgres. Practice state stays local (ADR-002's UX is kept); nothing changes in the code until TASK-021+ land.
 - `codebase/packages/theory/` — pure domain core, **zero runtime deps in its package.json, no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
 - `apps/web/src/components/` (reusable UI) · `apps/web/src/pages/` (one per practice module) · dependency direction `pages → components → @jazz-master/theory`
 - Tests colocated: `Foo.tsx` → `Foo.test.tsx`

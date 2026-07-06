@@ -15,7 +15,7 @@ A first-run onboarding that captures who the guitarist is — level per area, go
 
 ## Context
 
-"User logs in" in the desired flow maps to a local profile (ADR-002 — no accounts). Profile shape (the TASK-017 planner is the consumer, so agree the contract here): self-assessed level per area (`scales | arpeggios | chords | standards`, plus room for `ears`), ordered goal areas ("what do you want to get better at?"), and a daily time budget (e.g. 10/20/30/45 min). Stored via TASK-008 under a `profile` store.
+"User logs in" in the desired flow maps to a local profile (ADR-002 — no accounts; unchanged by ADR-006, which keeps practice state local). Profile shape (the TASK-017 planner is the consumer, so agree the contract here): self-assessed level per area (`scales | arpeggios | chords | standards`, plus room for `ears`), ordered goal areas ("what do you want to get better at?"), and a daily time budget (e.g. 10/20/30/45 min). Stored via TASK-008 under a `profile` store.
 
 UX: a short (~3-step) wizard on first visit — friendly, skippable with sensible defaults, editable later from a settings/profile surface. Keep it honest to the zero-tension promise: under a minute to complete.
 

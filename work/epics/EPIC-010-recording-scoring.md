@@ -22,7 +22,7 @@ Objective feedback closes the practice loop and feeds honest progress tracking. 
 - Microphone capture via Web Audio with a clean permission flow and level meter
 - Take analysis: detected notes/onsets vs the exercise's expected notes/timing → a 0–100 score with per-note feedback
 - Score persisted onto the session record (EPIC-008's runner), surfaced in history and dashboard (EPIC-012)
-- Local-only audio: takes are analyzed in the browser and not uploaded anywhere (no backend exists — ADR-002)
+- Local-only audio: takes are analyzed in the browser and not uploaded anywhere (no backend features exist yet — ADR-006 keeps practice state local per ADR-002's UX)
 
 ## Out of scope
 

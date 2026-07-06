@@ -18,7 +18,7 @@ This is the pillar that makes the product "zero-tension": the user never decides
 
 ## Scope
 
-- **Practice profile & onboarding**: self-assessed level per area, goals (what they want to get better at), minutes per day — stored locally ("logging in" = local profile per VIS-001/ADR-002)
+- **Practice profile & onboarding**: self-assessed level per area, goals (what they want to get better at), minutes per day — stored locally ("logging in" = local profile per VIS-001/ADR-002, kept under ADR-006)
 - **Plan generator v1 — deterministic rules, not ML**: fill the time budget from goal areas, rotate areas, prefer lessons at the user's level, resurface exercises graded shaky/missed, respect lesson prerequisites
 - **Today's plan** surface: what's queued, start it (hands off to the EPIC-008 runner), see it tick off as sessions complete
 - Adaptation loop: session results (self-grades, later EPIC-010 scores) shift what tomorrow looks like

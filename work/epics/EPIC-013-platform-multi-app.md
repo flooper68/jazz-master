@@ -47,8 +47,8 @@ The owner has decided the product grows beyond one web app — document creation
 
 ## Current status
 
-In progress. ADR-005 is written and the codebase restructure has shipped. The platform track now runs TASK-020 → TASK-021, then TASK-022 and TASK-023 independently, and TASK-024 once TASK-021 + TASK-023 are done. The database tasks remain `gated` in task frontmatter until a feature needs server-side persistence.
+In progress. ADR-005 is written and the codebase restructure has shipped. ADR-006 is now written (TASK-020) but `proposed` — owner acceptance is pending on its three deferred-grill questions, and the TASK-021 → TASK-022/023 → TASK-024 implementation chain waits behind that acceptance. The database tasks remain `gated` in task frontmatter until a feature needs server-side persistence.
 
 ## Last reviewed
 
-2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.
+2026-07-06 — Current status updated for ADR-006 written/proposed (TASK-020). 2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.
