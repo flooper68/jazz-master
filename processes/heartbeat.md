@@ -38,7 +38,7 @@ For each rule that fires, create a normal `TASK-###` (template in `work/README.m
 | Hygiene work | Due when | Scheduled task |
 |---|---|---|
 | QA / product review | ≥5 tasks/issues shipped since last `REV-*` or last scheduled QA task; or an epic reached `done`; or a security/privacy-sensitive slice shipped unreviewed | "Run QA/product review of <areas shipped since last review>" per `processes/qa-product-review.md` |
-| Knowledge maintenance (deep sweep) | ≥10 tasks shipped since the last sweep; or unprocessed notes / stale `RES-*` piled beyond what step 2 handled inline | "Run knowledge maintenance sweep" per `processes/knowledge-maintenance.md` |
+| Knowledge maintenance (deep sweep) | ≥10 tasks shipped since the last sweep; or unprocessed notes / stale `RES-*` piled beyond what step 2 handled inline; or `wiki/log.md` shows the wiki untouched across shipped work that changed how things work | "Run knowledge maintenance sweep" per `processes/knowledge-maintenance.md` (includes the wiki lint from `processes/wiki-maintenance.md`) |
 | Security review | Work since the last beat touched storage, dependencies, user input, permissions, or import/export without a security pass in its Log | "Security review of <surface>" per `processes/security-review.md` |
 | Research refresh | A `RES-*` `stale_when` condition has triggered | Task or insight to refresh, per `processes/knowledge-maintenance.md` routing |
 

@@ -22,6 +22,7 @@ Use this after QA reviews, after owner-requested research, after raw notes are a
 - `work/epics/EPIC-*` task lists and Done-when sections
 - `research/RES-*` recommendations and `stale_when`
 - `architecture/overview.md`, `architecture/LOG.md`, and ADRs
+- `wiki/` pages, `wiki/index.md`, and `wiki/log.md`
 - `processes/`, `AGENTS.md`, `CLAUDE.md`, and `work/README.md`
 
 ## Steps
@@ -31,9 +32,10 @@ Use this after QA reviews, after owner-requested research, after raw notes are a
 3. **Process notes.** For each unprocessed note, extract issues, insights, tasks, ADR candidates, or no-action decisions. Set `processed: true` only when every action is linked or explicitly dismissed.
 4. **Run triage where needed.** Use `processes/triage.md` for new insights and open issues; do not duplicate its rules here.
 5. **Feed research forward.** For each completed `RES-*`, confirm every recommendation is implemented, filed, rejected, deferred, or explicitly marked no-action. If `stale_when` has triggered, file a task or insight to refresh it.
-6. **Refresh epics and tasks.** Attach orphan tasks to an epic or explain why they are standalone. Update epic task lists, last-reviewed notes, and Done-when assessments.
-7. **Prune the actionable queue.** Reject stale ideas with reasons, defer with a concrete revisit trigger, merge duplicates by cross-linking, and keep the next-work list small.
-8. **Update indexes.** If process names, folders, or architecture rules changed, update `AGENTS.md`, `CLAUDE.md`, `work/README.md`, `research/README.md`, and `architecture/overview.md` as appropriate.
+6. **Lint the wiki.** Run the lint operation from `processes/wiki-maintenance.md`: page claims vs cited sources (canonical wins), staleness vs shipped work, orphan pages and index gaps, broken references, verbatim drift. Small fixes land in this sweep's commit; larger rewrites route through the table below.
+7. **Refresh epics and tasks.** Attach orphan tasks to an epic or explain why they are standalone. Update epic task lists, last-reviewed notes, and Done-when assessments.
+8. **Prune the actionable queue.** Reject stale ideas with reasons, defer with a concrete revisit trigger, merge duplicates by cross-linking, and keep the next-work list small.
+9. **Update indexes.** If process names, folders, or architecture rules changed, update `AGENTS.md`, `CLAUDE.md`, `work/README.md`, `research/README.md`, and `architecture/overview.md` as appropriate.
 
 ## Routing table
 
@@ -47,6 +49,7 @@ Classify each source fragment before creating or updating files:
 | Pillar-sized product area | propose an epic; create `EPIC-###` only when authorized |
 | System-shaping technical choice | `ADR-###` or a task to write one |
 | Research recommendation not yet acted on | task, process edit, ADR, or explicit no-action note |
+| Durable "how it works" synthesis worth keeping current | new or updated `wiki/` page per `processes/wiki-maintenance.md` |
 | Meeting discussion, owner note, feedback batch, or observation context | `NOTE-###`, with extracted work linked |
 | Duplicate, stale, or no-longer-relevant item | merge/reject/wontfix/defer with reason |
 

@@ -57,6 +57,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 - Tick completed acceptance criteria; append a Log entry (what, key decisions, deviations); set status `done` (or `blocked` with an explicit reason — never silently abandon).
 - If an architectural decision was made, write the ADR (`architecture/decisions/`) now, in the same change.
+- If the shipped work changes how the product or the project works as described in `wiki/`, update the affected wiki pages (plus `wiki/index.md`/`wiki/log.md`) in the same change — ops in `processes/wiki-maintenance.md`.
 - If this completes an epic's last task, update the epic's status and Done-when assessment.
 - Anything notable for posterity (migration, gotcha, dead end) → one line in `architecture/LOG.md`.
 

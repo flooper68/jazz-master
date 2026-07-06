@@ -1,6 +1,6 @@
 # Work — flow items
 
-Everything in this directory has a **lifecycle**: it is created, moves through statuses, and ends. Raw source material lives in `notes/`; durable knowledge lives in `strategy/`, `processes/`, `architecture/`, and `research/` — see CLAUDE.md for the full map.
+Everything in this directory has a **lifecycle**: it is created, moves through statuses, and ends. Raw source material lives in `notes/`; durable knowledge lives in `strategy/`, `processes/`, `architecture/`, and `research/`; derived "how it works" synthesis lives in `wiki/` — see CLAUDE.md for the full map.
 
 ```
 work/

@@ -118,6 +118,10 @@ The gap is not "we need a new wiki." The gap is that cross-linking and maintenan
 - Let agents rewrite compiled knowledge without review: rejected. The compilation-gap and drift risks make human/code-review style control important.
 - Put user practice data into an LLM Wiki: rejected for now. The app is local-first and has no current requirement for AI-maintained user memory.
 
+## Outcome (2026-07-06)
+
+The `stale_when` condition tripped: Jazz Master adopted a formal project-knowledge subsystem. Owner decision (TASK-032, ADR-007) overrode recommendation 2 and the "add a new top-level `wiki/` now: rejected" entry — `wiki/` exists, but as a *derived* synthesis layer whose pages cite canonical sources and lose to them on conflict, which addresses the duplication concern that drove the rejection. The remaining recommendations stand adopted: ops instantiated through `processes/` (rec. 1, via `processes/wiki-maintenance.md`), lint lives in the knowledge-maintenance sweep (rec. 3, unchanged), raw sources and citations are mandatory page frontmatter (rec. 4), git review is the control surface (rec. 5), search tooling stays deferred (rec. 6), and it is not a user-facing feature (rec. 7). This file remains the pattern's evidence record; the operative documents are ADR-007 and `processes/wiki-maintenance.md`.
+
 ## Sources
 
 [1] Andrej Karpathy, "LLM Wiki: A pattern for building personal knowledge bases using LLMs" - https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f (created 2026-04-04, accessed 2026-07-05)
