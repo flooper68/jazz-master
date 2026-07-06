@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — ADR-009 amended: Cloudflare Workers Builds replaces the GitHub Action (grill NOTE-007)
+
+One commit after the `deploy-dev` workflow landed — and one run after it proved the design by passing the full check gate on a GitHub runner and failing only on the deliberately-missing token — the owner redirected to Cloudflare Workers Builds: the repo connects to the worker in the Cloudflare dashboard, Cloudflare runs the check gate (owner kept it — NOTE-007 Q1a) and deploys on push to `main`. Net effect on ADR-009: stronger — no deploy token exists anywhere, not even in GitHub secrets. The workflow file lived for 39 minutes; its one run stands as evidence the gate works in CI.
+
 ## 2026-07-06 — ADR-009: no local deploy credentials, CI-only deploys (grill NOTE-006)
 
 The TASK-024 login blocker became a decision instead of a login: the owner rejected local wrangler credentials outright — AI agents must not have access to production, so the only deploy credential is a scoped API token in GitHub Actions secrets. Dev now auto-deploys on every push to `main` (TASK-024 reshaped); production is a gated, manual-UI-trigger concern (TASK-036) carrying the open question of whether owner approval is mechanically enforced (GitHub environment + required reviewer) or trust-based.

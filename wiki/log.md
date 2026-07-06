@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `product/overview` + `project/lifecycle-of-a-change` updated for the ADR-009 amendment (grill NOTE-007): the deploy mechanism is Cloudflare Workers Builds, not GitHub Actions — no deploy token exists anywhere.
 - 2026-07-06 — `product/overview` + `project/lifecycle-of-a-change` updated for ADR-009 (grill NOTE-006): deploys are CI-only — push to `main` auto-deploys dev, agents never hold deploy credentials, production deferred (TASK-036).
 - 2026-07-06 — `product/overview` under-the-hood section updated for the Workers-deploy prep (TASK-024): the health status chip is dev-only now; deployment is prepared but blocked on an owner `wrangler login`.
 - 2026-07-06 — `product/overview` under-the-hood section updated for the tRPC scaffold landing (TASK-023): a typed `/trpc/health` API surface exists (scaffolding only — no product feature is server-backed; local-first stands).

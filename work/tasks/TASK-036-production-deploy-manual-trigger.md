@@ -20,7 +20,7 @@ From the 2026-07-06 grill (NOTE-006): dev auto-deploys on every push to `main` (
 
 ## Open questions (deferred grill)
 
-1. **Enforcement of "agents never touch prod" (raised in-session, deliberately left undecided):** a naked `workflow_dispatch` can be fired by an agent through the owner's `gh` CLI (`gh workflow run`), so the manual trigger alone is trust-based. A GitHub **environment** with a required-reviewer rule (the owner approves each prod run in the GitHub UI) makes it mechanical at the cost of one extra click per deploy. Which does the owner want?
+1. **Enforcement of "agents never touch prod" (raised in-session, deliberately left undecided):** a naked `workflow_dispatch` can be fired by an agent through the owner's `gh` CLI (`gh workflow run`), so the manual trigger alone is trust-based. A GitHub **environment** with a required-reviewer rule (the owner approves each prod run in the GitHub UI) makes it mechanical at the cost of one extra click per deploy. Which does the owner want? *(NOTE-007 wrinkle: dev has since moved to Cloudflare Workers Builds, which has no required-reviewer equivalent — if prod also uses Workers Builds, the enforcement mechanism must come from somewhere else, e.g. a protected prod branch Cloudflare watches; a prod-only GitHub Action remains a legitimate alternative.)*
 2. Custom domain vs `workers.dev` for production, and the worker/environment naming scheme (the clean `jazz-master-web` name is currently the dev worker).
 3. Does promotion rebuild from `main` or redeploy the exact artifact that was verified on dev?
 

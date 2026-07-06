@@ -3,7 +3,7 @@ id: TASK-024
 title: Deploy the Astro app to Cloudflare Workers
 epic: EPIC-013
 status: blocked
-blocked_reason: CI workflow is landed and correct by dry-run, but the first deploy cannot go green until the owner creates the Cloudflare API token (Account / Workers Scripts / Edit) and adds the `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets, then re-runs `deploy-dev` from the Actions UI. Agents cannot and must not do this (ADR-009).
+blocked_reason: everything agent-side is done; the owner connects the GitHub repo to the worker via Cloudflare Workers Builds (dashboard — settings recorded in the Log). No token or secret to create anywhere (ADR-009 as amended, NOTE-007).
 depends_on: [TASK-021, TASK-023]
 research: RES-002
 created: 2026-07-05
@@ -21,13 +21,13 @@ RES-002 recommendation 1: target Workers, **not Pages** — the current Astro Cl
 
 **ADR-005 note (2026-07-05):** after the TASK-027 restructure, `wrangler.jsonc` lives in `codebase/apps/web/`; the `deploy` script is defined there and exposed through the workspace root (and root shim) so `bun run deploy` works from the repo root.
 
-**ADR-009 redesign (2026-07-06, grill NOTE-006):** the "manual/owner-triggered, no CI" sentence above is superseded. The owner rejected local wrangler credentials outright — agents must not have access to production, and no deploy credential may be readable from this machine. This task now delivers the **dev** deployment: a GitHub Actions workflow deploying to Cloudflare on every push to `main`, authenticated by a `CLOUDFLARE_API_TOKEN` repo secret the owner creates (agents never handle it). Production is split out to gated TASK-036 (manual UI trigger).
+**ADR-009 redesign (2026-07-06, grill NOTE-006):** the "manual/owner-triggered, no CI" sentence above is superseded. The owner rejected local wrangler credentials outright — agents must not have access to production, and no deploy credential may be readable from this machine. This task now delivers the **dev** deployment: a GitHub Actions workflow deploying to Cloudflare on every push to `main`, authenticated by a `CLOUDFLARE_API_TOKEN` repo secret the owner creates (agents never handle it). Production is split out to gated TASK-036 (manual UI trigger). *(Further amended same day — the mechanism is Cloudflare Workers Builds, no GitHub Action and no token at all; see NOTE-007 and the Log.)*
 
 ## Acceptance criteria
 
 - [x] `wrangler.jsonc` present with `nodejs_compat`, a pinned `compatibility_date`, and the Astro Workers entry (entry/assets come from the adapter-emitted `dist/server/wrangler.json` via the `.wrangler/deploy/config.json` redirect — see Log)
-- [ ] A GitHub Actions workflow deploys to Cloudflare Workers on every push to `main` (ADR-009): install → `bun run check` → `bun run deploy`, authenticated only by repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`)
-- [ ] No deploy credential is readable from the development machine; no `wrangler login` anywhere in the flow
+- [ ] Cloudflare Workers Builds deploys on every push to `main` (ADR-009 as amended): the repo is connected to the `jazz-master-web` worker in the Cloudflare dashboard, build command runs `bun install --frozen-lockfile` + the full `bun run check` gate (owner decision, NOTE-007), then `wrangler deploy`
+- [ ] No deploy credential exists anywhere agent-readable — no `wrangler login`, no API token on disk or in repo secrets
 - [ ] On the deployed dev URL: `/` renders server-side, `/app/*` runs the SPA including deep-link reloads, `/trpc/health` returns typed JSON *(all three verified in the local workerd preview; live URL pending first green CI deploy)*
 - [x] A documented local preview command runs the app in the Workers runtime
 - [ ] Deployment steps and the live dev URL recorded in `architecture/overview.md` *(steps recorded; URL pending publish)*
@@ -35,7 +35,7 @@ RES-002 recommendation 1: target Workers, **not Pages** — the current Astro Cl
 
 ## Verification
 
-`bun run check` green locally; push to `main` and watch the deploy workflow go green (`gh run watch`). On the live dev URL: `curl` `/` (expect HTML), `curl` `/trpc/health` (expect JSON), open `/app`, exercise one practice module, hard-reload a nested `/app/...` route. Confirm no local credential: `bunx wrangler whoami` on the dev machine stays logged out while CI deploys succeed.
+`bun run check` green locally; push to `main` and watch the Workers Builds run go green (Cloudflare dashboard → the worker → Builds, or the commit status on GitHub). On the live dev URL: `curl` `/` (expect HTML), `curl` `/trpc/health` (expect JSON), open `/app`, exercise one practice module, hard-reload a nested `/app/...` route. Confirm no local credential: `bunx wrangler whoami` on the dev machine stays logged out while CI deploys succeed.
 
 ## Log
 
@@ -67,4 +67,15 @@ The login blocker report triggered an owner decision: no local wrangler credenti
 - **Workflow landed:** `.github/workflows/deploy-dev.yml` — push to `main` + `workflow_dispatch`, `concurrency: deploy-dev` (latest push wins), Bun pinned to the local 1.3.14, `bun install --frozen-lockfile` → `bun run check` → `bun run deploy` with the two secrets injected only into the deploy step. YAML parse-validated.
 - Overview Deployment section rewritten for ADR-009; wiki `product/overview` + `project/lifecycle-of-a-change` updated (push to `main` now also deploys dev); wiki log lines added.
 - Reviewed: independent `code-reviewer` pass — clean, no must-fix findings; its hardening suggestions applied in the same commit (`permissions: contents: read`, `timeout-minutes: 15`, `setup-bun` SHA-pinned to v2.2.0, session-driver comment corrected to name the per-isolate/non-persistent caveat). Its double-build nit (check builds, deploy rebuilds) left as-is deliberately — CI-minutes cost only.
-- **Expected red:** the `deploy-dev` run triggered by this very commit will fail at the deploy step until the secrets exist. Owner: Cloudflare dashboard → My Profile → API Tokens → create token with **Account / Workers Scripts / Edit**; repo Settings → Secrets and variables → Actions → add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (dashboard → Workers & Pages → right sidebar); then re-run `deploy-dev` from the Actions tab. Remaining criteria (green CI deploy, live-URL checks, URL into overview.md) close after that.
+- **Expected red:** the `deploy-dev` run triggered by this very commit will fail at the deploy step until the secrets exist. Owner: Cloudflare dashboard — create token, add repo secrets, re-run. Remaining criteria (green CI deploy, live-URL checks, URL into overview.md) close after that. *(Superseded hours later — see next entry.)*
+
+### 2026-07-06 — switched to Cloudflare Workers Builds (grill NOTE-007, ADR-009 amendment)
+
+The GitHub Actions run had just proven the design (install ✓, full check gate ✓ on the runner, deploy ✗ exactly on the missing token) when the owner redirected: no GitHub Action — Cloudflare Workers Builds deploys the app itself. Grilled one question (gate placement); owner chose **(a) keep `bun run check` in Cloudflare's build command**. Changes: `deploy-dev.yml` deleted; ADR-009 amended (invariant strengthened — no deploy token exists anywhere, the credential is implicit in the Cloudflare↔GitHub connection); overview + wiki updated. The `deploy` script and the `sessionDrivers.memory()` binding-elimination both stay — Workers Builds needs the binding-free worker just the same.
+
+**Owner runbook (replaces the secrets to-do):** Cloudflare dashboard → Workers & Pages → `jazz-master-web` (create it via the connect flow if it doesn't exist) → Settings → Build → connect GitHub repo `flooper68/jazz-master`, branch `main`, then:
+- **Root directory:** `codebase/apps/web` (where `wrangler.jsonc` lives)
+- **Build command:** `cd ../.. && bun install --frozen-lockfile && bun run check`
+- **Deploy command:** `bunx wrangler deploy`
+
+After the first green build: tell an agent the `workers.dev` URL (or paste it), and the remaining criteria close — live-URL checks (`/`, `/trpc/health`, `/app` module + nested-route hard reload) and the URL recorded in overview.md.
