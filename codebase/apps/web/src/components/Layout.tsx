@@ -5,6 +5,7 @@ const navItems = [
   { to: '/voicings', label: 'Voicings' },
   { to: '/progressions', label: 'Progressions' },
   { to: '/practice', label: 'Practice' },
+  { to: '/history', label: 'History' },
   { to: '/repertoire', label: 'Repertoire' },
   { to: '/ear-training', label: 'Ear Training' },
   { to: '/profile', label: 'Profile' },

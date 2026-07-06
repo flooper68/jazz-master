@@ -27,6 +27,7 @@ describe('App', () => {
     ['/voicings', 'Voicings'],
     ['/progressions', 'Progressions'],
     ['/practice', 'Practice'],
+    ['/history', 'History'],
     ['/repertoire', 'Repertoire'],
     ['/ear-training', 'Ear Training'],
     ['/profile', 'Profile'],

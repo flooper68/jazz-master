@@ -2,7 +2,7 @@
 id: EPIC-012
 title: Dashboard & history — momentum at a glance
 vision: VIS-001
-status: backlog
+status: in-progress
 created: 2026-07-05
 ---
 
