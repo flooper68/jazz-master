@@ -1,5 +1,6 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render as rtlRender, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LESSONS } from '../content'
 import { toPlanDate } from '../planner'
@@ -16,6 +17,13 @@ beforeEach(() => {
   localStorage.clear()
   profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
+
+// The page uses router hooks (dashboard Start handoff), so it needs a router.
+function render(ui: React.ReactElement) {
+  return rtlRender(
+    <MemoryRouter initialEntries={['/practice']}>{ui}</MemoryRouter>,
+  )
+}
 
 describe('PracticePage', () => {
   it('lists every lesson in the pack', () => {

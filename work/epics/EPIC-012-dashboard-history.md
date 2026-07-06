@@ -2,7 +2,7 @@
 id: EPIC-012
 title: Dashboard & history — momentum at a glance
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-05
 ---
 
@@ -40,3 +40,15 @@ The dashboard is the app's front door: today's plan, streak, recent scores, and 
 ## Done when
 
 Opening the app shows, in one glance, what to practice now and how the last few weeks went; every past session is findable and inspectable.
+
+## Done-when assessment (2026-07-06, TASK-019 shipped)
+
+Met: `/` now opens on today's plan with reasons and a one-click Start into the
+runner, current streak, minutes-this-week against the profile budget, and
+per-area status with needs-attention callouts driven by the latest grades
+(TASK-019); every session is findable and inspectable at `/history` with area
+and time-range filters and per-exercise drill-down (TASK-018). The session
+record model was already the TASK-013 contract. Partial within scope: "per-area
+trend (accuracy/scores)" shipped as current status + attention callouts, not a
+trend *over time* — meaningful trend visuals want EPIC-010 machine scores;
+follow-up filed as an insight (INS-016).

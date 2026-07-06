@@ -32,6 +32,13 @@ zero-grade abandons persisting nothing means they simply don't appear in history
 *planner* wants wall-clock duration or a started-and-bailed signal, and the
 double-click debounce.
 
+2026-07-06 (TASK-019): the dashboard also consumed the documented semantics —
+minutes-this-week sums `durationSeconds` (time-to-last-grade), so it undercounts
+wall-clock practice for runs abandoned after their last grade; the streak counts
+any persisted session (a grade was earned), so zero-grade abandons don't extend
+it. Both consistent with TASK-018's reading. The open questions above are
+unchanged.
+
 **Polish (fold into the next runner-touching task):**
 
 - `resolveExercise` throws in render on a broken content reference with no error

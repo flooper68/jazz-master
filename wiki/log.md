@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `product/overview` built-today section updated for the dashboard v1 shipping and EPIC-012 completing (TASK-019): `/` is now the product's front door and the guided-practice vertical slice is finished.
 - 2026-07-06 — `product/overview` built-today section updated for the practice-history page shipping and EPIC-012 opening (TASK-018): every session is now findable at `/history`.
 - 2026-07-06 — `product/overview` under-the-hood section updated for ADR-006 (proposed): the EPIC-013 platform target is now a written decision, not "when written" (TASK-020).
 - 2026-07-06 — `project/overview`, `project/lifecycle-of-a-change`, and `project/quality-loops` updated for the new read-only status-report process and `work:status` facts command (TASK-034).

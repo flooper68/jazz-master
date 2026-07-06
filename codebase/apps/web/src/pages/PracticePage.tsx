@@ -1,21 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { AREA_LABELS } from '../components/areaLabels'
 import { PracticeRunner } from '../components/PracticeRunner'
 import { LESSONS } from '../content'
-import type { Lesson, LessonArea } from '../content'
-import { generatePlan, toPlanDate, type DailyPlan } from '../planner'
-import {
-  defaultProfile,
-  getDailyPlan,
-  profileStore,
-  saveDailyPlan,
-  sessionsStore,
-  type PracticeSession,
-} from '../storage'
-
-const AREA_LABELS: Partial<Record<LessonArea, string>> = {
-  scales: 'Scales',
-  arpeggios: 'Arpeggios',
-}
+import type { Lesson } from '../content'
+import { completedLessonIdsOn } from '../dashboard'
+import { useTodayPlan, type DailyPlan } from '../planner'
 
 // Authored order is curriculum order, so grouping preserves level progression.
 const areas = [...new Set(LESSONS.map((lesson) => lesson.area))]
@@ -29,43 +19,44 @@ interface ActiveRun {
   startedAt: number
 }
 
+/** Navigation state the dashboard's Start handoff sends (TASK-019). */
+export interface PracticeLocationState {
+  startLessonId?: string
+}
+
+function startRun(lesson: Lesson): ActiveRun {
+  return { lesson, sessionId: crypto.randomUUID(), startedAt: Date.now() }
+}
+
 export default function PracticePage() {
-  const [today] = useState(() => new Date())
-  const [planDate] = useState(() => toPlanDate(today))
-  const [profile] = useState(
-    () => profileStore.get() ?? defaultProfile(today.toISOString()),
-  )
-  const [sessions, setSessions] = useState(() => sessionsStore.get())
-  const [storedPlan, setStoredPlan] = useState<DailyPlan | null>(() =>
-    getDailyPlan(planDate),
-  )
-  const [activeRun, setActiveRun] = useState<ActiveRun | null>(null)
-  const plan = useMemo(
-    () => storedPlan ?? generatePlan(profile, sessions, LESSONS, today),
-    [profile, sessions, storedPlan, today],
-  )
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { plan, sessions, refreshSessions } = useTodayPlan()
+  const [activeRun, setActiveRun] = useState<ActiveRun | null>(() => {
+    const state = location.state as PracticeLocationState | null
+    const lesson = state?.startLessonId
+      ? lessonById.get(state.startLessonId)
+      : undefined
+    return lesson ? startRun(lesson) : null
+  })
   const completedLessonIds = useMemo(
-    () => completedLessonsForDate(sessions, plan.date),
+    () => completedLessonIdsOn(sessions, plan.date),
     [plan.date, sessions],
   )
 
+  // Consume the handoff state so refresh/back doesn't restart the lesson.
   useEffect(() => {
-    if (storedPlan !== null) return
-    saveDailyPlan(plan)
-    setStoredPlan(plan)
-  }, [plan, storedPlan])
+    if (location.state == null) return
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   const startLesson = (lesson: Lesson) => {
-    setActiveRun({
-      lesson,
-      sessionId: crypto.randomUUID(),
-      startedAt: Date.now(),
-    })
+    setActiveRun(startRun(lesson))
   }
 
   const exitRun = () => {
     setActiveRun(null)
-    setSessions(sessionsStore.get())
+    refreshSessions()
   }
 
   if (activeRun) {
@@ -102,7 +93,7 @@ export default function PracticePage() {
       {areas.map((area) => (
         <section key={area} className="mt-8 max-w-2xl">
           <h2 className="text-sm font-medium text-zinc-400">
-            {AREA_LABELS[area] ?? area}
+            {AREA_LABELS[area]}
           </h2>
           <ul className="mt-2 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
             {LESSONS.filter((lesson) => lesson.area === area).map((lesson) => (
@@ -186,7 +177,7 @@ function TodayPlan({
                 <p className="mt-2 text-sm text-zinc-400">{item.reason}</p>
                 <div className="mt-3 flex items-center justify-between gap-4">
                   <span className="text-sm text-zinc-400">
-                    {done ? 'Done today' : AREA_LABELS[item.area] ?? item.area}
+                    {done ? 'Done today' : AREA_LABELS[item.area]}
                   </span>
                   <button
                     type="button"
@@ -204,19 +195,5 @@ function TodayPlan({
         </ol>
       )}
     </section>
-  )
-}
-
-function completedLessonsForDate(
-  sessions: readonly PracticeSession[],
-  date: string,
-): ReadonlySet<string> {
-  return new Set(
-    sessions
-      .filter(
-        (session) =>
-          session.completed && toPlanDate(new Date(session.startedAt)) === date,
-      )
-      .map((session) => session.lessonId),
   )
 }

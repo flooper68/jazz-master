@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { AREA_LABELS } from '../components/areaLabels'
 import { LESSONS } from '../content'
 import type { LessonArea } from '../content'
 import {
@@ -11,13 +12,6 @@ import {
   type TimeRange,
 } from '../history'
 import { sessionsStore, type PracticeSession } from '../storage'
-
-const AREA_LABELS: Record<LessonArea, string> = {
-  scales: 'Scales',
-  arpeggios: 'Arpeggios',
-  chords: 'Chords',
-  standards: 'Standards',
-}
 
 const GRADE_LABELS = {
   'got-it': 'Got it',

@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — dashboard v1 shipped; EPIC-012 complete (TASK-019)
+
+`/` replaced the leftover fretboard-demo stub with the product's front door: today's plan (via the new shared `planner/useTodayPlan` hook, so dashboard and `/practice` render the same persisted plan), streak and minutes-this-week from the new pure `apps/web/src/dashboard/` derivation module, per-area needs-attention callouts (same latest-grade rule as the planner), and a location-state Start handoff into the runner (consumed once so refresh/back doesn't restart the lesson). The onboard → plan → practice → history → dashboard vertical slice is now closed end to end.
+
 ## 2026-07-06 — ADR-006 written: Astro/Workers hybrid platform target (TASK-020)
 
 The EPIC-013 platform decision is now recorded: Astro on Cloudflare Workers (not Pages), the React app as a `client:only` SPA island under `/app/*`, TanStack Router scoped inside it, tRPC on an Astro catch-all route with one shared React Query client, and Hyperdrive → Railway Postgres gated behind TASK-025. Once accepted it supersedes ADR-002's "no backend" assumption while keeping its local-first UX. Status `proposed` — owner acceptance is a deferred grill (three open questions in the ADR), and TASK-021+ implementation waits on it.
