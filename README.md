@@ -31,7 +31,7 @@ The repo carries its own knowledge system — the project is developed by a huma
 | `research/` | Persisted deep-research results feeding the docs above |
 | `artifacts/` | Human-facing rendered companions such as presentations, visual reports, and exports |
 | `codebase/` | The code — Bun workspaces: `apps/web` (the app) · `packages/theory` (pure domain core) |
-| `CLAUDE.md` / `AGENTS.md` | Agent indexes — start here |
+| `AGENTS.md` | Agent index — start here (`CLAUDE.md` is a symlink to it) |
 
 ## How inputs become work
 

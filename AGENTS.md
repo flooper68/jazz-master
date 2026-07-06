@@ -2,6 +2,8 @@
 
 Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, repertoire tracking, ear training. Built by a solo owner + AI agents through the processes indexed below.
 
+This file is the canonical agent index; `CLAUDE.md` is a symlink to it. Edit only this file.
+
 ## Knowledge map — where everything lives
 
 | Layer | Path | What / rule |
@@ -10,7 +12,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Processes | `processes/` | Executable playbooks — how we work (index below) |
 | Architecture | `architecture/` | `overview.md` (living map), `decisions/ADR-*` (decision records), `LOG.md` (engineering log) |
 | Work | `work/` | Flow items: epics, tasks, insights, issues, reviews — formats in `work/README.md` |
-| Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly |
+| Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly (one recorded exception: in-session grill write-backs, ADR-008) |
 | Research | `research/` | Persisted deep-research results (`RES-*`) — check before re-researching anything |
 | Wiki | `wiki/` | Derived synthesis of how the product + project work; cites canonical sources, never replaces them (ADR-007). Start at `wiki/index.md`. |
 | Artifacts | `artifacts/` | Human-facing outputs: presentations, visual reports, exports. Markdown docs remain canonical. |
@@ -20,17 +22,22 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 
 ## Which process, when
 
+Every file in `processes/` has a row here — that invariant is linted by `processes/knowledge-maintenance.md`.
+
 | Situation | Process |
 |---|---|
 | "Do the next task" / implement anything | `processes/dev-loop.md` |
-| "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
+| Writing React/TypeScript/Tailwind code | `processes/development-practices.md` |
 | Decide what tests a code change needs | `processes/testing-strategy.md` |
-| Before any push | `processes/code-review.md` + `bun run --cwd codebase check` |
+| "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
+| "Grill me" / owner gives feedback or makes a decision-shaped call — question the owner one-at-a-time, write decisions back | `processes/grilling.md` |
+| Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
 | Inspect the product, find problems | `processes/qa-product-review.md` |
 | Capture raw notes, feedback, bug reports | `processes/feedback-intake.md` |
 | Process the insights/issues inbox | `processes/triage.md` |
 | Choose between multiple possible next items | `processes/prioritization.md` |
+| Product judgment: frame problems, write product-facing tasks, choose features | `processes/product-practices.md` |
 | A task needs research first | `processes/deep-research.md` → result in `research/` |
 | Security/privacy-sensitive change | `processes/security-review.md` |
 | Prune/lint stale knowledge and feed research forward | `processes/knowledge-maintenance.md` |
@@ -41,10 +48,11 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 
 1. **Do not invent work.** Implement what a work item specifies; discoveries become `work/insights/`, `work/issues/`, or `notes/` files, not scope creep.
 2. **Never edit `strategy/`** — propose changes to the user instead.
-3. **Never push a red `bun run --cwd codebase check`.** It is THE gate: typecheck + lint + test + build.
+3. **Never push a red `bun run check`.** It is THE gate: typecheck + lint + test + build.
 4. Code and its tracker updates (task status, Log, criteria) ship **in the same commit**.
 5. Every work item is **reviewed** (independent agent pass) and **tested** (check + the item's Verification steps) before it is **pushed**.
 6. Update `architecture/` when the shape of the system changes: ADR for decisions, LOG.md for notable events.
+7. **Finished work is committed and pushed — never left sitting in the working tree.** Before reporting done or ending a session, `git status --short` and `git log origin/main..HEAD` must both be empty (the end-of-run check in `processes/git-workflow.md`). Applies to knowledge-only work exactly as to code.
 
 ## Commands
 
@@ -70,7 +78,11 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `
 ## Conventions
 
 - TypeScript everywhere; no `any` without an annotated reason
+- Follow `processes/development-practices.md` for React, TypeScript, Tailwind, testing, and agent workflow standards; adopted practices there trace to `research/RES-010-development-best-practices.md` and `RES-005`
 - Named exports preferred; default export only for route pages and `App`
 - Music notation in code: `b`/`#` in identifiers (`Bb`, `F#`); Unicode `♭`/`♯` only in rendered UI text
 - Chord qualities in code: `maj7`, `m7`, `7`, `m7b5`, `dim7` (lowercase, as guitarists write them)
 - Logic lives in `codebase/packages/theory/` or plain functions/hooks; components stay thin
+- React render logic stays pure/idempotent; prefer derived render data and event handlers before `useEffect`, and use Effects only for external synchronization
+- Tailwind v4 tokens live in `apps/web/src/index.css` under `@theme`; keep class names complete/literal so Tailwind can detect them
+- Tests verify public behavior: theory through package exports, UI through Testing Library role/label/text queries and user interactions

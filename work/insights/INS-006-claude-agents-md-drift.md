@@ -2,7 +2,7 @@
 id: INS-006
 title: CLAUDE.md and AGENTS.md are hand-maintained duplicates and drift
 status: accepted
-outcome: [TASK-030]
+outcome: [TASK-030, NOTE-003]
 created: 2026-07-05
 ---
 
@@ -21,3 +21,13 @@ heartbeat report). A known drift already exists (rule 7 missing from AGENTS.md),
 so this is a live defect in the agent-instruction layer, not a hypothetical.
 Folded into TASK-030 (knowledge maintenance sweep) rather than a standalone
 task — resolving doc duplication is squarely that process's remit.
+
+## Resolution
+
+2026-07-06 (grill session, NOTE-003) — the symlink option won: `AGENTS.md` is
+now the canonical file and `CLAUDE.md` a symlink to it, so drift is structurally
+impossible. The divergent content (rule 7, grilling/development-practices rows,
+extended conventions vs the testing-strategy row) was merged into AGENTS.md and
+the missing `product-practices.md` row added. Symlink integrity is checked by
+the index lint in `processes/knowledge-maintenance.md` step 9; TASK-030 retains
+the rest of the sweep scope.

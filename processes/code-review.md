@@ -9,7 +9,7 @@ Every work item is reviewed before it ships — including agent-implemented ones
 3. If the diff touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md`.
 4. Walk the checklist below in two passes:
    - **Spec:** did the diff implement the work item and verification honestly?
-   - **Standards:** does the diff improve or preserve code health under `processes/development-practices.md`, `processes/testing-strategy.md`, and CLAUDE.md?
+   - **Standards:** does the diff improve or preserve code health under `processes/development-practices.md`, `processes/testing-strategy.md`, and AGENTS.md?
 5. Every finding is either **fixed now** or **filed** as `work/issues/ISSUE-###` with a one-line justification for deferring. Findings are never silently dropped.
 
 ## Checklist
@@ -35,7 +35,7 @@ Every work item is reviewed before it ships — including agent-implemented ones
 - [ ] Storage changes are typed, migration-safe, and tolerate corrupt/missing data
 - [ ] Dependency changes are intentional and justified
 
-**Conventions** (see CLAUDE.md)
+**Conventions** (see AGENTS.md)
 - [ ] Naming, exports, chord-quality notation, TypeScript strictness (`any` only with a reason)
 - [ ] Type-only imports/exports used where appropriate; Vite-only transpilation is backed by `tsc -b` in `bun run --cwd codebase check`
 - [ ] Tailwind classes are complete/literal enough for v4 detection; design tokens belong in `@theme`

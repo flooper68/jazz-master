@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `project/overview` sources now cite `AGENTS.md` (canonical agent index; `CLAUDE.md` became a symlink to it, NOTE-003).
 - 2026-07-06 — `product/overview` built-today section updated for the first lesson pack landing on the Practice page (TASK-012).
 - 2026-07-06 — `project/overview` gained the grill loop (owner-facing rhythm) and `project/lifecycle-of-a-change` triage step now notes deferred-grill confirmation (ADR-008, NOTE-001).
 - 2026-07-06 — `product/overview` under-the-hood + built-today sections updated for the new curriculum content layer (`apps/web/src/content/`, TASK-011).

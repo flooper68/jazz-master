@@ -16,7 +16,7 @@ How to research a topic thoroughly (online) and persist the result so future wor
 3. **Read deeply.** Fetch and actually read the strongest 5–15 sources; don't cite from snippets.
 4. **Cross-check.** Any claim that will drive a decision needs two independent sources or a marked "single-source" flag.
 5. **Write the RES file** (format in `research/README.md`): findings per question, each with citations; a Recommendations section stating what *we* should adopt, adapt, or skip — and why.
-6. **Feed forward.** The consuming task turns Recommendations into concrete changes (process docs, CLAUDE.md conventions, code). Link the RES id from the task's frontmatter (`research: RES-###`) and Log. Durable "how it works" findings are ingested into the affected `wiki/` pages per `processes/wiki-maintenance.md`. If research was requested directly and has no consuming task, run `processes/knowledge-maintenance.md` to file or reject follow-up work.
+6. **Feed forward.** The consuming task turns Recommendations into concrete changes (process docs, AGENTS.md conventions, code). Link the RES id from the task's frontmatter (`research: RES-###`) and Log. Durable "how it works" findings are ingested into the affected `wiki/` pages per `processes/wiki-maintenance.md`. If research was requested directly and has no consuming task, run `processes/knowledge-maintenance.md` to file or reject follow-up work.
 
 ## Quality bar
 

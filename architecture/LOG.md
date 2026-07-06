@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — AGENTS.md made canonical, CLAUDE.md now a symlink; index lint added (NOTE-003)
+
+Grill session resolved INS-006's index drift: `AGENTS.md` is the single agent index (merged from the newer CLAUDE.md content plus the missing `testing-strategy`/`product-practices` rows) and `CLAUDE.md` is a symlink to it. `processes/knowledge-maintenance.md` step 9 became a deterministic index lint (symlink intact, process table bidirectionally complete, cited paths exist, ID sequences gap-free — known never-created gaps: ADR-006, RES-001). Enforcement is sweep-only by owner decision; inter-sweep drift is accepted.
+
 ## 2026-07-06 — first lesson pack shipped; displayAccidentals hoisted into the theory package (TASK-012)
 
 The v1 scales & arpeggios curriculum (10 lessons / 42 exercises) landed as typed data in `apps/web/src/content/lessons.ts`, browsable on the Practice page. En route, review caught `withAccidentals` duplicating `components/notation.ts`'s `displayAccidentals`; since content may not import components, the helper moved to `@jazz-master/theory` (pure string fn, both layers already depend on theory) and `components/notation.ts` is gone — import `displayAccidentals` from the package.

@@ -2,7 +2,7 @@
 title: How the project works
 updated: 2026-07-06
 sources:
-  - CLAUDE.md
+  - AGENTS.md
   - architecture/decisions/ADR-003-knowledge-system.md
   - architecture/decisions/ADR-004-closed-loop-product-process.md
   - architecture/decisions/ADR-007-wiki-derived-knowledge-layer.md
