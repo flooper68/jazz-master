@@ -6,3 +6,7 @@ import { afterEach } from 'vitest'
 afterEach(() => {
   cleanup()
 })
+
+// TanStack Router scrolls on navigation; jsdom has no scrollTo implementation
+// and logs "Not implemented" for every call without this stub.
+window.scrollTo = () => {}

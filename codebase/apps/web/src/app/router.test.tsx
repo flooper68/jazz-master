@@ -1,27 +1,18 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import App from './App'
 import { defaultProfile, profileStore } from '../storage'
+import { renderRoute } from '../test/renderRoute'
 
 beforeEach(() => {
   localStorage.clear()
 })
 
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  )
-}
-
 function seedProfile() {
   profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
 }
 
-describe('App', () => {
+describe('app router', () => {
   it.each([
     ['/', 'Dashboard'],
     ['/voicings', 'Voicings'],
@@ -31,23 +22,23 @@ describe('App', () => {
     ['/repertoire', 'Repertoire'],
     ['/ear-training', 'Ear Training'],
     ['/profile', 'Profile'],
-  ])('renders the %s page heading', (path, heading) => {
+  ])('renders the %s page heading', async (path, heading) => {
     seedProfile()
-    renderAt(path)
+    await renderRoute(path)
     expect(
       screen.getByRole('heading', { level: 1, name: heading }),
     ).toBeInTheDocument()
   })
 
-  it('shows the app title in the persistent layout', () => {
+  it('shows the app title in the persistent layout', async () => {
     seedProfile()
-    renderAt('/voicings')
+    await renderRoute('/voicings')
     expect(screen.getByText('Jazz Master')).toBeInTheDocument()
   })
 
-  it('marks only the current page link as active', () => {
+  it('marks only the current page link as active', async () => {
     seedProfile()
-    renderAt('/voicings')
+    await renderRoute('/voicings')
     const nav = screen.getByRole('navigation', { name: 'Main' })
     expect(nav).toContainElement(
       screen.getByRole('link', { name: 'Voicings', current: 'page' }),
@@ -57,9 +48,9 @@ describe('App', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders a not-found page for unknown paths', () => {
+  it('renders a not-found page for unknown paths', async () => {
     seedProfile()
-    renderAt('/no-such-page')
+    await renderRoute('/no-such-page')
     expect(
       screen.getByRole('heading', { level: 1, name: 'Page not found' }),
     ).toBeInTheDocument()
@@ -68,15 +59,15 @@ describe('App', () => {
   it('navigates when a nav link is clicked', async () => {
     const user = userEvent.setup()
     seedProfile()
-    renderAt('/')
+    await renderRoute('/')
     await user.click(screen.getByRole('link', { name: 'Repertoire' }))
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Repertoire' }),
+      await screen.findByRole('heading', { level: 1, name: 'Repertoire' }),
     ).toBeInTheDocument()
   })
 
-  it('shows onboarding on first visit before any route', () => {
-    renderAt('/practice')
+  it('shows onboarding on first visit before any route', async () => {
+    await renderRoute('/practice')
 
     expect(
       screen.getByRole('heading', { name: 'How comfortable are you?' }),
@@ -91,7 +82,7 @@ describe('App', () => {
 
   it('persists a skipped profile and enters the requested route', async () => {
     const user = userEvent.setup()
-    renderAt('/practice')
+    await renderRoute('/practice')
 
     await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
@@ -107,7 +98,7 @@ describe('App', () => {
 
   it('persists a completed profile and enters the requested route', async () => {
     const user = userEvent.setup()
-    renderAt('/')
+    await renderRoute('/')
 
     const scales = screen.getByRole('group', { name: 'Scales' })
     await user.click(within(scales).getByRole('radio', { name: 'Intermediate' }))
@@ -127,9 +118,9 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
-  it('does not show onboarding for a returning user with a profile', () => {
+  it('does not show onboarding for a returning user with a profile', async () => {
     seedProfile()
-    renderAt('/practice')
+    await renderRoute('/practice')
 
     expect(
       screen.queryByRole('heading', { name: 'How comfortable are you?' }),

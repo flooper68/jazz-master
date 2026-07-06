@@ -1,5 +1,5 @@
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { PracticeRunner } from '../../components/PracticeRunner'
 import { LESSONS } from '../../content'
@@ -19,9 +19,12 @@ interface ActiveRun {
   startedAt: number
 }
 
-/** Navigation state the dashboard's Start handoff sends (TASK-019). */
-export interface PracticeLocationState {
-  startLessonId?: string
+// Navigation state the dashboard's Start handoff sends (TASK-019), carried as
+// typed history state so it stays out of the URL.
+declare module '@tanstack/history' {
+  interface HistoryState {
+    startLessonId?: string
+  }
 }
 
 function startRun(lesson: Lesson): ActiveRun {
@@ -33,9 +36,8 @@ export default function PracticePage() {
   const navigate = useNavigate()
   const { plan, sessions, refreshSessions } = useTodayPlan()
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(() => {
-    const state = location.state as PracticeLocationState | null
-    const lesson = state?.startLessonId
-      ? lessonById.get(state.startLessonId)
+    const lesson = location.state.startLessonId
+      ? lessonById.get(location.state.startLessonId)
       : undefined
     return lesson ? startRun(lesson) : null
   })
@@ -46,9 +48,13 @@ export default function PracticePage() {
 
   // Consume the handoff state so refresh/back doesn't restart the lesson.
   useEffect(() => {
-    if (location.state == null) return
-    navigate(location.pathname, { replace: true, state: null })
-  }, [location.pathname, location.state, navigate])
+    if (location.state.startLessonId == null) return
+    void navigate({
+      to: '/practice',
+      replace: true,
+      state: (prev) => ({ ...prev, startLessonId: undefined }),
+    })
+  }, [location.state.startLessonId, navigate])
 
   const startLesson = (lesson: Lesson) => {
     setActiveRun(startRun(lesson))

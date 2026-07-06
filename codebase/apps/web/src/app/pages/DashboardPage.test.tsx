@@ -1,6 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
@@ -11,23 +10,17 @@ import {
   sessionsStore,
   type PracticeSession,
 } from '../../storage'
-import DashboardPage from './DashboardPage'
-import PracticePage from './PracticePage'
+import { renderRoute } from '../../test/renderRoute'
 
 beforeEach(() => {
   localStorage.clear()
   profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
+// The dashboard's Start handoff navigates to the real /practice route, so the
+// page renders through the app route tree instead of in isolation.
 function renderDashboard() {
-  return render(
-    <MemoryRouter initialEntries={['/']}>
-      <Routes>
-        <Route index element={<DashboardPage />} />
-        <Route path="practice" element={<PracticePage />} />
-      </Routes>
-    </MemoryRouter>,
-  )
+  return renderRoute('/')
 }
 
 /** A local timestamp n days before now — keeps day-based stats deterministic. */
@@ -54,8 +47,8 @@ function session(overrides: Partial<PracticeSession>): PracticeSession {
 }
 
 describe('DashboardPage', () => {
-  it('shows the starter plan with reasons and zeroed stats before any session', () => {
-    renderDashboard()
+  it('shows the starter plan with reasons and zeroed stats before any session', async () => {
+    await renderDashboard()
 
     expect(
       screen.getByRole('heading', { name: "Today's plan" }),
@@ -74,19 +67,19 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('computes streak and minutes this week from session history', () => {
+  it('computes streak and minutes this week from session history', async () => {
     sessionsStore.set([
       session({ startedAt: daysAgoIso(0), durationSeconds: 600 }),
       session({ startedAt: daysAgoIso(1), durationSeconds: 300 }),
     ])
-    renderDashboard()
+    await renderDashboard()
 
     expect(screen.getByText('2 days')).toBeInTheDocument()
     const stats = screen.getByRole('region', { name: 'Practice stats' })
     expect(within(stats).getByText('15')).toBeInTheDocument()
   })
 
-  it('calls out lessons whose latest session needs attention', () => {
+  it('calls out lessons whose latest session needs attention', async () => {
     const arpeggioLesson = LESSONS.find(
       (lesson) => lesson.area === 'arpeggios',
     )!
@@ -99,16 +92,16 @@ describe('DashboardPage', () => {
         completed: false,
       }),
     ])
-    renderDashboard()
+    await renderDashboard()
 
     expect(
       screen.getByText(`Needs attention: ${arpeggioLesson.title}`),
     ).toBeInTheDocument()
   })
 
-  it('shows completed lesson counts per area', () => {
+  it('shows completed lesson counts per area', async () => {
     sessionsStore.set([session({ lessonId: LESSONS[0].id })])
-    renderDashboard()
+    await renderDashboard()
 
     const scalesArea = screen
       .getByRole('heading', { name: 'Scales' })
@@ -118,7 +111,7 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('marks done plan items and offers Practice again once the plan is complete', () => {
+  it('marks done plan items and offers Practice again once the plan is complete', async () => {
     const lesson = LESSONS[0]
     const date = toPlanDate(new Date())
     saveDailyPlan({
@@ -135,7 +128,7 @@ describe('DashboardPage', () => {
       ],
     })
     sessionsStore.set([session({ lessonId: lesson.id })])
-    renderDashboard()
+    await renderDashboard()
 
     expect(screen.getByText('Done today')).toBeInTheDocument()
     expect(screen.getByText('Plan complete — nice work.')).toBeInTheDocument()
@@ -160,7 +153,7 @@ describe('DashboardPage', () => {
       ],
     })
     const user = userEvent.setup()
-    renderDashboard()
+    await renderDashboard()
 
     expect(screen.getByText(`Next up: ${lesson.title}`)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Start practicing' }))

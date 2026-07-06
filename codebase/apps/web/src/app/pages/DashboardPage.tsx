@@ -1,5 +1,5 @@
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { LESSONS } from '../../content'
 import {
@@ -10,7 +10,6 @@ import {
   WEEK_DAYS,
 } from '../../dashboard'
 import { useTodayPlan } from '../../planner'
-import type { PracticeLocationState } from './PracticePage'
 
 const linkClasses =
   'font-medium text-amber-400 hover:text-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
@@ -42,8 +41,10 @@ export default function DashboardPage() {
 
   const startPracticing = () => {
     if (!nextItem) return
-    const state: PracticeLocationState = { startLessonId: nextItem.lessonId }
-    navigate('/practice', { state })
+    void navigate({
+      to: '/practice',
+      state: (prev) => ({ ...prev, startLessonId: nextItem.lessonId }),
+    })
   }
 
   return (

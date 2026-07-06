@@ -1,6 +1,5 @@
-import { render as rtlRender, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
@@ -11,23 +10,22 @@ import {
   saveDailyPlan,
   sessionsStore,
 } from '../../storage'
-import PracticePage from './PracticePage'
+import { renderRoute } from '../../test/renderRoute'
 
 beforeEach(() => {
   localStorage.clear()
   profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
-// The page uses router hooks (dashboard Start handoff), so it needs a router.
-function render(ui: React.ReactElement) {
-  return rtlRender(
-    <MemoryRouter initialEntries={['/practice']}>{ui}</MemoryRouter>,
-  )
+// The page uses router hooks (dashboard Start handoff), so it renders through
+// the real /practice route.
+function renderPage() {
+  return renderRoute('/practice')
 }
 
 describe('PracticePage', () => {
-  it('lists every lesson in the pack', () => {
-    render(<PracticePage />)
+  it('lists every lesson in the pack', async () => {
+    await renderPage()
     expect(
       screen.getByRole('heading', { name: 'Practice' }),
     ).toBeInTheDocument()
@@ -36,16 +34,16 @@ describe('PracticePage', () => {
     }
   })
 
-  it('groups lessons under their area headings', () => {
-    render(<PracticePage />)
+  it('groups lessons under their area headings', async () => {
+    await renderPage()
     expect(screen.getByRole('heading', { name: 'Scales' })).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Arpeggios' }),
     ).toBeInTheDocument()
   })
 
-  it('shows level, duration, exercise count, and prerequisites per lesson', () => {
-    render(<PracticePage />)
+  it('shows level, duration, exercise count, and prerequisites per lesson', async () => {
+    await renderPage()
     const dorianItem = screen
       .getByText('Dorian — the ii-chord scale')
       .closest('li')
@@ -61,7 +59,7 @@ describe('PracticePage', () => {
 
   it('starts a guided session from a lesson and returns to the list on end', async () => {
     const user = userEvent.setup()
-    render(<PracticePage />)
+    await renderPage()
     const first = LESSONS[0]
 
     await user.click(
@@ -79,7 +77,7 @@ describe('PracticePage', () => {
   })
 
   it("renders and persists today's plan with reasons", async () => {
-    render(<PracticePage />)
+    await renderPage()
     const date = toPlanDate(new Date())
 
     expect(screen.getByRole('heading', { name: "Today's plan" })).toBeInTheDocument()
@@ -89,7 +87,7 @@ describe('PracticePage', () => {
     })
   })
 
-  it('reuses the saved plan for the day instead of reshuffling after history changes', () => {
+  it('reuses the saved plan for the day instead of reshuffling after history changes', async () => {
     const date = toPlanDate(new Date())
     saveDailyPlan({
       date,
@@ -115,7 +113,7 @@ describe('PracticePage', () => {
       },
     ])
 
-    render(<PracticePage />)
+    await renderPage()
 
     expect(screen.getByText('Already saved for today.')).toBeInTheDocument()
     expect(
@@ -125,7 +123,7 @@ describe('PracticePage', () => {
 
   it('starts a planned lesson and marks it done after completion', async () => {
     const user = userEvent.setup()
-    render(<PracticePage />)
+    await renderPage()
 
     await user.click(screen.getByRole('button', { name: /^Start planned lesson/ }))
     const activeLesson = LESSONS.find((lesson) =>

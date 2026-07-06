@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, Outlet } from '@tanstack/react-router'
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -9,7 +9,7 @@ const navItems = [
   { to: '/repertoire', label: 'Repertoire' },
   { to: '/ear-training', label: 'Ear Training' },
   { to: '/profile', label: 'Profile' },
-]
+] as const
 
 export function Layout() {
   return (
@@ -30,19 +30,18 @@ export function Layout() {
           <ul className="flex flex-col gap-1">
             {navItems.map(({ to, label }) => (
               <li key={to}>
-                <NavLink
+                <Link
                   to={to}
-                  end={to === '/'}
-                  className={({ isActive }) =>
-                    `block rounded px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 ${
-                      isActive
-                        ? 'bg-zinc-800 font-medium text-zinc-50'
-                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
-                    }`
-                  }
+                  activeOptions={{ exact: to === '/' }}
+                  className="block rounded px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                  activeProps={{ className: 'bg-zinc-800 font-medium text-zinc-50' }}
+                  inactiveProps={{
+                    className:
+                      'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
+                  }}
                 >
                   {label}
-                </NavLink>
+                </Link>
               </li>
             ))}
           </ul>

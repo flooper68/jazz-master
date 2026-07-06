@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — SPA routing migrated to TanStack Router (TASK-022)
+
+react-router v8 removed; the `/app/*` island now uses TanStack Router with file-based routes in `src/app/routes/` and `basepath: '/app'` (`src/app/router.tsx` factory so tests inject memory history). The RES-002 risk didn't materialize: `@tanstack/router-plugin` runs fine in Astro's `vite.plugins` — codegen works under both `astro dev` and `astro build` (user vite plugins run before integration-injected ones, satisfying the before-React ordering rule). `routeTree.gen.ts` is committed because `bun run build` runs `tsc -b` before Astro regenerates it. **Gotchas:** `HistoryState` augmentation must target `@tanstack/history`, which bun stores unresolvably in `.bun/` — it's now an explicit dep pinned to react-router's exact version; jsdom logs "Not implemented: scrollTo" on every TanStack navigation, stubbed in `src/test/setup.ts`. Page tests now render the real route tree (`src/test/renderRoute.tsx`), so they must seed a profile past the onboarding gate.
+
 ## 2026-07-06 — Astro shell landed: React app is now an island under /app/* (TASK-021)
 
 First EPIC-013 migration slice: the Vite SPA became an Astro 7 app — Astro serves a barebones landing at `/`, and `src/pages/app/[...path].astro` mounts the untouched React app (`src/app/AppShell.tsx`, `BrowserRouter basename="/app"`) with `client:only="react"`. React practice pages moved `src/pages/` → `src/app/pages/` because Astro owns `src/pages/`. Build targets Workers (`@astrojs/cloudflare`, `output: 'server'`); `check` composition unchanged (apps/web build is now `astro build`; Vitest gets its own `vitest.config.ts`). **Gotcha:** the adapter runs dev-server SSR inside workerd — without `nodejs_compat` in `wrangler.jsonc` every route 500s with `process is not defined`, and Astro's logger crashes trying to report the real error. Also: Astro 7 is current — RES-002's `stale_when` (written against Astro 5 docs) has tripped; filed INS-017.

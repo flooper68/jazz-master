@@ -1,16 +1,15 @@
+import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
-import { BrowserRouter } from 'react-router'
-import App from './App'
+import { createAppRouter } from './router'
 
 // Island entry: src/pages/app/[...path].astro mounts this with
 // client:only="react", so the router only ever runs in the browser.
-// The basename keeps every SPA route under /app without touching App's routes.
+const router = createAppRouter()
+
 export function AppShell() {
   return (
     <StrictMode>
-      <BrowserRouter basename="/app">
-        <App />
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </StrictMode>
   )
 }

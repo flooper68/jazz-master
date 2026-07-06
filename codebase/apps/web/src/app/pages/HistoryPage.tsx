@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link } from '@tanstack/react-router'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { LESSONS } from '../../content'
 import type { LessonArea } from '../../content'
