@@ -2,7 +2,8 @@
 id: TASK-024
 title: Deploy the Astro app to Cloudflare Workers
 epic: EPIC-013
-status: in-progress
+status: blocked
+blocked_reason: CI workflow is landed and correct by dry-run, but the first deploy cannot go green until the owner creates the Cloudflare API token (Account / Workers Scripts / Edit) and adds the `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets, then re-runs `deploy-dev` from the Actions UI. Agents cannot and must not do this (ADR-009).
 depends_on: [TASK-021, TASK-023]
 research: RES-002
 created: 2026-07-05
@@ -59,3 +60,11 @@ Reviewed: independent `code-reviewer` pass on the staged diff — verdict clean,
 ### 2026-07-06 — redesigned to CI-only deploy (grill NOTE-006, ADR-009)
 
 The login blocker report triggered an owner decision: no local wrangler credentials at all — agents must not have access to production. Task reshaped (see the ADR-009 note in Context): the criteria about a local publish are replaced by a GitHub Actions workflow that deploys to the dev worker on every push to `main`; the two prior unticked criteria (publish + live-URL checks) carry over in CI form. Prod split to TASK-036 (gated). Owner handles the credential side: scoped Cloudflare API token + `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` repo secrets. Implementation plan: (1) try to eliminate the adapter's auto-injected `SESSION` KV binding (set a non-KV Astro session driver — the app uses no sessions) so the token needs no KV scope and the first deploy provisions nothing; (2) add `.github/workflows/deploy-dev.yml` (push to `main` + `workflow_dispatch`, concurrency-guarded: setup-bun → `bun install --frozen-lockfile` → `bun run check` → `bun run deploy`); (3) the first workflow run will fail red until the owner adds the secrets — that is the intended loud signal, re-runnable from the Actions UI without a new push.
+
+### 2026-07-06 — CI deploy implemented; blocked on owner-created secrets (agent)
+
+- **`SESSION` KV binding eliminated:** `session: { driver: sessionDrivers.memory() }` in `astro.config.mjs` (the string form is deprecated in Astro 7). Dry-run confirms the worker now carries only `ASSETS` + `IMAGES` — the CI token needs Workers Scripts edit rights only, and the first deploy provisions nothing.
+- **Workflow landed:** `.github/workflows/deploy-dev.yml` — push to `main` + `workflow_dispatch`, `concurrency: deploy-dev` (latest push wins), Bun pinned to the local 1.3.14, `bun install --frozen-lockfile` → `bun run check` → `bun run deploy` with the two secrets injected only into the deploy step. YAML parse-validated.
+- Overview Deployment section rewritten for ADR-009; wiki `product/overview` + `project/lifecycle-of-a-change` updated (push to `main` now also deploys dev); wiki log lines added.
+- Reviewed: independent `code-reviewer` pass — clean, no must-fix findings; its hardening suggestions applied in the same commit (`permissions: contents: read`, `timeout-minutes: 15`, `setup-bun` SHA-pinned to v2.2.0, session-driver comment corrected to name the per-isolate/non-persistent caveat). Its double-build nit (check builds, deploy rebuilds) left as-is deliberately — CI-minutes cost only.
+- **Expected red:** the `deploy-dev` run triggered by this very commit will fail at the deploy step until the secrets exist. Owner: Cloudflare dashboard → My Profile → API Tokens → create token with **Account / Workers Scripts / Edit**; repo Settings → Secrets and variables → Actions → add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (dashboard → Workers & Pages → right sidebar); then re-run `deploy-dev` from the Actions tab. Remaining criteria (green CI deploy, live-URL checks, URL into overview.md) close after that.
