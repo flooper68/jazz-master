@@ -25,6 +25,13 @@ building on the record, and so the polish isn't lost.
   to an effect), but a debounce/disable-on-advance would prevent accidental
   grades. Related deferred idea: an End-lesson confirm once lessons get longer.
 
+2026-07-06 (TASK-018): history consumed the record with the documented semantics —
+`durationSeconds` (time-to-last-grade) is displayed as the session duration, and
+zero-grade abandons persisting nothing means they simply don't appear in history
+(decision noted in TASK-018's Log). Still open on this bullet list: whether the
+*planner* wants wall-clock duration or a started-and-bailed signal, and the
+double-click debounce.
+
 **Polish (fold into the next runner-touching task):**
 
 - `resolveExercise` throws in render on a broken content reference with no error
