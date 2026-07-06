@@ -1,7 +1,8 @@
 ---
 id: INS-008
 title: Knowledge-only commit swept another agent's staged in-flight work onto main
-status: new
+status: accepted
+outcome: [TASK-031]
 created: 2026-07-06
 ---
 
@@ -22,3 +23,11 @@ Cheap guardrails worth adopting in `processes/git-workflow.md`: before committin
 `git status` for already-staged entries that aren't yours; commit with explicit pathspecs
 (`git commit <paths>` commits only those paths, ignoring the rest of the index); or run
 concurrent agents in separate worktrees.
+
+## Triage note
+
+2026-07-06 (heartbeat) — Accepted (owner confirmation pending, batched in the
+heartbeat report) → TASK-031. Evidence is a real incident on main (`5b63bcd`)
+that violated two written rules; the fix is a small, bounded edit to
+`processes/git-workflow.md` adopting the pathspec-commit + staged-entries-check
+guardrails. EPIC-007 scope.

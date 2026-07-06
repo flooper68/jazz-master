@@ -2,7 +2,7 @@
 id: ISSUE-001
 title: App shell overflows horizontally at mobile widths
 severity: minor
-status: new
+status: confirmed
 created: 2026-07-05
 ---
 
@@ -35,3 +35,12 @@ Chromium via Playwright, viewport 420×800, dev build 2026-07-05.
 
 Related to (but not covered by) [[INS-002]] app-shell polish. Likely a Layout
 sizing issue (fixed sidebar width + unconstrained main min-width).
+
+## Triage
+
+2026-07-06 (heartbeat) — `status: confirmed`, severity `minor`, on the strength
+of the documented Playwright reproduction (420×800, reproduces on text-only stub
+pages) from TASK-004 verification. Sized trivial (Layout sizing fix, < 1
+session): the issue itself is the work item — no separate task; the dev loop
+can pick it directly. Also normalized the frontmatter status vocabulary (was
+`new`; the issue flow starts at `open`).

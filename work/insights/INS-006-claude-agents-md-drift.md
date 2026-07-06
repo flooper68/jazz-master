@@ -1,7 +1,8 @@
 ---
 id: INS-006
 title: CLAUDE.md and AGENTS.md are hand-maintained duplicates and drift
-status: new
+status: accepted
+outcome: [TASK-030]
 created: 2026-07-05
 ---
 
@@ -12,3 +13,11 @@ Options when triaged: make AGENTS.md a symlink to CLAUDE.md (both tools read pla
 ## INS-001 relation
 
 Independent of CI, but a `bun run check`-style guard could diff the shared sections if the two files are kept separate on purpose.
+
+## Triage note
+
+2026-07-06 (heartbeat) — Accepted (owner confirmation pending, batched in the
+heartbeat report). A known drift already exists (rule 7 missing from AGENTS.md),
+so this is a live defect in the agent-instruction layer, not a hypothetical.
+Folded into TASK-030 (knowledge maintenance sweep) rather than a standalone
+task — resolving doc duplication is squarely that process's remit.

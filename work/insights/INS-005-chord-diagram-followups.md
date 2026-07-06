@@ -23,3 +23,10 @@ requirements:
 
 Matters to the practice loop because EPIC-002's drills show grids of these
 diagrams; grip-data-model decisions there should settle 1 and 2.
+
+## Triage note
+
+2026-07-06 (heartbeat) — Deferred. All three findings hinge on grip-data-model
+decisions the EPIC-002 voicing library will make, and EPIC-002 is backlog, not
+in the current goals' "Now" list. Revisit when EPIC-002 starts; item 3 (aria
+accidentals) can alternatively ride any earlier app-wide a11y pass.
