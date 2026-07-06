@@ -23,7 +23,8 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 |---|---|
 | "Do the next task" / implement anything | `processes/dev-loop.md` |
 | "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
-| Before any push | `processes/code-review.md` + `bun run check` |
+| Decide what tests a code change needs | `processes/testing-strategy.md` |
+| Before any push | `processes/code-review.md` + `bun run --cwd codebase check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
 | Inspect the product, find problems | `processes/qa-product-review.md` |
 | Capture raw notes, feedback, bug reports | `processes/feedback-intake.md` |
@@ -38,7 +39,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 
 1. **Do not invent work.** Implement what a work item specifies; discoveries become `work/insights/`, `work/issues/`, or `notes/` files, not scope creep.
 2. **Never edit `strategy/`** — propose changes to the user instead.
-3. **Never push a red `bun run check`.** It is THE gate: typecheck + lint + test + build.
+3. **Never push a red `bun run --cwd codebase check`.** It is THE gate: typecheck + lint + test + build.
 4. Code and its tracker updates (task status, Log, criteria) ship **in the same commit**.
 5. Every work item is **reviewed** (independent agent pass) and **tested** (check + the item's Verification steps) before it is **pushed**.
 6. Update `architecture/` when the shape of the system changes: ADR for decisions, LOG.md for notable events.

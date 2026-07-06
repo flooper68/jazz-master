@@ -19,7 +19,7 @@ Project-specific engineering standards distilled from RES-010 and RES-005. Use t
 
 ## TypeScript and Vite
 
-- Assume Vite transpiles fast but does not typecheck. `bun run check` is the gate because it runs `tsc -b`, lint, tests, and production build. Source: RES-010 recommendation 5.
+- Assume Vite transpiles fast but does not typecheck. `bun run --cwd codebase check` is the root-level gate because it runs `tsc -b`, lint, tests, and production build. Source: RES-010 recommendation 5.
 - Prefer inference inside functions and explicit types at public boundaries: exported functions, package APIs, props, store values, reducers, parsers, and test fixtures whose shape matters. Source: RES-010 recommendation 6.
 - No `any` without an adjacent reason. Prefer `unknown` plus narrowing for untrusted or parsed values. Source: RES-010 recommendation 6.
 - Use `import type` / `export type` for type-only imports and exports when practical. Source: RES-010 recommendation 6.

@@ -10,7 +10,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 │   3. PLAN      read item + epic + relevant code; note approach in the item's Log
 │   4. IMPLEMENT small steps, tests alongside code
 │   5. REVIEW    per processes/code-review.md
-│   6. TEST      bun run check + the item's Verification steps
+│   6. TEST      bun run --cwd codebase check + the item's Verification steps
 │   7. RECORD    tick acceptance criteria, write the Log, set status
 │   8. SHIP      commit + push to main (per processes/git-workflow.md)
 └── 9. REFLECT   file insights/issues/notes for anything discovered; loop
@@ -30,6 +30,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 - Read the item fully, its epic, and any linked research (`research/RES-*.md`) or ADRs.
 - Read the code the task touches. Reuse before writing new — check `codebase/packages/theory/` and `codebase/apps/web/src/components/` first.
+- For code changes, read `processes/testing-strategy.md` to decide the cheapest meaningful test layer before implementing.
 - If the task has a research phase, run `processes/deep-research.md` first; findings land in `research/`.
 - If the task touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md` in the plan.
 - For product-facing tasks, restate the measurable aim (baseline → target, from the item's Problem brief or Goal) and name the verification signal in the plan before implementing (RES-008). If the item has neither, derive one and note it in the Log.
@@ -37,7 +38,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ### 4. Implement
 
-- Small increments; keep `bun run test:watch` running.
+- Small increments; keep `bun run --cwd codebase test:watch` running when a watch loop is useful.
 - Theory-core (`codebase/packages/theory/`) work is test-first: failing case, then make it pass.
 - Stay in scope. Ideas, discovered bugs, tempting refactors → `work/insights/` or `work/issues/` in step 9, not now.
 
@@ -47,8 +48,9 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ### 6. Test
 
-- `bun run check` must pass: typecheck, lint, tests, production build.
-- Execute the item's **Verification** section literally, including manual `bun run dev` checks.
+- `bun run --cwd codebase check` must pass: typecheck, lint, tests, production build.
+- New or changed tests must match `processes/testing-strategy.md`: behavior-focused at the cheapest layer that catches the defect.
+- Execute the item's **Verification** section literally, including manual `bun run --cwd codebase dev` checks.
 - Tick a criteria checkbox only after actually verifying it — never because the code "should" satisfy it.
 
 ### 7. Record
@@ -60,7 +62,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ### 8. Ship
 
-- Follow `processes/git-workflow.md`: one work item = one commit, `TASK-###: <summary>` (or `ISSUE-###:`), pushed to `main`. Code and tracker updates move together in that commit. Never ship with a red `bun run check`.
+- Follow `processes/git-workflow.md`: one work item = one commit, `TASK-###: <summary>` (or `ISSUE-###:`), pushed to `main`. Code and tracker updates move together in that commit. Never ship with a red `bun run --cwd codebase check`.
 - Actually run `git push` and confirm it reached `origin/main` — committing without pushing is not shipping. The end-of-run check in `processes/git-workflow.md` (clean `git status`, empty `git log origin/main..HEAD`) must pass before you report the item as done.
 
 ### 9. Reflect
@@ -90,7 +92,7 @@ deferred — filed TASK-009. bun run check green, pushed.
 
 1. All acceptance criteria checked, honestly.
 2. Reviewed per `processes/code-review.md`.
-3. `bun run check` green; new logic has tests (theory core: exhaustive — all twelve keys, enharmonics).
+3. `bun run --cwd codebase check` green; new logic has tests (theory core: exhaustive — all twelve keys, enharmonics).
 4. No scope creep; discoveries filed.
 5. Pushed to `main` and verified — the end-of-run check in `processes/git-workflow.md` passes (clean tree, nothing ahead of `origin/main`); the work item's Log tells a reviewer what happened without reading the diff.
 6. Meaningful product work states what changed for the user and what should be watched in the next QA review.

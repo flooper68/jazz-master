@@ -2,8 +2,9 @@
 id: TASK-006
 title: Research & document testing & QA best practices
 epic: EPIC-007
-status: backlog
+status: done
 depends_on: []
+research: RES-012
 created: 2026-07-05
 ---
 
@@ -28,11 +29,11 @@ Suggested research questions:
 
 ## Acceptance criteria
 
-- [ ] A `research/RES-###-qa-testing-best-practices.md` file is complete per `research/README.md` format
-- [ ] `processes/testing-strategy.md` created: what gets unit/component/e2e coverage here, naming/location conventions, what is deliberately not tested and why
-- [ ] `processes/qa-product-review.md` inspection steps upgraded from findings (a11y sweep, exploratory structure, console/network checks)
-- [ ] Tooling recommendations either adopted in this task (if config-only) or filed as insights/tasks (if substantial) — no dangling "we should someday"
-- [ ] `bun run check` passes
+- [x] A `research/RES-###-qa-testing-best-practices.md` file is complete per `research/README.md` format
+- [x] `processes/testing-strategy.md` created: what gets unit/component/e2e coverage here, naming/location conventions, what is deliberately not tested and why
+- [x] `processes/qa-product-review.md` inspection steps upgraded from findings (a11y sweep, exploratory structure, console/network checks)
+- [x] Tooling recommendations either adopted in this task (if config-only) or filed as insights/tasks (if substantial) — no dangling "we should someday"
+- [x] `bun run check` passes
 
 ## Verification
 
@@ -41,3 +42,11 @@ bun run check
 ```
 
 Read-through: given a hypothetical new feature (e.g. TASK-003 fretboard), the docs answer unambiguously which tests it must ship with.
+
+## Log
+
+### 2026-07-06 - claimed (agent)
+Plan: create `RES-012` for current QA/testing research, then distill it into `processes/testing-strategy.md` and targeted updates to `processes/qa-product-review.md`. Tooling recommendations will either be documented as deliberate skips/adoptions or filed as follow-up work if they exceed config-only scope; verification is `bun run check` plus a read-through against a representative feature.
+
+### 2026-07-06 - done
+Completed `RES-012`, created `processes/testing-strategy.md`, upgraded QA/product review charters and inspection checks, and filed substantial tooling follow-ups as INS-009 (minimal Playwright e2e trigger) and INS-010 (automated axe trigger). Independent review found the testing strategy was not discoverable from the executable process map and QA still used the root-invalid `bun run dev`; fixed by wiring `processes/testing-strategy.md` into AGENTS/dev-loop/code-review and changing QA to `bun run --cwd codebase dev`. Also standardized live process references to the root-safe `bun run --cwd codebase check` gate. Read-through against a representative fretboard-style feature now answers unit/component/page/e2e/manual QA expectations. `bun run --cwd codebase check` passed: 10 test files, 393 tests, production build green.

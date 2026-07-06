@@ -29,9 +29,10 @@ This project is built primarily by AI agents in loops. The process docs in `proc
 
 ## Tasks
 
-- TASK-005 — Research & document development best practices
-- TASK-006 — Research & document testing & QA best practices
-- TASK-007 — Research & document product practices (fed by RES-008)
+- TASK-005 — Research & document development best practices (done)
+- TASK-006 — Research & document testing & QA best practices (done)
+- TASK-007 — Research & document product practices (fed by RES-008; done)
+- TASK-031 — Adopt commit-isolation guardrails in the git workflow (backlog; pending owner confirmation from HEARTBEAT)
 
 ## Done when
 
@@ -39,8 +40,8 @@ All three RES files exist with cited findings; `processes/` docs are updated fro
 
 ## Current status
 
-In progress. Related direct research exists for agentic development workflow (`RES-005`), knowledge maintenance (`RES-006`), Markdown/HTML documentation boundaries (`RES-007`), and problem framing (`RES-008`), but TASK-005/TASK-006 still need their focused research-and-distill passes.
+In progress. The three researched-practices tasks are complete: development (`RES-010`), product (`RES-011`), and QA/testing (`RES-012`) are all distilled into process docs. Remaining work is the narrower TASK-031 commit-isolation guardrail, created from INS-008 and still pending owner confirmation from the heartbeat.
 
 ## Last reviewed
 
-2026-07-05 — Knowledge maintenance pass removed stale placeholder research IDs and linked `RES-008` to TASK-007 as the concrete feed-forward path.
+2026-07-06 — TASK-006 completed the QA/testing research track; EPIC-007 remains open only for TASK-031 commit-isolation guardrails.

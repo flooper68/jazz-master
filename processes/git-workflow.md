@@ -6,7 +6,7 @@ Trunk-based, push to `main`. Chosen for maximum loop speed while the project is 
 
 1. **One work item = one commit** on `main` (small follow-up fix commits referencing the same ID are acceptable).
 2. **Commit message:** `TASK-###: <imperative summary>` / `ISSUE-###: ...` / `REV-###: ...`. Knowledge-only changes (triage, notes, insights, ADRs, process edits) use a `work:` prefix, e.g. `work: triage 2026-07-05, INS-003 -> TASK-011`.
-3. **The gate before every push:** review done (`processes/code-review.md`) and `bun run check` green. No exceptions — a red check never reaches `main`.
+3. **The gate before every push:** review done (`processes/code-review.md`) and `bun run --cwd codebase check` green. No exceptions — a red check never reaches `main`.
 4. Code and its tracker updates (task file status, Log, criteria) ship **in the same commit** — the repo is never in a state where code and tracker disagree.
 5. Pull/rebase before pushing (`git pull --rebase`) — required when agents work in parallel.
 6. Never force-push `main`. Never rewrite pushed history.
@@ -15,7 +15,7 @@ Trunk-based, push to `main`. Chosen for maximum loop speed while the project is 
 
 ```sh
 git pull --rebase
-bun run check                 # must be green
+bun run --cwd codebase check  # must be green
 git add -A
 git commit -m "TASK-003: add fretboard model and SVG component"
 git push origin main

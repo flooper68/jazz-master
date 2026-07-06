@@ -15,19 +15,33 @@ A periodic inspection of the *running product* that generates the raw material f
 
 - List work shipped since the last `work/reviews/REV-###.md` (git log + task files).
 - Read the in-progress epics' **Done when** sections and the vision's pillars (`strategy/VIS-001-jazz-master.md`).
+- Choose 3-5 short review charters before opening the app. Default charters:
+  practice-loop value, navigation/responsiveness, accessibility/keyboard,
+  persistence/data resilience, and edge/error states. Add a specific charter for
+  the most recently shipped product surface.
 
 ### 2. Inspect the running app
 
-- `bun run dev`, then drive the app — in Claude Code use the Playwright MCP tools (navigate, snapshot, screenshot each page).
+- `bun run --cwd codebase dev`, then drive the app — in Claude Code use the Playwright MCP tools (navigate, snapshot, screenshot each page).
 - Walk **every** module/page, not just recently-changed ones (regressions hide in untouched screens).
 - Re-verify recently shipped tasks' acceptance criteria *in the app*, not in the code.
+- Record browser console errors/warnings and unexpected network requests. For a
+  local-first surface, any external request needs an explicit explanation.
+- Check at least one phone-width viewport (~375px) and one desktop viewport.
 - Quality sweep on each screen:
   - browser console clean (no errors/warnings)
   - relevant network panel clean; no unexpected external calls
   - usable at phone width (~375px) and desktop
-  - keyboard navigation works for interactive elements; obvious a11y misses (missing labels, contrast)
+  - keyboard navigation reaches interactive elements in a logical order, focus is visible, and there are no keyboard traps
+  - semantic page structure: one clear page heading, useful page title if implemented, named controls/links, named diagrams/images, and no interactive element exposed only by color or position
+  - obvious contrast, reflow, target-size, and label/instruction problems
   - empty states, loading states, nonsense input
   - stored/local data survives refresh and corrupt/missing data fails gracefully where relevant
+- When a screen has forms or practice controls, check label text, error messages,
+  disabled/enabled states, status feedback, keyboard operation, and refresh
+  behavior.
+- Take screenshots only when they clarify a finding or document a visual
+  baseline; screenshots are evidence, not a substitute for written observations.
 
 ### 3. Product judgment
 
@@ -63,13 +77,15 @@ filed: [ISSUE-004, ISSUE-005, INS-011, INS-012]
 # REV-003 — QA/product review
 
 ## Inspected
-What was walked through, with screenshots if useful.
+Charters run, pages/flows walked, viewports used, and screenshots if useful.
 
 ## Health
 Overall assessment: what's solid, what's fragile, vision alignment.
 
 ## Findings
-One line per filed item with severity/rationale.
+One line per filed item with severity/rationale, evidence, baseline observation,
+candidate target, and validation need (`dogfood`, `external user`,
+`research/spike`, or `direct task candidate`).
 
 ## Recommended next
 Ordered suggestion for what triage should prioritize.

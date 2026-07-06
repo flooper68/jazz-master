@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 - QA/testing strategy research distilled (TASK-006)
+
+Added RES-012 and `processes/testing-strategy.md`, defining the repo's unit/component/page/e2e/manual QA coverage rules. QA product review now uses explicit charters plus console/network, responsive, accessibility, persistence, and edge-state sweeps. Playwright e2e and automated axe checks were deferred into INS-009/INS-010 with concrete triggers instead of added before a real practice workflow exists.
+
 ## 2026-07-06 — development practices research distilled (TASK-005)
 
 Added RES-010 and `processes/development-practices.md`, grounding React 19/TypeScript/Vite/Tailwind/Bun conventions in cited sources plus RES-005. Code review now runs explicit Spec and Standards passes; CLAUDE.md routes implementation work to the new practices doc. No app code changed.
