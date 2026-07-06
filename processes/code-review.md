@@ -6,6 +6,8 @@ Every work item is reviewed before it ships — including agent-implemented ones
 
 1. Stage the diff (`git add -A; git diff --cached` view) so the review sees the complete change.
 2. Run an independent review pass — in Claude Code, launch the `code-reviewer` agent on the changes; for UI-heavy diffs additionally the `ui-code-reviewer` agent. The implementer re-reading their own diff is not a review.
+   - **Standing owner authorization** (2026-07-06, NOTE-005 / INS-015): agents are always authorized to spawn independent review subagents — no per-session delegation request is needed.
+   - **Degraded mode** when the environment genuinely cannot spawn one despite the authorization: complete the checklist below as a self-review and record the limitation in the item's Log. Shipping is not blocked; the Log line is the required trace (no ad hoc caveats elsewhere).
 3. If the diff touches storage, dependencies, user input, browser permissions, import/export, or data-loss risk, include `processes/security-review.md`.
 4. Walk the checklist below in two passes:
    - **Spec:** did the diff implement the work item and verification honestly?

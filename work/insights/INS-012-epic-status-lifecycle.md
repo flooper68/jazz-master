@@ -34,3 +34,11 @@ claim-time the right moment to flip an epic to `in-progress`, or should it be
 first *ship*? (2) should insight acceptances that resolve via a direct process
 edit — no task — be sanctioned in `processes/triage.md`, or must every accept
 create a task?
+
+2026-07-06 (grill session, NOTE-005) — acceptance and both deferred-grill
+questions **confirmed by the owner**: claim-time (not first-ship) stands as
+shipped, and accept-via-direct-process-edit is sanctioned in
+`processes/triage.md` with **confirm-then-ship** ordering — the proposed edit
+waits in the insight until the owner confirms; nothing in `processes/` changes
+before that. (This edit itself shipped pre-confirmation and is the last one to
+do so.)

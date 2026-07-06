@@ -35,3 +35,8 @@ which is exactly the "first real practice workflow" this was waiting on. And
 the automated gate is now the only thing standing behind that slice — QA
 coverage is manual-only. Outcome: TASK-035 (proposed), scoped to the candidate
 scope above.
+
+2026-07-06 (grill session, NOTE-005) — acceptance **confirmed by the owner**;
+TASK-035 sequenced after the EPIC-013 migration (depends_on TASK-024) and its
+gate-placement question decided (separate `check:e2e`; `bun run check` stays
+fast).

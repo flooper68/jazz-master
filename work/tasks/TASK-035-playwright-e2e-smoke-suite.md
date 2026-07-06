@@ -1,9 +1,9 @@
 ---
 id: TASK-035
 title: Add a minimal Playwright e2e smoke suite over the guided-practice slice
-status: proposed
+status: backlog
 proposed_by: TASK-030 knowledge sweep 2026-07-06
-depends_on: []
+depends_on: [TASK-024]
 source: INS-009
 research: RES-012
 created: 2026-07-06
@@ -31,10 +31,11 @@ Scope per INS-009: one happy path (start a lesson, grade through it, see it in h
 
 Standalone (no epic) deliberately: EPIC-007's scope explicitly excludes tooling/infrastructure work, and no other epic covers test infrastructure; the suite spans several epics' shipped surfaces (EPIC-008/011/012).
 
-## Open questions (deferred grill)
+## Resolved questions (grill session 2026-07-06, NOTE-005)
 
-- Should the e2e suite be part of `bun run check` (slower gate, always enforced) or a separate `check:e2e` script run before QA reviews and releases?
-- Is ~5 specs the right ceiling for now, or should ISSUE-002-style focus/a11y flows (see INS-010) join immediately?
+- **Acceptance confirmed by the owner**, sequenced **after** the EPIC-013 migration (`depends_on: TASK-024`) — the suite is written once against the final Astro/Workers platform; the migration itself is verified manually. All routes in the criteria read as post-migration paths (`/app/*`).
+- **Gate placement decided: separate `check:e2e` script, not part of `bun run check`** — the owner wants the gate kept fast. Named trigger points (QA reviews, deploys, practice-flow-touching tasks) are written into the process docs.
+- Spec ceiling stays ~5; accessibility flows arrive later via INS-010's own trigger.
 
 ## Acceptance criteria
 
@@ -43,7 +44,7 @@ Standalone (no epic) deliberately: EPIC-007's scope explicitly excludes tooling/
 - [ ] Persistence spec: reload mid-flow keeps profile/plan/session records
 - [ ] Phone-width smoke: no horizontal overflow on the core pages (guards ISSUE-001's fix)
 - [ ] Specs assert no console errors / failed requests on the covered paths
-- [ ] Decision on gate placement (in `check` or separate) recorded in the Log
+- [ ] Suite runs via a separate `check:e2e` script (owner decision, NOTE-005 — `bun run check` stays fast); its trigger points added to the QA-review and deploy process docs
 - [ ] `bun run check` passes
 
 ## Verification

@@ -17,6 +17,7 @@ For each inbox item, oldest first:
 3. Check problem framing (RES-008): before an insight becomes a task, the **current condition, desired condition, affected user/workflow, and evidence** must be clear — from the insight itself or one quick round of investigation. If they aren't, defer the insight noting what's missing; do not fabricate implementation work around a vague symptom.
 4. Decide:
    - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`. Product-facing tasks carry a `## Problem brief` (template in `work/README.md`).
+   - **Accept via direct process edit** (small process fixes only — owner decision 2026-07-06, NOTE-005): when the fix is a small edit to `processes/*` rather than product work, record the *proposed* edit verbatim in the insight, set `status: accepted` with the process file path as `outcome:`, and flag it for owner confirmation. **Confirm-then-ship:** the edit lands only after the owner confirms — until then nothing in `processes/` changes.
    - **Reject** → `status: rejected`, with a written reason (the reason is the value — it prevents re-litigating the idea later).
    - **Defer** → `status: deferred` with `revisit_when:` in frontmatter and a dated note on missing evidence and what would change the decision (vocabulary per `work/README.md`; deferred items stay in the triage inbox via the aging pass below).
 5. Never delete insight files.

@@ -1,8 +1,8 @@
 ---
 id: INS-015
 title: Independent review process assumes subagent availability that current tool policy may deny
-status: deferred
-revisit_when: next grill session — needs an owner decision (exact question in the triage note below)
+status: accepted
+outcome: [processes/code-review.md]
 created: 2026-07-06
 source: TASK-017
 ---
@@ -29,3 +29,12 @@ local-checklist fallback written into `processes/code-review.md` as an accepted
 degraded mode, or (c) neither — the work must not ship until an independent
 pass is possible?** Evidence unchanged: multiple task logs record the same ad
 hoc deviation.
+
+## Resolution
+
+2026-07-06 (grill session, NOTE-005) — owner decided: **standing authorization**
+— agents are always authorized to spawn independent review subagents, no
+per-session delegation needed — with **logged self-review as the sanctioned
+degraded mode** when the environment still cannot spawn one (work ships; the
+limitation goes in the item's Log, not an ad hoc caveat). Written into
+`processes/code-review.md` step 2 in this session's commit.

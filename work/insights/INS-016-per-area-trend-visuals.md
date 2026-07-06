@@ -2,7 +2,7 @@
 id: INS-016
 title: Per-area trend-over-time visuals deferred from dashboard v1
 status: deferred
-revisit_when: EPIC-010 machine scores land, or the owner answers the deferred-grill question below (self-grade trends earlier?)
+revisit_when: EPIC-010 machine scores land (owner decision 2026-07-06, NOTE-005 — trend work is strictly gated on machine scores)
 created: 2026-07-06
 source: TASK-019
 ---
@@ -36,3 +36,8 @@ as noise; machine scores (EPIC-010) are the signal trends want, and the
 `PracticeSession.score` field is already reserved. The deferred-grill question
 above stands for the owner: ship self-grade-ratio trends before machine scores
 exist, or gate trend work on EPIC-010?
+
+2026-07-06 (grill session, NOTE-005) — owner answered the deferred-grill
+question: **trend work is strictly gated on EPIC-010 machine scores**; no
+self-grade-ratio trends ship before then. Insight stays deferred with that as
+its only revisit trigger.
