@@ -7,6 +7,7 @@ const navItems = [
   { to: '/practice', label: 'Practice' },
   { to: '/repertoire', label: 'Repertoire' },
   { to: '/ear-training', label: 'Ear Training' },
+  { to: '/profile', label: 'Profile' },
 ]
 
 export function Layout() {

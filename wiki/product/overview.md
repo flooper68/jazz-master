@@ -6,6 +6,7 @@ sources:
   - strategy/goals.md
   - architecture/overview.md
   - architecture/decisions/ADR-002-local-first.md
+  - work/tasks/TASK-016-profile-onboarding.md
   - work/epics/EPIC-013-platform-multi-app.md
 ---
 
@@ -34,4 +35,4 @@ Everything runs client-side; there is no backend and no account (ADR-002 — "lo
 
 ## Built today vs pending (as of 2026-07-06)
 
-Done: app shell with routing and sidebar, the theory core, fretboard and chord-diagram components, and the persistence layer — EPIC-001 (foundation) is complete. EPIC-008 (curriculum & lessons) is complete: the exercise/lesson content model (TASK-011), the first lesson pack (TASK-012 — 10 scales/arpeggios lessons across 3 levels), and the guided practice runner (TASK-013) — from the Practice page a user starts a lesson, is guided exercise by exercise (fretboard positions, countdown, got-it/shaky/missed self-grades), and the session — completed or abandoned — persists as a `PracticeSession` record in the `sessions` store, the contract the planner and history will consume. Everything user-facing beyond that — planner, dashboard, drills, notation, recording — is backlog: the other practice modules are stub pages. Next per strategy/goals.md: the rest of the guided-practice vertical slice (EPIC-011 + 012) and de-risking research for notation and audio scoring.
+Done: app shell with routing and sidebar, the theory core, fretboard and chord-diagram components, and the persistence layer — EPIC-001 (foundation) is complete. EPIC-008 (curriculum & lessons) is complete: the exercise/lesson content model (TASK-011), the first lesson pack (TASK-012 — 10 scales/arpeggios lessons across 3 levels), and the guided practice runner (TASK-013) — from the Practice page a user starts a lesson, is guided exercise by exercise (fretboard positions, countdown, got-it/shaky/missed self-grades), and the session — completed or abandoned — persists as a `PracticeSession` record in the `sessions` store, the contract the planner and history will consume. EPIC-011 has its first input: a local `PracticeProfile` captured by first-run onboarding (or skip defaults) and editable later from `/profile`; no stored profile means onboarding has never run, so fresh visitors see the wizard before the app routes. Everything user-facing beyond that — generated daily plans, dashboard history, drills, notation, recording — is backlog: the other practice modules are stub pages. Next per strategy/goals.md: the rest of the guided-practice vertical slice (EPIC-011 + 012) and de-risking research for notation and audio scoring.

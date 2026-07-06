@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — local practice profile and first-run onboarding shipped (TASK-016)
+
+The EPIC-011 planner now has a local `PracticeProfile` contract: self-assessed levels per area, ordered goal areas, minutes per day, and onboarding timestamp in the typed `profile` store. No stored profile means onboarding has never run; the App gates every route behind the skippable wizard, and `/profile` edits the same fields later. Skip defaults intentionally bias toward the shipped lesson pack (`scales`, `arpeggios`, 20 min/day) so the next planner task always has schedulable inputs.
+
 ## 2026-07-06 — practice runner ships the first persisted user data; persist-in-effect gotcha (TASK-013)
 
 The guided runner (EPIC-008 complete) writes `PracticeSession` records to the new `sessions` store — the first real user data, and the contract EPIC-011/012 build on. Gotcha caught by both review agents: persisting from the grade *handler* by re-running the reducer against closure state desyncs from committed state when two dispatches land in one batch (rapid double-click persisted one grade while the UI advanced two). Persistence belongs in a `useEffect` synced on the reducer state — localStorage is external synchronization, and the effect always sees what React actually committed.
