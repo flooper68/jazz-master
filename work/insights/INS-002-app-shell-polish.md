@@ -1,7 +1,8 @@
 ---
 id: INS-002
 title: App shell polish deferred from TASK-001 review
-status: new
+status: deferred
+revisit_when: when the first real practice page lands, Layout gains behavior beyond navigation, or before a broader app-shell polish pass
 created: 2026-07-05
 ---
 

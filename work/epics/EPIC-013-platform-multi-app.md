@@ -31,15 +31,15 @@ The owner has decided the product grows beyond one web app — document creation
 
 ## Tasks
 
-- TASK-026 — Write ADR-005: codebase/ split + Bun workspaces monorepo (done)
+- TASK-026 — Write ADR-005: codebase/ split + Bun workspaces monorepo
 - TASK-027 — Restructure the repo to ADR-005
 - TASK-020 — Write ADR-006: hybrid Astro SSR + SPA on Cloudflare Workers with tRPC and Hyperdrive
 - TASK-021 — Host the existing React SPA inside Astro under /app/*
 - TASK-022 — Migrate SPA routing from React Router to TanStack Router
 - TASK-023 — tRPC scaffold with typed /trpc/health endpoint
 - TASK-024 — Deploy the Astro app to Cloudflare Workers
-- TASK-025 — Hyperdrive → Railway Postgres (GATED)
-- TASK-028 — Local Postgres for development via Docker Compose (pull alongside TASK-025)
+- TASK-025 — Hyperdrive → Railway Postgres
+- TASK-028 — Local Postgres for development via Docker Compose
 
 ## Done when
 
@@ -47,7 +47,7 @@ The owner has decided the product grows beyond one web app — document creation
 
 ## Current status
 
-In progress. ADR-005 written and accepted (TASK-026 done). TASK-004 has since completed, so TASK-027 (restructure) is unblocked and next; then the platform track: TASK-020 → 021, then 022 and 023 (independent), and 024 once 021 + 023 are done.
+In progress. ADR-005 is written and the codebase restructure has shipped. The platform track now runs TASK-020 → TASK-021, then TASK-022 and TASK-023 independently, and TASK-024 once TASK-021 + TASK-023 are done. The database tasks remain `gated` in task frontmatter until a feature needs server-side persistence.
 
 ## Last reviewed
 

@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `project/overview`, `project/lifecycle-of-a-change`, and `project/quality-loops` updated for the new read-only status-report process and `work:status` facts command (TASK-034).
 - 2026-07-06 — `product/overview` built-today section updated for the adaptive daily planner shipping and EPIC-011 completing (TASK-017): `/practice` now shows a persisted Today's plan with reasons and runner handoff.
 - 2026-07-06 — `product/overview` built-today section updated for local profile onboarding becoming the first EPIC-011 planner input (TASK-016).
 - 2026-07-06 — `product/overview` built-today section updated for the guided practice runner shipping and EPIC-008 completing (TASK-013): sessions now run and persist end to end.

@@ -41,10 +41,16 @@ Provenance is kept with `source:` for notes/insights/issues/reviews and `researc
 | Type | Flow |
 |---|---|
 | epic | `backlog → in-progress → done` |
-| task | `backlog → in-progress → done` (+ `blocked` with stated reason) |
-| insight | `new → accepted \| rejected` (accepted records `outcome:` task ids; rejected records why) |
+| task | `proposed → backlog → in-progress → done`; `gated` waits on a structured `gated_until:` trigger; `blocked` carries `blocked_reason:` |
+| insight | `new → accepted \| deferred \| rejected` (accepted records `outcome:` task ids; deferred records `revisit_when:`; rejected records why) |
 | issue | `open → confirmed → in-progress → fixed \| wontfix` |
 | review | none — a report, immutable once shipped |
+
+Status is frontmatter, never filename or folder location. If a lifecycle state
+matters to agents or reports, encode it in frontmatter rather than YAML comments
+or prose. Task lists inside epics should carry scope only — IDs and titles.
+Rollups such as "done/total", gated work, and owner-confirmation state are
+derived from task frontmatter.
 
 ## Templates
 
@@ -57,6 +63,9 @@ title: <imperative title>
 epic: EPIC-0XX
 status: backlog
 depends_on: []
+gated_until: <trigger>         # required when status: gated
+blocked_reason: <reason>       # required when status: blocked
+proposed_by: HEARTBEAT YYYY-MM-DD | NOTE-0XX   # optional when status: proposed
 source: INS-0XX | ISSUE-0XX | NOTE-0XX   # optional provenance
 research: RES-0XX             # optional, only after the RES file exists
 created: YYYY-MM-DD
@@ -96,6 +105,7 @@ Exact commands/steps proving the criteria.
 id: INS-0XX
 title: <short idea>
 status: new
+revisit_when: <trigger>        # required when status: deferred
 created: YYYY-MM-DD
 source: NOTE-0XX | REV-0XX    # optional provenance
 ---

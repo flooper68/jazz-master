@@ -1,7 +1,8 @@
 ---
 id: INS-007
 title: Fret/window validation is duplicated between fretboard.ts and positions.ts
-status: new
+status: deferred
+revisit_when: when CAGED, 3NPS, or another window-taking fretboard function is added
 created: 2026-07-06
 ---
 

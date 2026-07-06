@@ -9,6 +9,7 @@ sources:
   - architecture/decisions/ADR-008-grill-loop-primary-owner-interface.md
   - processes/dev-loop.md
   - processes/heartbeat.md
+  - processes/status-report.md
   - processes/grilling.md
   - processes/git-workflow.md
 ---
@@ -34,6 +35,8 @@ Jazz Master is built by a solo owner plus AI agents running in loops. The repo i
 ## The rhythm
 
 The intended cadence (processes/heartbeat.md): **"do next task" a few times, then "do the heartbeat", repeat.** The dev loop (processes/dev-loop.md) ships one reviewed, tested, pushed increment per task. The heartbeat is the owner-triggered conductor: it sweeps intake, schedules due hygiene (QA review ≈ every 5 shipped tasks, knowledge-maintenance sweep ≈ every 10, security reviews, research refreshes) as ordinary tasks, and recommends the next 1–3 items — it schedules, it never executes heavy work.
+
+The status report (processes/status-report.md) is the read-only visibility tool between beats. It runs `bun run --cwd codebase work:status` for deterministic facts (active/proposed/blocked work, inbox counts, ready backlog, shipped-since-heartbeat, cadence flags, repo hygiene), then applies fresh prioritization judgment for "next up." If it disagrees with the heartbeat, the report is fresher advice; the heartbeat remains the durable ledger.
 
 The owner's side of the rhythm is the **grill loop** (processes/grilling.md, ADR-008): when the owner is present, the default interface is the agent questioning the owner — one question at a time, anchored to the live artifact — with decisions written back in-session and transcripts preserved as `notes/`. Creating judgment-carrying artifacts (epics, product-facing tasks, ADRs, strategy proposals, triage promotions) always routes through a grill, inline or deferred into the owner-confirmation batch. A ~monthly exam grill (owner describes the whole system, agent probes for gaps) is both the success metric and the kill criterion for the loop.
 

@@ -9,6 +9,7 @@ sources:
   - processes/triage.md
   - processes/qa-product-review.md
   - processes/heartbeat.md
+  - processes/status-report.md
   - processes/knowledge-maintenance.md
   - processes/dev-loop.md
 ---
@@ -40,6 +41,8 @@ Agents run everything end to end, but insight acceptance/rejection is a **propos
 ## Cadence is derived, never counted
 
 Processes say "every ~5 shipped tasks" (QA) and "~10" (knowledge sweep), but no counter is maintained — the heartbeat derives everything from git log and file statuses at beat time, schedules due hygiene as ordinary tasks, and never executes heavy work itself. Thresholds are ceilings, not quotas: a borderline "due" with nothing meaningful to inspect is a recorded skip (processes/heartbeat.md).
+
+The status report uses the same idea without recording decisions: facts are derived from frontmatter and git every time the owner asks, including repo hygiene and lifecycle states such as `deferred`, `gated`, and `proposed`. That keeps visibility current without turning the report into a second ledger.
 
 ## Why it compounds
 

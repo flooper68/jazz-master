@@ -25,6 +25,9 @@ The heartbeat is the only process that counts shipped work and turns "periodical
 ### 1. Take stock
 
 - Read the last ledger entry in `work/HEARTBEAT.md` (first beat: baseline is repo start).
+- Run `bun run --cwd codebase work:status` for the deterministic facts shared
+  with `processes/status-report.md`; the heartbeat still owns triage, scheduling,
+  and the ledger.
 - Derive since-last-beat facts: shipped tasks/issues (`git log`), new/changed files in `notes/`, `work/insights/`, `work/issues/`, `research/`, in-progress or blocked items, last `REV-*` date, last knowledge-maintenance commit.
 
 ### 2. Sweep intake (inline — this part is cheap)

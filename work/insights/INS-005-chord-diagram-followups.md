@@ -1,7 +1,8 @@
 ---
 id: INS-005
 title: ChordDiagram follow-ups deferred from TASK-004 review
-status: new
+status: deferred
+revisit_when: when EPIC-002 starts, or earlier during an app-wide accessibility pass for aria accidentals
 created: 2026-07-05
 ---
 

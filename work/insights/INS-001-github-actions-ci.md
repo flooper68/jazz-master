@@ -1,7 +1,8 @@
 ---
 id: INS-001
 title: GitHub Actions CI running bun run check
-status: new
+status: deferred
+revisit_when: before the first external collaboration or PR flow, or earlier if bun run check passes locally but fails elsewhere
 created: 2026-07-05
 ---
 

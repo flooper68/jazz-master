@@ -12,6 +12,7 @@ sources:
   - processes/qa-product-review.md
   - processes/knowledge-maintenance.md
   - processes/heartbeat.md
+  - processes/status-report.md
 ---
 
 # Lifecycle of a change
@@ -54,3 +55,5 @@ With several candidates, `processes/prioritization.md` ranks them; the heartbeat
 ## 6. Observe and close the loop
 
 Every ~5 shipped tasks the heartbeat schedules a QA/product review (`processes/qa-product-review.md`), whose `REV-*` report files fresh insights and issues — feeding step 1 again. Every ~10, a knowledge-maintenance sweep (`processes/knowledge-maintenance.md`) prunes stale items, audits research feed-forward, and lints this wiki against its sources (`processes/wiki-maintenance.md`). The heartbeat ledger (`work/HEARTBEAT.md`) records what was scheduled, skipped, and recommended — so the whole cadence is auditable after the fact.
+
+At any point, the owner can ask for a status report (`processes/status-report.md`). That path does not mutate the tracker: it computes facts from frontmatter and git, then reruns prioritization for fresh advice. It exists because the heartbeat ledger is intentionally historical and can go stale as soon as more tasks ship.

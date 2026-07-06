@@ -2,7 +2,8 @@
 id: TASK-031
 title: Adopt commit-isolation guardrails in the git workflow
 epic: EPIC-007
-status: backlog
+status: proposed
+proposed_by: HEARTBEAT 2026-07-06
 depends_on: []
 source: INS-008
 created: 2026-07-06

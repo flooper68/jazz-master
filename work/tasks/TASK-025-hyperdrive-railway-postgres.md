@@ -2,7 +2,8 @@
 id: TASK-025
 title: Connect Workers to Railway Postgres through Cloudflare Hyperdrive
 epic: EPIC-013
-status: backlog       # GATED — do not start until a feature task actually needs server-side persistence
+status: gated
+gated_until: a feature task actually needs server-side persistence after TASK-024
 depends_on: [TASK-024]
 research: RES-002
 created: 2026-07-05

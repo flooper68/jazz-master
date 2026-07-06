@@ -1,7 +1,8 @@
 ---
 id: TASK-030
 title: Run knowledge maintenance sweep
-status: backlog
+status: proposed
+proposed_by: HEARTBEAT 2026-07-06
 depends_on: []
 source: INS-006
 created: 2026-07-06

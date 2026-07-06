@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — work-status report process added (TASK-034)
+
+Added a read-only status report process and `bun run --cwd codebase work:status` facts command. The command derives active/proposed/blocked work, inbox counts, ready backlog, shipped-since-heartbeat, cadence flags, and repo hygiene from frontmatter and git. Work lifecycle vocabulary now has structured `deferred`, `gated`, and `proposed` states for the report to query.
+
 ## 2026-07-06 — adaptive daily planner shipped; EPIC-011 complete (TASK-017)
 
 `apps/web/src/planner/generatePlan` now turns the local profile, lesson pack, session history, and date into a deterministic daily plan with human-readable reasons. Plans persist per local date in the versioned `daily-plans` store so refreshes do not reshuffle; completion state still comes from `PracticeSession` records. `/practice` now has the thinnest zero-tension loop: see today's plan, start a planned lesson, self-grade it, and see the item tick done.

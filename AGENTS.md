@@ -30,6 +30,7 @@ Every file in `processes/` has a row here — that invariant is linted by `proce
 | Writing React/TypeScript/Tailwind code | `processes/development-practices.md` |
 | Decide what tests a code change needs | `processes/testing-strategy.md` |
 | "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
+| "What's happening?" / status report | `processes/status-report.md` |
 | "Grill me" / owner gives feedback or makes a decision-shaped call — question the owner one-at-a-time, write decisions back | `processes/grilling.md` |
 | Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |

@@ -2,7 +2,8 @@
 id: TASK-028
 title: Local Postgres for development via Docker Compose
 epic: EPIC-013
-status: backlog       # pull alongside TASK-025 / the first server-persistence feature — no consumer exists until then
+status: gated
+gated_until: TASK-025 opens or a feature task actually needs server-side persistence
 depends_on: []
 created: 2026-07-06
 ---

@@ -1,7 +1,8 @@
 ---
 id: INS-004
 title: Fretboard hardening deferred from TASK-003 review
-status: new
+status: deferred
+revisit_when: when alternate tunings, overlapping highlight layers, or fretboard visual redesign become real work
 created: 2026-07-05
 ---
 
