@@ -2,7 +2,7 @@
 id: EPIC-011
 title: Adaptive practice planner — profile + history → today's plan
 vision: VIS-001
-status: backlog
+status: done
 created: 2026-07-05
 ---
 
@@ -42,3 +42,7 @@ This is the pillar that makes the product "zero-tension": the user never decides
 ## Done when
 
 A user with a saved profile opens the app on a fresh day and sees a plan that fits their time budget and level, starts it with one click, and tomorrow's plan visibly reacts to how today went.
+
+## Done-when assessment (2026-07-06, TASK-017 shipped)
+
+Met: first-run onboarding or skip writes a local `PracticeProfile` (TASK-016), and `/practice` now renders a persisted Today's plan generated from profile, lesson metadata, session history, and the local date. The plan respects the user's level, prerequisites, time budget, goal areas, and prior shaky/missed work; each item has a reason, starts the TASK-013 runner with one click, and completed sessions mark the item done without regenerating the day plan. Tomorrow's adaptation is covered by planner tests that feed a missed prior session and verify the lesson resurfaces with a reason. Dashboard composition remains EPIC-012, not this epic.

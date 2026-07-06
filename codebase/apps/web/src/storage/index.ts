@@ -1,5 +1,7 @@
 export { defineStore } from './store'
 export type { Store, StoreConfig } from './store'
+export { dailyPlansStore, getDailyPlan, saveDailyPlan } from './dailyPlans'
+export type { StoredDailyPlans } from './dailyPlans'
 export {
   defaultProfile,
   MINUTES_PER_DAY_OPTIONS,

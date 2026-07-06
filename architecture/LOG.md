@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — adaptive daily planner shipped; EPIC-011 complete (TASK-017)
+
+`apps/web/src/planner/generatePlan` now turns the local profile, lesson pack, session history, and date into a deterministic daily plan with human-readable reasons. Plans persist per local date in the versioned `daily-plans` store so refreshes do not reshuffle; completion state still comes from `PracticeSession` records. `/practice` now has the thinnest zero-tension loop: see today's plan, start a planned lesson, self-grade it, and see the item tick done.
+
 ## 2026-07-06 — local practice profile and first-run onboarding shipped (TASK-016)
 
 The EPIC-011 planner now has a local `PracticeProfile` contract: self-assessed levels per area, ordered goal areas, minutes per day, and onboarding timestamp in the typed `profile` store. No stored profile means onboarding has never run; the App gates every route behind the skippable wizard, and `/profile` edits the same fields later. Skip defaults intentionally bias toward the shipped lesson pack (`scales`, `arpeggios`, 20 min/day) so the next planner task always has schedulable inputs.
