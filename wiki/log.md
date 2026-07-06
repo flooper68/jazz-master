@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `product/overview` under-the-hood section updated for the Astro shell landing (TASK-021): the practice app now lives under `/app/*` behind an Astro landing page; product URLs carry the `/app` prefix.
 - 2026-07-06 — `product/overview` under-the-hood + built-today sections updated for ADR-006 acceptance and the owner-directed migration-first ordering (TASK-020 done, grill session NOTE-005).
 - 2026-07-06 — `product/overview` built-today section updated for the dashboard v1 shipping and EPIC-012 completing (TASK-019): `/` is now the product's front door and the guided-practice vertical slice is finished.
 - 2026-07-06 — `product/overview` built-today section updated for the practice-history page shipping and EPIC-012 opening (TASK-018): every session is now findable at `/history`.

@@ -2,9 +2,9 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { LESSONS } from '../content'
-import { toPlanDate } from '../planner'
-import { sessionsStore, type PracticeSession } from '../storage'
+import { LESSONS } from '../../content'
+import { toPlanDate } from '../../planner'
+import { sessionsStore, type PracticeSession } from '../../storage'
 import HistoryPage from './HistoryPage'
 
 const scalesLesson = LESSONS.find((lesson) => lesson.area === 'scales')!

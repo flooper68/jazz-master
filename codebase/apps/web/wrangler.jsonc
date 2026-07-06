@@ -1,0 +1,9 @@
+// Minimal Worker config: the @astrojs/cloudflare adapter fills in main/assets/
+// bindings itself, but nodejs_compat must be set here — Astro's runtime code
+// executes inside workerd (even in dev) and needs the Node globals.
+// TASK-024 extends this for the actual deployment.
+{
+  "name": "jazz-master-web",
+  "compatibility_date": "2026-04-15",
+  "compatibility_flags": ["nodejs_compat"]
+}

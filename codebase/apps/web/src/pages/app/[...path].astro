@@ -1,0 +1,10 @@
+---
+import { AppShell } from '../../app/AppShell'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+---
+
+{/* Server-rendered catch-all: any /app/* deep link gets this shell directly,
+    then the client-only island takes over routing. No SSR of practice routes. */}
+<BaseLayout>
+  <AppShell client:only="react" />
+</BaseLayout>

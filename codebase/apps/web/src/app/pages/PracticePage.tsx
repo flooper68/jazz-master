@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { AREA_LABELS } from '../components/areaLabels'
-import { PracticeRunner } from '../components/PracticeRunner'
-import { LESSONS } from '../content'
-import type { Lesson } from '../content'
-import { completedLessonIdsOn } from '../dashboard'
-import { useTodayPlan, type DailyPlan } from '../planner'
+import { AREA_LABELS } from '../../components/areaLabels'
+import { PracticeRunner } from '../../components/PracticeRunner'
+import { LESSONS } from '../../content'
+import type { Lesson } from '../../content'
+import { completedLessonIdsOn } from '../../dashboard'
+import { useTodayPlan, type DailyPlan } from '../../planner'
 
 // Authored order is curriculum order, so grouping preserves level progression.
 const areas = [...new Set(LESSONS.map((lesson) => lesson.area))]

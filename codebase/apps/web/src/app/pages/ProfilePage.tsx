@@ -3,8 +3,8 @@ import {
   GoalAreaFields,
   LevelFields,
   MinutesFields,
-} from '../components/ProfileFields'
-import { defaultProfile, profileStore, type PracticeProfile } from '../storage'
+} from '../../components/ProfileFields'
+import { defaultProfile, profileStore, type PracticeProfile } from '../../storage'
 
 /** Edit surface for the onboarding answers (TASK-016). */
 export default function ProfilePage() {

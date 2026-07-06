@@ -1,8 +1,8 @@
 import { useId, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { AREA_LABELS } from '../components/areaLabels'
-import { LESSONS } from '../content'
-import type { LessonArea } from '../content'
+import { AREA_LABELS } from '../../components/areaLabels'
+import { LESSONS } from '../../content'
+import type { LessonArea } from '../../content'
 import {
   filterSessions,
   formatDuration,
@@ -10,8 +10,8 @@ import {
   groupSessionsByDay,
   tallyGrades,
   type TimeRange,
-} from '../history'
-import { sessionsStore, type PracticeSession } from '../storage'
+} from '../../history'
+import { sessionsStore, type PracticeSession } from '../../storage'
 
 const GRADE_LABELS = {
   'got-it': 'Got it',

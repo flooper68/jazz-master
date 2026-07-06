@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — Astro shell landed: React app is now an island under /app/* (TASK-021)
+
+First EPIC-013 migration slice: the Vite SPA became an Astro 7 app — Astro serves a barebones landing at `/`, and `src/pages/app/[...path].astro` mounts the untouched React app (`src/app/AppShell.tsx`, `BrowserRouter basename="/app"`) with `client:only="react"`. React practice pages moved `src/pages/` → `src/app/pages/` because Astro owns `src/pages/`. Build targets Workers (`@astrojs/cloudflare`, `output: 'server'`); `check` composition unchanged (apps/web build is now `astro build`; Vitest gets its own `vitest.config.ts`). **Gotcha:** the adapter runs dev-server SSR inside workerd — without `nodejs_compat` in `wrangler.jsonc` every route 500s with `process is not defined`, and Astro's logger crashes trying to report the real error. Also: Astro 7 is current — RES-002's `stale_when` (written against Astro 5 docs) has tripped; filed INS-017.
+
 ## 2026-07-06 — ADR-006 accepted; migration is next work (grill session, NOTE-005)
 
 Owner grill resolved ADR-006's three open questions (operational commitment: yes, migrate while the app is small; Railway: deliberate; landing page: barebones) — ADR accepted, TASK-020 done, TASK-021 chain unblocked and owner-directed ahead of TASK-014/015. Same session confirmed the sweep's queued decisions: TASK-035 e2e suite sequenced after the migration as a separate `check:e2e` (the gate stays fast); claim-time epic flip stands; triage gains a confirm-then-ship accept-via-process-edit path; independent review gets standing spawn authorization with logged self-review as the degraded fallback (INS-015); dashboard trends stay gated on EPIC-010 machine scores (INS-016). Also fixed en route: `architecture/overview.md`'s current-state paragraph had missed TASK-019 (dashboard done).

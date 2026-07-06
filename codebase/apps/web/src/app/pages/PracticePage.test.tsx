@@ -2,15 +2,15 @@ import { render as rtlRender, screen, waitFor, within } from '@testing-library/r
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { LESSONS } from '../content'
-import { toPlanDate } from '../planner'
+import { LESSONS } from '../../content'
+import { toPlanDate } from '../../planner'
 import {
   defaultProfile,
   getDailyPlan,
   profileStore,
   saveDailyPlan,
   sessionsStore,
-} from '../storage'
+} from '../../storage'
 import PracticePage from './PracticePage'
 
 beforeEach(() => {

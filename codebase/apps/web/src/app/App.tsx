@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Route, Routes } from 'react-router'
-import { Layout } from './components/Layout'
-import { OnboardingWizard } from './components/OnboardingWizard'
+import { Layout } from '../components/Layout'
+import { OnboardingWizard } from '../components/OnboardingWizard'
 import DashboardPage from './pages/DashboardPage'
 import EarTrainingPage from './pages/EarTrainingPage'
 import HistoryPage from './pages/HistoryPage'
@@ -11,7 +11,7 @@ import ProfilePage from './pages/ProfilePage'
 import ProgressionsPage from './pages/ProgressionsPage'
 import RepertoirePage from './pages/RepertoirePage'
 import VoicingsPage from './pages/VoicingsPage'
-import { profileStore } from './storage'
+import { profileStore } from '../storage'
 
 function App() {
   // First-run gate (TASK-016): no stored profile means onboarding has never

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore } from '../storage'
+import { defaultProfile, profileStore } from '../../storage'
 import ProfilePage from './ProfilePage'
 
 beforeEach(() => {

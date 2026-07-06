@@ -4,19 +4,23 @@ Living document — update it whenever the shape of the system changes. Decision
 
 ## System shape
 
-Jazz Master is a local-first single-page app. No backend features yet, no accounts: all state lives in the browser (localStorage), all logic runs client-side. See ADR-002.
+Jazz Master is a local-first practice app, still with no backend features and no accounts: all practice state lives in the browser (localStorage), all product logic runs client-side. See ADR-002.
 
-**In migration (ADR-006, accepted 2026-07-06 — EPIC-013):** the target platform is a hybrid — Astro on Cloudflare Workers serving public/SSR pages and tRPC API routes, with the current React app mounted unchanged as a client-only SPA island under `/app/*` (TanStack Router inside the island), and a gated Hyperdrive → Railway Postgres path for future server persistence. ADR-002's local-first UX is kept: practice state stays in localStorage; only the "no backend" assumption is superseded. Nothing below changes until TASK-021+ land.
+Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Still ahead in the migration: TanStack Router inside the island (TASK-022), tRPC API routes (TASK-023), and the gated Hyperdrive → Railway Postgres path.
 
 ```mermaid
 flowchart TD
-    subgraph Browser
-        pages[apps/web/src/pages/ — route-level modules]
+    astro["Astro shell — src/pages/*.astro: landing at /, catch-all app/[...path].astro"]
+    subgraph SPA island — client:only under /app/*
+        shell[apps/web/src/app/AppShell.tsx — BrowserRouter basename=/app]
+        pages[apps/web/src/app/pages/ — route-level modules]
         components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
         content[apps/web/src/content/ — exercise/lesson model + curriculum data]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
+    astro --> shell
+    shell --> pages
     pages --> components
     pages --> content
     pages --> theory
@@ -30,12 +34,13 @@ flowchart TD
 | Layer | Path | Rule |
 |---|---|---|
 | Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
+| Astro shell | `codebase/apps/web/src/pages/` + `src/layouts/` | Astro's file router: public/server pages only (`index.astro`, `app/[...path].astro`). Never practice UI — that lives in the island. |
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
-| Pages | `codebase/apps/web/src/pages/` | One per practice module; own their route, compose components. |
+| SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `App.tsx`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
 | Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
 
-Dependency direction: `pages → components → @jazz-master/theory` and `pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours.
+Dependency direction: `app/pages → components → @jazz-master/theory` and `app/pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours and never imports Astro.
 
 ## Repository layout (ADR-005, landed with TASK-027)
 
@@ -47,14 +52,14 @@ codebase/
   tsconfig.base.json    # shared compiler options; per-workspace tsconfigs extend it
   vitest.config.ts      # test.projects: all workspaces run from one `bun run test`
   packages/theory/      # @jazz-master/theory — the pure domain core, zero runtime deps
-  apps/web/             # the app (later the Astro shell, TASK-021)
+  apps/web/             # the Astro shell + React SPA island (TASK-021)
 ```
 
 Future apps (CLI, docs, presentations) are added as `apps/*` directories. Package extraction requires a second concrete consumer or provable purity; `packages/ui`, `packages/storage`, and `packages/config` are deferred with triggers recorded in ADR-005. All bun commands run from `codebase/` — from the repo root use `bun run --cwd codebase <script>`.
 
 ## Toolchain
 
-Bun (runtime, packages, workspaces) · Vite 8 (build) · React 19 · TypeScript (project references: `apps/web` → `packages/theory`, which is `composite` and emits declarations only) · Tailwind v4 (CSS-config via `@theme`, scoped to `apps/web`) · Vitest + Testing Library (jsdom in `apps/web`; node defaults in packages) · oxlint. See ADR-001. The single verification gate is `bun run check` (run in `codebase/`).
+Bun (runtime, packages, workspaces) · Astro 7 + `@astrojs/react` + `@astrojs/cloudflare` (`output: 'server'`, Workers target; build/dev via `astro build`/`astro dev`, Vite underneath) · React 19 · TypeScript (project references: `apps/web` → `packages/theory`, which is `composite` and emits declarations only) · Tailwind v4 (CSS-config via `@theme`, wired through `vite.plugins` in `astro.config.mjs`) · Vitest + Testing Library (jsdom in `apps/web` via its `vitest.config.ts`; node defaults in packages) · oxlint. See ADR-001/ADR-006. The single verification gate is `bun run check` (run in `codebase/`). Gotcha: dev-server SSR runs inside workerd, so `apps/web/wrangler.jsonc` must keep `nodejs_compat` or every route 500s with `process is not defined`.
 
 ## Knowledge system
 
@@ -62,7 +67,7 @@ The repo is also the product operating system. `strategy/` sets direction, `proc
 
 ## Routing
 
-react-router v8, library mode. `BrowserRouter` wraps `App` in `apps/web/src/main.tsx`; `App.tsx` owns the route table (a `Layout` route with nested children per practice module, plus a `*` → `NotFoundPage` catch-all). `apps/web/src/components/Layout.tsx` is the persistent shell (sidebar nav via `NavLink`, content via `<Outlet>`). Tests mount `App` in a `MemoryRouter`.
+Two routers with a hard boundary at `/app`. Astro's file router owns everything outside it (`src/pages/index.astro`, future public pages). Inside the island: react-router v8, library mode — `AppShell.tsx` wraps `App` in `BrowserRouter basename="/app"` (route paths and `Link`s stay basename-relative, so `App.tsx`'s route table is untouched by the migration); `App.tsx` owns the route table (a `Layout` route with nested children per practice module, plus a `*` → `NotFoundPage` catch-all). `apps/web/src/components/Layout.tsx` is the persistent shell (sidebar nav via `NavLink`, content via `<Outlet>`). Tests mount `App` in a `MemoryRouter`, no basename needed. TanStack Router replaces react-router in TASK-022.
 
 ## Theory core
 
@@ -78,4 +83,4 @@ react-router v8, library mode. `BrowserRouter` wraps `App` in `apps/web/src/main
 
 ## Current state (2026-07-06)
 
-App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — to the `sessions` store (`apps/web/src/storage/sessions.ts`), upserted after every grade so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011): a local `PracticeProfile` plus `generatePlan` produce a persisted Today's plan with reasons, runner handoff, and completion ticks from session records. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Next: the EPIC-013 migration chain (TASK-021 → 022/023 → 024) — owner-directed ahead of the notation/scoring research (TASK-014/015).
+App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — to the `sessions` store (`apps/web/src/storage/sessions.ts`), upserted after every grade so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011): a local `PracticeProfile` plus `generatePlan` produce a persisted Today's plan with reasons, runner handoff, and completion ticks from session records. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Astro shell landed (TASK-021): Astro 7 serves a barebones landing at `/` and hosts the React app as a client-only island under `/app/*`; React pages moved to `src/app/pages/`; build targets Workers via `@astrojs/cloudflare` (deploy is TASK-024). Next in EPIC-013: TASK-022 (TanStack Router) and TASK-023 (tRPC scaffold) — owner-directed ahead of the notation/scoring research (TASK-014/015).

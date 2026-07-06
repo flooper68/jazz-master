@@ -69,12 +69,12 @@ Bun only — never npm/yarn/pnpm; use `bun add`, `bunx`. `bun install` runs in `
 
 ## Stack & architecture (detail: architecture/overview.md)
 
-- Vite 8 · React 19 · TypeScript · Tailwind v4 (`@theme` in `apps/web/src/index.css`, no config file) · Vitest + Testing Library · oxlint
+- Astro 7 (`@astrojs/react` + `@astrojs/cloudflare`, `output: 'server'`, Workers target; Vite underneath) · React 19 · TypeScript · Tailwind v4 (`@theme` in `apps/web/src/index.css`, wired via `vite.plugins` in `astro.config.mjs`) · Vitest + Testing Library · oxlint
 - Monorepo (ADR-005): `codebase/apps/web` (this app) + `codebase/packages/theory` (`@jazz-master/theory`, consumed as `workspace:*`)
 - Local-first: no backend features yet, no accounts; all persistence via typed stores (`defineStore`) in `apps/web/src/storage/` — **never touch `localStorage` directly outside that directory** (ADR-002)
-- In migration to the ADR-006 target platform (accepted 2026-07-06, EPIC-013): Astro on Cloudflare Workers, current React app as a client-only SPA island under `/app/*`, tRPC API routes, gated Hyperdrive → Railway Postgres. Practice state stays local (ADR-002's UX is kept); nothing changes in the code until TASK-021+ land.
-- `codebase/packages/theory/` — pure domain core, **zero runtime deps in its package.json, no React/DOM imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
-- `apps/web/src/components/` (reusable UI) · `apps/web/src/pages/` (one per practice module) · dependency direction `pages → components → @jazz-master/theory`
+- Hybrid shell since TASK-021 (ADR-006, accepted 2026-07-06, EPIC-013): **Astro owns `apps/web/src/pages/`** (landing at `/`, catch-all `app/[...path].astro`); the React practice app is a client-only island under `/app/*` (`src/app/AppShell.tsx`, `client:only="react"` — never SSR practice routes). Still ahead: TanStack Router (TASK-022), tRPC routes (TASK-023), Workers deploy (TASK-024), gated Hyperdrive → Railway Postgres. Practice state stays local (ADR-002's UX is kept). Keep `nodejs_compat` in `apps/web/wrangler.jsonc` — dev SSR runs in workerd.
+- `codebase/packages/theory/` — pure domain core, **zero runtime deps in its package.json, no React/DOM/Astro imports ever**, exhaustively tested (enharmonics matter: the seventh of Eb7 is Db, not C#)
+- `apps/web/src/components/` (reusable UI) · `apps/web/src/app/pages/` (one per practice module) · dependency direction `app/pages → components → @jazz-master/theory`
 - Tests colocated: `Foo.tsx` → `Foo.test.tsx`
 
 ## Conventions

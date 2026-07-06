@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
-import { defaultProfile, profileStore } from './storage'
+import { defaultProfile, profileStore } from '../storage'
 
 beforeEach(() => {
   localStorage.clear()

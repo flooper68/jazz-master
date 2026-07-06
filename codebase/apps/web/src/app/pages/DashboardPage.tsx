@@ -1,15 +1,15 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AREA_LABELS } from '../components/areaLabels'
-import { LESSONS } from '../content'
+import { AREA_LABELS } from '../../components/areaLabels'
+import { LESSONS } from '../../content'
 import {
   areaStatuses,
   completedLessonIdsOn,
   currentStreakDays,
   minutesThisWeek,
   WEEK_DAYS,
-} from '../dashboard'
-import { useTodayPlan } from '../planner'
+} from '../../dashboard'
+import { useTodayPlan } from '../../planner'
 import type { PracticeLocationState } from './PracticePage'
 
 const linkClasses =

@@ -1,4 +1,4 @@
-import { ChordDiagram, type Grip } from '../components/ChordDiagram'
+import { ChordDiagram, type Grip } from '../../components/ChordDiagram'
 
 // Sample open-position grips until EPIC-002 brings the real voicing library.
 const SAMPLE_GRIPS: { label: string; grip: Grip }[] = [

@@ -2,15 +2,15 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { LESSONS } from '../content'
-import { toPlanDate } from '../planner'
+import { LESSONS } from '../../content'
+import { toPlanDate } from '../../planner'
 import {
   defaultProfile,
   profileStore,
   saveDailyPlan,
   sessionsStore,
   type PracticeSession,
-} from '../storage'
+} from '../../storage'
 import DashboardPage from './DashboardPage'
 import PracticePage from './PracticePage'
 
