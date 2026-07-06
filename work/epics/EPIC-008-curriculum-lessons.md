@@ -2,7 +2,7 @@
 id: EPIC-008
 title: Curriculum & lessons — leveled content and a guided practice runner
 vision: VIS-001
-status: backlog
+status: in-progress
 created: 2026-07-05
 ---
 

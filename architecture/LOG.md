@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — first lesson pack shipped; displayAccidentals hoisted into the theory package (TASK-012)
+
+The v1 scales & arpeggios curriculum (10 lessons / 42 exercises) landed as typed data in `apps/web/src/content/lessons.ts`, browsable on the Practice page. En route, review caught `withAccidentals` duplicating `components/notation.ts`'s `displayAccidentals`; since content may not import components, the helper moved to `@jazz-master/theory` (pure string fn, both layers already depend on theory) and `components/notation.ts` is gone — import `displayAccidentals` from the package.
+
 ## 2026-07-06 — grill loop adopted as the owner's primary interface (ADR-008, NOTE-001)
 
 Owner-directed, designed live in a grill session about grilling itself (NOTE-001). RES-004's critique-skill concept reversed direction — the agent questions the owner, one question at a time, as a comprehension-and-ownership mechanism — and was promoted from checkpoint to primary interface: grill → agents work → feedback → grilled again. Canonical playbook `processes/grilling.md`, thin trigger `.claude/skills/grill-me/`. Supersedes RES-004 recs 1/4 and its auto-triggering caution (location; non-mutating — grill decisions now write back to the live artifact in-session, a recorded exception to the notes pipeline). Judgment-carrying artifact creation (epics, product tasks, ADRs, strategy proposals, triage promotions) now always grills, inline or deferred into confirmation batches. Exam grill ~monthly is the built-in success metric and kill criterion.

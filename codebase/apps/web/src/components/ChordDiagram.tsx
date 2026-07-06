@@ -1,4 +1,4 @@
-import { displayAccidentals } from './notation'
+import { displayAccidentals } from '@jazz-master/theory'
 
 /** Per-string action: an absolute fret number (0 = open) or `'x'` (muted). */
 export type GripFret = number | 'x'

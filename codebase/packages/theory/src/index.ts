@@ -6,6 +6,7 @@ export {
   type Note,
 } from './note'
 export { transpose, type IntervalName } from './interval'
+export { displayAccidentals } from './notation'
 export {
   noteAt,
   positionsOf,
