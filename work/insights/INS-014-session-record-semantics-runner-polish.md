@@ -1,7 +1,8 @@
 ---
 id: INS-014
 title: Session-record semantics questions and runner polish deferred from TASK-013 review
-status: new
+status: deferred
+revisit_when: next runner-touching task (polish list), or the planner consuming session duration / EPIC-010 scoring work (remaining semantics questions)
 created: 2026-07-06
 source: TASK-013
 ---
@@ -52,3 +53,13 @@ unchanged.
 - Runner component tests run a real 1 s `setInterval` under async
   interactions — fast tests win the race today; fake timers would make the
   countdown deterministic if flakes appear.
+
+## Triage note
+
+2026-07-06 (TASK-030 sweep) — Deferred. History (TASK-018) and dashboard
+(TASK-019) both consumed the documented semantics, so the record contract has
+two consistent consumers; what remains is (a) whether the *planner* ever wants
+wall-clock duration or a started-and-bailed signal — a question that only
+matters when planner heuristics evolve or EPIC-010 scoring lands — and (b) the
+polish list, which folds into the next runner-touching task. No standalone
+task warranted.

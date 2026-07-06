@@ -18,12 +18,12 @@ For each inbox item, oldest first:
 4. Decide:
    - **Accept** → create the task(s) (or propose an epic if it's pillar-sized) with `source: INS-###` in frontmatter; set the insight `status: accepted`, record `outcome: [TASK-###, ...]`. Product-facing tasks carry a `## Problem brief` (template in `work/README.md`).
    - **Reject** → `status: rejected`, with a written reason (the reason is the value — it prevents re-litigating the idea later).
-   - **Defer** → stays `new` with a dated note on missing evidence, revisit trigger, and what would change the decision.
+   - **Defer** → `status: deferred` with `revisit_when:` in frontmatter and a dated note on missing evidence and what would change the decision (vocabulary per `work/README.md`; deferred items stay in the triage inbox via the aging pass below).
 5. Never delete insight files.
 
 ### Insight aging
 
-During each triage pass, also inspect previously deferred `status: new` insights:
+During each triage pass, also inspect previously deferred insights (`status: deferred`):
 
 - Keep the insight open only if the missing evidence is still realistically obtainable and the revisit trigger still matters to current goals.
 - Reject solution-only, duplicated, or goal-irrelevant insights rather than carrying them as backlog debt.

@@ -1,7 +1,8 @@
 ---
 id: INS-015
 title: Independent review process assumes subagent availability that current tool policy may deny
-status: new
+status: deferred
+revisit_when: next grill session — needs an owner decision (exact question in the triage note below)
 created: 2026-07-06
 source: TASK-017
 ---
@@ -16,3 +17,15 @@ Why it might matter: the quality gate has a repeated, predictable failure mode
 that is currently resolved by ad hoc task-log caveats rather than a canonical
 fallback. Triage should decide whether the process needs an owner-approved
 fallback, a standing user authorization pattern, or different tooling.
+
+## Triage note
+
+2026-07-06 (TASK-030 sweep) — Deferred: this is an owner decision about the
+quality gate, not something an agent should settle unilaterally. Exact question
+for the next grill session: **when a session cannot spawn an independent review
+subagent, which fallback satisfies hard rule 5 — (a) a standing owner
+authorization that agents may always spawn review subagents, (b) a documented
+local-checklist fallback written into `processes/code-review.md` as an accepted
+degraded mode, or (c) neither — the work must not ship until an independent
+pass is possible?** Evidence unchanged: multiple task logs record the same ad
+hoc deviation.

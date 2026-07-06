@@ -1,7 +1,8 @@
 ---
 id: INS-009
 title: Add a minimal Playwright e2e smoke suite when the first real practice workflow exists
-status: new
+status: accepted
+outcome: [TASK-035]
 created: 2026-07-06
 source: TASK-006
 ---
@@ -24,3 +25,13 @@ practice session.
 Evidence: RES-012 findings 3 and 7.
 Validation need: direct task candidate when TASK-013 or an equivalent real
 practice workflow lands.
+
+## Triage note
+
+2026-07-06 (TASK-030 sweep) — Accepted (owner confirmation pending, batched in
+the sweep report). The insight's own trigger has fired: the guided-practice
+vertical slice (onboard → plan → practice → history → dashboard) is complete,
+which is exactly the "first real practice workflow" this was waiting on. And
+the automated gate is now the only thing standing behind that slice — QA
+coverage is manual-only. Outcome: TASK-035 (proposed), scoped to the candidate
+scope above.

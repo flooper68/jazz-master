@@ -1,7 +1,8 @@
 ---
 id: INS-016
 title: Per-area trend-over-time visuals deferred from dashboard v1
-status: new
+status: deferred
+revisit_when: EPIC-010 machine scores land, or the owner answers the deferred-grill question below (self-grade trends earlier?)
 created: 2026-07-06
 source: TASK-019
 ---
@@ -26,3 +27,12 @@ the dashboard's callouts cover the "what needs attention" question.
 Deferred-grill question for the owner: are self-grade-ratio trends worth
 shipping before machine scores exist, or is trend work strictly gated on
 EPIC-010?
+
+## Triage note
+
+2026-07-06 (TASK-030 sweep) — Deferred on the insight's own analysis:
+self-grades are a thin signal and one-lesson sample sizes make trend lines read
+as noise; machine scores (EPIC-010) are the signal trends want, and the
+`PracticeSession.score` field is already reserved. The deferred-grill question
+above stands for the owner: ship self-grade-ratio trends before machine scores
+exist, or gate trend work on EPIC-010?

@@ -204,3 +204,18 @@ How we will know it improved: manual run completion plus refresh shows the sessi
 [7] ASQ, "DMAIC Process: Define, Measure, Analyze, Improve, Control" — https://asq.org/quality-resources/dmaic (accessed 2026-07-05)
 
 [8] Eric Ries / The Lean Startup, "Methodology" — https://theleanstartup.com/principles (accessed 2026-07-05)
+
+## Staleness
+
+The `stale_when` condition tripped: specific Jazz Master operating processes
+were created from this research (commit 5b0b149 folded RES-008 into
+`processes/product-practices.md`, and it now also shapes `processes/triage.md`
+step 3 and the task templates in `work/README.md`). Feed-forward audited
+complete during the TASK-030 knowledge sweep (2026-07-06): recommendations 1
+and 3 are the problem-brief template and output/outcome distinction in
+`work/README.md` and `processes/product-practices.md`; 2, 4, 5, and 6 are
+adopted/adapted per the "RES-008 is applied as follows" section of
+`processes/product-practices.md`; 7 was the consuming task (TASK-007). No open
+recommendations remain. This file stays as the evidence record; the operative
+documents are `processes/product-practices.md`, `processes/triage.md`, and
+`work/README.md`.

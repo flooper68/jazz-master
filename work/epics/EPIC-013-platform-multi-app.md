@@ -10,7 +10,7 @@ created: 2026-07-05
 
 ## Goal
 
-A repository and runtime platform that supports multiple apps sharing the domain core: knowledge at the repo root, code as a Bun-workspaces monorepo under `codebase/` (ADR-005), and the web app migrated to Astro on Cloudflare Workers with a typed tRPC surface (RES-002, ADR-006 when written).
+A repository and runtime platform that supports multiple apps sharing the domain core: knowledge at the repo root, code as a Bun-workspaces monorepo under `codebase/` (ADR-005), and the web app migrated to Astro on Cloudflare Workers with a typed tRPC surface (RES-002, ADR-006 — written, `proposed`).
 
 ## Why this matters now
 
@@ -51,4 +51,4 @@ In progress. ADR-005 is written and the codebase restructure has shipped. ADR-00
 
 ## Last reviewed
 
-2026-07-06 — Current status updated for ADR-006 written/proposed (TASK-020). 2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.
+2026-07-06 — TASK-030 sweep: goal wording de-staled (ADR-006 is written, `proposed`); status and task list verified current. Earlier same day — Current status updated for ADR-006 written/proposed (TASK-020). 2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.

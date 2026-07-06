@@ -1,7 +1,8 @@
 ---
 id: INS-011
 title: Content-model authoring polish — display/duration edge cases the validator allows
-status: new
+status: deferred
+revisit_when: first chord-content authoring task (chord material makes the display-vs-material-kind constraint real)
 created: 2026-07-06
 ---
 
@@ -22,3 +23,14 @@ the real contract:
 
 Revisit when TASK-012 authors the first pack or TASK-013 consumes `display` — whichever
 lands first will show which of these are real constraints vs. imagined ones.
+
+## Triage note
+
+2026-07-06 (TASK-030 sweep) — Deferred with a narrower trigger. The original
+trigger (TASK-012/TASK-013 landing) fired, and neither surfaced these gaps as
+real defects: the all-fretboard v1 pack never hits them, and the runner's
+display handling for non-fretboard material is itself deferred to first chord
+content (see INS-014). Items 1 and 3 only become real constraints when chord
+material is authored; item 2 (fractional repetitions) rides along. Second
+deferral — per the triage aging rule, next pass is decision time: accept into
+the chord-content task or reject.

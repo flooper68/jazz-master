@@ -25,6 +25,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 2. Claim
 
 - Set frontmatter `status: in-progress`. This is the lock — never pick an item another agent has claimed.
+- If the item's epic is still `backlog`, set the epic `in-progress` in the same change (INS-012) — epic status must reflect first claim, not just final completion.
 
 ### 3. Plan
 

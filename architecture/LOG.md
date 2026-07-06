@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — knowledge maintenance sweep (TASK-030)
+
+First full sweep: inbox of 8 new insights triaged (INS-009 accepted → TASK-035 Playwright e2e smoke; INS-012 accepted → dev-loop now flips a `backlog` epic to `in-progress` at claim time; the rest deferred with triggers — INS-015/016 carry recorded owner grill questions), ISSUE-002 reproduced in-browser and confirmed (focus drops to `body` on both runner and onboarding view swaps — app-wide). RES-008's tripped `stale_when` resolved with a staleness section; all other research conditions checked, none tripped. Index lint clean after removing ADR-006 from the known-ID-gaps line (TASK-020 filled it); wiki lint clean. Drift fixed: triage.md's defer wording now matches work/README's `deferred` status vocabulary; EPIC-013's "ADR-006 when written" de-staled.
+
 ## 2026-07-06 — dashboard v1 shipped; EPIC-012 complete (TASK-019)
 
 `/` replaced the leftover fretboard-demo stub with the product's front door: today's plan (via the new shared `planner/useTodayPlan` hook, so dashboard and `/practice` render the same persisted plan), streak and minutes-this-week from the new pure `apps/web/src/dashboard/` derivation module, per-area needs-attention callouts (same latest-grade rule as the planner), and a location-state Start handoff into the runner (consumed once so refresh/back doesn't restart the lesson). The onboard → plan → practice → history → dashboard vertical slice is now closed end to end.
