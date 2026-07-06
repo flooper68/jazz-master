@@ -2,7 +2,7 @@
 id: EPIC-008
 title: Curriculum & lessons — leveled content and a guided practice runner
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-05
 ---
 
@@ -43,3 +43,7 @@ This is the content backbone of the "open app, pick up guitar, play" flow. The p
 ## Done when
 
 A user can open a scales lesson appropriate to their level, be guided through its exercises with fretboard display and timers, self-grade each, and the completed session is persisted.
+
+## Done-when assessment (2026-07-06, TASK-013 shipped)
+
+Met: the Practice page lists the 10-lesson scales/arpeggios pack by area with level tags (TASK-011/012), and Start guides through every exercise with resolved fretboard positions, a per-exercise countdown, and got-it/shaky/missed self-grading; completed and abandoned sessions persist to the `sessions` store (TASK-013, verified end to end). "Appropriate to their level" is user-driven today — the user picks by the visible level tag; profile-matched selection is EPIC-011's job, as scoped. Open follow-ups live in the inbox, not this epic: INS-013 (dev-time pack validation), INS-014 (session-record semantics for the planner/history), ISSUE-002 (focus management).

@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-06 — `product/overview` built-today section updated for the guided practice runner shipping and EPIC-008 completing (TASK-013): sessions now run and persist end to end.
 - 2026-07-06 — `project/overview` sources now cite `AGENTS.md` (canonical agent index; `CLAUDE.md` became a symlink to it, NOTE-003).
 - 2026-07-06 — `product/overview` built-today section updated for the first lesson pack landing on the Practice page (TASK-012).
 - 2026-07-06 — `project/overview` gained the grill loop (owner-facing rhythm) and `project/lifecycle-of-a-change` triage step now notes deferred-grill confirmation (ADR-008, NOTE-001).

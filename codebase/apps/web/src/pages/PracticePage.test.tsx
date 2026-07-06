@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { LESSONS } from '../content'
 import PracticePage from './PracticePage'
@@ -34,6 +35,25 @@ describe('PracticePage', () => {
       item.getByText(
         '4 exercises · after: Major scale I — open position, Major scale II — middle position, adding flat keys',
       ),
+    ).toBeInTheDocument()
+  })
+
+  it('starts a guided session from a lesson and returns to the list on end', async () => {
+    const user = userEvent.setup()
+    render(<PracticePage />)
+    const first = LESSONS[0]
+
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+    expect(
+      screen.getByText(`Exercise 1 of ${first.exercises.length}`),
+    ).toBeInTheDocument()
+    expect(screen.getByText(first.exercises[0].title)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'End lesson' }))
+    expect(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
     ).toBeInTheDocument()
   })
 })
