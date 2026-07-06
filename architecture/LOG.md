@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — ADR-009: no local deploy credentials, CI-only deploys (grill NOTE-006)
+
+The TASK-024 login blocker became a decision instead of a login: the owner rejected local wrangler credentials outright — AI agents must not have access to production, so the only deploy credential is a scoped API token in GitHub Actions secrets. Dev now auto-deploys on every push to `main` (TASK-024 reshaped); production is a gated, manual-UI-trigger concern (TASK-036) carrying the open question of whether owner approval is mechanically enforced (GitHub environment + required reviewer) or trust-based.
+
 ## 2026-07-06 — Workers deploy prepped; publish blocked on owner login (TASK-024)
 
 Deploy tooling landed: `wrangler` pinned in apps/web, `bun run deploy` (= `astro build && wrangler deploy`) exposed from the codebase root. Discovery: no `main`/`assets` belong in `wrangler.jsonc` — the adapter emits the resolved config to `dist/server/wrangler.json` and `.wrangler/deploy/config.json` redirects wrangler there; `wrangler deploy --dry-run` validates the whole thing without auth. Local Workers-runtime preview is just `astro preview` (the adapter serves the built worker in workerd) — verified `/` SSR, `/trpc/health` JSON, `/app/*` deep links there. INS-020/021 folded in: health chip is dev-only; tRPC error stacks stripped outside dev via an explicit `errorFormatter` (workerd sets no `NODE_ENV`, so tRPC's dev/prod heuristic never flips — verified: prod build returned full stacks before, none after). **Gotchas:** the adapter force-enables KV sessions (unused `SESSION` binding will want a namespace provisioned at first deploy — no off switch); tRPC still returns internal error *messages* verbatim in prod, fine while health-only, must be masked when the first throwing procedure lands. The publish itself is blocked: Cloudflare OAuth token expired, refresh needs an interactive `wrangler login`.

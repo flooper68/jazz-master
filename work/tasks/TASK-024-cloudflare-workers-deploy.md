@@ -2,8 +2,7 @@
 id: TASK-024
 title: Deploy the Astro app to Cloudflare Workers
 epic: EPIC-013
-status: blocked
-blocked_reason: first publish needs an interactive `wrangler login` — the stored Cloudflare OAuth token is expired and cannot refresh non-interactively; all deploy tooling, prod posture, and local workerd verification are done. Owner: run `bunx wrangler login` (in codebase/apps/web or any dir), then `bun run --cwd codebase deploy` or ask an agent to finish TASK-024.
+status: in-progress
 depends_on: [TASK-021, TASK-023]
 research: RES-002
 created: 2026-07-05
@@ -13,7 +12,7 @@ created: 2026-07-05
 
 ## Goal
 
-The app runs on Cloudflare Workers: SSR landing page, `/app/*` SPA, and `/trpc/health` all working on a real `workers.dev` (or custom-domain) URL, deployable with one command.
+The app runs on Cloudflare Workers as the **dev environment**: SSR landing page, `/app/*` SPA, and `/trpc/health` all working on a real `workers.dev` URL, deployed **automatically by CI on every push to `main`** — no deploy credential ever readable from the development machine (ADR-009).
 
 ## Context
 
@@ -21,18 +20,21 @@ RES-002 recommendation 1: target Workers, **not Pages** — the current Astro Cl
 
 **ADR-005 note (2026-07-05):** after the TASK-027 restructure, `wrangler.jsonc` lives in `codebase/apps/web/`; the `deploy` script is defined there and exposed through the workspace root (and root shim) so `bun run deploy` works from the repo root.
 
+**ADR-009 redesign (2026-07-06, grill NOTE-006):** the "manual/owner-triggered, no CI" sentence above is superseded. The owner rejected local wrangler credentials outright — agents must not have access to production, and no deploy credential may be readable from this machine. This task now delivers the **dev** deployment: a GitHub Actions workflow deploying to Cloudflare on every push to `main`, authenticated by a `CLOUDFLARE_API_TOKEN` repo secret the owner creates (agents never handle it). Production is split out to gated TASK-036 (manual UI trigger).
+
 ## Acceptance criteria
 
 - [x] `wrangler.jsonc` present with `nodejs_compat`, a pinned `compatibility_date`, and the Astro Workers entry (entry/assets come from the adapter-emitted `dist/server/wrangler.json` via the `.wrangler/deploy/config.json` redirect — see Log)
-- [ ] `bun run deploy` publishes to Cloudflare Workers *(script in place, `wrangler deploy --dry-run` passes; actual publish blocked on owner `wrangler login`)*
-- [ ] On the deployed URL: `/` renders server-side, `/app/*` runs the SPA including deep-link reloads, `/trpc/health` returns typed JSON *(all three verified in the local workerd preview; live URL pending publish)*
+- [ ] A GitHub Actions workflow deploys to Cloudflare Workers on every push to `main` (ADR-009): install → `bun run check` → `bun run deploy`, authenticated only by repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`)
+- [ ] No deploy credential is readable from the development machine; no `wrangler login` anywhere in the flow
+- [ ] On the deployed dev URL: `/` renders server-side, `/app/*` runs the SPA including deep-link reloads, `/trpc/health` returns typed JSON *(all three verified in the local workerd preview; live URL pending first green CI deploy)*
 - [x] A documented local preview command runs the app in the Workers runtime
-- [ ] Deployment steps and the live URL recorded in `architecture/overview.md` *(steps recorded; URL pending publish)*
+- [ ] Deployment steps and the live dev URL recorded in `architecture/overview.md` *(steps recorded; URL pending publish)*
 - [x] `bun run check` passes
 
 ## Verification
 
-`bun run check` green, then `bun run deploy`. On the live URL: `curl` `/` (expect HTML), `curl` `/trpc/health` (expect JSON), open `/app`, exercise one practice module, hard-reload a nested `/app/...` route.
+`bun run check` green locally; push to `main` and watch the deploy workflow go green (`gh run watch`). On the live dev URL: `curl` `/` (expect HTML), `curl` `/trpc/health` (expect JSON), open `/app`, exercise one practice module, hard-reload a nested `/app/...` route. Confirm no local credential: `bunx wrangler whoami` on the dev machine stays logged out while CI deploys succeed.
 
 ## Log
 
@@ -53,3 +55,7 @@ Everything except the publish itself is done and verified:
 Reviewed: independent `code-reviewer` pass on the staged diff — verdict clean, no must-fix findings. Its one fix-or-file finding (internal error *messages* still ship verbatim in prod once a throwing procedure exists; only stacks are stripped) is fixed as a recorded trigger in overview.md's Deployment section rather than code — nothing throws in the health-only API today. `bun run check` green (30 files / 519 tests).
 
 **Blocked:** stored Cloudflare OAuth token is expired and cannot refresh non-interactively; browser-extension path unavailable this session. Owner unblocks with `bunx wrangler login`, then `bun run --cwd codebase deploy`; remaining criteria are the publish, live-URL checks (`/`, `/trpc/health`, `/app` module + nested-route hard reload), and writing the URL into overview.md.
+
+### 2026-07-06 — redesigned to CI-only deploy (grill NOTE-006, ADR-009)
+
+The login blocker report triggered an owner decision: no local wrangler credentials at all — agents must not have access to production. Task reshaped (see the ADR-009 note in Context): the criteria about a local publish are replaced by a GitHub Actions workflow that deploys to the dev worker on every push to `main`; the two prior unticked criteria (publish + live-URL checks) carry over in CI form. Prod split to TASK-036 (gated). Owner handles the credential side: scoped Cloudflare API token + `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` repo secrets. Implementation plan: (1) try to eliminate the adapter's auto-injected `SESSION` KV binding (set a non-KV Astro session driver — the app uses no sessions) so the token needs no KV scope and the first deploy provisions nothing; (2) add `.github/workflows/deploy-dev.yml` (push to `main` + `workflow_dispatch`, concurrency-guarded: setup-bun → `bun install --frozen-lockfile` → `bun run check` → `bun run deploy`); (3) the first workflow run will fail red until the owner adds the secrets — that is the intended loud signal, re-runnable from the Actions UI without a new push.
