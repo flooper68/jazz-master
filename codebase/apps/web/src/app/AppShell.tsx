@@ -1,5 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
+import { AppProviders } from './providers'
 import { createAppRouter } from './router'
 
 // Island entry: src/pages/app/[...path].astro mounts this with
@@ -9,7 +10,9 @@ const router = createAppRouter()
 export function AppShell() {
   return (
     <StrictMode>
-      <RouterProvider router={router} />
+      <AppProviders>
+        <RouterProvider router={router} />
+      </AppProviders>
     </StrictMode>
   )
 }

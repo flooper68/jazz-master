@@ -12,6 +12,12 @@ stale_when: >
 
 # RES-002 — Astro on Cloudflare Workers with SPA app shell, TanStack Router, tRPC, React Query, and Hyperdrive
 
+> **Staleness notes** (per INS-017 — verify before consuming, don't re-run the research):
+>
+> - **2026-07-06 (TASK-021):** the `stale_when` Astro-7 trigger has tripped — see INS-017 for what held and what didn't (`nodejs_compat` in `wrangler.jsonc` is required for dev SSR; `astro dev` daemonizes).
+> - **2026-07-06 (TASK-023):** tRPC recommendations re-verified against tRPC 11.18 docs. The **fetch-adapter server shape (finding 3, rec 4) is still exact** — Astro `src/pages/trpc/[trpc].ts`, `fetchRequestHandler`, `ALL` handler. The **client-side shape in finding 3/rec 5 is superseded**: tRPC now recommends `@trpc/tanstack-react-query` (`createTRPCContext` → `TRPCProvider`/`useTRPC`, procedures consumed as `trpc.x.queryOptions()` on plain `useQuery`) over the classic `@trpc/react-query` `trpc.Provider`/`createTRPCReact` setup cited here [10]. The one-shared-`QueryClient` rule stands unchanged. TASK-023 shipped on the modern integration.
+> - Still unverified against current docs: the Hyperdrive path (finding 4) — re-check when the gated TASK-025 is pulled.
+
 ## Research questions
 
 1. Can Jazz Master use Astro for server-rendered landing/account routes while keeping the core practice app as a client-side SPA?
