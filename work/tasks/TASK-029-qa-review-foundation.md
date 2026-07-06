@@ -1,7 +1,7 @@
 ---
 id: TASK-029
 title: Run QA/product review of the foundation surface
-status: backlog
+status: done
 depends_on: []
 created: 2026-07-06
 ---
@@ -20,11 +20,21 @@ Known open items to fold into (not duplicate from) the review: ISSUE-001 (mobile
 
 ## Acceptance criteria
 
-- [ ] `work/reviews/REV-001-*.md` exists in the process's report format
-- [ ] Every EPIC-001 surface listed above inspected (running app, not just code)
-- [ ] Findings filed as `INS-*`/`ISSUE-*`/`NOTE-*` per `processes/feedback-intake.md` — none fixed inline
-- [ ] `bun run check` passes (no code changes expected; the gate still runs)
+- [x] `work/reviews/REV-001-*.md` exists in the process's report format
+- [x] Every EPIC-001 surface listed above inspected (running app, not just code)
+- [x] Findings filed as `INS-*`/`ISSUE-*`/`NOTE-*` per `processes/feedback-intake.md` — none fixed inline
+- [x] `bun run check` passes (no code changes expected; the gate still runs)
 
 ## Verification
 
 The REV file exists and each surface has an entry; filed findings link back to `source: REV-001`.
+
+## Log
+
+### 2026-07-06 — claimed (agent)
+
+Plan: run the QA/product-review process against the foundation surface in the live app, covering desktop and phone-width viewports; file only review artifacts/findings (no product fixes); run `bun run --cwd codebase check`; then complete review, task tracker, and ship together.
+
+### 2026-07-06 — done
+
+Created `REV-001` after inspecting all current routes at 1280×800 and 375×800. Re-confirmed existing `ISSUE-001` rather than filing a duplicate; no product fixes were made inline. Scale/arpeggio theory APIs are not yet exposed by a route, so the report records that honest product-surface limit and relies on the check gate until lessons surface them. Review checklist pass found no blocking tracker/doc issues; independent subagent review was not run because this session's agent-delegation tool requires explicit user authorization. `bun run --cwd codebase check` passed: 10 test files / 393 tests, production build green.

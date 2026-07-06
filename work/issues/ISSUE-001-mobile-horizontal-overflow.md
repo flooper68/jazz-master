@@ -3,6 +3,7 @@ id: ISSUE-001
 title: App shell overflows horizontally at mobile widths
 severity: minor
 status: confirmed
+source: REV-001
 created: 2026-07-05
 ---
 
@@ -35,6 +36,10 @@ Chromium via Playwright, viewport 420×800, dev build 2026-07-05.
 
 Related to (but not covered by) [[INS-002]] app-shell polish. Likely a Layout
 sizing issue (fixed sidebar width + unconstrained main min-width).
+
+Re-confirmed in REV-001 at 375×800: `/`, `/voicings`, `/progressions`,
+`/practice`, `/repertoire`, and `/ear-training` all exceed the viewport;
+`/voicings` measured 752px document width against a 375px viewport.
 
 ## Triage
 
