@@ -37,7 +37,7 @@ Raw material enters through `processes/feedback-intake.md`: owner notes, user fe
 
 ## 2. Triage
 
-`processes/triage.md` processes the inbox: insights are accepted (recording `outcome:` task IDs), rejected, or deferred with a revisit trigger — acceptance is a proposal the owner confirms. Issues get reproduced, confirmed, and assigned severity. Ideas too big for tasks may become epic proposals.
+`processes/triage.md` processes the inbox: insights are accepted (recording `outcome:` task IDs), rejected, or deferred with a revisit trigger — acceptance is a proposal the owner confirms, and confirmation is a deferred grill (`processes/grilling.md`, ADR-008): each promotion ships with the load-bearing questions it rests on, so the owner decides rather than rubber-stamps. Issues get reproduced, confirmed, and assigned severity. Ideas too big for tasks may become epic proposals.
 
 ## 3. Specify
 

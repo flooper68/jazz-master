@@ -10,7 +10,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | Processes | `processes/` | Executable playbooks — how we work (index below) |
 | Architecture | `architecture/` | `overview.md` (living map), `decisions/ADR-*` (decision records), `LOG.md` (engineering log) |
 | Work | `work/` | Flow items: epics, tasks, insights, issues, reviews — formats in `work/README.md` |
-| Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly |
+| Notes | `notes/` | Raw feedback, meetings, observations — processed into work, never implemented directly (one recorded exception: in-session grill write-backs, ADR-008) |
 | Research | `research/` | Persisted deep-research results (`RES-*`) — check before re-researching anything |
 | Wiki | `wiki/` | Derived synthesis of how the product + project work; cites canonical sources, never replaces them (ADR-007). Start at `wiki/index.md`. |
 | Artifacts | `artifacts/` | Human-facing outputs: presentations, visual reports, exports. Markdown docs remain canonical. |
@@ -25,6 +25,7 @@ Web app that helps guitarists practice jazz: chord voicings, ii–V–I drills, 
 | "Do the next task" / implement anything | `processes/dev-loop.md` |
 | Writing React/TypeScript/Tailwind code | `processes/development-practices.md` |
 | "Do the heartbeat" — consolidate new inputs, schedule due hygiene work, recommend next | `processes/heartbeat.md` |
+| "Grill me" / owner gives feedback or makes a decision-shaped call — question the owner one-at-a-time, write decisions back | `processes/grilling.md` |
 | Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
 | Inspect the product, find problems | `processes/qa-product-review.md` |

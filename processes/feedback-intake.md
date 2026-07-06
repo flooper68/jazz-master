@@ -8,6 +8,7 @@ Turns raw observations into the right durable artifact without deciding priority
 - User feedback, support comments, or external bug reports
 - Agent observations while using or reviewing the app
 - Security/privacy concerns noticed during implementation or QA
+- Grill session transcripts and routed questions (`processes/grilling.md`)
 
 ## Route each fragment
 
@@ -41,3 +42,5 @@ Turns raw observations into the right durable artifact without deciding priority
 ## Notes
 
 Raw feedback is cheap to capture, but it is not work until triaged. Run `processes/triage.md` for fresh insights/issues and `processes/knowledge-maintenance.md` when notes, research, and architecture may need a wider sweep.
+
+One exception (ADR-008): decisions the owner makes mid-grill are applied directly to the artifact under discussion, in-session, with the diff reviewed — they do not wait for triage. The transcript still lands here as a `NOTE-###` (`source_type: grill-session`); everything else a grill surfaces routes through this process as usual.

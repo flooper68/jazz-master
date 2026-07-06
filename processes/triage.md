@@ -48,6 +48,8 @@ After inbox items are processed, run `processes/prioritization.md` when new task
 
 Agents run triage end-to-end but **acceptance/rejection of insights is a proposal** until the user confirms — batch the proposals in the triage commit message and Log entries so confirmation is a one-glance affair. Issue confirmation/severity needs no approval (it's factual). The user can pre-authorize full autonomous triage at any point.
 
+Confirmation is a **deferred grill** (`processes/grilling.md`): each accept that promotes an insight into a task or epic ships with the 2–3 load-bearing questions the new artifact rests on, and the owner's confirmation session opens with those questions rather than a yes/no.
+
 ## Output
 
 - Updated inbox item files + any created tasks, shipped as one `work: triage <date>` commit.

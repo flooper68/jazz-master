@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — grill loop adopted as the owner's primary interface (ADR-008, NOTE-001)
+
+Owner-directed, designed live in a grill session about grilling itself (NOTE-001). RES-004's critique-skill concept reversed direction — the agent questions the owner, one question at a time, as a comprehension-and-ownership mechanism — and was promoted from checkpoint to primary interface: grill → agents work → feedback → grilled again. Canonical playbook `processes/grilling.md`, thin trigger `.claude/skills/grill-me/`. Supersedes RES-004 recs 1/4 and its auto-triggering caution (location; non-mutating — grill decisions now write back to the live artifact in-session, a recorded exception to the notes pipeline). Judgment-carrying artifact creation (epics, product tasks, ADRs, strategy proposals, triage promotions) now always grills, inline or deferred into confirmation batches. Exam grill ~monthly is the built-in success metric and kill criterion.
+
 ## 2026-07-06 — wiki/ derived-knowledge layer added (ADR-007, TASK-032)
 
 Owner-directed adoption of Karpathy's LLM-Wiki pattern from RES-003, overriding its "no parallel wiki/" recommendation with a derived-only design: `wiki/` pages synthesize and cite canonical docs (canonical wins conflicts), `index.md`/`log.md` navigate and audit it, and the ops live in `processes/wiki-maintenance.md`. Triggers wired into dev-loop Record, deep-research feed-forward, the heartbeat cadence table, and the knowledge-maintenance sweep (new wiki-lint step). Seeded with product overview, project overview, and lifecycle-of-a-change pages. RES-003's `stale_when` tripped by this adoption; resolved via its Outcome addendum. ADR-006 remains reserved for the Astro/Workers decision (TASK-020) — the wiki ADR is ADR-007.

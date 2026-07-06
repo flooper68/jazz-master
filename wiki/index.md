@@ -9,7 +9,7 @@ Map of all wiki pages — read this first, then open only what the question need
 
 ## Project — how the project works
 
-- [project/overview.md](project/overview.md) — the operating model: solo owner + AI agents, the knowledge layers, the work rhythm, and the rules that bind every change.
+- [project/overview.md](project/overview.md) — the operating model: solo owner + AI agents, the knowledge layers, the work rhythm, the grill loop (owner-facing interface), and the rules that bind every change.
 - [project/lifecycle-of-a-change.md](project/lifecycle-of-a-change.md) — end to end: how raw feedback becomes a note, an insight, a task, a reviewed commit on `main`, and eventually QA'd, maintained knowledge.
 - [project/quality-loops.md](project/quality-loops.md) — why the loop is closed: cheap capture vs deliberate commitment, small queue with complete archive, written reasons everywhere, the human at the product boundary, derived cadence.
 - [project/how-the-wiki-works.md](project/how-the-wiki-works.md) — the wiki's own mechanics: the LLM-Wiki pattern, the failure modes (compilation gap, drift), and the guardrail answering each.

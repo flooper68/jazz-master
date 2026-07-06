@@ -11,6 +11,7 @@ The cadence triggers that other processes state but nothing enforces:
 - `processes/qa-product-review.md` — "every ~5 shipped tasks / after an epic is done"
 - `processes/knowledge-maintenance.md` — "periodically after about ten shipped tasks"
 - `processes/security-review.md` — when shipped work touched sensitive surfaces without one
+- `processes/grilling.md` — the ~monthly exam grill
 - research `stale_when` conditions going stale unnoticed
 
 The heartbeat is the only process that counts shipped work and turns "periodically" into an actual scheduled task.
@@ -29,7 +30,7 @@ The heartbeat is the only process that counts shipped work and turns "periodical
 ### 2. Sweep intake (inline — this part is cheap)
 
 - Unprocessed `notes/NOTE-*`: run `processes/feedback-intake.md` extraction if quick, else count them toward scheduling a knowledge-maintenance task in step 3.
-- Inbox items (`INS-*` `status: new`, `ISSUE-*` `status: open`): run `processes/triage.md` inline. Its authority rules apply unchanged — insight accept/reject remains a proposal for the owner, batched into this beat's report.
+- Inbox items (`INS-*` `status: new`, `ISSUE-*` `status: open`): run `processes/triage.md` inline. Its authority rules apply unchanged — insight accept/reject remains a proposal for the owner, batched into this beat's report with each promotion's deferred-grill questions (`processes/grilling.md`).
 
 ### 3. Cadence check — schedule due hygiene as tasks
 
@@ -41,6 +42,7 @@ For each rule that fires, create a normal `TASK-###` (template in `work/README.m
 | Knowledge maintenance (deep sweep) | ≥10 tasks shipped since the last sweep; or unprocessed notes / stale `RES-*` piled beyond what step 2 handled inline; or `wiki/log.md` shows the wiki untouched across shipped work that changed how things work | "Run knowledge maintenance sweep" per `processes/knowledge-maintenance.md` (includes the wiki lint from `processes/wiki-maintenance.md`) |
 | Security review | Work since the last beat touched storage, dependencies, user input, permissions, or import/export without a security pass in its Log | "Security review of <surface>" per `processes/security-review.md` |
 | Research refresh | A `RES-*` `stale_when` condition has triggered | Task or insight to refresh, per `processes/knowledge-maintenance.md` routing |
+| Exam grill | ≥ ~30 days since the last exam-grill session (`notes/` with `source_type: grill-session` and `exam: true`; baseline: ADR-008 date) | **Not a task** — it needs the owner live. Flag "exam grill due" under **Owner decisions needed** in the report, per `processes/grilling.md` |
 
 Scheduling rules:
 
@@ -68,7 +70,7 @@ Append a ledger entry to `work/HEARTBEAT.md`:
 - Scheduled: <TASK-### …, or "nothing due" with skipped rules + reasons>
 - Retro: <finding + filed item, or "no friction">
 - Next up: 1. TASK-### — <why> 2. … 3. …
-- Owner decisions needed: <batched questions, or "none">
+- Owner decisions needed: <batched questions incl. outstanding `## Open questions (deferred grill)` headings in artifacts created since the last beat, or "none">
 ```
 
 Commit everything the beat produced — ledger entry, inline triage edits, scheduled tasks, filed retro items — as one commit, `work: heartbeat YYYY-MM-DD`, and **push it to `main`** per `processes/git-workflow.md`. Run its end-of-run check: the beat is not done while `git status` is dirty or the commit sits unpushed.

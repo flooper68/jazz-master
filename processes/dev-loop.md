@@ -56,7 +56,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 7. Record
 
 - Tick completed acceptance criteria; append a Log entry (what, key decisions, deviations); set status `done` (or `blocked` with an explicit reason — never silently abandon).
-- If an architectural decision was made, write the ADR (`architecture/decisions/`) now, in the same change.
+- If an architectural decision was made, write the ADR (`architecture/decisions/`) now, in the same change — with its deferred-grill questions recorded per `processes/grilling.md` (the owner wasn't present for the judgment).
 - If the shipped work changes how the product or the project works as described in `wiki/`, update the affected wiki pages (plus `wiki/index.md`/`wiki/log.md`) in the same change — ops in `processes/wiki-maintenance.md`.
 - If this completes an epic's last task, update the epic's status and Done-when assessment.
 - Anything notable for posterity (migration, gotcha, dead end) → one line in `architecture/LOG.md`.
@@ -68,7 +68,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ### 9. Reflect
 
-- File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`.
+- File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`. Judgment-carrying artifacts filed here (product-facing tasks, epic proposals) carry deferred-grill questions per `processes/grilling.md`.
 - These files land *after* the ship commit, so they need their own `work:` commit — commit and push them before ending the session or looping. Never leave filed items sitting uncommitted.
 - Loop back to 1 if in a multi-iteration session. Before ending any session, run the end-of-run check in `processes/git-workflow.md`.
 

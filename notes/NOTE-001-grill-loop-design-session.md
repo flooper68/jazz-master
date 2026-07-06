@@ -2,9 +2,9 @@
 id: NOTE-001
 title: Grill loop as primary owner interface — design session
 created: 2026-07-06
-source_type: chat
+source_type: grill-session
 participants: [owner, agent]
-processed: false
+processed: true
 ---
 
 # NOTE-001 - Grill loop as primary owner interface — design session
@@ -45,4 +45,7 @@ Risks accepted rather than resolved: the "hundreds/week" appetite is untested; a
 
 ## Extracted work
 
-- (pending — will link the process doc, skill, and ADR when implemented)
+- `architecture/decisions/ADR-008-grill-loop-primary-owner-interface.md` — the decision record
+- `processes/grilling.md` — the canonical playbook
+- `.claude/skills/grill-me/SKILL.md` — thin trigger surface
+- Wiring edits in the same commit: CLAUDE.md process index, `processes/heartbeat.md` (exam-grill cadence + deferred-grill questions in the beat report), `processes/dev-loop.md` (deferred-grill questions on autonomously created ADRs/tasks), `processes/triage.md` (confirmation batch = deferred grill), `processes/feedback-intake.md` + `notes/README.md` (`grill-session` source type, `exam:` flag, pipeline exception), wiki (`project/overview`, `project/lifecycle-of-a-change`, index, log)

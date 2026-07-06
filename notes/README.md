@@ -17,7 +17,8 @@ Notes are processed through `processes/feedback-intake.md` and `processes/knowle
 id: NOTE-0XX
 title: <meeting/topic>
 created: YYYY-MM-DD
-source_type: meeting | call | observation | chat | owner-note | user-feedback
+source_type: meeting | call | observation | chat | owner-note | user-feedback | grill-session
+exam: true            # grill-session only, and only for exam grills (processes/grilling.md); omit otherwise
 participants: []
 processed: false
 ---
