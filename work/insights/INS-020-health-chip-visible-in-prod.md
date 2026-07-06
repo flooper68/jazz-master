@@ -1,7 +1,8 @@
 ---
 id: INS-020
 title: Health chip renders in production builds — gate to dev or promote before deploy
-status: new
+status: accepted
+outcome: [TASK-024]
 created: 2026-07-06
 source: TASK-023 review
 ---

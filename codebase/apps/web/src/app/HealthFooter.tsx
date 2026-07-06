@@ -5,9 +5,17 @@ import { useTRPC } from './trpc'
 // fields come off the typed health procedure, so a server output change that
 // isn't reflected here fails the typecheck. Lives in src/app/ (not
 // components/) because it depends on the app-layer tRPC context.
+// Dev-only (INS-020): it is API-status scaffolding, not product UI, so
+// production builds render nothing. The typecheck-pinning value survives the
+// gate because the JSX below still compiles against the procedure's output.
 export function HealthFooter() {
   const trpc = useTRPC()
-  const health = useQuery(trpc.health.queryOptions())
+  const health = useQuery({
+    ...trpc.health.queryOptions(),
+    enabled: import.meta.env.DEV,
+  })
+
+  if (!import.meta.env.DEV) return null
 
   return (
     <footer

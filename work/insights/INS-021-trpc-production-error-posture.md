@@ -1,7 +1,8 @@
 ---
 id: INS-021
 title: /trpc production posture — error stack traces, CORS, abuse
-status: new
+status: accepted
+outcome: [TASK-024]
 created: 2026-07-06
 source: TASK-023 verification + review
 ---

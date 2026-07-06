@@ -11,6 +11,7 @@
     "dev": "bun run --cwd apps/web dev",
     "build": "bun run --filter './apps/*' build",
     "preview": "bun run --cwd apps/web preview",
+    "deploy": "bun run --cwd apps/web deploy",
     "lint": "oxlint",
     "typecheck": "tsc -b",
     "test": "vitest run",
