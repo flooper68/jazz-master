@@ -34,16 +34,17 @@ Decisions in NOTE-002 bind the design:
 
 Three pieces:
 
-1. **Facts script** — lives in `codebase/` (the root has no `package.json`), e.g. `bun run --cwd codebase work:status`, reading `../work/` frontmatter and `git log`. No LLM, no deps beyond what bun ships. Output sections: in-progress + blocked + pending-confirmation items; insight/issue inbox counts by status (untriaged vs deferred split correctly); dependency-ready backlog grouped by epic with done/total rollups per epic; shipped since the last heartbeat ledger entry (from `git log` `TASK-###:`/`ISSUE-###:` commits); cadence flags evaluated per the "Due when" rules in `processes/heartbeat.md` (QA review, knowledge sweep, heartbeat itself, exam grill).
+1. **Facts script** — lives in `codebase/` (the root has no `package.json`), e.g. `bun run --cwd codebase work:status`, reading `../work/` frontmatter and `git log`. No LLM, no deps beyond what bun ships. Output sections: in-progress + blocked + pending-confirmation items; insight/issue inbox counts by status (untriaged vs deferred split correctly); **open issues listed individually, ordered by severity** (NOTE-004); dependency-ready backlog grouped by epic with done/total rollups per epic; shipped since the last heartbeat ledger entry (from `git log` `TASK-###:`/`ISSUE-###:` commits); cadence flags evaluated per the "Due when" rules in `processes/heartbeat.md` (QA review, knowledge sweep, heartbeat itself, exam grill); **repo hygiene** (NOTE-004): dirty working tree, unpushed local commits, and untracked files outside expected knowledge/code directories — surfaces hard-rule-7 violations (finished work left uncommitted) automatically.
 2. **Status-vocabulary fixes in `work/README.md`** (the report can only show what frontmatter expresses): insight flow gains `deferred` with a `revisit_when:` field; tasks gain a structured gating field (e.g. `gated_until:` or `blocked` + `blocked_reason:`) replacing YAML comments; tasks pending owner confirmation get an explicit status (e.g. `proposed`). Retrofit the affected items: INS-001/002/004/005/007 (deferred at heartbeat 2026-07-06 with triggers recorded in the ledger), TASK-025/028 (gate text in YAML comments), TASK-030/031 (pending confirmation per the ledger). Epic template guidance: task lists carry scope (IDs + titles) only — no hand-written status annotations; rollups are derived from task frontmatter.
-3. **`processes/status-report.md` + wiring** — trigger: owner asks "what's happening" / "status report". Steps: run the script, run `processes/prioritization.md` for next 1–3, narrate leading with next-up and any cadence flags, explicitly advisory. Add the CLAUDE.md process-table row. Note the report as an input in `processes/heartbeat.md` step 1 (Take stock) so both derive from the same script.
+3. **`processes/status-report.md` + wiring** — trigger: owner asks "what's happening" / "status report". Steps: run the script, run `processes/prioritization.md` for next 1–3, narrate leading with next-up and any cadence flags, explicitly advisory. Two narration rules from NOTE-004: (a) **titles first, IDs last** — every item is named by its human-readable title, with the ID only as a trailing note/parenthetical, never leading a sentence or list entry; (b) **goal alignment** — the epic/initiative section maps in-progress and next epics against the "Now" items in `strategy/goals.md` so the report answers "why this next", not just "what's next". Add the AGENTS.md process-table row. Note the report as an input in `processes/heartbeat.md` step 1 (Take stock) so both derive from the same script.
 
 ## Acceptance criteria
 
 - [ ] `work/README.md` status table covers deferred insights, gated/blocked tasks, and pending-confirmation tasks; all existing items retrofitted so no lifecycle state exists only in YAML comments or ledger prose
-- [ ] The facts script runs via a single documented bun command and prints: in-progress/blocked/proposed items, inbox counts by status, dependency-ready backlog by epic with done/total rollups, shipped-since-last-heartbeat, and cadence-due flags matching `processes/heartbeat.md` rules
+- [ ] The facts script runs via a single documented bun command and prints: in-progress/blocked/proposed items, inbox counts by status, open issues ordered by severity, dependency-ready backlog by epic with done/total rollups, shipped-since-last-heartbeat, cadence-due flags matching `processes/heartbeat.md` rules, and a repo-hygiene section (dirty tree / unpushed commits / stray untracked files)
 - [ ] Script output matches a manual frontmatter sweep (spot-check: 3 untriaged insights, TASK-025/028 shown gated, TASK-030/031 shown pending confirmation)
-- [ ] `processes/status-report.md` exists (script for facts, fresh prioritization for next-up, read-only/advisory, heartbeat stays the recorder) and CLAUDE.md has the process-table row
+- [ ] `processes/status-report.md` exists (script for facts, fresh prioritization for next-up, read-only/advisory, heartbeat stays the recorder) and AGENTS.md has the process-table row
+- [ ] The process's narration rules require titles-first/IDs-as-trailing-note output and an epic section mapped to `strategy/goals.md` "Now" items; a sample report in the task Log demonstrates both
 - [ ] `bun run check` passes
 
 ## Verification
@@ -51,4 +52,12 @@ Three pieces:
 1. `bun run --cwd codebase work:status` (or the documented command) — compare each section against `grep -m1 '^status:' work/*/**.md` and `git log` since the last `work: heartbeat` commit.
 2. Confirm the deferred insights no longer count as untriaged and the gated/proposed tasks are labeled as such.
 3. `rg -n '# GATED|pending owner confirmation' work/tasks/` returns nothing outside structured frontmatter.
-4. `bun run --cwd codebase check` green.
+4. With a deliberately dirty tree (e.g. touch a scratch file), the hygiene section reports it; with a clean, pushed tree it reports clean.
+5. Generate one report via the process and check the narration: no ID leads a list entry or sentence; the epic section references `strategy/goals.md` "Now" items.
+6. `bun run --cwd codebase check` green.
+
+## Log
+
+### 2026-07-06 — spec extended from owner feedback (NOTE-004)
+
+The owner asked for an ad-hoc report (second manual sweep since NOTE-002) and directed improvements, folded into this spec while still backlog: open-issues-by-severity and repo-hygiene sections in the facts script; goal-alignment (`strategy/goals.md`) and titles-first/IDs-last narration rules in the process. Provenance: `notes/NOTE-004-status-report-feedback-session.md`.
