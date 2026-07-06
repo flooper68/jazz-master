@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-06 — ADR-006 accepted; migration is next work (grill session, NOTE-005)
+
+Owner grill resolved ADR-006's three open questions (operational commitment: yes, migrate while the app is small; Railway: deliberate; landing page: barebones) — ADR accepted, TASK-020 done, TASK-021 chain unblocked and owner-directed ahead of TASK-014/015. Same session confirmed the sweep's queued decisions: TASK-035 e2e suite sequenced after the migration as a separate `check:e2e` (the gate stays fast); claim-time epic flip stands; triage gains a confirm-then-ship accept-via-process-edit path; independent review gets standing spawn authorization with logged self-review as the degraded fallback (INS-015); dashboard trends stay gated on EPIC-010 machine scores (INS-016). Also fixed en route: `architecture/overview.md`'s current-state paragraph had missed TASK-019 (dashboard done).
+
 ## 2026-07-06 — knowledge maintenance sweep (TASK-030)
 
 First full sweep: inbox of 8 new insights triaged (INS-009 accepted → TASK-035 Playwright e2e smoke; INS-012 accepted → dev-loop now flips a `backlog` epic to `in-progress` at claim time; the rest deferred with triggers — INS-015/016 carry recorded owner grill questions), ISSUE-002 reproduced in-browser and confirmed (focus drops to `body` on both runner and onboarding view swaps — app-wide). RES-008's tripped `stale_when` resolved with a staleness section; all other research conditions checked, none tripped. Index lint clean after removing ADR-006 from the known-ID-gaps line (TASK-020 filled it); wiki lint clean. Drift fixed: triage.md's defer wording now matches work/README's `deferred` status vocabulary; EPIC-013's "ADR-006 when written" de-staled.

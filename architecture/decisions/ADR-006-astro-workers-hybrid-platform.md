@@ -1,8 +1,9 @@
 ---
 id: ADR-006
 title: Hybrid Astro SSR + SPA island on Cloudflare Workers, tRPC API, Hyperdrive to Railway Postgres
-status: proposed
+status: accepted
 date: 2026-07-06
+accepted: 2026-07-06
 research: RES-002
 ---
 
@@ -54,10 +55,10 @@ RES-002 recommendation coverage: recs 1–5 and 8 are adopted as decisions 1–4
 - **Cloudflare Pages** — the Astro adapter has dropped Pages support; Workers is the documented target.
 - **Staying local-only (no platform migration)** — rejected by the owner's multi-app/platform direction (EPIC-013); restructuring and re-platforming now is cheaper than after more features land.
 
-## Open questions (deferred grill)
+## Acceptance (2026-07-06, owner grill session — NOTE-005)
 
-Owner absent at authoring; per `processes/grilling.md` these are the load-bearing questions this ADR rests on. Resolve at next owner session, then remove this section and set status `accepted`.
+The three deferred-grill questions this ADR was authored with were resolved live:
 
-1. **Is the operational commitment wanted now?** A Workers deploy plus (eventually) Railway means bills, dashboards, and secrets where today there is a free static bundle — while the product hypothesis ADR-002 was guarding is still unproven. Is platform-readiness worth that before more practice features exist, or should TASK-021–024 wait behind EPIC-012 (dashboard/history)?
-2. **Is Railway Postgres actually decided, or just researched?** Decision 5 inherits Railway from RES-002's framing. Neon/Supabase/D1 were never explicitly compared. Fine to leave gated as-is, but confirm Railway is a real choice, not an accident of the research question.
-3. **How much landing page does slice one need?** TASK-021 says "a minimal landing page at `/` linking into `/app` is enough". Confirm nothing marketing-shaped is expected from this epic, so scope stays infrastructure-only.
+1. **Operational commitment: yes, now.** The owner weighed "weeks of agent capacity on plumbing while the practice hypothesis sits untested" against "migrating a bigger app later" and judged the later, riskier migration the worse failure — do it while the app is small (~8 routes, half stubs) and the island move is wholesale. The migration chain (TASK-021 → 022/023 → 024) is **owner-directed next work**, ahead of the notation/scoring research tasks (TASK-014/015). Dogfooding continues on the working app during the migration.
+2. **Railway Postgres is a deliberate choice**, not an inherited research framing — confirmed after being told Neon/Supabase/D1 were never compared. Stays gated behind TASK-025 as designed.
+3. **Slice-one landing page is barebones by decree:** app name, one sentence, one link into `/app`, no design work. Anything marketing-shaped needs its own future epic — it is out of this epic's scope.

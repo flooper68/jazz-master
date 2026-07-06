@@ -47,8 +47,8 @@ The owner has decided the product grows beyond one web app — document creation
 
 ## Current status
 
-In progress. ADR-005 is written and the codebase restructure has shipped. ADR-006 is now written (TASK-020) but `proposed` — owner acceptance is pending on its three deferred-grill questions, and the TASK-021 → TASK-022/023 → TASK-024 implementation chain waits behind that acceptance. The database tasks remain `gated` in task frontmatter until a feature needs server-side persistence.
+In progress. ADR-005 is written and the codebase restructure has shipped. ADR-006 is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done): operational commitment confirmed, Railway confirmed as a deliberate choice, slice-one landing page pinned to barebones (name + sentence + link into `/app`, nothing marketing-shaped). The TASK-021 → TASK-022/023 → TASK-024 chain is unblocked and is **owner-directed next work**, ahead of TASK-014/015. The database tasks remain `gated` in task frontmatter until a feature needs server-side persistence.
 
 ## Last reviewed
 
-2026-07-06 — TASK-030 sweep: goal wording de-staled (ADR-006 is written, `proposed`); status and task list verified current. Earlier same day — Current status updated for ADR-006 written/proposed (TASK-020). 2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.
+2026-07-06 — grill session (NOTE-005): ADR-006 accepted, chain unblocked, migration made next work. Earlier: TASK-030 sweep: goal wording de-staled (ADR-006 is written, `proposed`); status and task list verified current. Earlier same day — Current status updated for ADR-006 written/proposed (TASK-020). 2026-07-05 — created; adopted the six orphaned platform tasks (TASK-020–025) that were awaiting an epic.
