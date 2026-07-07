@@ -45,8 +45,8 @@ A scale or arpeggio exercise in the practice runner shows correct, readable staf
 
 ## Current status
 
-In progress. Research landed (RES-013) and the rendering approach is decided: VexFlow 5 behind a project-owned `<Notation>` component, rhythm derived not stored, lazy-loaded (ADR-010 — carries deferred-grill questions). Implementation tasks TASK-037–039 are filed and sized; TASK-037 is the entry point.
+In progress — the Done-when is substantively met as of TASK-038: every lesson-pack scale/arpeggio exercise renders an aligned staff + TAB pair in the practice runner via the `'notation'` display hint, spelled exactly as the theory core spells (flat-key read verified in dev). VexFlow stays lazy-loaded out of the initial `/app` chunk. Remaining: TASK-039 (bundle trim — the lazy chunk is 1.1 MB min / 692 KB gzip).
 
 ## Last reviewed
 
-2026-07-07 — TASK-014 done: RES-013 + ADR-010 written, implementation tasks TASK-037–039 filed.
+2026-07-07 — TASK-038 done: notation live in the runner; deferred polish filed as INS-030; only TASK-039 remains.

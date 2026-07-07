@@ -35,6 +35,8 @@ const CLEF_WIDTH = 48
 // final bar clips its content at the stave edge.
 const MEASURE_PAD = 24
 const MARGIN = 10
+// The responsive floor: how far below natural size the score may shrink.
+const MIN_WIDTH_FRACTION = 0.5
 
 function measureWidth(measure: NotationMeasure, isFirst: boolean): number {
   return (
@@ -150,4 +152,10 @@ export function renderNotation(
   svg.setAttribute('viewBox', `0 0 ${totalWidth} ${HEIGHT}`)
   svg.setAttribute('width', '100%')
   svg.removeAttribute('height')
+  // Legibility bounds: never shrink below half natural size — long exercises
+  // on narrow viewports scroll (callers wrap in overflow-x-auto) instead of
+  // shrinking staff and fret digits indefinitely — and never scale a short
+  // exercise past natural size on wide panels.
+  svg.style.minWidth = `${totalWidth * MIN_WIDTH_FRACTION}px`
+  svg.style.maxWidth = `${totalWidth}px`
 }

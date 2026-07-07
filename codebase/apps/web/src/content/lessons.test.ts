@@ -48,6 +48,13 @@ describe('the scales & arpeggios lesson pack', () => {
     }
   })
 
+  it('opts every exercise into fretboard and notation display (TASK-038)', () => {
+    for (const exercise of allExercises) {
+      expect(exercise.display).toContain('fretboard')
+      expect(exercise.display).toContain('notation')
+    }
+  })
+
   it('resolves every exercise to notes fully playable inside its fret window', () => {
     for (const exercise of allExercises) {
       const { notes, positions } = resolveExercise(exercise)

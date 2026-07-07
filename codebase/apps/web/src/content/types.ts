@@ -26,8 +26,8 @@ export type ExerciseDuration =
   | { kind: 'minutes'; minutes: number }
   | { kind: 'repetitions'; count: number }
 
-/** Display hint for the practice runner (notation joins once EPIC-009 lands). */
-export type ExerciseDisplay = 'fretboard' | 'chordDiagram'
+/** Display hint for the practice runner; 'notation' is staff + TAB (EPIC-009). */
+export type ExerciseDisplay = 'fretboard' | 'chordDiagram' | 'notation'
 
 /** One playable unit: material + where on the neck + tempo + how long. */
 export interface Exercise {

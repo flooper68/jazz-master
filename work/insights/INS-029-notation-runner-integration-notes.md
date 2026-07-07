@@ -1,7 +1,8 @@
 ---
 id: INS-029
 title: Notation polish items for the runner integration (TASK-038)
-status: new
+status: accepted
+outcome: [TASK-038]
 created: 2026-07-07
 source: TASK-037
 ---

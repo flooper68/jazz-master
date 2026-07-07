@@ -20,7 +20,7 @@ const lesson: Lesson = {
       window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
-      display: ['fretboard'],
+      display: ['fretboard', 'notation'],
     },
     {
       id: 'fx-2',
@@ -62,6 +62,24 @@ describe('PracticeRunner', () => {
     const root = svg.querySelector('g[data-string="5"][data-fret="3"]')
     expect(root).toHaveAttribute('data-role', 'root')
     expect(root!.querySelector('text')).toHaveTextContent('C')
+  })
+
+  it('shows notation for an exercise with the hint and none for one without', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    // fx-1 opts in: the score container appears with its summary label.
+    expect(
+      screen.getByRole('img', {
+        name: 'C major — open position — staff and tablature',
+      }),
+    ).toBeInTheDocument()
+
+    // fx-2 has no 'notation' hint: only the fretboard image remains.
+    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    expect(
+      screen.queryByRole('img', { name: /staff and tablature/ }),
+    ).toBeNull()
   })
 
   it('runs the happy path: grade both exercises, see the summary, persist a completed session', async () => {

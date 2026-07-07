@@ -1,8 +1,9 @@
 import { noteName } from '@jazz-master/theory'
 import { useEffect, useState } from 'react'
-import { resolveExercise, type Exercise, type Lesson } from '../content'
+import { deriveRhythm, resolveExercise, type Exercise, type Lesson } from '../content'
 import type { ExerciseGrade } from '../storage/sessions'
 import { Fretboard, type FretboardHighlight } from './Fretboard'
+import { Notation } from './Notation'
 import { usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
 
@@ -147,6 +148,16 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
             highlights={highlights}
             fretRange={exercise.window}
             aria-label={`${exercise.title} on the fretboard, frets ${exercise.window.min} to ${exercise.window.max}`}
+          />
+        </div>
+      )}
+      {/* Long exercises hit the SVG's min-width floor and scroll sideways
+          instead of shrinking fret digits into illegibility (INS-029). */}
+      {exercise.display.includes('notation') && (
+        <div className="mt-3 overflow-x-auto">
+          <Notation
+            measures={deriveRhythm(resolved.positions)}
+            aria-label={`${exercise.title} — staff and tablature`}
           />
         </div>
       )}

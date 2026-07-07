@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { parseNote } from '@jazz-master/theory'
 import type { Exercise, NoteName } from '../content'
 import { deriveRhythm, resolveExercise } from '../content'
 import { Notation } from './Notation'
@@ -38,6 +39,44 @@ describe('Notation', () => {
   it('renders nothing without measures', () => {
     render(<Notation measures={[]} />)
     expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('shows a loading placeholder until the score renders, then clears it', async () => {
+    const { measures } = arpeggioMeasures('Db')
+    const { container } = render(<Notation measures={measures} />)
+    expect(screen.getByText('Loading notation…')).toBeInTheDocument()
+    await findSvg(container)
+    expect(screen.queryByText('Loading notation…')).toBeNull()
+  })
+
+  it('replaces the placeholder with a failure message when the score cannot render', async () => {
+    // C does not sound at string 6 fret 5 (that's A) — stavePitch throws.
+    const broken = [
+      {
+        notes: [
+          {
+            position: {
+              note: parseNote('C')!,
+              string: 6,
+              fret: 5,
+              degree: 1,
+            } as const,
+            duration: '8' as const,
+          },
+        ],
+        beams: [],
+      },
+    ]
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    render(<Notation measures={broken} />)
+    expect(
+      await screen.findByText('Notation couldn’t load.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Loading notation…')).toBeNull()
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 
   it('names the image with the spelled note sequence', async () => {

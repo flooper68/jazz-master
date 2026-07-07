@@ -1,5 +1,5 @@
 import { displayAccidentals, noteName } from '@jazz-master/theory'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { NotationMeasure } from '../content/rhythm'
 
 export interface NotationProps {
@@ -30,6 +30,10 @@ export function Notation({
 }: NotationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const renderedKeyRef = useRef<string | null>(null)
+  // 'ready' sticks: content changes redraw in place, no placeholder flash.
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
+    'loading',
+  )
 
   useEffect(() => {
     const container = containerRef.current
@@ -42,11 +46,13 @@ export function Notation({
         if (cancelled) return
         renderNotation(container, measures)
         renderedKeyRef.current = key
+        setStatus('ready')
       })
       .catch((error: unknown) => {
         // Loud beats a silently blank score: a rejection here is a broken
         // chunk load or a spelling/position mismatch (stavePitch throws).
         console.error('Notation render failed', error)
+        if (!cancelled) setStatus('failed')
       })
     return () => {
       cancelled = true
@@ -62,10 +68,21 @@ export function Notation({
 
   return (
     <div
-      ref={containerRef}
       role="img"
       aria-label={ariaLabel ?? `Staff and tablature: ${spelledSequence}`}
+      aria-busy={status === 'loading'}
       className="text-zinc-100"
-    />
+    >
+      {/* The score pops in only after the lazy VexFlow chunk loads (INS-029);
+          give sighted users feedback instead of a blank gap meanwhile — and a
+          terminal message on failure, never an eternal "loading". */}
+      {status === 'loading' && (
+        <p className="py-4 text-sm text-zinc-400">Loading notation…</p>
+      )}
+      {status === 'failed' && (
+        <p className="py-4 text-sm text-zinc-400">Notation couldn’t load.</p>
+      )}
+      <div ref={containerRef} />
+    </div>
   )
 }
