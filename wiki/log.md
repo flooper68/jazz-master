@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-07 — `product/overview` built-today section updated for the notation bundle trim (TASK-039 done, EPIC-009 closed): the lazy VexFlow chunk is 389 KB gzip via `vexflow/bravura`.
 - 2026-07-07 — `product/overview` practice-flow + built-today sections updated for notation shipping into the runner (TASK-038): scale/arpeggio exercises now render staff + TAB via the `'notation'` display hint; VexFlow stays lazy-loaded.
 - 2026-07-07 — `product/overview` under-the-hood section updated for the production abandonment (grill NOTE-008): TASK-036 abandoned, no production environment is planned — the dev URL is the product's home.
 - 2026-07-07 — `product/overview` under-the-hood + built-today sections updated for the first live deploy (TASK-024 done): the dev environment is live on workers.dev, auto-deployed on every push to `main`.

@@ -4,7 +4,18 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
-## 2026-07-07 — Notation lands (TASK-037): VexFlow 5 spike passed; dark-theme gotchas
+## 2026-07-07 — Notation chunk trimmed 692→389 KB gzip (TASK-039); EPIC-009 closed
+
+The v4-era `vexflow-core` package RES-013 flagged needs-spike is obsolete in v5: the
+main `vexflow@5` package ships subpath entries instead — `vexflow/core` (zero fonts)
+and `vexflow/bravura` (Bravura + Academico, both embedded as data URIs). The bravura
+entry re-exports the identical API barrel, so the trim was a one-line import swap in
+`notationRender.ts`; the dropped weight is the embedded Petaluma/PetalumaScript/
+Gonville font modules. Academico must stay (TAB fret digits route to it — see the
+TASK-037 entry below), which is why `/bravura` beats `/core` + lazy fonts for us.
+VexFlow's cdn.jsdelivr.net `Font.HOST_URL` fallback is dead code when font data is
+passed (always, in this entry) — offline rendering verified in-browser with all
+external requests blocked. Last EPIC-009 task; the epic is done.
 
 ADR-010 made real: `<Notation>` renders staff+TAB from theory-core spellings, VexFlow
 behind a dynamic-import chunk (692 KB gzip, verified split). The spike confirmed the

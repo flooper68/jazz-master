@@ -2,7 +2,7 @@
 id: EPIC-009
 title: Notation & tabs — render exercises as staff notation + tablature
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-05
 ---
 
@@ -45,8 +45,8 @@ A scale or arpeggio exercise in the practice runner shows correct, readable staf
 
 ## Current status
 
-In progress — the Done-when is substantively met as of TASK-038: every lesson-pack scale/arpeggio exercise renders an aligned staff + TAB pair in the practice runner via the `'notation'` display hint, spelled exactly as the theory core spells (flat-key read verified in dev). VexFlow stays lazy-loaded out of the initial `/app` chunk. Remaining: TASK-039 (bundle trim — the lazy chunk is 1.1 MB min / 692 KB gzip).
+Done — all four tasks shipped. Done-when assessment: met. Every lesson-pack scale/arpeggio exercise in the practice runner shows an aligned staff + TAB pair via the `'notation'` display hint, spelled exactly as the theory core spells (enharmonic tests + flat-key read verified under TASK-037/038). VexFlow is lazy-loaded out of the initial `/app` chunk, and TASK-039 trimmed that chunk from 692 KB to 389 KB gzip (the `vexflow/bravura` entry — Bravura + Academico only, fonts embedded, offline rendering verified with external network blocked). Deferred UX polish lives in INS-030; notation e2e coverage gap in INS-031 — both are inbox items for triage, not epic blockers.
 
 ## Last reviewed
 
-2026-07-07 — TASK-038 done: notation live in the runner; deferred polish filed as INS-030; only TASK-039 remains.
+2026-07-07 — TASK-039 done (bundle trim); epic closed.
