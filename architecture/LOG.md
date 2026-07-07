@@ -4,6 +4,18 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-07 — Notation lands (TASK-037): VexFlow 5 spike passed; dark-theme gotchas
+
+ADR-010 made real: `<Notation>` renders staff+TAB from theory-core spellings, VexFlow
+behind a dynamic-import chunk (692 KB gzip, verified split). The spike confirmed the
+v4-era Formatter/Accidental docs hold in v5 — no fallback needed. Gotchas for anyone
+styling VexFlow on our dark theme: TAB fret digits default to the Bravura *music*
+font (blocky time-sig glyphs — route `MetricsDefaults.TabNote.text.fontFamily` to
+Academico), fret numbers sit on an opaque white blanking rect
+(`context.setBackgroundFillStyle('transparent')`), and `renderer.resize()` pins inline
+pixel width/height that beats responsive svg attributes. All handled inside
+`notationRender.ts`; details in TASK-037's log. Runner integration polish → INS-029.
+
 ## 2026-07-07 — E2E layer adopted (TASK-035); Astro-dev daemonization gotcha
 
 The Playwright smoke suite is live: 4 specs over the guided-practice slice, `bun run --cwd codebase check:e2e`, deliberately outside `bun run check` (NOTE-005). Gotcha for anyone wiring tools to `astro dev`: Astro 7 detects agentic environments and silently daemonizes the dev server (the launcher process exits), which any process-supervising tool — Playwright's `webServer` here — reads as the server dying. `ASTRO_DEV_BACKGROUND=1` in the child env suppresses the detection and keeps it foreground; see the comment in `apps/web/playwright.config.ts`.
