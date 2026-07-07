@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-07 — E2E layer adopted (TASK-035); Astro-dev daemonization gotcha
+
+The Playwright smoke suite is live: 4 specs over the guided-practice slice, `bun run --cwd codebase check:e2e`, deliberately outside `bun run check` (NOTE-005). Gotcha for anyone wiring tools to `astro dev`: Astro 7 detects agentic environments and silently daemonizes the dev server (the launcher process exits), which any process-supervising tool — Playwright's `webServer` here — reads as the server dying. `ASTRO_DEV_BACKGROUND=1` in the child env suppresses the detection and keeps it foreground; see the comment in `apps/web/playwright.config.ts`.
+
 ## 2026-07-07 — Production environment taken off the roadmap (TASK-036 abandoned; grill NOTE-008)
 
 The owner ditched the parked production-deploy task outright: production is far enough out that a standing gated placeholder is pure context cost. This supersedes NOTE-006's "gated until the owner asks". The dev worker URL is the product's home for the foreseeable future. Nothing about ADR-009 changes — production deploys, if they ever exist, remain owner-only and never agent-reachable — and TASK-036's file keeps its three open questions (prod-trigger enforcement, naming/domain, promote-artifact semantics) as raw material for any future fresh task. `abandoned` added to the task status vocabulary in `work/README.md` (terminal, carries `abandoned_reason:`).
