@@ -65,6 +65,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 ### 8. Ship
 
 - Follow `processes/git-workflow.md`: one work item = one commit, `TASK-###: <summary>` (or `ISSUE-###:`), pushed to `main`. Code and tracker updates move together in that commit. Never ship with a red `bun run --cwd codebase check`.
+- Commit via the commit-isolation steps in `processes/git-workflow.md`: inspect `git status --short` for foreign entries, then stage and commit with explicit pathspecs in a shared tree — never sweep a concurrent agent's staged work into your commit (INS-008).
 - Actually run `git push` and confirm it reached `origin/main` — committing without pushing is not shipping. The end-of-run check in `processes/git-workflow.md` (clean `git status`, empty `git log origin/main..HEAD`) must pass before you report the item as done.
 
 ### 9. Reflect
@@ -106,4 +107,4 @@ deferred — filed TASK-009. bun run check green, pushed.
 
 ## Parallel work
 
-Claiming is the lock. Parallel agents pick items touching different areas (check `depends_on` and affected files) or work in separate worktrees; last to ship rebases.
+Claiming is the lock. Parallel agents pick items touching different areas (check `depends_on` and affected files) or, preferably, work in separate worktrees — the structural guardrail of the commit-isolation section in `processes/git-workflow.md`; last to ship rebases. In a shared tree, that section's pathspec-commit steps are mandatory.

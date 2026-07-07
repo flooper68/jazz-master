@@ -76,7 +76,7 @@ Append a ledger entry to `work/HEARTBEAT.md`:
 - Owner decisions needed: <batched questions incl. outstanding `## Open questions (deferred grill)` headings in artifacts created since the last beat, or "none">
 ```
 
-Commit everything the beat produced — ledger entry, inline triage edits, scheduled tasks, filed retro items — as one commit, `work: heartbeat YYYY-MM-DD`, and **push it to `main`** per `processes/git-workflow.md`. Run its end-of-run check: the beat is not done while `git status` is dirty or the commit sits unpushed.
+Commit everything the beat produced — ledger entry, inline triage edits, scheduled tasks, filed retro items — as one commit, `work: heartbeat YYYY-MM-DD`, and **push it to `main`** per `processes/git-workflow.md`. The beat's files are enumerable, so follow that process's commit-isolation steps: inspect `git status --short`, then stage and commit them by explicit pathspec — never `git add -A` in a shared tree. Run its end-of-run check: the beat is not done while `git status` is dirty or the commit sits unpushed.
 
 Only after the push succeeds, report to the owner: the same digest, leading with **next up** and **decisions needed**.
 
