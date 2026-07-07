@@ -126,4 +126,25 @@ describe('PracticeRunner', () => {
     expect(onExit).toHaveBeenCalledTimes(1)
     expect(sessionsStore.get()).toEqual([])
   })
+
+  it('moves focus to the lesson heading when the runner appears', () => {
+    renderRunner()
+    expect(
+      screen.getByRole('heading', { name: 'Fixture lesson' }),
+    ).toHaveFocus()
+  })
+
+  it('moves focus to the summary heading when the last grade swaps in the summary', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    // Mid-lesson advance is not a view swap — focus stays on the grade button.
+    expect(screen.getByRole('button', { name: 'Got it' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Shaky' }))
+    expect(
+      screen.getByRole('heading', { name: 'Lesson complete — Fixture lesson' }),
+    ).toHaveFocus()
+  })
 })

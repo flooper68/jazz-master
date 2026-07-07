@@ -1,4 +1,5 @@
 import { Link, Outlet } from '@tanstack/react-router'
+import type { Ref } from 'react'
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -11,7 +12,16 @@ const navItems = [
   { to: '/profile', label: 'Profile' },
 ] as const
 
-export function Layout() {
+interface LayoutProps {
+  /**
+   * Focus target for view swaps that replace the whole shell (ISSUE-002):
+   * the routed page's heading is not reachable from the swapping component,
+   * so the main landmark receives focus instead.
+   */
+  mainRef?: Ref<HTMLElement>
+}
+
+export function Layout({ mainRef }: LayoutProps) {
   return (
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
       <aside className="flex w-56 shrink-0 flex-col gap-8 border-r border-zinc-800 px-4 py-6">
@@ -47,7 +57,7 @@ export function Layout() {
           </ul>
         </nav>
       </aside>
-      <main className="flex-1 px-8 py-10">
+      <main ref={mainRef} tabIndex={-1} className="flex-1 px-8 py-10">
         <Outlet />
       </main>
     </div>

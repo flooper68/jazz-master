@@ -2,6 +2,7 @@ import { createRootRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Layout } from '../../components/Layout'
 import { OnboardingWizard } from '../../components/OnboardingWizard'
+import { useViewFocus } from '../../components/useViewFocus'
 import { profileStore } from '../../storage'
 import { HealthFooter } from '../HealthFooter'
 import NotFoundPage from '../pages/NotFoundPage'
@@ -11,6 +12,12 @@ import NotFoundPage from '../pages/NotFoundPage'
 // oxlint-disable-next-line react/only-export-components -- TanStack root route files colocate the component with the Route export
 function RootComponent() {
   const [profile, setProfile] = useState(() => profileStore.get())
+  // ISSUE-002: completing onboarding swaps the wizard for the app shell within
+  // the same route; move focus into the app's main landmark so keyboard and
+  // screen-reader users land on the page content, not document.body.
+  const mainRef = useViewFocus<HTMLElement>(
+    profile === null ? 'onboarding' : 'app',
+  )
 
   if (profile === null) {
     return (
@@ -28,7 +35,7 @@ function RootComponent() {
 
   return (
     <>
-      <Layout />
+      <Layout mainRef={mainRef} />
       <HealthFooter />
     </>
   )

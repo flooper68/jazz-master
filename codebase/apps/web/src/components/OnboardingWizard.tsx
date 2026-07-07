@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { defaultProfile, type PracticeProfile } from '../storage'
 import { GoalAreaFields, LevelFields, MinutesFields } from './ProfileFields'
+import { useViewFocus } from './useViewFocus'
 
 interface OnboardingWizardProps {
   /** Receives the finished profile; the caller persists it. */
@@ -24,16 +25,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [draft, setDraft] = useState(() => defaultProfile(''))
 
   // Move focus to the heading when the step view swaps without navigation,
-  // so keyboard/screen-reader users aren't left on a removed button.
-  const headingRef = useRef<HTMLHeadingElement>(null)
-  const mounted = useRef(false)
-  useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true
-      return
-    }
-    headingRef.current?.focus()
-  }, [step])
+  // so keyboard/screen-reader users aren't left on a removed button (ISSUE-002).
+  const headingRef = useViewFocus<HTMLHeadingElement>(`step-${step}`)
 
   const lastStep = step === STEP_TITLES.length - 1
   const goalsEmpty = draft.goalAreas.length === 0

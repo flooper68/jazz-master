@@ -4,6 +4,7 @@ import { resolveExercise, type Exercise, type Lesson } from '../content'
 import type { ExerciseGrade } from '../storage/sessions'
 import { Fretboard, type FretboardHighlight } from './Fretboard'
 import { usePracticeRunner } from './usePracticeRunner'
+import { useViewFocus } from './useViewFocus'
 
 const GRADE_LABELS: Record<ExerciseGrade, string> = {
   'got-it': 'Got it',
@@ -28,6 +29,12 @@ export function PracticeRunner({
   onExit,
 }: PracticeRunnerProps) {
   const { state, grade } = usePracticeRunner({ lesson, sessionId, startedAt })
+  // ISSUE-002: the runner appearing (Start) and the summary replacing it (last
+  // grade) are same-route view swaps; move focus to the incoming heading.
+  const headingRef = useViewFocus<HTMLHeadingElement>(
+    state.finished ? 'summary' : 'exercises',
+    { focusOnMount: true },
+  )
 
   if (state.finished) {
     const gradeByExercise = new Map(
@@ -35,7 +42,11 @@ export function PracticeRunner({
     )
     return (
       <section className="max-w-2xl">
-        <h2 className="font-display text-xl font-bold tracking-tight">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        >
           Lesson complete — {lesson.title}
         </h2>
         <ul className="mt-4 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
@@ -69,7 +80,11 @@ export function PracticeRunner({
   return (
     <section className="max-w-2xl">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-xl font-bold tracking-tight">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        >
           {lesson.title}
         </h2>
         <button

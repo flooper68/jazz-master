@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { PracticeRunner } from '../../components/PracticeRunner'
+import { useViewFocus } from '../../components/useViewFocus'
 import { LESSONS } from '../../content'
 import type { Lesson } from '../../content'
 import { completedLessonIdsOn } from '../../dashboard'
@@ -45,6 +46,12 @@ export default function PracticePage() {
     () => completedLessonIdsOn(sessions, plan.date),
     [plan.date, sessions],
   )
+  // ISSUE-002: returning from a run (End lesson / Done) is a same-route view
+  // swap; refocus the list heading. The ref is only attached in the list view —
+  // on list → runner the incoming PracticeRunner focuses its own heading.
+  const listHeadingRef = useViewFocus<HTMLHeadingElement>(
+    activeRun ? `run-${activeRun.sessionId}` : 'list',
+  )
 
   // Consume the handoff state so refresh/back doesn't restart the lesson.
   useEffect(() => {
@@ -86,7 +93,13 @@ export default function PracticePage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold tracking-tight">Practice</h1>
+      <h1
+        ref={listHeadingRef}
+        tabIndex={-1}
+        className="font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+      >
+        Practice
+      </h1>
       <p className="mt-4 text-zinc-300">
         The v1 lesson pack — scales and arpeggios by level. Pick a lesson and
         start a guided session.

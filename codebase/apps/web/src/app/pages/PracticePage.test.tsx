@@ -76,6 +76,48 @@ describe('PracticePage', () => {
     ).toBeInTheDocument()
   })
 
+  it('moves focus to the incoming heading on each view swap of a full session', async () => {
+    const user = userEvent.setup()
+    await renderPage()
+    const first = LESSONS[0]
+
+    // List → runner: the lesson heading receives focus.
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: first.title }),
+    ).toHaveFocus()
+
+    // Runner → summary: the completion heading receives focus.
+    for (const _exercise of first.exercises) {
+      await user.click(screen.getByRole('button', { name: 'Got it' }))
+    }
+    expect(
+      screen.getByRole('heading', { name: `Lesson complete — ${first.title}` }),
+    ).toHaveFocus()
+
+    // Summary → list: the page heading receives focus.
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Practice' }),
+    ).toHaveFocus()
+  })
+
+  it('moves focus back to the page heading when a lesson is ended early', async () => {
+    const user = userEvent.setup()
+    await renderPage()
+    const first = LESSONS[0]
+
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+    await user.click(screen.getByRole('button', { name: 'End lesson' }))
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Practice' }),
+    ).toHaveFocus()
+  })
+
   it("renders and persists today's plan with reasons", async () => {
     await renderPage()
     const date = toPlanDate(new Date())

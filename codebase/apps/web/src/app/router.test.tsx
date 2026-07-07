@@ -96,6 +96,15 @@ describe('app router', () => {
     ).toBeInTheDocument()
   })
 
+  it('moves focus into the app main region when onboarding gives way to the app', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/practice')
+
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+
+    expect(screen.getByRole('main')).toHaveFocus()
+  })
+
   it('persists a completed profile and enters the requested route', async () => {
     const user = userEvent.setup()
     await renderRoute('/')
