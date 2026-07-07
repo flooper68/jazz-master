@@ -2,7 +2,7 @@
 id: EPIC-010
 title: Recording & scoring — record a take, get a score
 vision: VIS-001
-status: backlog
+status: in-progress
 created: 2026-07-05
 ---
 
@@ -35,8 +35,12 @@ Objective feedback closes the practice loop and feeds honest progress tracking. 
 
 ## Tasks
 
-- TASK-015 — Research browser audio recording & pitch-detection feasibility (assigns the next available RES ID when claimed)
-- (implementation tasks created after the research lands)
+- TASK-015 — Research browser audio recording & pitch-detection feasibility (→ `research/RES-014-audio-recording-scoring.md`)
+- TASK-040 — Throwaway spike: record a take and extract pitches/onsets from real guitar
+- TASK-041 — Recording capture flow in the practice runner
+- TASK-042 — Take analysis & scoring engine — detected vs expected notes to a 0–100 score
+- TASK-043 — Score feedback UI & persistence onto the session record
+- TASK-044 — Chord "close enough" check via chroma template matching
 
 ## Done when
 
@@ -44,8 +48,16 @@ A user records a monophonic scale exercise and gets a credible score with per-no
 
 ## Current status
 
-Backlog. Feasibility research is still the blocking first step; no `RES-*` ID is reserved before TASK-015 is claimed.
+In progress. Feasibility research landed (RES-014): **staged-go** — monophonic
+single-note-line scoring with offline-after-the-take analysis is credible in the
+browser (MPM/YIN pitch detection, spectral-flux onsets, metronome count-in
+instead of a backing track, score-only persistence); real-time note-by-note
+feedback and per-note chord scoring are out for v1. Implementation is staged:
+throwaway spike on real guitar signals first (TASK-040 — needs the owner
+playing), then capture flow, scoring engine, and score UI/persistence; a
+chroma-based chord "close enough" check is gated behind validated monophonic
+scoring.
 
 ## Last reviewed
 
-2026-07-05 — Knowledge maintenance pass removed the stale `RES-009` placeholder because that ID now belongs to visual-artifact skill research.
+2026-07-07 — TASK-015 research complete; implementation tasks filed per RES-014's staged-go recommendation.
