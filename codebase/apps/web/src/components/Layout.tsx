@@ -23,8 +23,8 @@ interface LayoutProps {
 
 export function Layout({ mainRef }: LayoutProps) {
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
-      <aside className="flex w-56 shrink-0 flex-col gap-8 border-r border-zinc-800 px-4 py-6">
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-100 md:flex-row">
+      <aside className="flex shrink-0 flex-col gap-4 border-b border-zinc-800 px-4 py-4 md:w-56 md:gap-8 md:border-r md:border-b-0 md:py-6">
         <div>
           <Link
             to="/"
@@ -37,7 +37,7 @@ export function Layout({ mainRef }: LayoutProps) {
           </p>
         </div>
         <nav aria-label="Main">
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-row flex-wrap gap-1 md:flex-col">
             {navItems.map(({ to, label }) => (
               <li key={to}>
                 <Link
@@ -57,7 +57,7 @@ export function Layout({ mainRef }: LayoutProps) {
           </ul>
         </nav>
       </aside>
-      <main ref={mainRef} tabIndex={-1} className="flex-1 px-8 py-10">
+      <main ref={mainRef} tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-10">
         <Outlet />
       </main>
     </div>
