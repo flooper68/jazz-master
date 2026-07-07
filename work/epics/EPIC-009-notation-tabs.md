@@ -2,7 +2,7 @@
 id: EPIC-009
 title: Notation & tabs — render exercises as staff notation + tablature
 vision: VIS-001
-status: backlog
+status: in-progress
 created: 2026-07-05
 ---
 
@@ -34,8 +34,10 @@ The desired practice flow shows "both notes and tabs." Fretboard/diagram views (
 
 ## Tasks
 
-- TASK-014 — Research notation + tab rendering approach (→ ADR; assigns the next available RES ID when claimed)
-- (implementation tasks created after the research lands)
+- TASK-014 — Research notation + tab rendering approach
+- TASK-037 — Notation component — staff + TAB via VexFlow
+- TASK-038 — Show notation in the practice runner via a display hint
+- TASK-039 — Trim the notation bundle — evaluate vexflow-core + single font
 
 ## Done when
 
@@ -43,8 +45,8 @@ A scale or arpeggio exercise in the practice runner shows correct, readable staf
 
 ## Current status
 
-Backlog. The planned notation research has not started; no `RES-*` ID is reserved before the task is claimed.
+In progress. Research landed (RES-013) and the rendering approach is decided: VexFlow 5 behind a project-owned `<Notation>` component, rhythm derived not stored, lazy-loaded (ADR-010 — carries deferred-grill questions). Implementation tasks TASK-037–039 are filed and sized; TASK-037 is the entry point.
 
 ## Last reviewed
 
-2026-07-05 — Knowledge maintenance pass removed the stale `RES-008` placeholder because that ID now belongs to product/problem-framing research.
+2026-07-07 — TASK-014 done: RES-013 + ADR-010 written, implementation tasks TASK-037–039 filed.
