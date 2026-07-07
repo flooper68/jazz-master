@@ -33,7 +33,7 @@ Provenance is kept with `source:` for notes/insights/issues/reviews and `researc
 
 - Filename `<ID>-<kebab-slug>.md`; IDs sequential per type, never reused (list the directory for the next free one).
 - YAML frontmatter carries `id`, `title`, `status`, `created`, and type-specific fields. Frontmatter is the single source of truth — there is no external tracker.
-- Files are never deleted; terminal statuses (`done`, `rejected`, `wontfix`) keep the history searchable.
+- Files are never deleted; terminal statuses (`done`, `rejected`, `wontfix`, `abandoned`) keep the history searchable.
 - Work-in-flight appends to a `## Log` section (format in `processes/dev-loop.md`).
 
 ## Statuses
@@ -41,7 +41,7 @@ Provenance is kept with `source:` for notes/insights/issues/reviews and `researc
 | Type | Flow |
 |---|---|
 | epic | `backlog → in-progress → done` |
-| task | `proposed → backlog → in-progress → done`; `gated` waits on a structured `gated_until:` trigger; `blocked` carries `blocked_reason:` |
+| task | `proposed → backlog → in-progress → done`; `gated` waits on a structured `gated_until:` trigger; `blocked` carries `blocked_reason:`; `abandoned` is terminal and carries `abandoned_reason:` (owner call to drop the work entirely) |
 | insight | `new → accepted \| deferred \| rejected` (accepted records `outcome:` task ids; deferred records `revisit_when:`; rejected records why) |
 | issue | `open → confirmed → in-progress → fixed \| wontfix` |
 | review | none — a report, immutable once shipped |

@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-07 — Production environment taken off the roadmap (TASK-036 abandoned; grill NOTE-008)
+
+The owner ditched the parked production-deploy task outright: production is far enough out that a standing gated placeholder is pure context cost. This supersedes NOTE-006's "gated until the owner asks". The dev worker URL is the product's home for the foreseeable future. Nothing about ADR-009 changes — production deploys, if they ever exist, remain owner-only and never agent-reachable — and TASK-036's file keeps its three open questions (prod-trigger enforcement, naming/domain, promote-artifact semantics) as raw material for any future fresh task. `abandoned` added to the task status vocabulary in `work/README.md` (terminal, carries `abandoned_reason:`).
+
 ## 2026-07-07 — RES-014: browser guitar-take scoring is staged-go (TASK-015)
 
 VIS-001's riskiest bet is feasible in stages: monophonic offline-after-take analysis (MPM/`pitchy` or YIN/`pitchfinder` + spectral-flux onsets, metronome count-in, ±100 ms full-credit windows, 60/30/10 pitch/timing/completeness score, score-only persistence) is credible in the browser today; real-time worklet feedback and per-note chord scoring are rejected for v1 (chords staged later as a chroma-template check). EPIC-010 implementation staged behind a real-guitar spike (TASK-040) — the repo's first task whose verification needs the owner physically playing.

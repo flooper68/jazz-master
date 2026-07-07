@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-07 — `product/overview` under-the-hood section updated for the production abandonment (grill NOTE-008): TASK-036 abandoned, no production environment is planned — the dev URL is the product's home.
 - 2026-07-07 — `product/overview` under-the-hood + built-today sections updated for the first live deploy (TASK-024 done): the dev environment is live on workers.dev, auto-deployed on every push to `main`.
 - 2026-07-07 — `product/overview` practice-flow + built-today sections updated for the two de-risking research results: notation rendering decided (VexFlow 5, ADR-010/RES-013, TASK-014) and recording/scoring staged-go (RES-014, TASK-015); goal-4 research is done.
 - 2026-07-07 — `project/lifecycle-of-a-change` ship step now cites the TASK-031 commit-isolation guardrails (pathspec commits, worktree-per-agent).
