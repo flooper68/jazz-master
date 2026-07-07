@@ -2,9 +2,10 @@
 id: TASK-045
 title: Research sampled-instrument playback for play-along
 epic: EPIC-014
-status: backlog
+status: done
 depends_on: []
 source: NOTE-009
+research: RES-015
 created: 2026-07-07
 ---
 
@@ -53,12 +54,12 @@ and maintenance health; (5) licensing.
 
 ## Acceptance criteria
 
-- [ ] A `research/RES-###-play-along-audio.md` file exists per the
+- [x] A `research/RES-###-play-along-audio.md` file exists per the
       deep-research process: cited comparison of sample sources and playback
       approaches against the criteria, with a recommendation
-- [ ] ADR drafted in `architecture/decisions/` recording the chosen playback
+- [x] ADR drafted in `architecture/decisions/` recording the chosen playback
       stack and its consequences
-- [ ] EPIC-014 implementation tasks filed and sized from the findings
+- [x] EPIC-014 implementation tasks filed and sized from the findings
       (playback engine; runner controls + per-exercise tempo persistence at
       minimum), and the epic's task list updated
 
@@ -69,4 +70,20 @@ lists concrete next tasks with the research linked.
 
 ## Log
 
-(empty — not yet claimed)
+### 2026-07-07 — claimed (agent)
+
+Plan: create `RES-015` with framed questions, research sample sources,
+playback libraries, WebAudio scheduling, asset caching/offline strategy, and
+EPIC-010 reuse; then record the chosen stack in ADR-011 and file EPIC-014
+implementation tasks sized from the findings.
+
+### 2026-07-07 — done
+
+RES-015 recommends `smplr` for sampled playback, FluidR3_GM electric/jazz guitar
+as the default source, and a project-owned Web Audio lookahead scheduler. ADR-011
+records the decision and consequences. Filed TASK-046 for the playback engine
+and TASK-047 for runner controls + per-exercise tempo persistence, and updated
+EPIC-014's task list. Independent review found missing asset-size traceability,
+deferred-grill gaps on the filed tasks, offline-scope drift, and weak `smplr`
+maintenance evidence; all were fixed before ship. Verification: markdown/doc
+consistency checked; `bun run --cwd codebase check` passes.

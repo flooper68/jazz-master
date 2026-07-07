@@ -2,7 +2,7 @@
 id: EPIC-014
 title: Play-along — hear the exercise, loop it, keep time
 vision: VIS-001
-status: planned
+status: in-progress
 created: 2026-07-07
 ---
 
@@ -52,7 +52,9 @@ Owner decisions this epic rests on (NOTE-009):
   the player plays alone.
 - Tempo control in the runner: adjust below/at authored tempo, persisted per
   exercise via a typed store.
-- Local-first: everything plays offline once assets are cached; no backend.
+- Local-first: play-along sample playback works after the app and assets have
+  already loaded once, using cached samples where the browser supports it; no
+  backend.
 
 ## Out of scope
 
@@ -60,6 +62,8 @@ Owner decisions this epic rests on (NOTE-009):
   moving-exercise content model (INS-032), which waits on this epic.
 - The moving-exercise / JSON-pack model redesign itself (INS-032/INS-033).
 - Tempo above the authored target, swing feel, or humanized playback in v1.
+- Full PWA/offline app shell guarantees. EPIC-014 caches playback assets; it
+  does not make first navigation to the app work with no network.
 
 ## Depends on
 
@@ -74,20 +78,21 @@ Owner decisions this epic rests on (NOTE-009):
 
 ## Tasks
 
-- TASK-045 — Research sampled-instrument playback for play-along (→ `research/RES-###` at claim time)
-- Implementation tasks filed from the research findings (playback engine,
-  runner controls + tempo persistence, at minimum).
+- TASK-045 — Research sampled-instrument playback for play-along (RES-015; ADR-011)
+- TASK-046 — Build the play-along audio engine
+- TASK-047 — Add runner play-along controls and per-exercise tempo persistence
 
 ## Done when
 
 On any existing exercise the player can press play and hear its notes in
 sampled guitar (or fallback piano) timbre, loop them with a metronome click,
 drag the tempo down and back up, and find that tempo remembered next session
-— all offline after first load.
+— with sample playback working from cache after the app/assets have loaded once.
 
 ## Current status
 
-Planned. Research task filed; nothing implemented.
+In progress. TASK-045 chose the playback stack in RES-015/ADR-011; next work is
+TASK-046 (audio engine), then TASK-047 (runner controls + tempo persistence).
 
 ## Last reviewed
 

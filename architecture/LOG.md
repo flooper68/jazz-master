@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-07 — Play-along sampled-audio stack chosen (TASK-045)
+
+RES-015/ADR-011 chose `smplr` behind a project-owned Web Audio lookahead
+scheduler for EPIC-014 play-along. Default sample source is FluidR3_GM
+electric/jazz guitar with piano as fallback, lazy-loaded and CacheStorage-backed
+where available. Implementation split into TASK-046 (audio engine) and TASK-047
+(runner controls + per-exercise tempo persistence).
+
 ## 2026-07-07 — Notation chunk trimmed 692→389 KB gzip (TASK-039); EPIC-009 closed
 
 The v4-era `vexflow-core` package RES-013 flagged needs-spike is obsolete in v5: the
