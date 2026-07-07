@@ -1,7 +1,8 @@
 ---
 id: INS-031
 title: Play-along — hear the exercise, loop it, metronome at tempo
-status: new
+status: accepted
+outcome: [EPIC-014, TASK-045]
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -26,8 +27,8 @@ Why it matters to the practice loop: every exercise today is silent — the
 player has no model to imitate and nothing keeping them in time, which also
 feeds the "exercises are boring" finding ([[INS-032]] waits on this feature).
 
-Shape of the work: pillar-sized — an epic was proposed to the owner at the
-grill close-out (agents don't create epics unasked). Needs a research phase
-first (`processes/deep-research.md`): sampled-instrument playback on the web
-(soundfont/sampler libraries, WebAudio scheduling for loop + click accuracy,
-asset size vs. the bundle-trim concerns of TASK-039).
+Shape of the work: pillar-sized — the owner approved the epic in the same
+session. Accepted into [[EPIC-014]] with the research task [[TASK-045]]
+(sampled-instrument playback on the web) as its blocking first item. Two
+follow-up grill answers recorded there: tempo is adjustable and remembered
+per exercise; guitar timbre preferred, piano fallback.

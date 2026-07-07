@@ -88,7 +88,12 @@ Item 4 (staff/TAB/both toggle) was captured directly per the agreed agenda.
 
 ## Action items
 
-- Owner to confirm creating the play-along epic (proposed at close-out).
+- ~~Owner to confirm creating the play-along epic (proposed at close-out).~~
+  Confirmed in the same session → EPIC-014 created with TASK-045 (research)
+  as its blocking first item. The creation-hook grill added two decisions:
+  **tempo is adjustable on the loop and remembered per exercise**, and
+  **guitar timbre preferred** (piano fallback if guitar loses badly on
+  quality-per-megabyte).
 - Next triage processes INS-031–035; prioritization applies the
   play-along-over-recording ordering.
 - Deep-research task for sampled playback precedes any play-along
@@ -97,6 +102,8 @@ Item 4 (staff/TAB/both toggle) was captured directly per the agreed agenda.
 ## Extracted work
 
 - [[INS-031]] — play-along audio (scope, timbre bar, priority decision)
+- EPIC-014 — play-along epic (owner-approved in-session)
+- [[TASK-045]] — research: sampled-instrument playback for play-along
 - [[INS-032]] — moving exercises over progressions (waits on INS-031)
 - [[INS-033]] — JSON exercise packs (folds into INS-032's model redesign)
 - [[INS-034]] — notation default size + fullscreen focus mode
