@@ -25,6 +25,11 @@ RES-013 finding 3 / ADR-010 decision 5: VexFlow publishes a zero-font
 mechanism is VexFlow-4-era — flagged **needs-spike**. This task is that spike plus
 adoption if it pays:
 
+Reviewer note (2026-07-07, TASK-014 review): `vexflow@5.0.0` on npm already declares
+`./core` and `./bravura` subpath exports — the v5 trim path is likely `vexflow/core`
+(a subpath of the main package) rather than the separate `vexflow-core` package the
+v4-era docs describe. Start the spike there.
+
 - Measure the current notation chunk size (baseline from TASK-037's build).
 - Swap to `vexflow-core` + one music font (Bravura or Petaluma), keeping offline
   operation — the font must be bundled/self-hosted, never fetched from a CDN at

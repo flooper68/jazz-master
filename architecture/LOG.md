@@ -4,6 +4,26 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-07 — RES-014: browser guitar-take scoring is staged-go (TASK-015)
+
+VIS-001's riskiest bet is feasible in stages: monophonic offline-after-take analysis (MPM/`pitchy` or YIN/`pitchfinder` + spectral-flux onsets, metronome count-in, ±100 ms full-credit windows, 60/30/10 pitch/timing/completeness score, score-only persistence) is credible in the browser today; real-time worklet feedback and per-note chord scoring are rejected for v1 (chords staged later as a chroma-template check). EPIC-010 implementation staged behind a real-guitar spike (TASK-040) — the repo's first task whose verification needs the owner physically playing.
+
+## 2026-07-07 — ISSUE-001: app shell made responsive
+
+The fixed `w-56` sidebar + implicit `min-width:auto` on the flex main were the root cause of every route overflowing phone viewports. Sidebar now collapses to a top bar below `md`; `<main>` carries `min-w-0`. Verification pattern worth keeping: real-browser `document.documentElement.scrollWidth` checks at 375px across all routes (752px → 375px on /app/voicings). Gotcha: the Playwright-MCP screenshot tool writes into the main repo root, not the caller's worktree cwd.
+
+## 2026-07-07 — Notation/TAB rendering decided: VexFlow 5 behind a component seam (TASK-014 → RES-013, ADR-010)
+
+VexFlow 5 (MIT), used via its low-level native API — not VexTab/EasyScore — wrapped in a project-owned `<Notation>` component and lazy-loaded out of the initial `/app` chunk (~677 KB gzip otherwise). Chosen because its input model *is* spelled pitches, so the theory core's enharmonics render verbatim; staff+TAB alignment is one documented Formatter pass. alphaTab rejected (fret-first model, derived spelling, worker/asset baggage), OSMD rejected (MusicXML-only input over the same VexFlow engine), custom SVG recorded as the fallback behind the seam. Implementation: TASK-037–039.
+
+## 2026-07-07 — ISSUE-002: focus-on-swap mechanism adopted
+
+Same-route view swaps (practice list ↔ runner ↔ summary, onboarding → app) now move focus to the incoming view's heading via the shared `useViewFocus` hook (`apps/web/src/components/useViewFocus.ts`) instead of dropping it on `body`. Use the hook for any future view swap rather than ad-hoc focus effects; route-change focus is a deferred, milder follow-up (INS-027).
+
+## 2026-07-07 — TASK-031: commit-isolation guardrails adopted in the git workflow
+
+After INS-008 (commit `5b63bcd` swept another agent's staged work), `processes/git-workflow.md` gained a "Commit isolation" section: worktree-per-agent preferred; in shared trees, inspect `git status --short`, then stage and commit by pathspec (`git commit -m ... -- <paths>`), verify with `git log -1 --stat`. "Anatomy of a ship", the end-of-run check, dev-loop, heartbeat, and code-review aligned.
+
 ## 2026-07-06 — ADR-009 amended: Cloudflare Workers Builds replaces the GitHub Action (grill NOTE-007)
 
 One commit after the `deploy-dev` workflow landed — and one run after it proved the design by passing the full check gate on a GitHub runner and failing only on the deliberately-missing token — the owner redirected to Cloudflare Workers Builds: the repo connects to the worker in the Cloudflare dashboard, Cloudflare runs the check gate (owner kept it — NOTE-007 Q1a) and deploys on push to `main`. Net effect on ADR-009: stronger — no deploy token exists anywhere, not even in GitHub secrets. The workflow file lived for 39 minutes; its one run stands as evidence the gate works in CI.
