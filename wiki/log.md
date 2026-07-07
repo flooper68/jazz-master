@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-07 — `product/overview` under-the-hood + built-today sections updated for the first live deploy (TASK-024 done): the dev environment is live on workers.dev, auto-deployed on every push to `main`.
 - 2026-07-07 — `product/overview` practice-flow + built-today sections updated for the two de-risking research results: notation rendering decided (VexFlow 5, ADR-010/RES-013, TASK-014) and recording/scoring staged-go (RES-014, TASK-015); goal-4 research is done.
 - 2026-07-07 — `project/lifecycle-of-a-change` ship step now cites the TASK-031 commit-isolation guardrails (pathspec commits, worktree-per-agent).
 - 2026-07-06 — `product/overview` + `project/lifecycle-of-a-change` updated for the ADR-009 amendment (grill NOTE-007): the deploy mechanism is Cloudflare Workers Builds, not GitHub Actions — no deploy token exists anywhere.

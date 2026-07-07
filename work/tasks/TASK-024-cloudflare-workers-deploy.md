@@ -2,8 +2,7 @@
 id: TASK-024
 title: Deploy the Astro app to Cloudflare Workers
 epic: EPIC-013
-status: blocked
-blocked_reason: everything agent-side is done; the owner connects the GitHub repo to the worker via Cloudflare Workers Builds (dashboard — settings recorded in the Log). No token or secret to create anywhere (ADR-009 as amended, NOTE-007).
+status: done
 depends_on: [TASK-021, TASK-023]
 research: RES-002
 created: 2026-07-05
@@ -26,11 +25,11 @@ RES-002 recommendation 1: target Workers, **not Pages** — the current Astro Cl
 ## Acceptance criteria
 
 - [x] `wrangler.jsonc` present with `nodejs_compat`, a pinned `compatibility_date`, and the Astro Workers entry (entry/assets come from the adapter-emitted `dist/server/wrangler.json` via the `.wrangler/deploy/config.json` redirect — see Log)
-- [ ] Cloudflare Workers Builds deploys on every push to `main` (ADR-009 as amended): the repo is connected to the `jazz-master-web` worker in the Cloudflare dashboard, build command runs `bun install --frozen-lockfile` + the full `bun run check` gate (owner decision, NOTE-007), then `wrangler deploy`
-- [ ] No deploy credential exists anywhere agent-readable — no `wrangler login`, no API token on disk or in repo secrets
-- [ ] On the deployed dev URL: `/` renders server-side, `/app/*` runs the SPA including deep-link reloads, `/trpc/health` returns typed JSON *(all three verified in the local workerd preview; live URL pending first green CI deploy)*
+- [x] Cloudflare Workers Builds deploys on every push to `main` (ADR-009 as amended): the repo is connected to the worker in the Cloudflare dashboard, build command runs `bun install --frozen-lockfile` + the full `bun run check` gate (owner decision, NOTE-007), then `wrangler deploy` *(owner connected 2026-07-07; first deploy live)*
+- [x] No deploy credential exists anywhere agent-readable — no `wrangler login`, no API token on disk or in repo secrets *(verified 2026-07-07: `bunx wrangler whoami` → "Not logged in", token expired and non-refreshable, while the live deploy serves)*
+- [x] On the deployed dev URL: `/` renders server-side, `/app/*` runs the SPA including deep-link reloads, `/trpc/health` returns typed JSON *(verified live 2026-07-07 — see Log)*
 - [x] A documented local preview command runs the app in the Workers runtime
-- [ ] Deployment steps and the live dev URL recorded in `architecture/overview.md` *(steps recorded; URL pending publish)*
+- [x] Deployment steps and the live dev URL recorded in `architecture/overview.md`
 - [x] `bun run check` passes
 
 ## Verification
@@ -79,3 +78,14 @@ The GitHub Actions run had just proven the design (install ✓, full check gate 
 - **Deploy command:** `bunx wrangler deploy`
 
 After the first green build: tell an agent the `workers.dev` URL (or paste it), and the remaining criteria close — live-URL checks (`/`, `/trpc/health`, `/app` module + nested-route hard reload) and the URL recorded in overview.md.
+
+### 2026-07-07 — done: owner connected the repo, first deploy verified live (agent)
+
+Owner connected `flooper68/jazz-master` to the worker per the runbook; first Workers Builds deploy is live at **https://jazz-master.premysl-ciompa.workers.dev**. Verification executed literally against the live URL:
+
+- `curl /` → HTTP 200, server-rendered HTML (Astro landing, 808 bytes).
+- `curl /trpc/health` → HTTP 200, typed JSON `{"status":"ok","time":...}`, no stack fields.
+- `/app/practice` deep link → HTTP 200; in a real browser (Playwright/Chromium, fresh profile) the island boots straight into onboarding; skipped → practice list with Today's plan; started the planned Maj7-arpeggios lesson, graded all 4 exercises to the summary; hard-reloaded `/app/history` — the completed session persisted (4 got-it) and rendered grouped by day. Zero console errors/warnings across the whole flow.
+- Credential boundary: `bunx wrangler whoami` on the dev machine → "Not logged in … token expired and could not be refreshed" while the deploy serves — ADR-009's invariant holds (deploys work, agents hold nothing).
+
+Live URL + verification recorded in `architecture/overview.md` (Deployment section + ambient status); EPIC-013 status note updated. One minor observation filed as ISSUE-003 (reflect step): on the live build, focus lands on `<main>` rather than the lesson heading after Start — the jsdom test asserts the heading; summary-swap focus works correctly live.
