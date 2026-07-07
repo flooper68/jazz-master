@@ -1,7 +1,9 @@
 /**
  * The one module that imports VexFlow (ADR-010 decision 3/5). `Notation` loads
- * it via dynamic import so the ~677 KB gzip library stays out of the initial
- * /app chunk — nothing else may import this file statically.
+ * it via dynamic import so the library stays out of the initial /app chunk —
+ * nothing else may import this file statically. The `vexflow/bravura` entry
+ * bundles only Bravura + Academico (both embedded as data URIs, so offline
+ * rendering keeps working) instead of the full build's five fonts — TASK-039.
  */
 import {
   Accidental,
@@ -15,7 +17,7 @@ import {
   TabNote,
   TabStave,
   Voice,
-} from 'vexflow'
+} from 'vexflow/bravura'
 import type { NotationMeasure } from '../content/rhythm'
 import { stavePitch } from './notationPitch'
 
