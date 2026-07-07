@@ -19,7 +19,7 @@ gate with a narrower command.
 | Unit | Pure functions, parsers, music theory, reducers, validation | colocated `*.test.ts` | Vitest in node |
 | Component | Reusable UI behavior, rendering contracts, accessible names, edge states | colocated `*.test.tsx` | Vitest + Testing Library in jsdom |
 | Page/integration | Routes, composed page behavior, storage-facing workflows with controlled stores | colocated page/app `*.test.tsx` | Vitest + Testing Library in jsdom |
-| E2E | Cross-page browser flows, persistence across refresh, responsive/keyboard behavior that jsdom cannot prove | future `e2e/*.spec.ts` | Playwright, when adopted |
+| E2E | Cross-page browser flows, persistence across refresh, responsive/keyboard behavior that jsdom cannot prove | `apps/web/e2e/*.spec.ts` | Playwright via `bun run --cwd codebase check:e2e` (TASK-035) |
 | Manual QA | Product judgment, visual layout, console/network/a11y sweep, exploratory risks | `work/reviews/REV-*` | `processes/qa-product-review.md` |
 
 Prefer the cheapest layer that catches the defect. A higher-level test should
@@ -66,12 +66,24 @@ Treat AI-written tests as drafts. Before committing them:
 - Keep useful generated table tests, but verify the expected data independently
   when the data is the behavior.
 
+## E2E smoke suite
+
+Adopted in TASK-035 (owner decision NOTE-005): a minimal Playwright smoke suite
+over the guided-practice slice lives in `apps/web/e2e/` and runs via
+`bun run --cwd codebase check:e2e` — deliberately **not** part of `bun run check`,
+which stays fast. One-time setup on a fresh machine: `bunx playwright install
+chromium` (browser binaries are not part of `bun install`). Every spec also asserts no console errors and no failed
+requests on the paths it covers. Keep it a smoke pass (~5 specs), not a browser
+port of the unit tests. Run it at these trigger points:
+
+- before/during a QA product review (`processes/qa-product-review.md`)
+- before pushing a change that touches the practice flow, routing, or storage —
+  a push to `main` is a dev deploy (ADR-009)
+- when a work item's Verification section calls for real-browser proof
+
 ## Not adopted yet
 
-- Playwright e2e is not in the gate until a real practice workflow exists. The
-  first suite should be a minimal smoke path with refresh/persistence coverage,
-  not a broad browser suite.
-- Automated axe checks wait for a browser/e2e harness. Manual accessibility QA
+- Automated axe checks wait to join the e2e harness. Manual accessibility QA
   starts now through `processes/qa-product-review.md`.
 - Visual regression waits for stable visual contracts such as notation/tabs,
   complex responsive diagrams, or generated visual artifacts.

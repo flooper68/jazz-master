@@ -22,6 +22,7 @@ A periodic inspection of the *running product* that generates the raw material f
 
 ### 2. Inspect the running app
 
+- First run the e2e smoke suite: `bun run --cwd codebase check:e2e` (TASK-035). A red suite is itself a finding; the manual pass then focuses on judgment, not on re-proving the covered happy paths.
 - `bun run --cwd codebase dev`, then drive the app — in Claude Code use the Playwright MCP tools (navigate, snapshot, screenshot each page).
 - Walk **every** module/page, not just recently-changed ones (regressions hide in untouched screens).
 - Re-verify recently shipped tasks' acceptance criteria *in the app*, not in the code.

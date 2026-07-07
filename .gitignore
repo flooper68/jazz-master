@@ -30,3 +30,7 @@ dist-ssr
 
 # Playwright MCP browser artifacts
 .playwright-mcp/
+
+# Playwright e2e output (TASK-035)
+test-results/
+playwright-report/

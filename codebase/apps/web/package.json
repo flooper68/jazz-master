@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "deploy": "bun run build && wrangler deploy",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.1",
@@ -29,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tanstack/router-plugin": "^1.168.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
