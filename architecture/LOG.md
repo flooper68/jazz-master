@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — synthesized take scoring engine added (TASK-042)
+
+Added `apps/web/src/scoring/` as a pure app-local scoring layer rather than a
+new package: `analyzeTake` runs offline MPM-style monophonic pitch detection
+over PCM and groups detected frames into note events; `scoreTake` matches those
+events to expected notes/onsets with octave-agnostic pitch-class matching,
+lenient/standard/strict timing presets, per-note verdicts, and 60/30/10
+pitch/timing/completeness components. Verification is synthesized-fixture only
+per the accepted TASK-040 risk decision; real guitar behavior still needs QA.
+
 ## 2026-07-08 — runner notation readability pass shipped (TASK-048)
 
 Runner notation now has mode-aware VexFlow rendering (staff, TAB, or both), larger

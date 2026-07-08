@@ -18,6 +18,7 @@ flowchart TD
         components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
         content[apps/web/src/content/ — exercise/lesson model + curriculum data]
         audio[apps/web/src/audio/ — play-along + recording capture helpers]
+        scoring[apps/web/src/scoring/ — pure take analysis + score matching]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
@@ -28,10 +29,12 @@ flowchart TD
     pages --> components
     pages --> content
     pages -. browser audio .-> audio
+    pages --> scoring
     pages --> theory
     components --> theory
     content --> theory
     audio --> theory
+    scoring --> theory
     pages --> storage
 ```
 
@@ -46,6 +49,7 @@ flowchart TD
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
 | Audio | `codebase/apps/web/src/audio/` | App-local browser-audio infrastructure. Pure timeline/scheduler/recording helpers are tested without Web Audio; `engine.ts` is the browser-only `smplr` seam that schedules FluidR3_GM guitar samples and synthesizes the play-along metronome click. The runner owns browser permission flows and imports playback lazily. |
+| Scoring | `codebase/apps/web/src/scoring/` | Pure app-local take analysis and scoring. `analyzeTake` turns recorded mono PCM into monophonic note events; `scoreTake` greedily matches events to expected note/onset targets with octave-agnostic pitch-class matching and lenient/standard/strict timing presets. Kept inside the web app rather than a package until there is a second consumer. |
 | Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
 
 Dependency direction: `app/pages → components → @jazz-master/theory` and `app/pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours and never imports Astro.
@@ -143,7 +147,8 @@ position: RES-014 returned staged-go for monophonic offline-after-take scoring,
 but the owner abandoned TASK-040's real-guitar spike on 2026-07-08 (NOTE-010).
 TASK-041's capture implementation is present in the runner and covered by
 component/unit tests, but the task is blocked pending required desktop
-Firefox/Safari and iOS Safari mic verification. Scoring work proceeds next from
-RES-014 defaults and synthesized fixtures; real-signal quality issues should be
-handled in TASK-041/TASK-042 follow-up QA rather than treated as a current
-blocker.
+Firefox/Safari and iOS Safari mic verification. TASK-042 added the pure
+`apps/web/src/scoring/` module: synthesized mono fixtures prove perfect, late,
+wrong, missed, extra, empty, and octave-shifted takes across multiple keys;
+real-signal quality issues should be handled in TASK-041/TASK-042 follow-up QA
+rather than treated as a current blocker.
