@@ -27,6 +27,15 @@ export {
 } from './notationPreferences'
 export type { NotationDisplayMode, NotationPreferences } from './notationPreferences'
 export {
+  DEFAULT_SCORE_TOLERANCE,
+  SCORE_TOLERANCE_PRESETS,
+  getScoreTolerance,
+  isScoreTolerancePreset,
+  scoringPreferencesStore,
+  saveScoreTolerance,
+} from './scoringPreferences'
+export type { ScoringPreferences } from './scoringPreferences'
+export {
   defaultProfile,
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,
@@ -35,7 +44,11 @@ export {
 export type { PracticeArea, PracticeProfile, SkillLevel } from './profile'
 export { sessionsStore, upsertSession } from './sessions'
 export type {
+  ExerciseScore,
+  ExerciseScoreNote,
   ExerciseGrade,
   ExerciseResult,
   PracticeSession,
+  ScoreTolerancePreset,
+  ScoreVerdict,
 } from './sessions'

@@ -49,4 +49,41 @@ describe('upsertSession', () => {
     expect(sessions[0].completed).toBe(true)
     expect(sessions[0].results).toHaveLength(2)
   })
+
+  it('preserves machine score metadata on exercise results', () => {
+    upsertSession(
+      session({
+        completed: true,
+        score: 92,
+        results: [
+          {
+            exerciseId: 'scales-major-open-c',
+            grade: 'got-it',
+            score: {
+              score: 92,
+              tolerance: 'standard',
+              components: { pitch: 100, timing: 83, completeness: 100 },
+              perNote: [
+                {
+                  expectedId: 'scales-major-open-c-0',
+                  expectedNote: 'C',
+                  verdict: 'correct',
+                  timingOffsetSeconds: 0.012,
+                  pitchCents: 4,
+                },
+              ],
+              extras: 0,
+              analyzedAt: '2026-07-06T10:01:00.000Z',
+            },
+          },
+        ],
+      }),
+    )
+
+    expect(sessionsStore.get()[0].results[0].score).toMatchObject({
+      score: 92,
+      tolerance: 'standard',
+      perNote: [{ expectedNote: 'C', verdict: 'correct' }],
+    })
+  })
 })

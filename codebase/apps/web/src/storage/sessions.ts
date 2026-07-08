@@ -8,11 +8,35 @@ import { defineStore } from './store'
  */
 
 export type ExerciseGrade = 'got-it' | 'shaky' | 'missed'
+export type ScoreVerdict = 'correct' | 'early' | 'late' | 'wrong-pitch' | 'missed'
+export type ScoreTolerancePreset = 'lenient' | 'standard' | 'strict'
+
+export interface ExerciseScoreNote {
+  expectedId: string
+  expectedNote: string
+  verdict: ScoreVerdict
+  timingOffsetSeconds: number | null
+  pitchCents: number | null
+}
+
+export interface ExerciseScore {
+  score: number
+  tolerance: ScoreTolerancePreset
+  components: {
+    pitch: number
+    timing: number
+    completeness: number
+  }
+  perNote: ExerciseScoreNote[]
+  extras: number
+  analyzedAt: string
+}
 
 export interface ExerciseResult {
   /** `Exercise.id` — unique across the curriculum. */
   exerciseId: string
   grade: ExerciseGrade
+  score?: ExerciseScore
 }
 
 export interface PracticeSession {
@@ -26,7 +50,7 @@ export interface PracticeSession {
   completed: boolean
   /** One entry per graded exercise, in lesson order. */
   results: ExerciseResult[]
-  /** Reserved for EPIC-010 machine scoring; the runner never writes it. */
+  /** Mean machine score for scored exercise results in this session. */
   score?: number
 }
 

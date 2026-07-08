@@ -21,9 +21,18 @@ import {
 } from './profile'
 import {
   sessionsStore,
+  type ExerciseScore,
   type ExerciseGrade,
   type PracticeSession,
+  type ScoreTolerancePreset,
+  type ScoreVerdict,
 } from './sessions'
+import {
+  DEFAULT_SCORE_TOLERANCE,
+  isScoreTolerancePreset,
+  scoringPreferencesStore,
+  type ScoringPreferences,
+} from './scoringPreferences'
 import { dailyPlansStore, type StoredDailyPlans } from './dailyPlans'
 import { storageKey } from './store'
 
@@ -33,6 +42,13 @@ export const MAX_STORAGE_BACKUP_BYTES = 1024 * 1024
 
 const PLAN_AREAS = ['scales', 'arpeggios', 'chords', 'standards'] as const
 const EXERCISE_GRADES: readonly ExerciseGrade[] = ['got-it', 'shaky', 'missed']
+const SCORE_VERDICTS: readonly ScoreVerdict[] = [
+  'correct',
+  'early',
+  'late',
+  'wrong-pitch',
+  'missed',
+]
 
 interface StoreBackup<T> {
   version: number
@@ -59,6 +75,7 @@ export interface StorageBackup {
     dailyPlans: StoreBackup<StoredDailyPlans>
     playAlongTempos: StoreBackup<StoredPlayAlongTempos>
     notationPreferences: StoreBackup<NotationPreferences>
+    scoringPreferences: StoreBackup<ScoringPreferences>
   }
 }
 
@@ -79,6 +96,10 @@ export function createStorageBackup(exportedAt = new Date()): StorageBackup {
       notationPreferences: {
         version: 1,
         data: notationPreferencesStore.get(),
+      },
+      scoringPreferences: {
+        version: 1,
+        data: scoringPreferencesStore.get(),
       },
     },
   }
@@ -119,6 +140,7 @@ function persistBackupStores(backup: StorageBackup): boolean {
     toPersistedEntry('daily-plans', backup.stores.dailyPlans),
     toPersistedEntry('play-along-tempos', backup.stores.playAlongTempos),
     toPersistedEntry('notation-preferences', backup.stores.notationPreferences),
+    toPersistedEntry('scoring-preferences', backup.stores.scoringPreferences),
   ]
 
   const previous = new Map<string, string | null>()
@@ -197,6 +219,14 @@ function parseStorageBackup(
     value.stores.notationPreferences,
     isNotationPreferences,
   )
+  const scoringPreferences =
+    value.stores.scoringPreferences === undefined
+      ? {
+          ok: true as const,
+          version: 1 as const,
+          data: { tolerance: DEFAULT_SCORE_TOLERANCE },
+        }
+      : parseStoreBackup(value.stores.scoringPreferences, isScoringPreferences)
 
   if (!profile.ok) return { ok: false, error: 'Profile data is invalid.' }
   if (!sessions.ok) return { ok: false, error: 'Session history is invalid.' }
@@ -206,6 +236,9 @@ function parseStorageBackup(
   }
   if (!notationPreferences.ok) {
     return { ok: false, error: 'Notation preferences are invalid.' }
+  }
+  if (!scoringPreferences.ok) {
+    return { ok: false, error: 'Scoring preferences are invalid.' }
   }
 
   return {
@@ -220,6 +253,7 @@ function parseStorageBackup(
         dailyPlans: toStoreBackup(dailyPlans),
         playAlongTempos: toStoreBackup(playAlongTempos),
         notationPreferences: toStoreBackup(notationPreferences),
+        scoringPreferences: toStoreBackup(scoringPreferences),
       },
     },
   }
@@ -302,7 +336,58 @@ function isExerciseResult(value: unknown): boolean {
   if (!isRecord(value)) return false
   return (
     typeof value.exerciseId === 'string' &&
-    EXERCISE_GRADES.includes(value.grade as ExerciseGrade)
+    EXERCISE_GRADES.includes(value.grade as ExerciseGrade) &&
+    (value.score === undefined || isExerciseScore(value.score))
+  )
+}
+
+function isExerciseScore(value: unknown): value is ExerciseScore {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.score === 'number' &&
+    Number.isFinite(value.score) &&
+    value.score >= 0 &&
+    value.score <= 100 &&
+    isScoreTolerancePreset(value.tolerance as ScoreTolerancePreset) &&
+    isScoreComponents(value.components) &&
+    Array.isArray(value.perNote) &&
+    value.perNote.every(isExerciseScoreNote) &&
+    typeof value.extras === 'number' &&
+    Number.isInteger(value.extras) &&
+    value.extras >= 0 &&
+    isIsoDateTimeString(value.analyzedAt)
+  )
+}
+
+function isScoreComponents(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return (
+    isPercent(value.pitch) &&
+    isPercent(value.timing) &&
+    isPercent(value.completeness)
+  )
+}
+
+function isPercent(value: unknown): boolean {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 100
+  )
+}
+
+function isExerciseScoreNote(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.expectedId === 'string' &&
+    typeof value.expectedNote === 'string' &&
+    SCORE_VERDICTS.includes(value.verdict as ScoreVerdict) &&
+    (value.timingOffsetSeconds === null ||
+      (typeof value.timingOffsetSeconds === 'number' &&
+        Number.isFinite(value.timingOffsetSeconds))) &&
+    (value.pitchCents === null ||
+      (typeof value.pitchCents === 'number' && Number.isFinite(value.pitchCents)))
   )
 }
 
@@ -373,5 +458,13 @@ function isNotationPreferences(
   return (
     isNotationDisplayMode(value.displayMode) ||
     value.displayMode === DEFAULT_NOTATION_DISPLAY_MODE
+  )
+}
+
+function isScoringPreferences(value: unknown): value is ScoringPreferences {
+  if (!isRecord(value)) return false
+  return (
+    isScoreTolerancePreset(value.tolerance) ||
+    value.tolerance === DEFAULT_SCORE_TOLERANCE
   )
 }

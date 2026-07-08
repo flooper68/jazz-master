@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — score feedback and score-only persistence shipped (TASK-043)
+
+The runner now analyzes recorded takes after stop, shows a 0-100 machine score
+with per-note verdicts, persists score metadata on `PracticeSession.results[]`,
+and leaves raw audio transient. Added the `scoring-preferences` typed store for
+lenient/standard/strict tolerance and included score metadata/preferences in
+backup import/export validation. Review gotcha: async analysis needs a generation
+guard so a stale decode from an earlier take cannot overwrite a later take's
+score state.
+
 ## 2026-07-08 — human-only verification moved out of task gates (NOTE-012)
 
 Owner decision: agents should not create or preserve tasks that require

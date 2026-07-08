@@ -9,8 +9,10 @@ import {
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveExercise, type Lesson } from '../content'
+import type { ExpectedNote, TolerancePreset } from '../scoring'
 import { getNotationDisplayMode } from '../storage/notationPreferences'
 import { getPlayAlongTempo } from '../storage/playAlongTempos'
+import { getScoreTolerance } from '../storage/scoringPreferences'
 import { sessionsStore } from '../storage/sessions'
 import { PracticeRunner } from './PracticeRunner'
 
@@ -35,6 +37,13 @@ vi.mock('../audio', () => {
   audioMock.moduleLoaded()
   return { createPlayAlongEngine: audioMock.createPlayAlongEngine }
 })
+
+const scoringMock = vi.hoisted(() => ({
+  analyzeTake: vi.fn(),
+  scoreTake: vi.fn(),
+}))
+
+vi.mock('../scoring', () => scoringMock)
 
 let mediaRecorderInstances: MockMediaRecorder[] = []
 const trackStopMock = vi.fn()
@@ -111,6 +120,12 @@ class MockAudioContext {
     },
     connect: vi.fn(),
   }))
+  decodeAudioData = vi.fn().mockResolvedValue({
+    numberOfChannels: 1,
+    length: 4,
+    sampleRate: 48_000,
+    getChannelData: () => new Float32Array([0, 0.5, 0, -0.5]),
+  })
 }
 
 const lesson: Lesson = {
@@ -209,6 +224,45 @@ beforeEach(() => {
   createObjectUrlMock.mockReturnValue('blob:recorded-take')
   revokeObjectUrlMock.mockClear()
   MockMediaRecorder.isTypeSupported.mockClear()
+  scoringMock.analyzeTake.mockReset()
+  scoringMock.analyzeTake.mockReturnValue([
+    {
+      onsetSeconds: 0,
+      durationSeconds: 0.4,
+      frequencyHz: 261.63,
+      midi: 60,
+      pitchClass: 0,
+      centsFromNearestSemitone: 4,
+      clarity: 0.95,
+    },
+  ])
+  scoringMock.scoreTake.mockReset()
+  scoringMock.scoreTake.mockImplementation(
+    (_events: unknown, expected: ExpectedNote[], tolerance: TolerancePreset) => ({
+      score: 92,
+      components: { pitch: 100, timing: 83, completeness: 100 },
+      perNote: expected.slice(0, 3).map((note, index) => ({
+        expected: note,
+        event: {
+          onsetSeconds: note.onsetSeconds + (index === 1 ? 0.12 : 0),
+          durationSeconds: 0.4,
+          frequencyHz: 261.63,
+          midi: 60,
+          pitchClass: 0,
+          centsFromNearestSemitone: 4,
+          clarity: 0.95,
+        },
+        verdict: index === 1 ? 'late' : 'correct',
+        timingOffsetSeconds: index === 1 ? 0.12 : 0,
+        pitchClassMatched: true,
+        pitchCents: 4,
+        timingCredit: index === 1 ? 0.5 : 1,
+        pitchCredit: 1,
+      })),
+      extras: [],
+      tolerance,
+    }),
+  )
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
     value: { getUserMedia: getUserMediaMock },
@@ -689,6 +743,142 @@ describe('PracticeRunner', () => {
 
     expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
     expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:recorded-take')
+  })
+
+  it('scores a recorded take and persists the score with the graded session', async () => {
+    const user = userEvent.setup()
+    const fastLesson: Lesson = {
+      ...lesson,
+      exercises: [
+        { ...lesson.exercises[0], tempoBpm: 200 },
+        lesson.exercises[1],
+      ],
+    }
+    renderRunner(vi.fn(), fastLesson)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+    await user.click(
+      await screen.findByRole(
+        'button',
+        { name: 'Stop recording C major — open position' },
+        { timeout: 2_500 },
+      ),
+    )
+
+    expect(await screen.findByText('Machine score')).toBeInTheDocument()
+    expect(screen.getByText('92')).toBeInTheDocument()
+    expect(screen.getAllByText('On time')).toHaveLength(2)
+    expect(screen.getByText('Late')).toBeInTheDocument()
+    expect(scoringMock.scoreTake).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'fx-1-0', note: 'E', onsetSeconds: 0 }),
+      ]),
+      'standard',
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    )
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
+      ).getByRole('button', { name: 'Got it' }),
+    )
+
+    expect(sessionsStore.get()).toMatchObject([
+      {
+        id: 'session-1',
+        score: 92,
+        results: [
+          {
+            exerciseId: 'fx-1',
+            grade: 'got-it',
+            score: {
+              score: 92,
+              tolerance: 'standard',
+              components: { pitch: 100, timing: 83, completeness: 100 },
+              perNote: expect.arrayContaining([
+                expect.objectContaining({
+                  expectedId: 'fx-1-0',
+                  expectedNote: 'E',
+                  verdict: 'correct',
+                }),
+              ]),
+            },
+          },
+        ],
+      },
+    ])
+  })
+
+  it('persists the selected scoring tolerance preference', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.selectOptions(
+      screen.getByLabelText('Scoring tolerance'),
+      'strict',
+    )
+
+    expect(getScoreTolerance()).toBe('strict')
+  })
+
+  it('does not persist a punitive score when the take is unclear', async () => {
+    const user = userEvent.setup()
+    scoringMock.analyzeTake.mockReturnValueOnce([])
+    const fastLesson: Lesson = {
+      ...lesson,
+      exercises: [
+        { ...lesson.exercises[0], tempoBpm: 200 },
+        lesson.exercises[1],
+      ],
+    }
+    renderRunner(vi.fn(), fastLesson)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+    await user.click(
+      await screen.findByRole(
+        'button',
+        { name: 'Stop recording C major — open position' },
+        { timeout: 2_500 },
+      ),
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "We couldn't hear enough clear notes",
+    )
+    expect(scoringMock.scoreTake).not.toHaveBeenCalled()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    )
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
+      ).getByRole('button', { name: 'Shaky' }),
+    )
+
+    expect(sessionsStore.get()).toMatchObject([
+      {
+        id: 'session-1',
+        results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
+      },
+    ])
+    expect(sessionsStore.get()[0].score).toBeUndefined()
+    expect(sessionsStore.get()[0].results[0].score).toBeUndefined()
   })
 
   it('stops active recording capture when Next opens grading', async () => {

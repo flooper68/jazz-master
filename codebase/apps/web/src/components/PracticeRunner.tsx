@@ -1,4 +1,4 @@
-import { noteName } from '@jazz-master/theory'
+import { displayAccidentals, noteName } from '@jazz-master/theory'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type {
   ChangeEvent,
@@ -21,6 +21,14 @@ import {
 } from '../audio/recording'
 import { deriveRhythm, resolveExercise, type Exercise, type Lesson } from '../content'
 import {
+  analyzeTake,
+  scoreTake,
+  type ExpectedNote,
+  type NoteScore,
+  type ScoreComponents,
+  type TakeScore,
+} from '../scoring'
+import {
   MAX_PLAY_ALONG_TEMPO_BPM,
   MIN_PLAY_ALONG_TEMPO_BPM,
   clampPlayAlongTempo,
@@ -33,7 +41,17 @@ import {
   saveNotationDisplayMode,
   type NotationDisplayMode,
 } from '../storage/notationPreferences'
-import type { ExerciseGrade } from '../storage/sessions'
+import {
+  SCORE_TOLERANCE_PRESETS,
+  getScoreTolerance,
+  saveScoreTolerance,
+} from '../storage/scoringPreferences'
+import type {
+  ExerciseGrade,
+  ExerciseScore,
+  ScoreTolerancePreset,
+  ScoreVerdict,
+} from '../storage/sessions'
 import { Fretboard, type FretboardHighlight } from './Fretboard'
 import { Notation } from './Notation'
 import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
@@ -52,6 +70,32 @@ const DEFAULT_CLICK_VOLUME = 80
 
 type PlaybackStatus = 'idle' | 'loading' | 'playing'
 type PlaythroughStatus = 'not-started' | 'active' | 'complete'
+type ScoreAnalysisState =
+  | { status: 'idle'; score: null; message: null }
+  | { status: 'analyzing'; score: null; message: null }
+  | { status: 'scored'; score: ExerciseScore; message: null }
+  | { status: 'unclear'; score: null; message: string }
+  | { status: 'failed'; score: null; message: string }
+
+const initialScoreAnalysisState: ScoreAnalysisState = {
+  status: 'idle',
+  score: null,
+  message: null,
+}
+
+const SCORE_VERDICT_LABELS: Record<ScoreVerdict, string> = {
+  correct: 'On time',
+  early: 'Early',
+  late: 'Late',
+  'wrong-pitch': 'Wrong note',
+  missed: 'Missed',
+}
+
+const SCORE_TOLERANCE_LABELS: Record<ScoreTolerancePreset, string> = {
+  lenient: 'Lenient',
+  standard: 'Standard',
+  strict: 'Strict',
+}
 
 type WindowWithWebkitAudio = Window &
   typeof globalThis & {
@@ -176,7 +220,7 @@ function ExercisePanel({
   exercise: Exercise
   onBeginExercise: () => void
   onCompleteExercise: () => void
-  onGrade: (grade: ExerciseGrade) => void
+  onGrade: (grade: ExerciseGrade, score?: ExerciseScore) => void
 }) {
   const resolved = useMemo(() => resolveExercise(exercise), [exercise])
   const notationMeasures = useMemo(
@@ -188,6 +232,10 @@ function ExercisePanel({
   )
   const [notationDisplayMode, setNotationDisplayMode] = useState(
     getNotationDisplayMode,
+  )
+  const [scoreTolerance, setScoreTolerance] = useState(getScoreTolerance)
+  const [scoreAnalysis, setScoreAnalysis] = useState<ScoreAnalysisState>(
+    initialScoreAnalysisState,
   )
   const [scoreFocusOpen, setScoreFocusOpen] = useState(false)
   const [playthroughStatus, setPlaythroughStatus] =
@@ -215,6 +263,7 @@ function ExercisePanel({
   const recordingStartedAtRef = useRef<number | null>(null)
   const recordingTimeoutsRef = useRef<number[]>([])
   const takeUrlRef = useRef<string | null>(null)
+  const scoreAnalysisRunRef = useRef(0)
   const mountedRef = useRef(true)
   const playthroughStatusRef = useRef<PlaythroughStatus>('not-started')
   const playbackCompletionTimeoutRef = useRef<number | null>(null)
@@ -370,6 +419,17 @@ function ExercisePanel({
     saveNotationDisplayMode(mode)
   }
 
+  function updateScoreTolerance(
+    event: ChangeEvent<HTMLSelectElement>,
+  ): void {
+    const value = event.currentTarget.value
+    if (!SCORE_TOLERANCE_PRESETS.includes(value as ScoreTolerancePreset)) return
+    const tolerance = value as ScoreTolerancePreset
+    setScoreTolerance(tolerance)
+    saveScoreTolerance(tolerance)
+    resetScoreAnalysis()
+  }
+
   function openScoreFocus(): void {
     restoreScoreFocusRef.current = false
     setScoreFocusOpen(true)
@@ -386,6 +446,11 @@ function ExercisePanel({
       scoreFocusButtonRef.current?.focus()
     }
   }, [scoreFocusOpen])
+
+  function resetScoreAnalysis(): void {
+    scoreAnalysisRunRef.current += 1
+    setScoreAnalysis(initialScoreAnalysisState)
+  }
 
   function clearRecordingTimeouts(): void {
     for (const timeoutId of recordingTimeoutsRef.current) {
@@ -420,12 +485,14 @@ function ExercisePanel({
   function resetTake(): void {
     cleanupCapture({ revokeTake: true })
     dispatchRecording({ type: 'reset' })
+    resetScoreAnalysis()
   }
 
   function failCapture(message: string): void {
     cleanupCapture({ revokeTake: true })
     if (mountedRef.current) {
       dispatchRecording({ type: 'failed', message })
+      resetScoreAnalysis()
     }
   }
 
@@ -443,6 +510,7 @@ function ExercisePanel({
 
     stopPlayback()
     cleanupCapture({ revokeTake: true })
+    resetScoreAnalysis()
     dispatchRecording({ type: 'request-permission' })
 
     if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
@@ -534,6 +602,55 @@ function ExercisePanel({
     }
   }
 
+  async function analyzeRecordedTake(
+    blob: Blob,
+    audioContext: AudioContext,
+  ): Promise<void> {
+    const analysisRun = scoreAnalysisRunRef.current + 1
+    scoreAnalysisRunRef.current = analysisRun
+    setScoreAnalysis({ status: 'analyzing', score: null, message: null })
+    try {
+      const buffer = await audioContext.decodeAudioData(await blob.arrayBuffer())
+      if (!isCurrentAnalysisRun(analysisRun)) return
+      const pcm = audioBufferToMonoPcm(buffer)
+      const events = analyzeTake(pcm, buffer.sampleRate)
+      if (events.length === 0) {
+        setScoreAnalysis({
+          status: 'unclear',
+          score: null,
+          message:
+            "We couldn't hear enough clear notes to score this take. Try a closer mic position and record again.",
+        })
+        return
+      }
+      const expected = expectedNotesForExercise(
+        exercise.id,
+        resolved.positions.map((position) => noteName(position.note)),
+        tempoBpm,
+      )
+      const result = scoreTake(events, expected, scoreTolerance)
+      setScoreAnalysis({
+        status: 'scored',
+        score: toExerciseScore(result, scoreTolerance),
+        message: null,
+      })
+    } catch (error) {
+      if (!isCurrentAnalysisRun(analysisRun)) return
+      setScoreAnalysis({
+        status: 'failed',
+        score: null,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'This take could not be analyzed.',
+      })
+    }
+  }
+
+  function isCurrentAnalysisRun(analysisRun: number): boolean {
+    return mountedRef.current && scoreAnalysisRunRef.current === analysisRun
+  }
+
   function beginMediaRecording(
     stream: MediaStream,
     MediaRecorderConstructor: typeof MediaRecorder,
@@ -583,6 +700,7 @@ function ExercisePanel({
             sampleRate: audioContext.sampleRate,
           },
         })
+        void analyzeRecordedTake(blob, audioContext)
       } else {
         URL.revokeObjectURL(url)
       }
@@ -709,9 +827,13 @@ function ExercisePanel({
         )}
       </div>
       <RecordingPanel
+        exerciseId={exercise.id}
         exerciseTitle={exercise.title}
         tempoBpm={tempoBpm}
         state={recordingState}
+        scoreAnalysis={scoreAnalysis}
+        tolerance={scoreTolerance}
+        onToleranceChange={updateScoreTolerance}
         onRecord={() => void startCapture()}
         onReset={resetTake}
       />
@@ -771,7 +893,7 @@ function ExercisePanel({
           exerciseTitle={exercise.title}
           onGrade={(gradeValue) => {
             setGradePromptOpen(false)
-            onGrade(gradeValue)
+            onGrade(gradeValue, scoreAnalysis.score ?? undefined)
           }}
         />
       )}
@@ -860,6 +982,64 @@ function clampVolumePercent(volume: number): number {
 
 function volumePercentToUnit(volume: number): number {
   return clampVolumePercent(volume) / 100
+}
+
+function expectedNotesForExercise(
+  exerciseId: string,
+  noteNames: readonly string[],
+  tempoBpm: number,
+): ExpectedNote[] {
+  const beatSeconds = secondsPerBeat(tempoBpm)
+  return noteNames.map((note, index) => ({
+    id: `${exerciseId}-${index}`,
+    note,
+    onsetSeconds: index * beatSeconds,
+  }))
+}
+
+function toExerciseScore(
+  result: TakeScore,
+  tolerance: ScoreTolerancePreset,
+): ExerciseScore {
+  return {
+    score: result.score,
+    tolerance,
+    components: result.components,
+    perNote: result.perNote.map(toExerciseScoreNote),
+    extras: result.extras.length,
+    analyzedAt: new Date().toISOString(),
+  }
+}
+
+function toExerciseScoreNote(note: NoteScore): ExerciseScore['perNote'][number] {
+  return {
+    expectedId: note.expected.id,
+    expectedNote: note.expected.note,
+    verdict: note.verdict,
+    timingOffsetSeconds:
+      note.timingOffsetSeconds === null
+        ? null
+        : roundSeconds(note.timingOffsetSeconds),
+    pitchCents: note.pitchCents === null ? null : Math.round(note.pitchCents),
+  }
+}
+
+function audioBufferToMonoPcm(buffer: AudioBuffer): Float32Array {
+  if (buffer.numberOfChannels <= 1) {
+    return new Float32Array(buffer.getChannelData(0))
+  }
+  const pcm = new Float32Array(buffer.length)
+  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+    const data = buffer.getChannelData(channel)
+    for (let index = 0; index < data.length; index += 1) {
+      pcm[index] += data[index] / buffer.numberOfChannels
+    }
+  }
+  return pcm
+}
+
+function roundSeconds(seconds: number): number {
+  return Math.round(seconds * 1000) / 1000
 }
 
 function NotationFocusDialog({
@@ -1038,15 +1218,23 @@ function GradeButtons({
 }
 
 function RecordingPanel({
+  exerciseId,
   exerciseTitle,
   tempoBpm,
   state,
+  scoreAnalysis,
+  tolerance,
+  onToleranceChange,
   onRecord,
   onReset,
 }: {
+  exerciseId: string
   exerciseTitle: string
   tempoBpm: number
   state: typeof initialRecordingState
+  scoreAnalysis: ScoreAnalysisState
+  tolerance: ScoreTolerancePreset
+  onToleranceChange: (event: ChangeEvent<HTMLSelectElement>) => void
   onRecord: () => void
   onReset: () => void
 }) {
@@ -1121,6 +1309,29 @@ function RecordingPanel({
       {state.take && (
         <RecordedTakePlayer take={state.take} onReset={onReset} />
       )}
+      <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label
+            htmlFor={`score-tolerance-${exerciseId}`}
+            className="text-sm font-medium text-zinc-100"
+          >
+            Scoring tolerance
+          </label>
+          <select
+            id={`score-tolerance-${exerciseId}`}
+            value={tolerance}
+            onChange={onToleranceChange}
+            className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          >
+            {SCORE_TOLERANCE_PRESETS.map((preset) => (
+              <option key={preset} value={preset}>
+                {SCORE_TOLERANCE_LABELS[preset]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <ScoreAnalysisPanel state={scoreAnalysis} />
+      </div>
       {state.error && (
         <p role="alert" className="mt-3 text-sm text-red-300">
           {state.error}
@@ -1128,6 +1339,103 @@ function RecordingPanel({
       )}
     </div>
   )
+}
+
+function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
+  if (state.status === 'idle') {
+    return (
+      <p className="mt-3 text-sm text-zinc-400">
+        Record a take to get pitch and timing feedback.
+      </p>
+    )
+  }
+
+  if (state.status === 'analyzing') {
+    return (
+      <p role="status" className="mt-3 text-sm text-zinc-300">
+        Analyzing take…
+      </p>
+    )
+  }
+
+  if (state.status === 'unclear' || state.status === 'failed') {
+    return (
+      <p role="alert" className="mt-3 text-sm text-amber-200">
+        {state.message}
+      </p>
+    )
+  }
+
+  const score = state.score
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-sm text-zinc-400">Machine score</p>
+          <p className="font-display text-3xl font-bold tracking-tight text-zinc-100">
+            {score.score}
+          </p>
+        </div>
+        <ScoreComponents components={score.components} />
+      </div>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+        {score.perNote.map((note, index) => (
+          <li
+            key={note.expectedId}
+            className="flex items-center justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2"
+          >
+            <span className="text-sm text-zinc-100">
+              {index + 1}. {displayAccidentals(note.expectedNote)}
+            </span>
+            <span
+              className={`rounded-sm px-2 py-1 text-xs font-medium ${scoreVerdictClass(note.verdict)}`}
+            >
+              {SCORE_VERDICT_LABELS[note.verdict]}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {score.extras > 0 && (
+        <p className="mt-2 text-xs text-zinc-400">
+          {score.extras} extra {score.extras === 1 ? 'note' : 'notes'} detected.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ScoreComponents({ components }: { components: ScoreComponents }) {
+  return (
+    <dl className="grid grid-cols-3 gap-2 text-right text-xs text-zinc-400">
+      <div>
+        <dt>Pitch</dt>
+        <dd className="mt-1 font-medium text-zinc-100">{components.pitch}</dd>
+      </div>
+      <div>
+        <dt>Timing</dt>
+        <dd className="mt-1 font-medium text-zinc-100">{components.timing}</dd>
+      </div>
+      <div>
+        <dt>Complete</dt>
+        <dd className="mt-1 font-medium text-zinc-100">
+          {components.completeness}
+        </dd>
+      </div>
+    </dl>
+  )
+}
+
+function scoreVerdictClass(verdict: ScoreVerdict): string {
+  switch (verdict) {
+    case 'correct':
+      return 'bg-emerald-500/20 text-emerald-200'
+    case 'early':
+    case 'late':
+      return 'bg-amber-500/20 text-amber-200'
+    case 'wrong-pitch':
+    case 'missed':
+      return 'bg-red-500/20 text-red-200'
+  }
 }
 
 function RecordedTakePlayer({

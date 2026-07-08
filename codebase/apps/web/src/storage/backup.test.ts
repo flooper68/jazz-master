@@ -9,6 +9,7 @@ import {
   notationPreferencesStore,
   playAlongTemposStore,
   profileStore,
+  scoringPreferencesStore,
   serializeStorageBackup,
   sessionsStore,
   type PracticeSession,
@@ -22,7 +23,28 @@ const session: PracticeSession = {
   startedAt: '2026-07-08T09:30:00.000Z',
   durationSeconds: 180,
   completed: true,
-  results: [{ exerciseId: 'exercise-1', grade: 'got-it' }],
+  results: [
+    {
+      exerciseId: 'exercise-1',
+      grade: 'got-it',
+      score: {
+        score: 94,
+        tolerance: 'standard',
+        components: { pitch: 100, timing: 80, completeness: 100 },
+        perNote: [
+          {
+            expectedId: 'exercise-1-0',
+            expectedNote: 'C',
+            verdict: 'correct',
+            timingOffsetSeconds: 0.01,
+            pitchCents: 3,
+          },
+        ],
+        extras: 0,
+        analyzedAt: '2026-07-08T09:31:00.000Z',
+      },
+    },
+  ],
   score: 94,
 }
 
@@ -55,6 +77,7 @@ describe('storage backup', () => {
     dailyPlansStore.set({ [plan.date]: plan })
     playAlongTemposStore.set({ 'exercise-1': 88 })
     notationPreferencesStore.set({ displayMode: 'tab' })
+    scoringPreferencesStore.set({ tolerance: 'lenient' })
 
     expect(createStorageBackup(exportedAt)).toEqual({
       app: 'jazz-master',
@@ -69,6 +92,7 @@ describe('storage backup', () => {
         dailyPlans: { version: 1, data: { [plan.date]: plan } },
         playAlongTempos: { version: 1, data: { 'exercise-1': 88 } },
         notationPreferences: { version: 1, data: { displayMode: 'tab' } },
+        scoringPreferences: { version: 1, data: { tolerance: 'lenient' } },
       },
     })
   })
@@ -87,6 +111,7 @@ describe('storage backup', () => {
     expect(dailyPlansStore.get()).toEqual({})
     expect(playAlongTemposStore.get()).toEqual({})
     expect(notationPreferencesStore.get()).toEqual({ displayMode: 'both' })
+    expect(scoringPreferencesStore.get()).toEqual({ tolerance: 'standard' })
   })
 
   it('rejects malformed backups without overwriting existing data', () => {

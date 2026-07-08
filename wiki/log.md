@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-08 — `product/overview` updated for TASK-043: runner recording now feeds local take analysis, score UI, score-only session persistence, scoring tolerance preferences, and history score display.
 - 2026-07-08 — `project/lifecycle-of-a-change` and `product/overview` updated for NOTE-012: task completion gates now require automated or agent-runnable verification; human-only browser/device coverage moves to QA/product review, so TASK-041 is done.
 - 2026-07-08 — `product/overview` updated for ISSUE-005: Profile now includes JSON backup export/import for typed local stores, giving local-first data a user-owned recovery path for Safari/WebKit storage eviction risk.
 - 2026-07-08 — `product/overview` updated for TASK-048: runner notation now has larger default scaling, staff/TAB/both controls, a persisted display preference, and in-run focus mode.

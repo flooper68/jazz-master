@@ -171,7 +171,6 @@ function SessionRow({ session }: { session: PracticeSession }) {
               Incomplete
             </span>
           )}
-          {/* Reserved slot for EPIC-010 machine scores; nothing writes it yet. */}
           {session.score !== undefined && <span>Score {session.score}</span>}
         </span>
         <button
@@ -204,6 +203,7 @@ function SessionRow({ session }: { session: PracticeSession }) {
                 </span>
                 <span className="shrink-0 text-zinc-400">
                   {GRADE_LABELS[result.grade]}
+                  {result.score !== undefined && ` · Score ${result.score.score}`}
                 </span>
               </li>
             ))}

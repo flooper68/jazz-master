@@ -2,7 +2,9 @@ import { useEffect, useReducer } from 'react'
 import type { Lesson } from '../content'
 import {
   upsertSession,
+  type ExerciseScore,
   type ExerciseGrade,
+  type ExerciseResult,
   type PracticeSession,
 } from '../storage/sessions'
 
@@ -25,7 +27,7 @@ export interface RunnerState {
   /** Accumulated active playthrough time, excluding setup and grading prompt time. */
   durationSeconds: number
   exerciseIndex: number
-  results: { exerciseId: string; grade: ExerciseGrade }[]
+  results: ExerciseResult[]
   /** True once the last exercise is graded — show the summary. */
   finished: boolean
 }
@@ -33,7 +35,7 @@ export interface RunnerState {
 export type RunnerAction =
   | { type: 'begin-exercise'; at: number }
   | { type: 'complete-exercise'; at: number }
-  | { type: 'grade'; grade: ExerciseGrade; at: number }
+  | { type: 'grade'; grade: ExerciseGrade; score?: ExerciseScore; at: number }
 
 export interface RunnerInit {
   lesson: Lesson
@@ -86,7 +88,11 @@ export function runnerReducer(
       const exercise = state.lesson.exercises[state.exerciseIndex]
       const results = [
         ...completedState.results,
-        { exerciseId: exercise.id, grade: action.grade },
+        {
+          exerciseId: exercise.id,
+          grade: action.grade,
+          ...(action.score ? { score: action.score } : {}),
+        },
       ]
       const isLast =
         completedState.exerciseIndex + 1 >= completedState.lesson.exercises.length
@@ -103,6 +109,17 @@ export function runnerReducer(
 }
 
 function toSessionRecord(state: RunnerState, now: number): PracticeSession {
+  const scoredResults = state.results.filter(
+    (result): result is ExerciseResult & { score: ExerciseScore } =>
+      result.score !== undefined,
+  )
+  const score =
+    scoredResults.length > 0
+      ? Math.round(
+          scoredResults.reduce((sum, result) => sum + result.score.score, 0) /
+            scoredResults.length,
+        )
+      : undefined
   return {
     id: state.sessionId,
     lessonId: state.lesson.id,
@@ -113,6 +130,7 @@ function toSessionRecord(state: RunnerState, now: number): PracticeSession {
         : completeActiveExercise(state, now).durationSeconds,
     completed: state.finished,
     results: state.results,
+    ...(score !== undefined ? { score } : {}),
   }
 }
 
@@ -136,8 +154,12 @@ export function usePracticeRunner(init: RunnerInit) {
     dispatch({ type: 'complete-exercise', at })
   }
 
-  function grade(gradeValue: ExerciseGrade, at = Date.now()): void {
-    dispatch({ type: 'grade', grade: gradeValue, at })
+  function grade(
+    gradeValue: ExerciseGrade,
+    score?: ExerciseScore,
+    at = Date.now(),
+  ): void {
+    dispatch({ type: 'grade', grade: gradeValue, score, at })
   }
 
   return { state, beginExercise, completeExercise, grade }
