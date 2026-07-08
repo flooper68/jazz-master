@@ -1,7 +1,7 @@
 ---
 id: ISSUE-003
 title: Focus lands on <main>, not the lesson heading, when the runner mounts in a real browser
-status: confirmed
+status: fixed
 severity: minor
 created: 2026-07-07
 source: TASK-024
@@ -48,3 +48,25 @@ suite (TASK-035) could pin this class of behavior in a real browser.
 kept as minor: focus lands on the named `<main>` landmark, not `body`, so this
 is an accessibility polish defect rather than a blocker. Fold diagnostic
 coverage into TASK-052 unless it becomes user-visible friction sooner.
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+
+Plan: reproduce the runner-start focus path locally, inspect the view-focus
+hooks around PracticePage and PracticeRunner, then make the runner heading win
+the real-browser focus order. Verification target: a real browser reports the
+runner lesson heading as `document.activeElement` after clicking Start, and
+`bun run --cwd codebase check` passes.
+
+### 2026-07-08 - fixed
+
+Local Chromium did not reproduce the deployed observation on the current tree:
+both planned-lesson Start and lesson-list Start leave focus on the runner `<h2>`.
+Added Playwright smoke assertions for those browser-only focus contracts so a
+future effect-order regression fails at the layer where this was found.
+Independent subagent review was unavailable under the current tool policy, so
+degraded self-review covered scope, focus contract, test layer, and security
+surface; no findings. Verification: `bun run --cwd codebase check` green after
+rerun outside the sandbox for Wrangler log access; `bun run --cwd codebase check:e2e`
+green.

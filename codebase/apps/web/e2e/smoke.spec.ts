@@ -32,9 +32,12 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
     '',
   )
   await startPlanned.click()
-  await expect(
-    page.getByRole('heading', { name: lessonTitle, level: 2 }),
-  ).toBeVisible()
+  const runnerHeading = page.getByRole('heading', {
+    name: lessonTitle,
+    level: 2,
+  })
+  await expect(runnerHeading).toBeVisible()
+  await expect(runnerHeading).toBeFocused()
   const notationScore = page.getByRole('img', {
     name: /staff and tablature/i,
   }).first()
@@ -88,6 +91,29 @@ test('runner Play starts timing before Next opens grading', async ({ page }) => 
   const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
   await expect(gradeDialog).toBeVisible()
   await expect(gradeDialog.getByRole('button', { name: 'Got it' })).toBeFocused()
+})
+
+test('starting a lesson from the lesson list focuses the runner heading', async ({
+  page,
+}) => {
+  await page.goto('/app/practice')
+  await skipOnboarding(page)
+  const startLesson = page.getByRole('button', {
+    name: 'Start Major scale I — open position',
+  })
+  const lessonTitle = (await startLesson.getAttribute('aria-label'))!.replace(
+    'Start ',
+    '',
+  )
+
+  await startLesson.click()
+
+  const runnerHeading = page.getByRole('heading', {
+    name: lessonTitle,
+    level: 2,
+  })
+  await expect(runnerHeading).toBeVisible()
+  await expect(runnerHeading).toBeFocused()
 })
 
 test('persistence: profile, plan, and session records survive a reload mid-flow', async ({
