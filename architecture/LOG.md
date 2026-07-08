@@ -4,6 +4,13 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — dev-loop claim-time owner report added
+
+The dev loop now requires agents to announce a claimed work item before deeper
+planning or implementation: ID/title, problem, intended outcome, likely touch
+area, and verification signal. This keeps the owner oriented as soon as a task
+lock is taken, without adding new tracker fields.
+
 ## 2026-07-08 - unfinished placeholder app routes hidden (TASK-051)
 
 The SPA primary nav now exposes only usable surfaces: Dashboard, Practice,

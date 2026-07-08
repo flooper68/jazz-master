@@ -6,7 +6,8 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 ```
 ┌─> 1. PICK      choose the next actionable work item
-│   2. CLAIM     set status: in-progress
+│   2. CLAIM + ANNOUNCE
+│                set status: in-progress; tell the owner what was claimed
 │   3. PLAN      read item + epic + relevant code; note approach in the item's Log
 │   4. IMPLEMENT small steps, tests alongside code
 │   5. REVIEW    per processes/code-review.md
@@ -26,6 +27,21 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 
 - Set frontmatter `status: in-progress`. This is the lock — never pick an item another agent has claimed.
 - If the item's epic is still `backlog`, set the epic `in-progress` in the same change (INS-012) — epic status must reflect first claim, not just final completion.
+- Immediately after claiming, report to the owner in plain language before deeper
+  planning or implementation. Keep it short and include: work item ID + title,
+  the product/user or project problem it addresses, the intended outcome, the
+  main area likely to change if known, and the verification signal that will
+  prove it worked.
+
+Example claim-time report:
+
+```text
+Claimed TASK-048 — Make notation fullscreen and readable.
+This is about making runner notation usable while playing: the current score area
+is too cramped when staff and TAB are both visible. I will focus on the practice
+runner notation layout and verify it with the task's viewport checks plus
+`bun run --cwd codebase check`.
+```
 
 ### 3. Plan
 
@@ -99,6 +115,8 @@ deferred — filed TASK-009. bun run check green, pushed.
 4. No scope creep; discoveries filed.
 5. Pushed to `main` and verified — the end-of-run check in `processes/git-workflow.md` passes (clean tree, nothing ahead of `origin/main`); the work item's Log tells a reviewer what happened without reading the diff.
 6. Meaningful product work states what changed for the user and what should be watched in the next QA review.
+7. The session began with a clear claim-time owner report naming the claimed
+   item, problem, intended outcome, likely touch area, and verification signal.
 
 ## Roles
 
