@@ -88,7 +88,23 @@ runner notation layout and verify it with the task's viewport checks plus
 
 - File new insight/issue/task/note files for everything discovered via `processes/feedback-intake.md`. Judgment-carrying artifacts filed here (product-facing tasks, epic proposals) carry deferred-grill questions per `processes/grilling.md`.
 - These files land *after* the ship commit, so they need their own `work:` commit — commit and push them before ending the session or looping. Never leave filed items sitting uncommitted.
-- Loop back to 1 if in a multi-iteration session. Before ending any session, run the end-of-run check in `processes/git-workflow.md`.
+- Loop back to 1 if in a multi-iteration session. Before ending any session,
+  run the end-of-run check in `processes/git-workflow.md`, then report the
+  result to the owner.
+
+### End report
+
+The final owner-facing report for a dev-loop item must include:
+
+- the shipped work item ID/title, final status, and commit/push state;
+- the acceptance criteria result: all checked, or the exact unchecked criteria
+  and why if blocked/partial;
+- how to test it: the exact automated commands and manual steps from the
+  item's **Verification** section, adjusted only for current paths/URLs;
+- any verification that was skipped, failed, or needed a rerun/escalation.
+
+Keep it concise, but make it possible for the owner or the next agent to verify
+the work without reopening the task file first.
 
 ## Log format (inside work items)
 
@@ -117,6 +133,8 @@ deferred — filed TASK-009. bun run check green, pushed.
 6. Meaningful product work states what changed for the user and what should be watched in the next QA review.
 7. The session began with a clear claim-time owner report naming the claimed
    item, problem, intended outcome, likely touch area, and verification signal.
+8. The final owner report states the acceptance-criteria result and how to test
+   the shipped work.
 
 ## Roles
 
