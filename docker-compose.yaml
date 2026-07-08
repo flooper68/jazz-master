@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: jazz_master
+      POSTGRES_USER: jazz_master
+      POSTGRES_PASSWORD: jazz_master
+    ports:
+      - "127.0.0.1:${JAZZ_MASTER_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - jazz_master_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jazz_master -d jazz_master"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  jazz_master_postgres_data:

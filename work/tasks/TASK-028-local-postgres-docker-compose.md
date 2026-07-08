@@ -2,7 +2,7 @@
 id: TASK-028
 title: Local Postgres for development via Docker Compose and psql
 epic: EPIC-013
-status: backlog
+status: done
 depends_on: []
 research: RES-017
 created: 2026-07-06
@@ -34,19 +34,19 @@ Boundaries:
 
 ## Acceptance criteria
 
-- [ ] Root `docker-compose.yaml` defines one `postgres` service with a pinned
+- [x] Root `docker-compose.yaml` defines one `postgres` service with a pinned
       major version (`postgres:18` unless the owner has already chosen the
       production major)
-- [ ] Postgres data uses a named volume and survives `docker compose down` +
+- [x] Postgres data uses a named volume and survives `docker compose down` +
       `docker compose up -d`; a documented reset command wipes it intentionally
-- [ ] The Postgres port is bound to localhost only, not all interfaces
-- [ ] A healthcheck uses `pg_isready`
-- [ ] `.env.example` documents the local `DATABASE_URL` convention with
+- [x] The Postgres port is bound to localhost only, not all interfaces
+- [x] A healthcheck uses `pg_isready`
+- [x] `.env.example` documents the local `DATABASE_URL` convention with
       dev-only credentials
-- [ ] Documentation records start, stop, reset, and `psql` smoke-check commands
-- [ ] `bun run --cwd codebase dev` and `bun run --cwd codebase check` pass with
+- [x] Documentation records start, stop, reset, and `psql` smoke-check commands
+- [x] `bun run --cwd codebase dev` and `bun run --cwd codebase check` pass with
       Docker stopped
-- [ ] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -59,3 +59,13 @@ Boundaries:
 - Stop Docker entirely, then run `bun run --cwd codebase check`
 - `rg -n "railway|hyperdrive|DATABASE_URL=.*(railway|cloudflare)|postgres://.*@" docker-compose.yaml .env.example architecture codebase`
   finds no production credential or production host
+
+## Log
+
+### 2026-07-08 — claimed (agent)
+
+Plan: add a root Docker Compose Postgres service with localhost-only port, named volume, and `pg_isready`; document local-only `DATABASE_URL`, start/stop/reset/`psql` commands, and verify Docker is optional for `bun run --cwd codebase check`. Keep Drizzle and app DB consumption out of scope for TASK-055/TASK-056.
+
+### 2026-07-08 — done
+
+Added root `docker-compose.yaml` with a single `postgres:18` service, dev-only `jazz_master` credentials, localhost-only host port with default `5432`, `pg_isready`, and a named volume mounted at `/var/lib/postgresql` for the Postgres 18 image layout. Added `.env.example`, README local database commands, `.env` ignore, and architecture overview/log updates. Verification: `docker compose config` shows default `127.0.0.1:5432` and alternate `127.0.0.1:55432`; literal `docker compose up -d` on this machine failed because unrelated container `postgres-configurator-phoenix` already owns `127.0.0.1:5432`, so the service was runtime-verified with `JAZZ_MASTER_POSTGRES_PORT=55432` instead. `docker compose ps` showed healthy; `psql ...55432 -c 'select 1;'` succeeded; a throwaway row survived `docker compose down` + `docker compose up -d`; `docker compose down --volumes` removed the Jazz Master test volume. `rg -n "railway|hyperdrive|DATABASE_URL=.*(railway|cloudflare)|postgres://.*@" docker-compose.yaml .env.example architecture codebase` found no matches. `bun run --cwd codebase dev -- --host 127.0.0.1 --port 4322` started with the Jazz Master compose service stopped, then was stopped via `bunx astro dev stop`. `bun run --cwd codebase check` passed after rerun with escalated filesystem permission for Wrangler logs. Review: degraded-mode self-review because the available subagent tool requires explicit user delegation; security/privacy checklist: no secrets or production hosts, no app DB dependency, reset command documented explicitly.

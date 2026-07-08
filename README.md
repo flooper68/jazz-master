@@ -13,6 +13,32 @@ bun run dev      # start the dev server
 bun run check    # typecheck + lint + test + build
 ```
 
+## Local Postgres
+
+Server-side database work uses a local PostgreSQL service for development. It is
+optional for the current app: `bun run --cwd codebase dev` and
+`bun run --cwd codebase check` must pass with Docker stopped.
+
+```sh
+docker compose up -d
+docker compose ps
+psql "postgres://jazz_master:jazz_master@127.0.0.1:5432/jazz_master" -c 'select 1;'
+docker compose down       # stop and remove the container; keep the named volume
+docker compose up -d      # start again with the same data
+docker compose down --volumes  # intentional reset: removes local Postgres data
+```
+
+The local connection convention is documented in `.env.example`:
+
+```sh
+JAZZ_MASTER_POSTGRES_PORT=5432
+DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master
+```
+
+If another local service already owns port 5432, set `JAZZ_MASTER_POSTGRES_PORT`
+before running Compose and use the same port in `DATABASE_URL`/`psql`, for
+example `55432`.
+
 ## Stack
 
 React 19 · TypeScript · Vite 8 · Tailwind CSS v4 · Vitest · Bun

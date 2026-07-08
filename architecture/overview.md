@@ -6,7 +6,7 @@ Living document — update it whenever the shape of the system changes. Decision
 
 Jazz Master is a local-first practice app, still with no backend features and no accounts: all practice state lives in the browser (localStorage), all product logic runs client-side. See ADR-002.
 
-Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Inside the island, routing is TanStack Router (file-based, TASK-022). Since TASK-023 there is also a **typed tRPC API surface**: server procedures under `apps/web/src/server/trpc/` served by the Astro catch-all endpoint `src/pages/trpc/[trpc].ts` (tRPC fetch adapter), consumed in the island through `@trpc/tanstack-react-query` on one shared React Query `QueryClient` (`src/app/providers.tsx`) — health-only scaffolding for now, no database or auth. Still ahead in the migration: the gated Hyperdrive → Railway Postgres path.
+Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Inside the island, routing is TanStack Router (file-based, TASK-022). Since TASK-023 there is also a **typed tRPC API surface**: server procedures under `apps/web/src/server/trpc/` served by the Astro catch-all endpoint `src/pages/trpc/[trpc].ts` (tRPC fetch adapter), consumed in the island through `@trpc/tanstack-react-query` on one shared React Query `QueryClient` (`src/app/providers.tsx`) — health-only scaffolding for now, no database or auth. Since TASK-028, local server-persistence development has a repo-owned Docker Compose Postgres service and `.env.example` connection convention; Drizzle and server DB smoke paths remain TASK-055/TASK-056, and production database infrastructure remains owner-owned.
 
 ```mermaid
 flowchart TD
@@ -72,6 +72,20 @@ Future apps (CLI, docs, presentations) are added as `apps/*` directories. Packag
 ## Toolchain
 
 Bun (runtime, packages, workspaces) · Astro 7 + `@astrojs/react` + `@astrojs/cloudflare` (`output: 'server'`, Workers target; build/dev via `astro build`/`astro dev`, Vite underneath) · React 19 · TypeScript (project references: `apps/web` → `packages/theory`, which is `composite` and emits declarations only) · Tailwind v4 (CSS-config via `@theme`, wired through `vite.plugins` in `astro.config.mjs`) · Vitest + Testing Library (jsdom in `apps/web` via its `vitest.config.ts`; node defaults in packages) · oxlint. See ADR-001/ADR-006. The single verification gate is `bun run check` (run in `codebase/`). Gotcha: dev-server SSR runs inside workerd, so `apps/web/wrangler.jsonc` must keep `nodejs_compat` or every route 500s with `process is not defined`.
+
+## Local database development (TASK-028)
+
+The root `docker-compose.yaml` defines one dev-only PostgreSQL service using
+`postgres:18`, obvious local credentials (`jazz_master`/`jazz_master`), a
+localhost-only port bind (`127.0.0.1:${JAZZ_MASTER_POSTGRES_PORT:-5432}:5432`),
+a `pg_isready` healthcheck, and a named volume (`jazz_master_postgres_data`,
+prefixed by the Compose project name at runtime) mounted at
+`/var/lib/postgresql`, matching the PostgreSQL 18 image layout. `docker compose
+down` preserves local data; `docker compose down --volumes` is the documented
+intentional reset. `.env.example` documents the local `DATABASE_URL` convention
+and the default host port, but the current app does not require either:
+`bun run --cwd codebase dev` and `bun run --cwd codebase check` must work with
+Docker stopped.
 
 ## Deployment (TASK-024)
 

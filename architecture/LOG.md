@@ -4,6 +4,10 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — TASK-028 local Postgres compose service
+
+Added a root Docker Compose PostgreSQL service for local server-persistence development: `postgres:18`, dev-only `jazz_master` credentials, localhost-only port binding, named volume mounted at `/var/lib/postgresql` for the Postgres 18 image layout, and `pg_isready` healthcheck. Documented `.env.example`, `psql` smoke checks, optional host-port override for local conflicts, and explicit reset via `docker compose down --volumes`; the app still does not require Docker or Postgres for dev/check.
+
 ## 2026-07-08 — score feedback and score-only persistence shipped (TASK-043)
 
 The runner now analyzes recorded takes after stop, shows a 0-100 machine score
