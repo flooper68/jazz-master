@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-08 — `product/overview` updated for TASK-048: runner notation now has larger default scaling, staff/TAB/both controls, a persisted display preference, and in-run focus mode.
 - 2026-07-08 — `product/overview` updated for TASK-041: runner capture UI exists (mic permission, input meter, count-in, in-session replay), but completion is blocked on desktop Firefox/Safari and iOS Safari mic verification.
 - 2026-07-08 — `product/overview` updated for NOTE-010: TASK-040's real-guitar scoring spike is abandoned by accepted owner risk, so recording/scoring proceeds from RES-014 defaults.
 - 2026-07-08 — `product/overview` updated for runner play-along controls and per-exercise tempo persistence (TASK-047 done, EPIC-014 complete).

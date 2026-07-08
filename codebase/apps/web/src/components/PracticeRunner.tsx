@@ -1,6 +1,6 @@
 import { noteName } from '@jazz-master/theory'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type { PlayAlongEngine } from '../audio'
 import {
   RECORDING_COUNT_IN_BEATS,
@@ -21,9 +21,16 @@ import {
   getPlayAlongTempo,
   savePlayAlongTempo,
 } from '../storage/playAlongTempos'
+import {
+  NOTATION_DISPLAY_MODES,
+  getNotationDisplayMode,
+  saveNotationDisplayMode,
+  type NotationDisplayMode,
+} from '../storage/notationPreferences'
 import type { ExerciseGrade } from '../storage/sessions'
 import { Fretboard, type FretboardHighlight } from './Fretboard'
 import { Notation } from './Notation'
+import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
 import { usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
 
@@ -136,28 +143,31 @@ export function PracticeRunner({
         Exercise {state.exerciseIndex + 1} of {lesson.exercises.length}
       </p>
       {/* Keyed so per-exercise state (the countdown) resets on advance. */}
-      <ExercisePanel key={exercise.id} exercise={exercise} />
-      <div className="mt-6 flex gap-3">
-        {GRADE_ORDER.map((gradeValue) => (
-          <button
-            key={gradeValue}
-            type="button"
-            onClick={() => grade(gradeValue)}
-            className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
-          >
-            {GRADE_LABELS[gradeValue]}
-          </button>
-        ))}
-      </div>
+      <ExercisePanel key={exercise.id} exercise={exercise} onGrade={grade} />
+      <GradeButtons onGrade={grade} layout="inline" />
     </section>
   )
 }
 
-function ExercisePanel({ exercise }: { exercise: Exercise }) {
+function ExercisePanel({
+  exercise,
+  onGrade,
+}: {
+  exercise: Exercise
+  onGrade: (grade: ExerciseGrade) => void
+}) {
   const resolved = useMemo(() => resolveExercise(exercise), [exercise])
+  const notationMeasures = useMemo(
+    () => deriveRhythm(resolved.positions),
+    [resolved.positions],
+  )
   const [tempoBpm, setTempoBpm] = useState(() =>
     getPlayAlongTempo(exercise.id, exercise.tempoBpm),
   )
+  const [notationDisplayMode, setNotationDisplayMode] = useState(
+    getNotationDisplayMode,
+  )
+  const [scoreFocusOpen, setScoreFocusOpen] = useState(false)
   const [loopEnabled, setLoopEnabled] = useState(true)
   const [clickEnabled, setClickEnabled] = useState(true)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
@@ -262,6 +272,23 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
     setClickEnabled(event.currentTarget.checked)
     if (playbackStatus === 'playing') stopPlayback()
   }
+
+  function updateNotationDisplayMode(mode: NotationDisplayMode): void {
+    setNotationDisplayMode(mode)
+    saveNotationDisplayMode(mode)
+  }
+
+  const closeScoreFocus = useCallback(() => {
+    setScoreFocusOpen(false)
+  }, [])
+
+  const gradeFromScoreFocus = useCallback(
+    (grade: ExerciseGrade) => {
+      setScoreFocusOpen(false)
+      onGrade(grade)
+    },
+    [onGrade],
+  )
 
   function clearRecordingTimeouts(): void {
     for (const timeoutId of recordingTimeoutsRef.current) {
@@ -563,13 +590,202 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
       {/* Long exercises hit the SVG's min-width floor and scroll sideways
           instead of shrinking fret digits into illegibility (INS-029). */}
       {exercise.display.includes('notation') && (
-        <div className="mt-3 overflow-x-auto">
-          <Notation
-            measures={deriveRhythm(resolved.positions)}
-            aria-label={`${exercise.title} — staff and tablature`}
-          />
+        <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <NotationDisplayControls
+              exerciseTitle={exercise.title}
+              displayMode={notationDisplayMode}
+              onChange={updateNotationDisplayMode}
+            />
+            <button
+              type="button"
+              onClick={() => setScoreFocusOpen(true)}
+              aria-label={`Open focus mode for ${exercise.title} score`}
+              className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+            >
+              Focus
+            </button>
+          </div>
+          <div
+            tabIndex={0}
+            aria-label={`${exercise.title} score viewport`}
+            className="mt-3 min-h-[18rem] overflow-x-auto rounded-md border border-zinc-800 bg-zinc-950/60 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 sm:min-h-[21rem]"
+          >
+            <Notation
+              measures={notationMeasures}
+              displayMode={notationDisplayMode}
+              aria-label={`${exercise.title} — ${NOTATION_DISPLAY_LABELS[notationDisplayMode]}`}
+            />
+          </div>
+          {scoreFocusOpen && (
+            <NotationFocusDialog
+              exerciseTitle={exercise.title}
+              measures={notationMeasures}
+              displayMode={notationDisplayMode}
+              onDisplayModeChange={updateNotationDisplayMode}
+              onClose={closeScoreFocus}
+              onGrade={gradeFromScoreFocus}
+            />
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+function NotationDisplayControls({
+  exerciseTitle,
+  displayMode,
+  onChange,
+}: {
+  exerciseTitle: string
+  displayMode: NotationDisplayMode
+  onChange: (mode: NotationDisplayMode) => void
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`Score display for ${exerciseTitle}`}
+      className="flex rounded-md border border-zinc-700 bg-zinc-950 p-0.5"
+    >
+      {NOTATION_DISPLAY_MODES.map((mode) => {
+        const selected = displayMode === mode
+        const text = mode === 'both' ? 'Both' : mode === 'staff' ? 'Staff' : 'TAB'
+        return (
+          <button
+            key={mode}
+            type="button"
+            aria-pressed={selected}
+            aria-label={`Show ${NOTATION_DISPLAY_LABELS[mode]} for ${exerciseTitle}`}
+            onClick={() => onChange(mode)}
+            className={
+              selected
+                ? 'rounded-sm bg-amber-500 px-3 py-1.5 text-sm font-medium text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
+                : 'rounded-sm px-3 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
+            }
+          >
+            {text}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function NotationFocusDialog({
+  exerciseTitle,
+  measures,
+  displayMode,
+  onDisplayModeChange,
+  onClose,
+  onGrade,
+}: {
+  exerciseTitle: string
+  measures: ReturnType<typeof deriveRhythm>
+  displayMode: NotationDisplayMode
+  onDisplayModeChange: (mode: NotationDisplayMode) => void
+  onClose: () => void
+  onGrade: (grade: ExerciseGrade) => void
+}) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    closeButtonRef.current?.focus()
+    function closeOnEscape(event: KeyboardEvent): void {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [onClose])
+
+  function trapTabFocus(event: ReactKeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== 'Tab') return
+    const focusable = [
+      ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) ?? []),
+    ].filter((element) => !element.hasAttribute('disabled'))
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (!first || !last) return
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return (
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${exerciseTitle} score focus mode`}
+      onKeyDown={trapTabFocus}
+      className="fixed inset-0 z-50 flex flex-col bg-zinc-950 p-4 text-zinc-100 sm:p-6"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+        <div>
+          <p className="text-sm text-zinc-400">Score focus</p>
+          <h3 className="font-display text-xl font-bold tracking-tight">
+            {exerciseTitle}
+          </h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <NotationDisplayControls
+            exerciseTitle={exerciseTitle}
+            displayMode={displayMode}
+            onChange={onDisplayModeChange}
+          />
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          >
+            Exit focus
+          </button>
+        </div>
+      </div>
+      <div
+        tabIndex={0}
+        aria-label={`${exerciseTitle} focus score viewport`}
+        className="my-4 min-h-0 flex-1 overflow-auto rounded-md border border-zinc-800 bg-zinc-900 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+      >
+        <Notation
+          measures={measures}
+          displayMode={displayMode}
+          size="focus"
+          aria-label={`${exerciseTitle} focus — ${NOTATION_DISPLAY_LABELS[displayMode]}`}
+        />
+      </div>
+      <GradeButtons onGrade={onGrade} layout="focus" />
+    </div>
+  )
+}
+
+function GradeButtons({
+  onGrade,
+  layout,
+}: {
+  onGrade: (grade: ExerciseGrade) => void
+  layout: 'inline' | 'focus'
+}) {
+  return (
+    <div className={layout === 'focus' ? 'flex flex-wrap gap-3' : 'mt-6 flex gap-3'}>
+      {GRADE_ORDER.map((gradeValue) => (
+        <button
+          key={gradeValue}
+          type="button"
+          onClick={() => onGrade(gradeValue)}
+          className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        >
+          {GRADE_LABELS[gradeValue]}
+        </button>
+      ))}
     </div>
   )
 }

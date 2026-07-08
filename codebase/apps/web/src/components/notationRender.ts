@@ -19,6 +19,7 @@ import {
   Voice,
 } from 'vexflow/bravura'
 import type { NotationMeasure } from '../content/rhythm'
+import type { NotationDisplayMode } from '../storage/notationPreferences'
 import { stavePitch } from './notationPitch'
 
 // VexFlow's default font stack puts Bravura (the music font) first even for
@@ -30,7 +31,9 @@ Metrics.clear('TabNote.text')
 
 const STAVE_Y = 20
 const TAB_Y = 140
-const HEIGHT = 300
+const TAB_ONLY_Y = 35
+const BOTH_HEIGHT = 300
+const SINGLE_HEIGHT = 175
 const NOTE_WIDTH = 48
 const CLEF_WIDTH = 48
 // Breathing room per bar for barlines and end padding — without it a short
@@ -38,7 +41,17 @@ const CLEF_WIDTH = 48
 const MEASURE_PAD = 24
 const MARGIN = 10
 // The responsive floor: how far below natural size the score may shrink.
-const MIN_WIDTH_FRACTION = 0.5
+const INLINE_MIN_WIDTH_FRACTION = 0.72
+const FOCUS_MIN_WIDTH_FRACTION = 0.9
+const INLINE_MAX_SCALE = 1.4
+const FOCUS_MAX_SCALE = 2
+
+export type NotationSize = 'inline' | 'focus'
+
+interface RenderNotationOptions {
+  displayMode?: NotationDisplayMode
+  size?: NotationSize
+}
 
 function measureWidth(measure: NotationMeasure, isFirst: boolean): number {
   return (
@@ -78,16 +91,26 @@ function buildStaveNotes(measure: NotationMeasure): StaveNote[] {
 export function renderNotation(
   container: HTMLDivElement,
   measures: readonly NotationMeasure[],
+  options: RenderNotationOptions = {},
 ): void {
   container.replaceChildren()
   if (measures.length === 0) return
+
+  const displayMode = options.displayMode ?? 'both'
+  const size = options.size ?? 'inline'
+  const showStaff = displayMode === 'both' || displayMode === 'staff'
+  const showTab = displayMode === 'both' || displayMode === 'tab'
+  const height = displayMode === 'both' ? BOTH_HEIGHT : SINGLE_HEIGHT
+  const minWidthFraction =
+    size === 'focus' ? FOCUS_MIN_WIDTH_FRACTION : INLINE_MIN_WIDTH_FRACTION
+  const maxScale = size === 'focus' ? FOCUS_MAX_SCALE : INLINE_MAX_SCALE
 
   const totalWidth =
     2 * MARGIN +
     measures.reduce((sum, m, i) => sum + measureWidth(m, i === 0), 0)
 
   const renderer = new Renderer(container, Renderer.Backends.SVG)
-  renderer.resize(totalWidth, HEIGHT)
+  renderer.resize(totalWidth, height)
   const context = renderer.getContext()
   context.setFillStyle('currentColor')
   context.setStrokeStyle('currentColor')
@@ -99,41 +122,51 @@ export function renderNotation(
   let x = MARGIN
   measures.forEach((measure, index) => {
     const width = measureWidth(measure, index === 0)
-    const stave = new Stave(x, STAVE_Y, width)
-    const tabStave = new TabStave(x, TAB_Y, width)
+    const stave = showStaff ? new Stave(x, STAVE_Y, width) : null
+    const tabStave = showTab
+      ? new TabStave(x, displayMode === 'both' ? TAB_Y : TAB_ONLY_Y, width)
+      : null
     if (index === 0) {
-      stave.addClef('treble')
-      tabStave.addClef('tab')
+      stave?.addClef('treble')
+      tabStave?.addClef('tab')
     }
 
-    const staveNotes = buildStaveNotes(measure)
-    const tabNotes = measure.notes.map(
-      ({ position, duration }) =>
-        new TabNote({
-          positions: [{ str: position.string, fret: position.fret }],
-          duration,
-        }),
-    )
-    const beams = measure.beams.map(
-      (group) => new Beam(group.map((i) => staveNotes[i])),
-    )
+    const staveNotes = showStaff ? buildStaveNotes(measure) : []
+    const tabNotes = showTab
+      ? measure.notes.map(
+          ({ position, duration }) =>
+            new TabNote({
+              positions: [{ str: position.string, fret: position.fret }],
+              duration,
+            }),
+        )
+      : []
+    const beams = showStaff
+      ? measure.beams.map((group) => new Beam(group.map((i) => staveNotes[i])))
+      : []
 
     const eighths = measure.notes.length
-    const voice = new Voice({ numBeats: eighths, beatValue: 8 }).addTickables(
-      staveNotes,
-    )
-    const tabVoice = new Voice({ numBeats: eighths, beatValue: 8 }).addTickables(
-      tabNotes,
-    )
-    new Formatter()
-      .joinVoices([voice])
-      .joinVoices([tabVoice])
-      .formatToStave([voice, tabVoice], stave)
+    const formatter = new Formatter()
+    const voice = showStaff
+      ? new Voice({ numBeats: eighths, beatValue: 8 }).addTickables(staveNotes)
+      : null
+    const tabVoice = showTab
+      ? new Voice({ numBeats: eighths, beatValue: 8 }).addTickables(tabNotes)
+      : null
+    if (voice) formatter.joinVoices([voice])
+    if (tabVoice) formatter.joinVoices([tabVoice])
+    const formatTarget = stave ?? tabStave
+    if (formatTarget) {
+      formatter.formatToStave(
+        [voice, tabVoice].filter((v): v is Voice => v !== null),
+        formatTarget,
+      )
+    }
 
-    stave.setContext(context).draw()
-    tabStave.setContext(context).draw()
-    voice.draw(context, stave)
-    tabVoice.draw(context, tabStave)
+    stave?.setContext(context).draw()
+    tabStave?.setContext(context).draw()
+    if (voice && stave) voice.draw(context, stave)
+    if (tabVoice && tabStave) tabVoice.draw(context, tabStave)
     beams.forEach((beam) => beam.setContext(context).draw())
 
     x += width
@@ -151,13 +184,14 @@ export function renderNotation(
   // Scale with the container instead of VexFlow's fixed pixel size (resize()
   // pins width/height as inline style, which beats attributes).
   svg.removeAttribute('style')
-  svg.setAttribute('viewBox', `0 0 ${totalWidth} ${HEIGHT}`)
+  svg.setAttribute('viewBox', `0 0 ${totalWidth} ${height}`)
   svg.setAttribute('width', '100%')
   svg.removeAttribute('height')
   // Legibility bounds: never shrink below half natural size — long exercises
   // on narrow viewports scroll (callers wrap in overflow-x-auto) instead of
   // shrinking staff and fret digits indefinitely — and never scale a short
   // exercise past natural size on wide panels.
-  svg.style.minWidth = `${totalWidth * MIN_WIDTH_FRACTION}px`
-  svg.style.maxWidth = `${totalWidth}px`
+  svg.style.display = 'block'
+  svg.style.minWidth = `${totalWidth * minWidthFraction}px`
+  svg.style.maxWidth = `${totalWidth * maxScale}px`
 }

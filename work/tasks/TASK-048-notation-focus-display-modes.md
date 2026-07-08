@@ -2,7 +2,7 @@
 id: TASK-048
 title: Make runner notation readable with focus mode and display toggles
 epic: EPIC-009
-status: backlog
+status: done
 depends_on: []
 source: NOTE-011
 created: 2026-07-08
@@ -44,20 +44,20 @@ implementation needs one.
 
 ## Acceptance criteria
 
-- [ ] Runner notation default rendering is larger and remains legible on desktop
+- [x] Runner notation default rendering is larger and remains legible on desktop
       and phone-width viewports
-- [ ] A focus/full-screen mode shows the score as the primary surface with only
+- [x] A focus/full-screen mode shows the score as the primary surface with only
       the controls needed to continue practice
-- [ ] The user can switch between staff only, TAB only, and staff+TAB, with the
+- [x] The user can switch between staff only, TAB only, and staff+TAB, with the
       mode reflected in accessible names
-- [ ] The first notation load reserves enough space or otherwise avoids pushing
+- [x] The first notation load reserves enough space or otherwise avoids pushing
       core runner controls down unexpectedly
-- [ ] Keyboard and screen-reader behavior for the score/focus controls is
+- [x] Keyboard and screen-reader behavior for the score/focus controls is
       deliberate and tested
-- [ ] The Playwright smoke path asserts that a notation SVG with score content
+- [x] The Playwright smoke path asserts that a notation SVG with score content
       actually rendered
-- [ ] `bun run --cwd codebase check` passes
-- [ ] `bun run --cwd codebase check:e2e` passes
+- [x] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check:e2e` passes
 
 ## Verification
 
@@ -66,3 +66,33 @@ implementation needs one.
 - Manual browser pass at desktop and 375px: start a notation-bearing lesson,
   switch staff/TAB/both, enter/exit focus mode, verify no console errors and no
   incoherent overlap.
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+
+Plan: keep VexFlow behind the existing `<Notation>` seam while adding
+staff/TAB/both rendering modes; add a small typed storage store for the runner's
+display preference; wire an inline segmented display control and a focus-mode
+score surface in `PracticeRunner`; reserve score height and make the overflow
+region intentionally keyboard-scrollable; cover modes/focus/accessibility with
+component tests and add the Playwright SVG-content assertion.
+
+### 2026-07-08 - done
+
+Implemented mode-aware notation rendering (`both`/`staff`/`tab`), larger inline
+and focus scaling, a reserved keyboard-scrollable score viewport, display-mode
+controls with accessible names, an in-run focus dialog with grading controls and
+focus trapping, plus a versioned `notation-preferences` localStorage store.
+Added unit/component coverage for render modes, persisted preference,
+keyboard/focus behavior, and focus grading; the Playwright smoke happy path now
+asserts SVG score glyphs render. Review: independent review subagents were not
+available under the active tool policy, so the code-review and security/privacy
+checklists were completed as a degraded self-review; one keyboard focus issue was
+fixed before ship. Security/privacy checklist: no concerns — the new store keeps
+only a non-sensitive display preference, is typed/versioned, and fails closed to
+the default. Verification: focused tests passed; `bun run --cwd codebase check`
+passed; `bun run --cwd codebase check:e2e` passed; final Chromium manual pass at
+1280px and 375px switched staff/TAB/both, opened/exited focus mode, verified
+inline/focus SVG glyphs rendered, confirmed focus wraps inside the dialog, and
+found no console errors or page-level horizontal overflow.

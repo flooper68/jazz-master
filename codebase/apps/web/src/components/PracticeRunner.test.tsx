@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveExercise, type Lesson } from '../content'
+import { getNotationDisplayMode } from '../storage/notationPreferences'
 import { getPlayAlongTempo } from '../storage/playAlongTempos'
 import { sessionsStore } from '../storage/sessions'
 import { PracticeRunner } from './PracticeRunner'
@@ -231,6 +232,106 @@ describe('PracticeRunner', () => {
     expect(
       screen.queryByRole('img', { name: /staff and tablature/ }),
     ).toBeNull()
+  })
+
+  it('switches and persists the notation display mode', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Show staff notation for C major — open position',
+      }),
+    )
+
+    expect(getNotationDisplayMode()).toBe('staff')
+    expect(
+      screen.getByRole('img', {
+        name: 'C major — open position — staff notation',
+      }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Show tablature for C major — open position',
+      }),
+    )
+
+    expect(getNotationDisplayMode()).toBe('tab')
+    expect(
+      screen.getByRole('img', {
+        name: 'C major — open position — tablature',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('makes the score viewport keyboard focusable', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    const viewport = screen.getByLabelText('C major — open position score viewport')
+    await user.click(viewport)
+    expect(viewport).toHaveFocus()
+  })
+
+  it('opens score focus mode with display controls and exits on Escape', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Open focus mode for C major — open position score',
+      }),
+    )
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'C major — open position score focus mode',
+    })
+    expect(
+      within(dialog).getByRole('img', {
+        name: 'C major — open position focus — staff and tablature',
+      }),
+    ).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Exit focus' })).toHaveFocus()
+
+    within(dialog)
+      .getByRole('button', {
+        name: 'Show staff and tablature for C major — open position',
+      })
+      .focus()
+    await user.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(within(dialog).getByRole('button', { name: 'Missed' })).toHaveFocus()
+
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: 'Show staff notation for C major — open position',
+      }),
+    )
+    expect(
+      within(dialog).getByRole('img', {
+        name: 'C major — open position focus — staff notation',
+      }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('can grade from score focus mode', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Open focus mode for C major — open position score',
+      }),
+    )
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Got it' }),
+    )
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
   })
 
   it('lazy-loads play-along audio on first play and starts with defaults', async () => {

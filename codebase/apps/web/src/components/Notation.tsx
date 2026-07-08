@@ -1,6 +1,9 @@
 import { displayAccidentals, noteName } from '@jazz-master/theory'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { NotationMeasure } from '../content/rhythm'
+import type { NotationDisplayMode } from '../storage/notationPreferences'
+import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
+import type { NotationSize } from './notationRender'
 
 export interface NotationProps {
   /**
@@ -9,13 +12,21 @@ export interface NotationProps {
    * without triggering VexFlow re-layouts.
    */
   measures: readonly NotationMeasure[]
+  /** Which systems to draw. Defaults to the aligned staff + TAB pair. */
+  displayMode?: NotationDisplayMode
+  /** Focus mode allows more natural scaling than the inline runner card. */
+  size?: NotationSize
   /** Defaults to the spelled note sequence. */
   'aria-label'?: string
 }
 
 /** Measures are plain data, so a JSON signature is a stable content key. */
-function contentKey(measures: readonly NotationMeasure[]): string {
-  return JSON.stringify(measures)
+function contentKey(
+  measures: readonly NotationMeasure[],
+  displayMode: NotationDisplayMode,
+  size: NotationSize,
+): string {
+  return JSON.stringify({ measures, displayMode, size })
 }
 
 /**
@@ -26,10 +37,13 @@ function contentKey(measures: readonly NotationMeasure[]): string {
  */
 export function Notation({
   measures,
+  displayMode = 'both',
+  size = 'inline',
   'aria-label': ariaLabel,
 }: NotationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const renderedKeyRef = useRef<string | null>(null)
+  const descriptionId = useId()
   // 'ready' sticks: content changes redraw in place, no placeholder flash.
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
@@ -38,13 +52,13 @@ export function Notation({
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const key = contentKey(measures)
+    const key = contentKey(measures, displayMode, size)
     if (key === renderedKeyRef.current) return
     let cancelled = false
     import('./notationRender')
       .then(({ renderNotation }) => {
         if (cancelled) return
-        renderNotation(container, measures)
+        renderNotation(container, measures, { displayMode, size })
         renderedKeyRef.current = key
         setStatus('ready')
       })
@@ -57,7 +71,7 @@ export function Notation({
     return () => {
       cancelled = true
     }
-  }, [measures])
+  }, [displayMode, measures, size])
 
   if (measures.length === 0) return null
 
@@ -69,10 +83,19 @@ export function Notation({
   return (
     <div
       role="img"
-      aria-label={ariaLabel ?? `Staff and tablature: ${spelledSequence}`}
+      aria-label={
+        ariaLabel ??
+        `${NOTATION_DISPLAY_LABELS[displayMode]}: ${spelledSequence}`
+      }
+      aria-describedby={ariaLabel ? descriptionId : undefined}
       aria-busy={status === 'loading'}
       className="text-zinc-100"
     >
+      {ariaLabel && (
+        <p id={descriptionId} className="sr-only">
+          {NOTATION_DISPLAY_LABELS[displayMode]}: {spelledSequence}
+        </p>
+      )}
       {/* The score pops in only after the lazy VexFlow chunk loads (INS-029);
           give sighted users feedback instead of a blank gap meanwhile — and a
           terminal message on failure, never an eternal "loading". */}

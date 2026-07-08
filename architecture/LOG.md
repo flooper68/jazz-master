@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — runner notation readability pass shipped (TASK-048)
+
+Runner notation now has mode-aware VexFlow rendering (staff, TAB, or both), larger
+default/focus scaling, a reserved keyboard-scrollable score viewport, and an
+in-run focus dialog with grading controls. The chosen score display persists in
+the typed `notation-preferences` localStorage store, and the Playwright smoke
+suite now asserts real SVG score glyphs render.
+
 ## 2026-07-08 — runner recording capture implemented; manual browser verification pending (TASK-041)
 
 The practice runner now has an exercise-local take recorder: Record requests the

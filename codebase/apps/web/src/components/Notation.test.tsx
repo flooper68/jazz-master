@@ -99,6 +99,19 @@ describe('Notation', () => {
     await findSvg(container)
   })
 
+  it('reflects the selected display mode in the accessible name', async () => {
+    const { measures } = arpeggioMeasures('Db')
+    const { container, rerender } = render(
+      <Notation measures={measures} displayMode="staff" />,
+    )
+    expect(screen.getByRole('img')).toHaveAccessibleName(/staff notation:/i)
+    await findSvg(container)
+
+    rerender(<Notation measures={measures} displayMode="tab" />)
+    expect(screen.getByRole('img')).toHaveAccessibleName(/tablature:/i)
+    await findSvg(container)
+  })
+
   it.each(['Db', 'Eb', 'Ab', 'Bb'] as const)(
     'spells %s arpeggio content with flats, never sharps',
     async (root) => {

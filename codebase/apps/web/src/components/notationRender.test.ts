@@ -14,10 +14,13 @@ function glyphCount(svg: SVGElement, glyph: string): number {
   ).length
 }
 
-function render(measures: ReturnType<typeof deriveRhythm>): HTMLDivElement {
+function render(
+  measures: ReturnType<typeof deriveRhythm>,
+  options?: Parameters<typeof renderNotation>[2],
+): HTMLDivElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
-  renderNotation(container, measures)
+  renderNotation(container, measures, options)
   return container
 }
 
@@ -69,6 +72,33 @@ describe('renderNotation', () => {
       (t) => t.textContent,
     )
     expect(tabTexts).toEqual(positions.map((p) => String(p.fret)))
+  })
+
+  it('can render staff without TAB', () => {
+    const positions = scalePositions(
+      { root: parseNote('C')!, type: 'ionian' },
+      { min: 0, max: 4 },
+    )
+    const svg = render(deriveRhythm(positions), {
+      displayMode: 'staff',
+    }).querySelector('svg')!
+
+    expect(svg.querySelectorAll('g.vf-stavenote').length).toBe(positions.length)
+    expect(svg.querySelectorAll('g.vf-tabnote').length).toBe(0)
+    expect(svg.querySelectorAll('g.vf-stave').length).toBeGreaterThan(0)
+  })
+
+  it('can render TAB without staff notation', () => {
+    const positions = scalePositions(
+      { root: parseNote('C')!, type: 'ionian' },
+      { min: 0, max: 4 },
+    )
+    const svg = render(deriveRhythm(positions), {
+      displayMode: 'tab',
+    }).querySelector('svg')!
+
+    expect(svg.querySelectorAll('g.vf-stavenote').length).toBe(0)
+    expect(svg.querySelectorAll('g.vf-tabnote').length).toBe(positions.length)
   })
 
   it('marks accidentals explicitly, incl. the natural after a flat in the bar', () => {

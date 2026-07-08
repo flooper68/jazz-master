@@ -11,6 +11,15 @@ export {
 } from './playAlongTempos'
 export type { StoredPlayAlongTempos } from './playAlongTempos'
 export {
+  DEFAULT_NOTATION_DISPLAY_MODE,
+  NOTATION_DISPLAY_MODES,
+  getNotationDisplayMode,
+  isNotationDisplayMode,
+  notationPreferencesStore,
+  saveNotationDisplayMode,
+} from './notationPreferences'
+export type { NotationDisplayMode, NotationPreferences } from './notationPreferences'
+export {
   defaultProfile,
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,

@@ -35,6 +35,16 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
   await expect(
     page.getByRole('heading', { name: lessonTitle, level: 2 }),
   ).toBeVisible()
+  const notationScore = page.getByRole('img', {
+    name: /staff and tablature/i,
+  }).first()
+  await expect(notationScore).toBeVisible()
+  await expect
+    .poll(
+      async () => notationScore.locator('svg text').count(),
+      { message: 'notation score glyphs rendered' },
+    )
+    .toBeGreaterThan(0)
 
   await gradeThroughLesson(page)
   await page.getByRole('button', { name: 'Done' }).click()
