@@ -1,40 +1,61 @@
 ---
 id: TASK-028
-title: Local Postgres for development via Docker Compose
+title: Local Postgres for development via Docker Compose and psql
 epic: EPIC-013
-status: gated
-gated_until: TASK-025 opens or a feature task actually needs server-side persistence
+status: backlog
 depends_on: []
+research: RES-017
 created: 2026-07-06
 ---
 
-# TASK-028 — Local Postgres for development via Docker Compose
+# TASK-028 — Local Postgres for development via Docker Compose and psql
 
 ## Goal
 
-A one-command local PostgreSQL instance (`docker compose up -d`) that mirrors the production database we will provision on Railway, so server-persistence work (TASK-025 and whatever feature opens its gate) develops against a real Postgres instead of the live Railway service.
+A repo-owned local PostgreSQL service starts with one command and can be
+verified with `psql`, giving Drizzle and future server-persistence work a real
+local database without touching production infrastructure.
 
 ## Context
 
-Owner directive (2026-07-06): the long-run database is PostgreSQL deployed on Railway; local development should run Postgres via Docker Compose. The production path is already planned — TASK-025 connects Workers to Railway Postgres through Cloudflare Hyperdrive (RES-002 recommendation 6, gated). TASK-025's "local dev story" criterion currently offers only "Hyperdrive local connection string or direct-to-Railway fallback"; this task supplies the better answer: a local compose-managed Postgres that `wrangler dev` / Hyperdrive local config points at, keeping development off the billed Railway service.
+Owner directive (2026-07-08): use PostgreSQL, local `docker-compose.yaml`,
+`psql` for smoke checks, and leave production infrastructure setup to the owner.
+RES-017 records the current research basis.
 
-Boundaries that stay true (ADR-002, EPIC-013 out-of-scope):
+Boundaries:
 
-- The app keeps working with Docker down. Local-first UX stands; no default command (`bun run dev`, `bun run check`) may require Postgres until TASK-025's gate opens.
-- Dev-only credentials in `docker-compose.yml` are acceptable; anything pointing at Railway is not — Railway credentials never enter the repo (TASK-025 hard boundary).
-
-Shape (implementer's call on details): `docker-compose.yml` at the repo or `codebase/` root with a single `postgres` service — image pinned to the major version Railway will provision (check Railway's current default at implementation time), named volume for data, healthcheck, port bound to localhost only. A `.env.example` documenting the `DATABASE_URL` convention. No schema, no migrations, no ORM — that belongs to the feature task that opens the TASK-025 gate.
+- The app keeps working with Docker down. `bun run --cwd codebase dev` and
+  `bun run --cwd codebase check` must not require Postgres.
+- Use obvious dev-only credentials. No Railway, Hyperdrive, production
+  connection string, token, private hostname, or Cloudflare dashboard state
+  belongs in this task.
+- This task creates the local database service only. Drizzle ORM/migrations are
+  TASK-055.
 
 ## Acceptance criteria
 
-- [ ] `docker compose up -d` starts Postgres; a documented connection string reaches it (`psql`/`pg_isready` round-trip)
-- [ ] Postgres major version pinned and matching what Railway will provision (noted in the compose file)
-- [ ] Data survives `docker compose down` + `up` (named volume); a documented reset path wipes it
-- [ ] Port bound to localhost only; credentials are obvious dev-only values; nothing Railway-related appears in the repo
-- [ ] `bun run dev` and `bun run check` pass with Docker stopped — no default workflow depends on the database
-- [ ] Local dev database usage documented (README or `architecture/overview.md`), including how TASK-025's Hyperdrive local config will point at it
-- [ ] `bun run check` passes
+- [ ] Root `docker-compose.yaml` defines one `postgres` service with a pinned
+      major version (`postgres:18` unless the owner has already chosen the
+      production major)
+- [ ] Postgres data uses a named volume and survives `docker compose down` +
+      `docker compose up -d`; a documented reset command wipes it intentionally
+- [ ] The Postgres port is bound to localhost only, not all interfaces
+- [ ] A healthcheck uses `pg_isready`
+- [ ] `.env.example` documents the local `DATABASE_URL` convention with
+      dev-only credentials
+- [ ] Documentation records start, stop, reset, and `psql` smoke-check commands
+- [ ] `bun run --cwd codebase dev` and `bun run --cwd codebase check` pass with
+      Docker stopped
+- [ ] `bun run --cwd codebase check` passes
 
 ## Verification
 
-`docker compose up -d && pg_isready -h localhost -p <port>` succeeds; connect with `psql` and run `SELECT 1`. `docker compose down && docker compose up -d` retains data; documented reset command clears it. Stop Docker entirely; `bun run check` still green. `grep -ri "railway" docker-compose.yml .env.example` returns nothing.
+- `docker compose up -d`
+- `docker compose ps` shows Postgres healthy
+- `psql "postgres://jazz_master:jazz_master@127.0.0.1:5432/jazz_master" -c 'select 1;'`
+  succeeds
+- `docker compose down && docker compose up -d` preserves data; the documented
+  reset command removes it
+- Stop Docker entirely, then run `bun run --cwd codebase check`
+- `rg -n "railway|hyperdrive|DATABASE_URL=.*(railway|cloudflare)|postgres://.*@" docker-compose.yaml .env.example architecture codebase`
+  finds no production credential or production host

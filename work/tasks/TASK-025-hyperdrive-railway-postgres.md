@@ -1,36 +1,43 @@
 ---
 id: TASK-025
-title: Connect Workers to Railway Postgres through Cloudflare Hyperdrive
+title: Abandoned — agent-owned Railway/Hyperdrive production database setup
 epic: EPIC-013
-status: gated
-gated_until: a feature task actually needs server-side persistence after TASK-024
+status: abandoned
+abandoned_reason: owner decision 2026-07-08 — owner will set up production database infrastructure; agents should not provision Railway, Hyperdrive, Cloudflare dashboard state, or production database credentials
 depends_on: [TASK-024]
-research: RES-002
+research: RES-002, RES-017
 created: 2026-07-05
+abandoned: 2026-07-08
 ---
 
-# TASK-025 — Connect Workers to Railway Postgres through Cloudflare Hyperdrive
+# TASK-025 — Abandoned: agent-owned Railway/Hyperdrive production database setup
 
-## Goal
+> **Abandoned 2026-07-08** by owner directive. The owner will set up production
+> database infrastructure. Agents should not provision Railway, create
+> Hyperdrive configs, manage Cloudflare dashboard state, or verify live
+> production database health as part of EPIC-013.
 
-tRPC procedures can query a Railway PostgreSQL database through a Cloudflare Hyperdrive binding, proven by one read-only smoke procedure — establishing the database path without moving any product state to the server.
+## Preserved Context
 
-## Context
+The original task asked agents to connect Workers to Railway Postgres through a
+Cloudflare Hyperdrive binding and prove it with a deployed read-only smoke
+procedure. That shape is now the wrong ownership boundary.
 
-RES-002 recommendation 6, deliberately **last and gated**: RES-002 says durable state moves to Postgres only when a specific task requires it. Pull this task only alongside the first feature that needs cross-device persistence; until then it stays in backlog. Setup: provision a Railway Postgres service, use its TCP-proxy external connection (mind egress billing), create a Hyperdrive config pointing at it, and add the `hyperdrive` binding to `wrangler.jsonc`. The connection is used via `env.HYPERDRIVE.connectionString` with `pg` or `postgres.js` inside tRPC context (`src/server/trpc/context.ts`) only. Hard boundaries from the research: the Railway `DATABASE_URL` never reaches browser code or the repo (Wrangler secret / dashboard only); React never connects to the database; all access goes through Worker-side tRPC procedures. A `dbHealth`-style procedure (`SELECT 1` / version) is the whole product surface of this task — no schema, no migrations, no feature data.
+RES-017 supersedes the agent-owned production scope:
 
-**ADR-005 note (2026-07-05):** paths predate the TASK-027 restructure — read `src/...` as `codebase/apps/web/src/...`; the boundary criterion covers `codebase/apps/web/src/{app,components,pages}/` and `codebase/packages/theory/`, and the Verification grep runs over `codebase/apps/web/src/` and its build output.
+- Agent-owned now: local Postgres via Docker Compose, Drizzle schema/migration
+  tooling, and server-side code that can consume a database connection once the
+  owner provides one.
+- Owner-owned now: production database provisioning, provider credentials,
+  Cloudflare/Hyperdrive dashboard setup, and build/deploy secrets.
 
-## Acceptance criteria
+## Future Re-entry
 
-- [ ] Hyperdrive config created and bound in `wrangler.jsonc`
-- [ ] A tRPC procedure returns a successful round-trip result from Railway Postgres on deployed Workers
-- [ ] Database credentials appear in no source file, client bundle, or build output
-- [ ] Database access exists only behind tRPC context/procedures — nothing under `src/app/`, `src/components/`, `src/pages/`, or `src/theory/` imports database code
-- [ ] Local dev story documented (Hyperdrive local connection string pointed at the TASK-028 Docker Compose Postgres; direct-to-Railway only as fallback)
-- [ ] `architecture/overview.md` updated with the data path: SPA → tRPC → Worker → Hyperdrive → Railway
-- [ ] `bun run check` passes
+If production database integration becomes concrete again, file a fresh task
+that starts from owner-provided inputs:
 
-## Verification
+- the database provider and connection policy
+- the Cloudflare binding name or build/runtime secret names
+- the target environment that should be verified
 
-`bun run check` green, deploy, call the db-health procedure on the live URL and see a successful response. `grep -ri "railway\|DATABASE_URL\|postgres://" src/ dist/` shows no credentials. Confirm the Hyperdrive binding appears in `wrangler.jsonc` and the Cloudflare dashboard.
+That future task should not revive this one.
