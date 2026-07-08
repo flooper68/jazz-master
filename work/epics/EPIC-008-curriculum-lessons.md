@@ -38,6 +38,7 @@ This is the content backbone of the "open app, pick up guitar, play" flow. The p
 - TASK-011 — Exercise & lesson content model
 - TASK-012 — First lesson pack: scales & arpeggios
 - TASK-013 — Guided practice session runner
+- TASK-049 — Gate exercise timing and grading behind playthrough (post-epic runner flow cleanup)
 - (more as discovered)
 
 ## Done when
@@ -46,4 +47,4 @@ A user can open a scales lesson appropriate to their level, be guided through it
 
 ## Done-when assessment (2026-07-06, TASK-013 shipped)
 
-Met: the Practice page lists the 10-lesson scales/arpeggios pack by area with level tags (TASK-011/012), and Start guides through every exercise with resolved fretboard positions, a per-exercise countdown, and got-it/shaky/missed self-grading; completed and abandoned sessions persist to the `sessions` store (TASK-013, verified end to end). "Appropriate to their level" is user-driven today — the user picks by the visible level tag; profile-matched selection is EPIC-011's job, as scoped. Open follow-ups live in the inbox, not this epic: INS-013 (dev-time pack validation), INS-014 (session-record semantics for the planner/history), ISSUE-002 (focus management).
+Met: the Practice page lists the 10-lesson scales/arpeggios pack by area with level tags (TASK-011/012), and Start guides through every exercise with resolved fretboard positions, a per-exercise countdown, and got-it/shaky/missed self-grading; completed and abandoned sessions persist to the `sessions` store (TASK-013, verified end to end). "Appropriate to their level" is user-driven today — the user picks by the visible level tag; profile-matched selection is EPIC-011's job, as scoped. Open follow-ups live in the inbox, not this epic: INS-013 (dev-time pack validation), INS-014 (session-record semantics for the planner/history), ISSUE-002 (focus management). 2026-07-08 owner feedback filed TASK-049 as post-epic runner flow cleanup for play-gated timing and grading.

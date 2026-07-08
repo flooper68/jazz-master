@@ -1,7 +1,8 @@
 ---
 id: INS-035
 title: Toggle between staff / TAB / both in the practice runner
-status: new
+status: accepted
+outcome: [TASK-048]
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -20,3 +21,8 @@ stores (ADR-002).
 
 Batch with the notation-sizing pass in [[INS-034]] — the toggle changes how
 much vertical room the grown default rendering has to work with.
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-048 with INS-034. NOTE-011 confirmed
+the toggle is part of the urgent notation readability fix.

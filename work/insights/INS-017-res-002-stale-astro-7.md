@@ -1,7 +1,8 @@
 ---
 id: INS-017
 title: RES-002 stale_when tripped — Astro 7 is current
-status: new
+status: accepted
+outcome: [TASK-053]
 created: 2026-07-06
 source: TASK-021
 ---
@@ -25,3 +26,9 @@ Router integration for TASK-022, tRPC adapter shape for TASK-023, Hyperdrive
 for the gated TASK-025) against Astro 7 / current docs before those tasks
 consume them, and record a staleness note in RES-002 rather than re-running
 the whole research.
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-053, the next
+knowledge-maintenance sweep. This is exactly a stale-research/feed-forward
+audit item, not a product implementation task.

@@ -38,6 +38,7 @@ The desired practice flow shows "both notes and tabs." Fretboard/diagram views (
 - TASK-037 — Notation component — staff + TAB via VexFlow
 - TASK-038 — Show notation in the practice runner via a display hint
 - TASK-039 — Trim the notation bundle — evaluate vexflow-core + single font
+- TASK-048 — Make runner notation readable with focus mode and display toggles (post-epic usability follow-up)
 
 ## Done when
 
@@ -45,7 +46,7 @@ A scale or arpeggio exercise in the practice runner shows correct, readable staf
 
 ## Current status
 
-Done — all four tasks shipped. Done-when assessment: met. Every lesson-pack scale/arpeggio exercise in the practice runner shows an aligned staff + TAB pair via the `'notation'` display hint, spelled exactly as the theory core spells (enharmonic tests + flat-key read verified under TASK-037/038). VexFlow is lazy-loaded out of the initial `/app` chunk, and TASK-039 trimmed that chunk from 692 KB to 389 KB gzip (the `vexflow/bravura` entry — Bravura + Academico only, fonts embedded, offline rendering verified with external network blocked). Deferred UX polish lives in INS-030; notation e2e coverage gap in INS-031 — both are inbox items for triage, not epic blockers.
+Done — all four original tasks shipped. Done-when assessment: met. Every lesson-pack scale/arpeggio exercise in the practice runner shows an aligned staff + TAB pair via the `'notation'` display hint, spelled exactly as the theory core spells (enharmonic tests + flat-key read verified under TASK-037/038). VexFlow is lazy-loaded out of the initial `/app` chunk, and TASK-039 trimmed that chunk from 692 KB to 389 KB gzip (the `vexflow/bravura` entry — Bravura + Academico only, fonts embedded, offline rendering verified with external network blocked). 2026-07-08 owner feedback upgraded readability/focus/toggles from polish to urgent post-epic work; TASK-048 tracks that without reopening the epic's original done-when.
 
 ## Last reviewed
 

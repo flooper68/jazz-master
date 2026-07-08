@@ -1,7 +1,8 @@
 ---
 id: INS-032
 title: Moving exercises — arpeggios over chord progressions, changing every bar
-status: new
+status: deferred
+revisit_when: TASK-048, TASK-049, and TASK-050 ship; then design the moving-exercise model with JSON packs
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -27,3 +28,10 @@ it. The two form one arc: the loop, then content that moves inside it.
 
 The pack format redesign this forces is also where "exercises as JSON"
 ([[INS-033]]) folds in — one model redesign, not two.
+
+## Triage note
+
+2026-07-08 heartbeat - Deferred. The play-along prerequisite is now satisfied,
+but NOTE-011 identified more basic runner usability problems (readability,
+timer/grading flow, tempo/volume controls) that should land first. Revisit once
+those are fixed, then promote this together with INS-033.

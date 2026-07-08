@@ -1,7 +1,8 @@
 ---
 id: INS-018
 title: Committed routeTree.gen.ts has no drift guard in the check gate
-status: new
+status: deferred
+revisit_when: next task that touches TanStack route files or the shared check/build gate
 created: 2026-07-06
 source: TASK-022
 ---
@@ -22,3 +23,10 @@ Possible fix: a `check` step that regenerates and runs
 `git diff --exit-code apps/web/src/app/routeTree.gen.ts`, or a pre-`tsc`
 generate step in the build script. Deferred from TASK-022 because it changes
 the shared `check` gate, which is beyond a mechanical routing migration.
+
+## Triage note
+
+2026-07-08 heartbeat - Deferred. The risk is real, but no current route drift
+has been observed and today's priority is the runner/notation practice loop.
+Fold this into the next route-file or check-gate task rather than expanding the
+queue now.

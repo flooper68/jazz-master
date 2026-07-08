@@ -81,6 +81,7 @@ Owner decisions this epic rests on (NOTE-009):
 - TASK-045 — Research sampled-instrument playback for play-along (RES-015; ADR-011)
 - TASK-046 — Build the play-along audio engine
 - TASK-047 — Add runner play-along controls and per-exercise tempo persistence
+- TASK-050 — Add playback volume controls and 200 BPM tempo ceiling (post-epic control polish)
 
 ## Done when
 
@@ -93,7 +94,8 @@ drag the tempo down and back up, and find that tempo remembered next session
 
 Done. TASK-045 chose the playback stack in RES-015/ADR-011, TASK-046 added the
 sampled playback engine, and TASK-047 wired the runner controls plus per-exercise
-tempo persistence.
+tempo persistence. 2026-07-08 owner feedback filed TASK-050 for post-epic
+control polish: separate guitar/click volumes and a 200 BPM ceiling.
 
 ## Last reviewed
 

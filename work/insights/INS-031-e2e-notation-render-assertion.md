@@ -1,7 +1,8 @@
 ---
 id: INS-031
 title: e2e smoke never asserts the notation score actually renders
-status: new
+status: accepted
+outcome: [TASK-048]
 created: 2026-07-07
 source: TASK-039
 ---
@@ -32,3 +33,9 @@ onboarding skip first).
 Touches `codebase/apps/web/e2e/smoke.spec.ts` only. Related: [[INS-030]]
 (runner-notation UX polish) — could batch, but this one is a mechanical test
 addition, not a product judgment.
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-048. The task is already changing
+the runner score surface, so the e2e render assertion is the right verification
+hook for that work.

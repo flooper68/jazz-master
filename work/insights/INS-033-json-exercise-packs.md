@@ -1,7 +1,8 @@
 ---
 id: INS-033
 title: Exercise packs as JSON data — agent-generated, schema-validated at load
-status: new
+status: deferred
+revisit_when: TASK-048, TASK-049, and TASK-050 ship; pair with INS-032 moving-exercise model design
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -24,3 +25,8 @@ When it lands it is architecture-shaped: JSON pack format + schema validation
 (the `validate.ts` groundwork and the deferred edge cases in [[INS-011]] are
 directly relevant), and where packs live (bundled vs. fetched). Likely an ADR
 at design time.
+
+## Triage note
+
+2026-07-08 heartbeat - Deferred. Still valid, but it should ride with the
+moving-exercise model redesign after the current runner usability fixes ship.

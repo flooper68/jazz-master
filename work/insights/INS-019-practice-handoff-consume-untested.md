@@ -1,7 +1,8 @@
 ---
 id: INS-019
 title: Practice page's handoff-consume effect (refresh/back must not restart a lesson) has no test
-status: new
+status: deferred
+revisit_when: next PracticePage/dashboard handoff task or TASK-052 QA review findings
 created: 2026-07-06
 source: TASK-022
 ---
@@ -21,3 +22,9 @@ that jsdom suites currently cannot catch. A small test — render via the
 dashboard Start handoff, assert the run started, then assert
 `router.state.location.state.startLessonId` is cleared — would pin it at the
 page/integration layer.
+
+## Triage note
+
+2026-07-08 heartbeat - Deferred. This is a good small regression test, but not
+worth a standalone task ahead of the owner-reported runner problems. Revisit
+when PracticePage/handoff code is touched or when TASK-052 reviews the flow.

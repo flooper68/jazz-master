@@ -1,7 +1,8 @@
 ---
 id: INS-026
 title: research/README.md has no index of RES files
-status: new
+status: accepted
+outcome: [TASK-053]
 created: 2026-07-07
 source: TASK-014
 ---
@@ -13,3 +14,8 @@ add an index line and found nowhere to put it. A knowledge-maintenance candidate
 either add a one-line-per-RES index to `research/README.md` (and keep it linted like
 the processes table in the agent index), or decide the directory listing is enough and
 note that in the README.
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-053. This is knowledge-system
+maintenance, not product work.

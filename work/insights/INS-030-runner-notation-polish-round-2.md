@@ -1,7 +1,8 @@
 ---
 id: INS-030
 title: Runner-notation polish round 2 — items deferred from TASK-038's review
-status: new
+status: accepted
+outcome: [TASK-048]
 created: 2026-07-07
 source: TASK-038
 ---
@@ -35,3 +36,9 @@ defect, deferred instead of fixed in-task:
 All three touch `codebase/apps/web/src/components/Notation.tsx` /
 `PracticeRunner.tsx`. Natural batching: fold into the next QA product review
 of the runner ([[TASK-039]] is nearby in code but is bundle work, not UX).
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-048. NOTE-011 raised notation
+readability/focus/toggles to the top priority, and these polish items touch the
+same score layout and accessibility decisions.

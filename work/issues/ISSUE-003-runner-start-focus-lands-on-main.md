@@ -1,8 +1,8 @@
 ---
 id: ISSUE-003
 title: Focus lands on <main>, not the lesson heading, when the runner mounts in a real browser
-status: open
-severity:
+status: confirmed
+severity: minor
 created: 2026-07-07
 source: TASK-024
 ---
@@ -41,3 +41,10 @@ clicked-then-unmounted Start button. First diagnostic step: reproduce locally
 (`bun run dev`, real browser) and log the firing order of the `useViewFocus`
 effects. Related: [[INS-027]] (route-change focus), the planned Playwright
 suite (TASK-035) could pin this class of behavior in a real browser.
+
+## Triage note
+
+2026-07-08 heartbeat - Confirmed from the original real-browser observation and
+kept as minor: focus lands on the named `<main>` landmark, not `body`, so this
+is an accessibility polish defect rather than a blocker. Fold diagnostic
+coverage into TASK-052 unless it becomes user-visible friction sooner.

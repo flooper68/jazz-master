@@ -38,6 +38,7 @@ Every pillar (voicings, progressions, repertoire, ear training) needs to name no
 - TASK-008 — Typed localStorage persistence layer
 - TASK-009 — Theory core: scales, modes, and arpeggios
 - TASK-010 — Scale & arpeggio fretboard positions
+- TASK-051 — Hide unfinished placeholder pages from the app shell (post-epic cleanup)
 - (more as discovered)
 
 ## Done when
@@ -46,7 +47,7 @@ A developer can `import { spellChord } from '@/theory'`, get correct notes for `
 
 ## Current status
 
-Done (2026-07-06). All listed tasks shipped: TASK-001 (shell/routing), TASK-002/009/010 (theory core incl. scales, modes, arpeggios, fretboard positions), TASK-003 (Fretboard), TASK-004 (ChordDiagram), TASK-008 (typed localStorage persistence). Done-when assessment: met — `spellChord` from `@jazz-master/theory` returns correct notes for `Cmaj7` and renders on `<Fretboard>`, all tested and navigable from the shell. Persistence landed as `defineStore` in `apps/web/src/storage/` (ADR-002; extraction to a package deferred per ADR-005).
+Done (2026-07-06). All original tasks shipped: TASK-001 (shell/routing), TASK-002/009/010 (theory core incl. scales, modes, arpeggios, fretboard positions), TASK-003 (Fretboard), TASK-004 (ChordDiagram), TASK-008 (typed localStorage persistence). Done-when assessment: met — `spellChord` from `@jazz-master/theory` returns correct notes for `Cmaj7` and renders on `<Fretboard>`, all tested and navigable from the shell. Persistence landed as `defineStore` in `apps/web/src/storage/` (ADR-002; extraction to a package deferred per ADR-005). 2026-07-08 owner feedback filed TASK-051 as post-epic app-shell cleanup for confusing placeholder pages.
 
 ## Last reviewed
 

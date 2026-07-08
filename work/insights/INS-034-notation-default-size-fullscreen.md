@@ -1,7 +1,8 @@
 ---
 id: INS-034
 title: Notation renders too small — grow the default, add a fullscreen focus mode
-status: new
+status: accepted
+outcome: [TASK-048]
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -25,3 +26,8 @@ adding a focus mode touch the same sizing decisions; resolve them together in
 one notation-sizing pass rather than three patches. Also adjacent:
 [[INS-035]] (staff/TAB toggle) frees vertical space that a bigger default
 rendering will want.
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-048. NOTE-011 upgraded this from
+polish to an ASAP practice-loop problem.

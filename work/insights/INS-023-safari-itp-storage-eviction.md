@@ -1,7 +1,8 @@
 ---
 id: INS-023
 title: Safari ITP 7-day eviction threatens ALL local-first practice data, not just future audio
-status: new
+status: accepted
+outcome: [TASK-053]
 created: 2026-07-07
 source: TASK-015
 ---
@@ -22,3 +23,10 @@ Desired condition: practice history survives Safari's 7-day ITP window, or the r
 Affected user/workflow: any Safari/iOS user with gaps between practice sessions.
 Evidence: RES-014 Q6 citations (MDN storage quotas and eviction criteria; WebKit storage-policy posts).
 Validation need: research/spike | direct task candidate
+
+## Triage note
+
+2026-07-08 heartbeat - Accepted into TASK-053. This should be decided in a
+knowledge-maintenance pass that can update ADR-002/wiki or file a focused
+mitigation task (`navigator.storage.persist()`, export, or owner-accepted
+risk) with the citations in front of it.
