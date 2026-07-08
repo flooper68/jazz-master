@@ -1,6 +1,6 @@
 ---
 title: Lifecycle of a change — from raw input to maintained knowledge
-updated: 2026-07-07
+updated: 2026-07-08
 sources:
   - work/README.md
   - processes/feedback-intake.md
@@ -42,7 +42,7 @@ Raw material enters through `processes/feedback-intake.md`: owner notes, user fe
 
 ## 3. Specify
 
-Actionable work becomes a `TASK-*` from the template in `work/README.md`: one focused session, objective acceptance criteria, an executable Verification section, provenance kept via `source:`/`research:`. Product-facing tasks carry a Problem brief separating outcome from output. A task needing research runs `processes/deep-research.md` first, landing a `RES-*` file.
+Actionable work becomes a `TASK-*` from the template in `work/README.md`: one focused session, objective acceptance criteria, an executable Verification section, provenance kept via `source:`/`research:`. Verification must be automated or agent-runnable; human-only manual device/browser coverage is QA/product-review scope, not a task `done` gate. Product-facing tasks carry a Problem brief separating outcome from output. A task needing research runs `processes/deep-research.md` first, landing a `RES-*` file.
 
 ## 4. Prioritize
 
@@ -50,7 +50,7 @@ With several candidates, `processes/prioritization.md` ranks them; the heartbeat
 
 ## 5. Implement and ship
 
-`processes/dev-loop.md` runs the nine steps: pick → claim (`status: in-progress` is the lock) → plan (logged in the item) → implement in small tested increments → independent review (`processes/code-review.md`) → test (`bun run check` plus the item's Verification, literally executed) → record (criteria ticked honestly, Log written, ADR/LOG.md if shape changed, wiki pages updated if "how it works" changed) → ship (one commit, `TASK-###:` prefix, pushed to `main` per `processes/git-workflow.md` — since TASK-031, following its commit-isolation steps: worktree-per-agent preferred, pathspec staging/commits mandatory in shared trees) → reflect (discoveries filed as insights/issues/notes, never as scope creep). Since TASK-024 (ADR-009), pushing to `main` has a second effect: Cloudflare Workers Builds re-runs `bun run check` and deploys the app to the dev Workers URL — agents ship dev deployments by pushing, but no deploy credential exists anywhere they can reach (it is implicit in the owner-managed Cloudflare↔GitHub connection).
+`processes/dev-loop.md` runs the nine steps: pick → claim (`status: in-progress` is the lock) → plan (logged in the item) → implement in small tested increments → independent review (`processes/code-review.md`) → test (`bun run check` plus the item's agent-runnable Verification) → record (criteria ticked honestly, Log written, ADR/LOG.md if shape changed, wiki pages updated if "how it works" changed) → ship (one commit, `TASK-###:` prefix, pushed to `main` per `processes/git-workflow.md` — since TASK-031, following its commit-isolation steps: worktree-per-agent preferred, pathspec staging/commits mandatory in shared trees) → reflect (discoveries filed as insights/issues/notes, never as scope creep). Since TASK-024 (ADR-009), pushing to `main` has a second effect: Cloudflare Workers Builds re-runs `bun run check` and deploys the app to the dev Workers URL — agents ship dev deployments by pushing, but no deploy credential exists anywhere they can reach (it is implicit in the owner-managed Cloudflare↔GitHub connection).
 
 ## 6. Observe and close the loop
 

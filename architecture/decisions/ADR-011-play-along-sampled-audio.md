@@ -66,8 +66,9 @@ Load-bearing choices:
   `/app` initial load does not regress.
 - The playback implementation has two testable seams: pure scheduling/timeline
   tests in Vitest, and runner integration tests for controls/tempo persistence.
-  Real browser manual verification remains necessary because Web Audio and
-  CacheStorage behavior cannot be fully proven in jsdom.
+  Real browser QA remains necessary because Web Audio and CacheStorage behavior
+  cannot be fully proven in jsdom, but NOTE-012 keeps that coverage out of task
+  completion gates unless it is agent-runnable.
 - Offline-after-first-use for samples depends on CacheStorage in HTTPS contexts;
   broader full-app offline behavior remains out of scope until a service worker
   or PWA task exists.

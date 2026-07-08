@@ -20,7 +20,7 @@ gate with a narrower command.
 | Component | Reusable UI behavior, rendering contracts, accessible names, edge states | colocated `*.test.tsx` | Vitest + Testing Library in jsdom |
 | Page/integration | Routes, composed page behavior, storage-facing workflows with controlled stores | colocated page/app `*.test.tsx` | Vitest + Testing Library in jsdom |
 | E2E | Cross-page browser flows, persistence across refresh, responsive/keyboard behavior that jsdom cannot prove | `apps/web/e2e/*.spec.ts` | Playwright via `bun run --cwd codebase check:e2e` (TASK-035) |
-| Manual QA | Product judgment, visual layout, console/network/a11y sweep, exploratory risks | `work/reviews/REV-*` | `processes/qa-product-review.md` |
+| Manual QA | Product judgment, visual layout, console/network/a11y sweep, human-only device/browser coverage, exploratory risks | `work/reviews/REV-*` | `processes/qa-product-review.md` |
 
 Prefer the cheapest layer that catches the defect. A higher-level test should
 cover a user workflow, not duplicate every branch already covered below it.
@@ -38,8 +38,9 @@ cover a user workflow, not duplicate every branch already covered below it.
 - Storage: test corrupt/missing data, version envelopes, migrations, reset, and
   that reads fail closed to defaults without throwing.
 - Bug fixes: add a regression test at the lowest layer that would have failed
-  before the fix, unless the issue is only observable in manual QA. In that case,
-  record the manual verification step in the work item.
+  before the fix, unless the issue is only observable in human QA. In that case,
+  record the risk or suggested check for the next QA/product review; do not make
+  human-only manual verification a task completion gate.
 
 ## Testing Library style
 
@@ -79,7 +80,8 @@ port of the unit tests. Run it at these trigger points:
 - before/during a QA product review (`processes/qa-product-review.md`)
 - before pushing a change that touches the practice flow, routing, or storage —
   a push to `main` is a dev deploy (ADR-009)
-- when a work item's Verification section calls for real-browser proof
+- when a work item's Verification section calls for real-browser proof that can
+  be run by the agent or browser tooling
 
 ## Not adopted yet
 

@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — human-only verification moved out of task gates (NOTE-012)
+
+Owner decision: agents should not create or preserve tasks that require
+human-only manual browser/device verification before `done`. Task verification
+now must be automated or agent-runnable; humans catch device/browser issues
+during QA/product review and those findings become issues. TASK-041's capture
+flow is therefore marked done on its implemented/reviewed scope, with residual
+Firefox/Safari/iOS Safari mic risk routed to QA.
+
 ## 2026-07-08 - local storage backup and restore shipped (ISSUE-005)
 
 The Profile page now exposes JSON backup export/import for the typed local

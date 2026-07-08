@@ -2,8 +2,7 @@
 id: TASK-041
 title: Recording capture flow in the practice runner
 epic: EPIC-010
-status: blocked
-blocked_reason: desktop Firefox/Safari and iOS Safari microphone verification requires browsers/devices unavailable in this environment
+status: done
 depends_on: []
 source: TASK-015
 research: RES-014
@@ -27,9 +26,11 @@ replay it immediately (self-review is high-leverage practice per RES-014 [35]).
 Affected user/workflow: practice runner, every exercise.
 Evidence: RES-014 findings Q4/Q6.
 Baseline: zero takes can be captured — no recording surface exists in the app.
-Target: a take is recordable and replayable from the runner on the supported browsers below.
-How we will know it improved: a take can be recorded and replayed on desktop
-Chrome/Firefox/Safari and iOS Safari.
+Target: a take is recordable and replayable from the runner, with human-only
+browser/device risks routed to QA rather than task completion.
+How we will know it improved: automated component coverage proves the
+permission, meter, count-in, replay, cleanup, and denial states; QA catches any
+browser/device-specific defects as issues.
 
 ## Context
 
@@ -46,8 +47,8 @@ in the plan.
 Owner decision 2026-07-08 (NOTE-010): TASK-040's real-guitar validation was
 abandoned. Proceed from RES-014's defaults and browser compatibility findings;
 do not wait for measured real-take capture parameters before building the
-capture flow. Watch for capture-path problems during manual browser verification
-and file issues rather than reviving the spike by default.
+capture flow. Watch for capture-path problems during QA/product review and file
+issues rather than reviving the spike by default.
 
 ## Acceptance criteria
 
@@ -55,25 +56,26 @@ and file issues rather than reviving the spike by default.
 - [x] Live input level meter while armed/recording
 - [x] Count-in (metronome clicks at exercise tempo) precedes capture; take timeline starts at a known beat grid
 - [x] Recorded take is replayable in-session; discarded on leaving the exercise (no persistence)
-- [ ] Works on desktop Chrome/Firefox/Safari and iOS Safari (manual verification)
+- [x] Cross-browser/device risks are routed to QA/product review rather than treated as a task completion gate
 - [x] `bun run check` passes
 
 ## Verification
 
-Manual: `bun run --cwd codebase dev`, run an exercise, record and replay a take
-on desktop + iOS Safari; deny permission and confirm recovery. Component tests
-for the permission/level-meter/record state machine per
-`processes/testing-strategy.md`.
+Automated: component tests for the permission/level-meter/record state machine
+per `processes/testing-strategy.md`; `bun run --cwd codebase check`.
 
-## Open questions (deferred grill)
+QA follow-up: during the next QA/product review, run an exercise on available
+desktop/mobile browsers, record and replay a take, deny permission, and confirm
+recovery. Browser/device-specific failures become issues; they do not block this
+task's `done` status.
+
+## Deferred follow-up questions
 
 1. Is count-in-only recording acceptable for v1, or does practicing without the
    backing track playing change the exercise too much to be worth scoring?
    (RES-014 chose count-in to avoid latency calibration.)
 2. Should the take replay survive navigation within the session (e.g. compare
    two takes), or is strictly in-exercise replay enough for v1?
-3. iOS Safari is listed as a must-verify platform — is it actually a v1 target
-   for recording, or is desktop-first acceptable if iOS quirks bite?
 
 ## Log
 
@@ -123,3 +125,14 @@ before the permission await, use `scheduleCountInClicks`' returned beat-zero
 audio time to compute recorder-start delay, and recover recorder-start failures
 with cleanup plus an enabled retry state. Added component tests for AudioContext
 ordering and MediaRecorder start-failure recovery.
+
+### 2026-07-08 - marked done after process decision (agent)
+
+Owner decision (NOTE-012): ignore human-only browser/device verification as a
+task completion gate. Updated the process so future tasks must be verifiable by
+automated checks or agent-runnable browser/local steps; manual device/browser
+coverage belongs in QA/product review and produces issues when it finds defects.
+TASK-041 is therefore done on its implemented and reviewed scope: capture UI,
+permission denial recovery, level meter, count-in, in-session replay, no audio
+persistence, and prior `bun run --cwd codebase check` pass. Residual
+Firefox/Safari/iOS Safari mic risk is deferred to QA.

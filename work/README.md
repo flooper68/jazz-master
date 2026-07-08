@@ -97,7 +97,9 @@ What the implementer needs; link epics, research, code paths.
 - [ ] `bun run check` passes
 
 ## Verification
-Exact commands/steps proving the criteria.
+Exact automated or agent-runnable commands/steps proving the criteria. Do not
+make human-only manual device/browser QA a task completion gate; file or route
+that coverage to QA/product review instead.
 ```
 
 ### Insight
@@ -162,7 +164,10 @@ Follow the format in `processes/qa-product-review.md`.
 
 ## Writing a good task
 
-Completable in one focused session; verifiable without human judgment where possible. If it grows mid-flight, split it: ship a slice, file follow-ups, link them.
+Completable in one focused session; verifiable by automated checks or
+agent-runnable local/browser steps. Human-only manual device/browser coverage is
+QA/product-review scope, not a task `done` gate. If it grows mid-flight, split
+it: ship a slice, file follow-ups, link them.
 
 Product-facing tasks distinguish **output** (what will be built) from **outcome** (what should improve for the user, from baseline to target) — that is what the Problem brief carries. Framing guidance: `research/RES-008-organizational-problem-identification-measurement-solving-frameworks.md`.
 

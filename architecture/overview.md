@@ -135,8 +135,8 @@ then starts MediaRecorder on the known beat grid. Capture prefers
 `audio/webm;codecs=opus` and falls back to `audio/mp4` for Safari; the recorded
 Blob becomes an in-memory object URL for replay only. No take audio is persisted
 or uploaded, and the URL plus mic tracks are cleaned up when the user discards
-the take or leaves the exercise. TASK-041 remains blocked pending manual
-desktop Firefox/Safari and iOS Safari mic verification.
+the take or leaves the exercise. TASK-041 is done; cross-browser/device mic
+coverage now belongs to QA/product review rather than blocking task completion.
 
 ## Current state (2026-07-08)
 
@@ -146,8 +146,8 @@ EPIC-010 recording/scoring is in progress from a deliberately risk-accepted
 position: RES-014 returned staged-go for monophonic offline-after-take scoring,
 but the owner abandoned TASK-040's real-guitar spike on 2026-07-08 (NOTE-010).
 TASK-041's capture implementation is present in the runner and covered by
-component/unit tests, but the task is blocked pending required desktop
-Firefox/Safari and iOS Safari mic verification. TASK-042 added the pure
+component/unit tests; NOTE-012 moved human-only browser/device verification out
+of task completion gates and into QA/product review. TASK-042 added the pure
 `apps/web/src/scoring/` module: synthesized mono fixtures prove perfect, late,
 wrong, missed, extra, empty, and octave-shifted takes across multiple keys;
 real-signal quality issues should be handled in TASK-041/TASK-042 follow-up QA

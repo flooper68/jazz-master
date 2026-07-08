@@ -11,7 +11,7 @@ The core iteration for shipping any piece of work (task or small issue). Designe
 │   3. PLAN      read item + epic + relevant code; note approach in the item's Log
 │   4. IMPLEMENT small steps, tests alongside code
 │   5. REVIEW    per processes/code-review.md
-│   6. TEST      bun run --cwd codebase check + the item's Verification steps
+│   6. TEST      bun run --cwd codebase check + agent-runnable Verification steps
 │   7. RECORD    tick acceptance criteria, write the Log, set status
 │   8. SHIP      commit + push to main (per processes/git-workflow.md)
 └── 9. REFLECT   file insights/issues/notes for anything discovered; loop
@@ -67,7 +67,15 @@ runner notation layout and verify it with the task's viewport checks plus
 
 - `bun run --cwd codebase check` must pass: typecheck, lint, tests, production build.
 - New or changed tests must match `processes/testing-strategy.md`: behavior-focused at the cheapest layer that catches the defect.
-- Execute the item's **Verification** section literally, including manual `bun run --cwd codebase dev` checks.
+- Execute the item's **Verification** section literally when the steps are
+  agent-runnable: automated commands, Playwright/browser-tool checks, or local
+  `bun run --cwd codebase dev` checks the agent can actually perform.
+- Do not create or preserve task acceptance criteria that require human-only
+  manual/device/browser verification before `done`. Those risks belong in
+  QA/product reviews, regression packs, or filed issues/insights. If a task
+  already contains a human-only verification gate, rewrite it into an
+  agent-runnable verification signal and record any residual risk for the next
+  QA review instead of blocking the task.
 - Tick a criteria checkbox only after actually verifying it — never because the code "should" satisfy it.
 
 ### 7. Record
@@ -99,8 +107,8 @@ The final owner-facing report for a dev-loop item must include:
 - the shipped work item ID/title, final status, and commit/push state;
 - the acceptance criteria result: all checked, or the exact unchecked criteria
   and why if blocked/partial;
-- how to test it: the exact automated commands and manual steps from the
-  item's **Verification** section, adjusted only for current paths/URLs;
+- how to test it: the exact automated commands and agent-runnable steps from
+  the item's **Verification** section, adjusted only for current paths/URLs;
 - any verification that was skipped, failed, or needed a rerun/escalation.
 
 Keep it concise, but make it possible for the owner or the next agent to verify

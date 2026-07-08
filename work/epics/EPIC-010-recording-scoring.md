@@ -54,10 +54,11 @@ browser (MPM/YIN pitch detection, spectral-flux onsets, metronome count-in
 instead of a backing track, score-only persistence); real-time note-by-note
 feedback and per-note chord scoring are out for v1. The recommended real-guitar
 spike was abandoned by owner decision on 2026-07-08 (NOTE-010): downstream work
-accepts that risk and proceeds with capture flow, scoring engine, and score
-UI/persistence from RES-014 defaults and synthesized fixtures. A chroma-based
+accepts that risk. Capture flow (TASK-041) and the pure scoring engine
+(TASK-042) are done; the next implementation step is score UI/persistence
+(TASK-043), using RES-014 defaults and synthesized fixtures. A chroma-based
 chord "close enough" check remains gated behind validated monophonic scoring.
 
 ## Last reviewed
 
-2026-07-08 — owner accepted the risk of skipping TASK-040's real-guitar spike (NOTE-010); TASK-041 and TASK-042 are unblocked.
+2026-07-08 — NOTE-012 moved human-only browser/device verification to QA/product review; TASK-041 and TASK-042 are done, so TASK-043 is dependency-ready.
