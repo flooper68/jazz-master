@@ -35,6 +35,14 @@ describe('play-along timeline', () => {
     ])
   })
 
+  it('can omit phrase clicks for click-free playback', () => {
+    const pattern = createExercisePattern([position(0), position(1)], {
+      click: false,
+    })
+
+    expect(pattern.events.map((event) => event.kind)).toEqual(['note', 'note'])
+  })
+
   it('converts BPM to seconds per beat', () => {
     expect(secondsPerBeat(120)).toBe(0.5)
     expect(secondsPerBeat(60)).toBe(1)

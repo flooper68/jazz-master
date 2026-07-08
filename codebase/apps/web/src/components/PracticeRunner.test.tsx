@@ -1,9 +1,29 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveExercise, type Lesson } from '../content'
+import { getPlayAlongTempo } from '../storage/playAlongTempos'
 import { sessionsStore } from '../storage/sessions'
 import { PracticeRunner } from './PracticeRunner'
+
+const audioMock = vi.hoisted(() => {
+  const engine = {
+    playResolvedExercise: vi.fn(),
+    setTempoBpm: vi.fn(),
+    stop: vi.fn(),
+    dispose: vi.fn(),
+  }
+  return {
+    engine,
+    createPlayAlongEngine: vi.fn(() => engine),
+    moduleLoaded: vi.fn(),
+  }
+})
+
+vi.mock('../audio', () => {
+  audioMock.moduleLoaded()
+  return { createPlayAlongEngine: audioMock.createPlayAlongEngine }
+})
 
 const lesson: Lesson = {
   id: 'fixture-lesson',
@@ -48,6 +68,13 @@ function renderRunner(onExit = vi.fn()) {
 
 beforeEach(() => {
   localStorage.clear()
+  audioMock.moduleLoaded.mockClear()
+  audioMock.createPlayAlongEngine.mockClear()
+  audioMock.engine.playResolvedExercise.mockReset()
+  audioMock.engine.playResolvedExercise.mockResolvedValue(undefined)
+  audioMock.engine.setTempoBpm.mockClear()
+  audioMock.engine.stop.mockClear()
+  audioMock.engine.dispose.mockClear()
 })
 
 describe('PracticeRunner', () => {
@@ -82,13 +109,178 @@ describe('PracticeRunner', () => {
     ).toBeNull()
   })
 
+  it('lazy-loads play-along audio on first play and starts with defaults', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    expect(audioMock.moduleLoaded).not.toHaveBeenCalled()
+    expect(audioMock.createPlayAlongEngine).not.toHaveBeenCalled()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
+    })
+    expect(audioMock.moduleLoaded).toHaveBeenCalledTimes(1)
+    expect(audioMock.createPlayAlongEngine).toHaveBeenCalledTimes(1)
+    expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith({
+      positions: resolveExercise(lesson.exercises[0]).positions,
+      tempoBpm: 60,
+      loop: true,
+      click: true,
+      countInBeats: 4,
+    })
+    expect(
+      screen.getByRole('button', {
+        name: 'Stop play-along for C major — open position',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows loading and error states for failed playback', async () => {
+    const user = userEvent.setup()
+    let rejectStart!: (error: Error) => void
+    audioMock.engine.playResolvedExercise.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectStart = reject
+      }),
+    )
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'Loading play-along for C major — open position',
+      }),
+    ).toBeDisabled()
+
+    rejectStart(new Error('Audio unavailable'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Audio unavailable',
+    )
+  })
+
+  it('persists a slower tempo and uses it for playback', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    fireEvent.change(
+      screen.getByRole('slider', {
+        name: 'Tempo for C major — open position',
+      }),
+      { target: { value: '48' } },
+    )
+
+    expect(getPlayAlongTempo('fx-1', 60)).toBe(48)
+    expect(screen.getAllByText('48 BPM').length).toBeGreaterThan(0)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
+        expect.objectContaining({ tempoBpm: 48 }),
+      )
+    })
+  })
+
+  it('updates active playback tempo when the slider changes', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.change(
+      screen.getByRole('slider', {
+        name: 'Tempo for C major — open position',
+      }),
+      { target: { value: '52' } },
+    )
+
+    expect(audioMock.engine.setTempoBpm).toHaveBeenCalledWith(52)
+  })
+
+  it('passes loop and click state to playback', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Loop' }))
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Click + count-in' }),
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
+        expect.objectContaining({
+          loop: false,
+          click: false,
+          countInBeats: 0,
+        }),
+      )
+    })
+  })
+
+  it('stops playback when advancing or ending a lesson', async () => {
+    const user = userEvent.setup()
+    const onExit = renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
+    })
+    await user.click(screen.getByRole('button', { name: 'Got it' }))
+
+    expect(audioMock.engine.dispose).toHaveBeenCalledTimes(1)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for G7 arpeggio — open position',
+      }),
+    )
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(2)
+    })
+    await user.click(screen.getByRole('button', { name: 'End lesson' }))
+
+    expect(onExit).toHaveBeenCalledTimes(1)
+    expect(audioMock.engine.dispose).toHaveBeenCalledTimes(2)
+  })
+
   it('runs the happy path: grade both exercises, see the summary, persist a completed session', async () => {
     const user = userEvent.setup()
     const onExit = renderRunner()
 
     expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
     expect(screen.getByText('C major — open position')).toBeInTheDocument()
-    expect(screen.getByText('60 BPM')).toBeInTheDocument()
+    expect(screen.getAllByText('60 BPM').length).toBeGreaterThan(0)
     expect(screen.getByText('1:00')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Got it' }))

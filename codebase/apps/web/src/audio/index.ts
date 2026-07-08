@@ -1,4 +1,8 @@
-export { createPlayAlongEngine, type PlayAlongEngine } from './engine'
+export {
+  createPlayAlongEngine,
+  type PlayAlongEngine,
+  type PlayAlongEngineOptions,
+} from './engine'
 export { createFluidGuitarPreset } from './guitarSampler'
 export { fluidSampleName, midiForPosition } from './notes'
 export {
@@ -9,6 +13,7 @@ export {
   createClickPattern,
   createExercisePattern,
   secondsPerBeat,
+  type ExercisePatternOptions,
   type PlayAlongPattern,
   type PlayAlongPatternEvent,
 } from './timeline'

@@ -22,6 +22,10 @@ export interface PlayAlongPattern {
   lengthBeats: number
 }
 
+export interface ExercisePatternOptions {
+  click?: boolean
+}
+
 export const EIGHTH_NOTE_BEATS = 0.5
 export const DEFAULT_NOTE_DURATION_BEATS = 0.45
 
@@ -34,6 +38,7 @@ export function secondsPerBeat(tempoBpm: number): number {
 
 export function createExercisePattern(
   positions: readonly PositionedNote[],
+  options: ExercisePatternOptions = {},
 ): PlayAlongPattern {
   const noteEvents = positions.map((position, index) => ({
     kind: 'note' as const,
@@ -48,13 +53,15 @@ export function createExercisePattern(
     positions.length * EIGHTH_NOTE_BEATS,
   )
   const clickEvents: PlayAlongPatternEvent[] = []
-  for (let beat = 0; beat < Math.ceil(lengthBeats); beat += 1) {
-    clickEvents.push({
-      kind: 'click',
-      id: `click-${beat}`,
-      offsetBeats: beat,
-      accent: beat % 4 === 0,
-    })
+  if (options.click ?? true) {
+    for (let beat = 0; beat < Math.ceil(lengthBeats); beat += 1) {
+      clickEvents.push({
+        kind: 'click',
+        id: `click-${beat}`,
+        offsetBeats: beat,
+        accent: beat % 4 === 0,
+      })
+    }
   }
   return {
     events: [...clickEvents, ...noteEvents].sort(comparePatternEvents),

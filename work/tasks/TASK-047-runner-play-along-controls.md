@@ -2,7 +2,7 @@
 id: TASK-047
 title: Add runner play-along controls and per-exercise tempo persistence
 epic: EPIC-014
-status: backlog
+status: done
 depends_on: [TASK-046]
 source: TASK-045
 research: RES-015
@@ -43,16 +43,16 @@ starts playback.
 
 ## Acceptance criteria
 
-- [ ] Runner exercise panel includes play/stop, loop, click/count-in state, and
+- [x] Runner exercise panel includes play/stop, loop, click/count-in state, and
       loading/error states with accessible button names
-- [ ] Tempo control allows slower practice up to the authored BPM and persists
+- [x] Tempo control allows slower practice up to the authored BPM and persists
       per `Exercise.id` through a typed versioned store
-- [ ] Starting playback lazy-loads the audio engine and selected samples; simply
+- [x] Starting playback lazy-loads the audio engine and selected samples; simply
       visiting Practice does not
-- [ ] Advancing, ending, or completing a lesson stops any active playback
-- [ ] Tests cover tempo persistence defaults/updates and runner control behavior
+- [x] Advancing, ending, or completing a lesson stops any active playback
+- [x] Tests cover tempo persistence defaults/updates and runner control behavior
       through Testing Library queries/interactions
-- [ ] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -73,4 +73,39 @@ starts playback.
 
 ## Log
 
-(empty — not yet claimed)
+### 2026-07-08 — claimed (agent)
+
+Plan: wire the existing TASK-046 audio engine into the practice runner with a
+compact control group, lazy dynamic import on first play, loop/click/count-in
+toggles, and explicit stop behavior when the exercise changes or the run ends.
+Add a typed versioned `storage/` store keyed by `Exercise.id` for slow-practice
+tempo, clamped to the authored tempo with a fixed 40 BPM floor for v1. Baseline:
+runner shows only static BPM and no persisted tempo. Target: user can start
+sampled playback with click, adjust tempo below/at target, return to the
+exercise, and see the same tempo restored. Verification signal: storage tests,
+Testing Library runner behavior tests, `bun run --cwd codebase check`,
+`check:e2e`, and manual browser pass with clean console.
+
+### 2026-07-08 — done (agent)
+
+Implemented runner play/stop controls with loop and click/count-in toggles,
+lazy audio-module import, loading/error UI, and stop/dispose behavior when the
+exercise panel unmounts or the runner exits. Added `play-along-tempos`, a
+versioned typed store keyed by `Exercise.id`, with a fixed 40 BPM floor and the
+authored BPM as the ceiling. A manual browser pass found a React StrictMode
+mount-guard bug that left playback stuck on Loading in dev; the effect now
+resets the guard on mount before async playback continues.
+
+Verification:
+
+- `bun run --cwd codebase test -- apps/web/src/storage/playAlongTempos.test.ts apps/web/src/audio/timeline.test.ts apps/web/src/components/PracticeRunner.test.tsx --reporter=dot`
+- `bun run --cwd codebase check`
+- `bun run --cwd codebase check:e2e`
+- Manual Playwright browser pass with MP3 requests fulfilled locally: start a
+  lesson, lower tempo to 48 BPM, play until Stop appears, stop, advance/end,
+  restart, confirm 48 BPM is restored and no console/request failures occurred.
+
+Review/security notes: local code-review pass found no follow-up changes after
+the StrictMode fix; subagent review was unavailable under the current delegation
+policy. Persistence remains inside `apps/web/src/storage/`; stored data is only
+per-exercise numeric BPM, no sensitive data.

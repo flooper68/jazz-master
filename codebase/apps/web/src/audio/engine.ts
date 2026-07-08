@@ -1,5 +1,11 @@
 import type { PositionedNote } from '@jazz-master/theory'
-import type { Sampler as SmplrSampler, Storage as SmplrStorage } from 'smplr'
+import {
+  CacheStorage,
+  HttpStorage,
+  Sampler,
+  type Sampler as SmplrSampler,
+  type Storage as SmplrStorage,
+} from 'smplr'
 import { createFluidGuitarPreset } from './guitarSampler'
 import { midiForPosition } from './notes'
 import { PlayAlongScheduler, type ScheduledPlayAlongEvent } from './scheduler'
@@ -19,6 +25,7 @@ export interface PlayResolvedExerciseOptions {
   positions: readonly PositionedNote[]
   tempoBpm: number
   loop?: boolean
+  click?: boolean
   countInBeats?: number
 }
 
@@ -41,10 +48,9 @@ type WindowWithWebkitAudio = Window &
     webkitAudioContext?: typeof AudioContext
   }
 
-type SmplrModule = typeof import('smplr')
-
 const DEFAULT_TICK_MS = 25
 const START_DELAY_SECONDS = 0.05
+const SAMPLE_LOAD_TIMEOUT_MS = 30_000
 
 export function createPlayAlongEngine(
   options: PlayAlongEngineOptions = {},
@@ -57,7 +63,6 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
   readonly #lookaheadSeconds: number
   readonly #tickMs: number
   #sampler: SmplrSampler | null = null
-  #smplrModule: SmplrModule | null = null
   #scheduler: PlayAlongScheduler | null = null
   #intervalId: number | null = null
 
@@ -68,19 +73,18 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
   }
 
   async playResolvedExercise(options: PlayResolvedExerciseOptions): Promise<void> {
-    await resumeAudioContext(this.#context)
-    const pattern = createExercisePattern(options.positions)
+    const click = options.click ?? true
+    const pattern = createExercisePattern(options.positions, { click })
     const midiNotes = options.positions.map(midiForPosition)
     const sampler = await this.#loadSampler(midiNotes)
     this.#startPattern(pattern, options.tempoBpm, {
       loop: options.loop ?? true,
-      countInBeats: options.countInBeats ?? 4,
+      countInBeats: options.countInBeats ?? (click ? 4 : 0),
       onEvent: (event) => this.#scheduleEvent(event, sampler),
     })
   }
 
   async playMetronome(options: PlayMetronomeOptions): Promise<void> {
-    await resumeAudioContext(this.#context)
     this.#startPattern(createClickPattern(), options.tempoBpm, {
       loop: options.loop ?? true,
       countInBeats: options.countInBeats ?? 0,
@@ -110,21 +114,19 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
 
   async #loadSampler(midiNotes: readonly number[]): Promise<SmplrSampler> {
     this.#sampler?.dispose()
-    const smplr = await this.#loadSmplr()
-    const sampler = smplr.Sampler(this.#context, {
+    const sampler = Sampler(this.#context, {
       preset: createFluidGuitarPreset(midiNotes),
-      storage: createSampleStorage(smplr),
+      storage: createSampleStorage(),
       velocity: 96,
       volume: 92,
     })
     this.#sampler = sampler
-    await sampler.ready
+    await withTimeout(
+      sampler.ready,
+      SAMPLE_LOAD_TIMEOUT_MS,
+      'Play-along samples did not finish loading. Check your connection and try again.',
+    )
     return sampler
-  }
-
-  async #loadSmplr(): Promise<SmplrModule> {
-    this.#smplrModule ??= await import('smplr')
-    return this.#smplrModule
   }
 
   #startPattern(
@@ -181,21 +183,37 @@ function createAudioContext(): AudioContext {
   return new AudioContextConstructor()
 }
 
-async function resumeAudioContext(context: AudioContext): Promise<void> {
-  if (context.state === 'suspended') {
-    await context.resume()
-  }
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(message))
+    }, timeoutMs)
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId)
+        resolve(value)
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId)
+        reject(error)
+      },
+    )
+  })
 }
 
-function createSampleStorage(smplr: SmplrModule): SmplrStorage {
+function createSampleStorage(): SmplrStorage {
   try {
     if (window.isSecureContext && 'caches' in window) {
-      return smplr.CacheStorage('jazz-master-play-along-samples-v1')
+      return CacheStorage('jazz-master-play-along-samples-v1')
     }
   } catch {
     // Local HTTP dev and restricted browser modes fall back to ordinary fetches.
   }
-  return smplr.HttpStorage
+  return HttpStorage
 }
 
 function scheduleClick(

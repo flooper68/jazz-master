@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — runner play-along controls shipped (TASK-047)
+
+The practice runner now lazy-loads the play-along engine from an exercise-level
+control strip: play/stop, loop, click/count-in, and a tempo slider capped at the
+authored BPM. Slow-practice tempo persists per `Exercise.id` in the versioned
+`play-along-tempos` store; changing exercises, ending a run, or completing a
+lesson disposes active playback.
+
 ## 2026-07-08 — play-along audio engine seam added (TASK-046)
 
 Added `apps/web/src/audio/`: pure timeline/scheduler helpers plus a browser-only

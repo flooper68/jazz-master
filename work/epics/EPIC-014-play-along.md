@@ -2,7 +2,7 @@
 id: EPIC-014
 title: Play-along — hear the exercise, loop it, keep time
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-07
 ---
 
@@ -91,9 +91,11 @@ drag the tempo down and back up, and find that tempo remembered next session
 
 ## Current status
 
-In progress. TASK-045 chose the playback stack in RES-015/ADR-011; next work is
-TASK-046 (audio engine), then TASK-047 (runner controls + tempo persistence).
+Done. TASK-045 chose the playback stack in RES-015/ADR-011, TASK-046 added the
+sampled playback engine, and TASK-047 wired the runner controls plus per-exercise
+tempo persistence.
 
 ## Last reviewed
 
-2026-07-07 — created from NOTE-009 (testing-feedback grill; creation-hook grill held in the same session).
+2026-07-08 — completed by TASK-047; runner play-along, loop/click controls, and
+per-exercise remembered tempo are shipped.
