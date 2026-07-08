@@ -89,3 +89,12 @@ port of the unit tests. Run it at these trigger points:
   complex responsive diagrams, or generated visual artifacts.
 - Coverage thresholds wait until the suite is larger and CI exists. Meaningful
   behavior tests outrank numeric coverage for now.
+
+## Manual regression pack
+
+`processes/regression-testing.md` owns the compiled manual/browser regression
+pack in `work/REGRESSION.md`. The pack is built from shipped task Acceptance
+criteria and Verification sections, then run with browser tooling when heartbeat
+schedules it or the owner asks for it. It does not replace `bun run --cwd
+codebase check` or `check:e2e`; it gives agents repeatable manual steps for
+previously implemented user workflows.

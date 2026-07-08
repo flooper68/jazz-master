@@ -9,6 +9,7 @@ work/
   insights/  INS-###    raw ideas inbox — cheap to file, processed by triage
   issues/    ISSUE-###  reported bugs — reproduced, triaged, fixed via the dev loop
   reviews/   REV-###    QA/product review reports
+  REGRESSION.md          compiled manual/browser regression pack
 ```
 
 ## How work flows
@@ -22,6 +23,7 @@ This is the canonical map from source material to actionable work. Only tasks an
 | New insights | `processes/triage.md` | accepted insight with `outcome: [TASK-*]`, rejected, or deferred |
 | Open issues | `processes/triage.md` | confirmed issue, direct fix candidate, or linked `TASK-*` |
 | QA/product reviews | `processes/qa-product-review.md` then triage | `REV-*` plus filed `INS-*`, `ISSUE-*`, or `NOTE-*` |
+| Regression testing | `processes/regression-testing.md` | Updated `work/REGRESSION.md` plus filed `ISSUE-*` / `INS-*` |
 | Completed research | consuming task or `processes/knowledge-maintenance.md` | implementation/doc/process change, `TASK-*`, ADR, defer/reject/no-action |
 | Stale docs, stale research, unprocessed notes | `processes/knowledge-maintenance.md` | linked work, pruned/deferred decisions, index updates |
 | Multiple ready candidates | `processes/prioritization.md` | next task or issue to run through the dev loop |

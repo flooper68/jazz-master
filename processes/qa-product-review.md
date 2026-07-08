@@ -14,6 +14,9 @@ A periodic inspection of the *running product* that generates the raw material f
 ### 1. Prepare
 
 - List work shipped since the last `work/reviews/REV-###.md` (git log + task files).
+- Read the latest `work/REGRESSION.md` run if it exists. If it is missing or
+  stale for the changed product areas, note that as a review setup gap and
+  recommend/schedule `processes/regression-testing.md`.
 - Read the in-progress epics' **Done when** sections and the vision's pillars (`strategy/VIS-001-jazz-master.md`).
 - Choose 3-5 short review charters before opening the app. Default charters:
   practice-loop value, navigation/responsiveness, accessibility/keyboard,

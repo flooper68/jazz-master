@@ -35,6 +35,7 @@ Every file in `processes/` has a row here — that invariant is linted by `proce
 | Before any push | `processes/code-review.md` + `bun run check` |
 | Committing / pushing | `processes/git-workflow.md` (trunk-based, push to main) |
 | Inspect the product, find problems | `processes/qa-product-review.md` |
+| Compile/run the manual browser regression pack | `processes/regression-testing.md` |
 | Capture raw notes, feedback, bug reports | `processes/feedback-intake.md` |
 | Process the insights/issues inbox | `processes/triage.md` |
 | Choose between multiple possible next items | `processes/prioritization.md` |

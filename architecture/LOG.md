@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 - manual regression process added
+
+Added `processes/regression-testing.md` and RES-016 to create a compiled
+manual/browser regression pack (`work/REGRESSION.md`) from shipped task
+Acceptance criteria and Verification steps. Heartbeat schedules regression work
+as a normal task when the pack is missing/stale or high-risk product areas
+change; heartbeat does not run the browser pass inline. QA reviews now read the
+latest regression run as setup context.
+
 ## 2026-07-08 - knowledge maintenance sweep round 2 (TASK-053)
 
 Second sweep resolved the post-runner knowledge drift: `research/README.md` now

@@ -29,6 +29,7 @@ collision; numbering resumes at `RES-002`.
 | RES-013 | Notation + tablature rendering approach for exercise display | TASK-014 / ADR-010 |
 | RES-014 | Browser audio recording & pitch-detection feasibility for guitar take scoring | TASK-015 / EPIC-010 |
 | RES-015 | Sampled-instrument playback for play-along | TASK-045 / ADR-011 |
+| RES-016 | Manual regression testing for agent-run browser passes | `processes/regression-testing.md` |
 
 ## File format
 
