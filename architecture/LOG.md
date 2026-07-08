@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — play-along audio engine seam added (TASK-046)
+
+Added `apps/web/src/audio/`: pure timeline/scheduler helpers plus a browser-only
+Web Audio engine that dynamically imports `smplr` for exact-range FluidR3_GM
+electric-jazz-guitar samples. Metronome clicks are synthesized, sample fetches
+use `CacheStorage` when available, and source attribution lives under
+`apps/web/public/audio/play-along/`.
+
 ## 2026-07-07 — Play-along sampled-audio stack chosen (TASK-045)
 
 RES-015/ADR-011 chose `smplr` behind a project-owned Web Audio lookahead

@@ -17,6 +17,7 @@ flowchart TD
         pages[apps/web/src/app/pages/ — route-level modules]
         components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
         content[apps/web/src/content/ — exercise/lesson model + curriculum data]
+        audio[apps/web/src/audio/ — play-along timeline, scheduler, Web Audio sampler seam]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
@@ -26,9 +27,11 @@ flowchart TD
     shell --> pages
     pages --> components
     pages --> content
+    pages -. lazy play-along .-> audio
     pages --> theory
     components --> theory
     content --> theory
+    audio --> theory
     pages --> storage
 ```
 
@@ -42,6 +45,7 @@ flowchart TD
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
+| Audio | `codebase/apps/web/src/audio/` | App-local play-along infrastructure. Pure timeline/scheduler helpers are tested without Web Audio; `engine.ts` is the browser-only seam that dynamically imports `smplr`, schedules FluidR3_GM guitar samples, and synthesizes the metronome click. React imports this layer only lazily from playback controls. |
 | Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
 
 Dependency direction: `app/pages → components → @jazz-master/theory` and `app/pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours and never imports Astro.
@@ -96,6 +100,19 @@ Two routers with a hard boundary at `/app`. Astro's file router owns everything 
 ## Content model (TASK-011)
 
 `apps/web/src/content/` is the shared contract between curriculum data (TASK-012), the practice runner (TASK-013), and the planner (EPIC-011). An `Exercise` is one playable unit — `ExerciseMaterial` (a discriminated union referencing theory constructs: scale or arpeggio + root + type/quality; more kinds arrive with the tasks that need them), a fret `window` (the position), `tempoBpm`, a `duration` (minutes or repetitions), and `display` hints. A `Lesson` is ordered exercises plus planner metadata: `area` (`scales | arpeggios | chords | standards`), `level` (1 = beginner), `prerequisites` (lesson ids), `estimatedMinutes`. `resolveExercise` turns a reference into concrete spelled notes + `PositionedNote[]` (throws on broken references); `validateLessons` returns a problem list covering unparseable roots, invalid windows, non-positive amounts, duplicate ids, and missing/cyclic prerequisites — lesson packs assert it returns `[]` in a test.
+
+## Play-along audio (TASK-046)
+
+`apps/web/src/audio/` is the EPIC-014 playback seam. `timeline.ts` turns resolved
+exercise positions into straight-eighth note events plus quarter-note clicks;
+`scheduler.ts` owns the lookahead loop semantics (count-in, loop wrap, stop,
+tempo changes) without touching browser APIs; `engine.ts` is the only Web Audio
+adapter and dynamically imports `smplr` only when sampled guitar playback is
+requested. The default sampler preset targets FluidR3_GM
+`electric_guitar_jazz` from `midi-js-soundfonts`, loading only the MIDI notes
+needed for the current exercise and using `CacheStorage` when the browser
+allows it; local HTTP dev falls back to normal fetch. The metronome/count-in
+path synthesizes its own click and can run without guitar samples.
 
 ## Current state (2026-07-06)
 
