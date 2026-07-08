@@ -39,6 +39,7 @@ Use this after QA reviews, after owner-requested research, after raw notes are a
    - **Twins:** `AGENTS.md` is the canonical agent index and `CLAUDE.md` is a symlink to it (`ls -l CLAUDE.md` → `CLAUDE.md -> AGENTS.md`). If `CLAUDE.md` is ever a regular file again, that is a defect: merge any divergent content into `AGENTS.md` and restore the symlink.
    - **Process table, both directions:** every `processes/*.md` file has a row in the "Which process, when" table in `AGENTS.md`, and every row's path exists. No exceptions — a process file not worth a row is not worth being a separate file.
    - **Cited paths exist:** every path named in `AGENTS.md` (knowledge map + process table), `work/README.md`, `research/README.md`, and `architecture/overview.md` resolves to a real file or directory.
+   - **Research index:** every existing `research/RES-*.md` file has one row in `research/README.md`'s index, and every row points to an existing RES file or the documented `RES-001` known gap.
    - **ID sequences:** `ADR/RES/NOTE/INS/ISSUE/TASK/EPIC/REV` numbering has no unexplained gaps. Known gaps (verified never-created in git history, 2026-07-06): `RES-001`. (`ADR-006` was a known gap until TASK-020 filled it on 2026-07-06.) Any new gap is a finding.
    - Fixes land in this sweep's commit, like the wiki lint's small fixes.
 

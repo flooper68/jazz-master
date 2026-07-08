@@ -2,7 +2,7 @@
 id: INS-013
 title: Wire validateLessons into a dev-time assertion when the practice runner lands
 status: deferred
-revisit_when: next runner-touching task (fold in alongside the INS-014 polish list)
+revisit_when: next content-model, lesson-pack, or JSON-pack task
 created: 2026-07-06
 source: TASK-012
 ---
@@ -23,3 +23,8 @@ hardening with no current failure mode (the pack is CI-validated and static).
 Not worth a standalone task; fold into the next task that touches the runner
 or content layer, together with INS-014's error-boundary polish (the two guard
 the same failure).
+
+2026-07-08 TASK-053 sweep - Several runner tasks shipped without touching the
+lesson-pack contract, and no malformed-pack problem surfaced. Narrowed the
+trigger to content/model work, especially the future JSON-pack redesign, where a
+runtime assertion or load-time schema validation will matter.

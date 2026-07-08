@@ -32,3 +32,9 @@ the whole research.
 2026-07-08 heartbeat - Accepted into TASK-053, the next
 knowledge-maintenance sweep. This is exactly a stale-research/feed-forward
 audit item, not a product implementation task.
+
+2026-07-08 TASK-053 sweep - RES-002 already carries staleness notes for the
+Astro 7/TASK-021 and tRPC/TASK-023 portions. The only unconsumed RES-002
+recommendation is Hyperdrive/Railway (TASK-025), and RES-002 now explicitly says
+to re-check that path when the gated database task is pulled. No refresh task is
+useful before a feature needs server persistence.

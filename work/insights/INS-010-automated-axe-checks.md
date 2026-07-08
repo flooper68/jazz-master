@@ -2,7 +2,7 @@
 id: INS-010
 title: Add automated axe accessibility checks after a browser test harness exists
 status: deferred
-revisit_when: TASK-035 (Playwright e2e smoke suite) ships — axe runs inside that harness
+revisit_when: next accessibility-focused QA/tooling pass or the next expansion of the Playwright smoke suite
 created: 2026-07-06
 source: TASK-006
 ---
@@ -33,3 +33,9 @@ task before the first ships would just inflate the queue. When TASK-035 lands,
 this becomes a direct task candidate (likely a small follow-up inside the same
 suite). ISSUE-002 is a reminder of the limits: axe would not catch that focus
 bug — manual review keeps that job either way.
+
+2026-07-08 TASK-053 sweep - Trigger fired: TASK-035 exists. Kept deferred
+rather than adding a standalone task today because REV-002 left concrete focus
+defects (`ISSUE-003`, `ISSUE-004`) and TASK-054 security review ahead of generic
+a11y automation. Promote when the browser suite is next expanded or an
+accessibility pass is explicitly picked.

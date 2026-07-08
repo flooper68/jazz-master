@@ -2,7 +2,7 @@
 id: INS-027
 title: Route changes could adopt useViewFocus too
 status: deferred
-revisit_when: TASK-052 QA review or next app-shell/focus task
+revisit_when: next app-shell or focus-management task
 created: 2026-07-07
 source: ISSUE-002
 ---
@@ -20,3 +20,8 @@ already carries `tabIndex={-1}` — is the natural extension. Related: [[INS-010
 2026-07-08 heartbeat - Deferred. ISSUE-003 and TASK-052 will inspect the
 current focus behavior in a real browser; promote only if that review confirms
 route-change focus is hurting the practice flow.
+
+2026-07-08 TASK-053 sweep - TASK-052 inspected navigation/focus. It found modal
+focus restoration as a concrete defect (`ISSUE-004`) and kept runner-start focus
+as `ISSUE-003`; route changes themselves did not produce a new defect. Keep
+deferred for the next app-shell/focus-management task.

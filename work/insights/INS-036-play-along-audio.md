@@ -1,5 +1,5 @@
 ---
-id: INS-031
+id: INS-036
 title: Play-along — hear the exercise, loop it, metronome at tempo
 status: accepted
 outcome: [EPIC-014, TASK-045]
@@ -25,10 +25,17 @@ the exercise's tempo. Decisions made in the grill session:
 
 Why it matters to the practice loop: every exercise today is silent — the
 player has no model to imitate and nothing keeping them in time, which also
-feeds the "exercises are boring" finding ([[INS-032]] waits on this feature).
+feeds the "exercises are boring" finding ([[INS-032]] waited on this feature).
 
 Shape of the work: pillar-sized — the owner approved the epic in the same
 session. Accepted into [[EPIC-014]] with the research task [[TASK-045]]
 (sampled-instrument playback on the web) as its blocking first item. Two
 follow-up grill answers recorded there: tempo is adjustable and remembered
 per exercise; guitar timbre preferred, piano fallback.
+
+## Maintenance note
+
+2026-07-08 TASK-053 sweep - Renumbered from duplicate `INS-031` to `INS-036`.
+The other `INS-031` (`INS-031-e2e-notation-render-assertion.md`) kept the ID
+because later heartbeat/task references already disambiguate it as the notation
+render assertion.

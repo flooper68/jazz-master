@@ -1,7 +1,7 @@
 ---
 id: ISSUE-004
 title: Closing notation focus mode with Escape drops focus to the page body
-status: open
+status: confirmed
 severity: minor
 created: 2026-07-08
 source: REV-002
@@ -30,3 +30,10 @@ The dialog closes and focus lands on `<body>`.
 Found during `REV-002` at desktop width. The focus dialog itself initially
 focuses `Exit focus`, and mobile focus mode fits the viewport without page
 overflow. This issue is limited to focus restoration after close.
+
+## Triage note
+
+2026-07-08 TASK-053 sweep - Confirmed from REV-002 browser evidence and code
+inspection: `NotationFocusDialog` closes on Escape through `onClose` without
+restoring focus to the opener. Severity remains minor; this is a direct fix
+candidate and does not need a separate task.

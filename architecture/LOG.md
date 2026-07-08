@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 - knowledge maintenance sweep round 2 (TASK-053)
+
+Second sweep resolved the post-runner knowledge drift: `research/README.md` now
+has a RES index, duplicate `INS-031` was renumbered (`INS-036` is play-along),
+RES-002's remaining stale-research trigger is explicitly gated to TASK-025,
+Safari localStorage eviction is documented in ADR-002/overview and routed to
+TASK-054, ISSUE-004 is confirmed, and EPIC-007 is closed.
+
 ## 2026-07-08 — dev-loop claim-time owner report added
 
 The dev loop now requires agents to announce a claimed work item before deeper

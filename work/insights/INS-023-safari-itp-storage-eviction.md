@@ -2,7 +2,7 @@
 id: INS-023
 title: Safari ITP 7-day eviction threatens ALL local-first practice data, not just future audio
 status: accepted
-outcome: [TASK-053]
+outcome: [TASK-053, TASK-054]
 created: 2026-07-07
 source: TASK-015
 ---
@@ -30,3 +30,9 @@ Validation need: research/spike | direct task candidate
 knowledge-maintenance pass that can update ADR-002/wiki or file a focused
 mitigation task (`navigator.storage.persist()`, export, or owner-accepted
 risk) with the citations in front of it.
+
+2026-07-08 TASK-053 sweep - Fed forward into ADR-002 and
+`architecture/overview.md` as an explicit local-first durability caveat. Routed
+mitigation choice into TASK-054's storage/security review rather than creating a
+third hygiene task: that review already owns the storage/privacy surface and can
+decide whether to file a focused persistence/export task.

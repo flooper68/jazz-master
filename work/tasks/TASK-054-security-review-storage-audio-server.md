@@ -27,6 +27,7 @@ Surfaces to cover:
 
 - `apps/web/src/storage/*` stores for profile, plans, sessions, and play-along
   tempos
+- Safari/WebKit localStorage eviction risk from `INS-023` / ADR-002
 - tRPC health/server error posture after TASK-023/TASK-024
 - play-along sample loading/cache behavior and external requests
 - recording/microphone permission flow from TASK-041 if it has shipped by

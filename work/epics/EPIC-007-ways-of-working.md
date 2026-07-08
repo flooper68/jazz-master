@@ -2,7 +2,7 @@
 id: EPIC-007
 title: Ways of working — researched practices for development, product, and QA
 vision: VIS-001
-status: in-progress
+status: done
 created: 2026-07-05
 ---
 
@@ -40,8 +40,12 @@ All three RES files exist with cited findings; `processes/` docs are updated fro
 
 ## Current status
 
-In progress. The three researched-practices tasks are complete: development (`RES-010`), product (`RES-011`), and QA/testing (`RES-012`) are all distilled into process docs. Remaining work is the narrower TASK-031 commit-isolation guardrail, created from INS-008 and currently marked `proposed` in task frontmatter for owner confirmation.
+Done. The researched-practices tasks are complete: development (`RES-010`),
+product (`RES-011`), and QA/testing (`RES-012`) are all distilled into process
+docs. The follow-up TASK-031 commit-isolation guardrail is also done and wired
+through the git workflow, dev loop, heartbeat, and code-review process.
 
 ## Last reviewed
 
-2026-07-06 — TASK-006 completed the QA/testing research track; EPIC-007 remains open only for TASK-031 commit-isolation guardrails.
+2026-07-08 — TASK-053 sweep closed stale status: TASK-031 is done, so EPIC-007
+meets its Done-when assessment.

@@ -1,7 +1,7 @@
 ---
 id: TASK-053
 title: Run knowledge maintenance sweep round 2
-status: backlog
+status: done
 proposed_by: HEARTBEAT 2026-07-08
 depends_on: []
 created: 2026-07-08
@@ -33,14 +33,43 @@ Known inputs:
 
 ## Acceptance criteria
 
-- [ ] `processes/knowledge-maintenance.md` checklist executed end to end
-- [ ] Stale research and feed-forward decisions recorded or routed to tasks
-- [ ] New/deferred insight aging pass completed with decisions recorded
-- [ ] Wiki/index lint completed
-- [ ] `architecture/LOG.md` entry for the sweep
-- [ ] `bun run --cwd codebase check` passes
+- [x] `processes/knowledge-maintenance.md` checklist executed end to end
+- [x] Stale research and feed-forward decisions recorded or routed to tasks
+- [x] New/deferred insight aging pass completed with decisions recorded
+- [x] Wiki/index lint completed
+- [x] `architecture/LOG.md` entry for the sweep
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
 - Sweep decisions are auditable in changed docs and task/insight logs.
 - `bun run --cwd codebase check`
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+
+Plan: run `processes/knowledge-maintenance.md` end to end; inspect stale research,
+wiki/process indexes, insights/issues aging, and known duplicate IDs; record
+feed-forward decisions in the relevant docs/work items; run `bun run --cwd
+codebase check`; then review, mark criteria, commit, and push.
+
+### 2026-07-08 - done
+
+Executed the sweep end to end. Decisions: added the RES index and research-index
+lint; kept RES-002's only remaining re-check tied to gated TASK-025; documented
+Safari/WebKit localStorage eviction risk in ADR-002 and architecture overview,
+then routed mitigation choice to TASK-054; confirmed ISSUE-004; renumbered the
+duplicate play-along insight to INS-036; refreshed fired deferred triggers
+without inflating the queue; and closed stale EPIC-007 status now that TASK-031
+is done. Wiki lint found no page/index edits needed beyond confirming existing
+pages and sources still resolve. Verification: index/path/ID lint scripts were
+run, `bun run --cwd codebase work:status` was checked for tracker state, and
+`bun run --cwd codebase check` passed.
+
+Review: independent subagent review was not available under this session's tool
+policy without an explicit user delegation request, despite the repo's standing
+authorization. Completed the `processes/code-review.md` checklist as a degraded
+self-review. No findings. Security/privacy checklist: no secrets, dependencies,
+storage schema changes, browser permissions, or network behavior introduced; the
+diff documents and routes an existing localStorage data-loss risk.

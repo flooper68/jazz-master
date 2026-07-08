@@ -19,3 +19,8 @@ note that in the README.
 
 2026-07-08 heartbeat - Accepted into TASK-053. This is knowledge-system
 maintenance, not product work.
+
+2026-07-08 TASK-053 sweep - Resolved by adding a one-line RES index to
+`research/README.md` and a research-index lint bullet to
+`processes/knowledge-maintenance.md`. The index records `RES-001` as the known
+never-created gap and lists every existing RES file.

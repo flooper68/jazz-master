@@ -8,6 +8,28 @@ Persisted results of deep research (`processes/deep-research.md`). Research is a
 - Before starting new research, check whether an existing RES file already covers (part of) the topic.
 - Completed research must feed forward through a consuming task, process/architecture update, rejected/deferred decision, or `processes/knowledge-maintenance.md` follow-up. See `work/README.md` for the canonical intake-to-action workflow.
 
+## Index
+
+`RES-001` is a known never-created gap from the early parallel-research ID
+collision; numbering resumes at `RES-002`.
+
+| ID | Title | Consumed by |
+|---|---|---|
+| RES-002 | Astro on Cloudflare Workers with SPA app shell, TanStack Router, tRPC, React Query, and Hyperdrive | TASK-020 through TASK-025 |
+| RES-003 | Karpathy LLM Wiki pattern for agent-maintained knowledge bases | TASK-032 / ADR-007 |
+| RES-004 | Grill-me skill and recent developments in agentic coding | ADR-008 / `processes/grilling.md` |
+| RES-005 | Matt Pocock's recent agentic coding workflow patterns | TASK-005 / TASK-007 |
+| RES-006 | Knowledge pruning and triage for insights, issues, research, and notes | `processes/knowledge-maintenance.md` / `processes/triage.md` |
+| RES-007 | HTML over Markdown for documentation aimed at AI agents | Current decision: Markdown remains canonical; HTML belongs in `artifacts/` |
+| RES-008 | Organizational problem identification, measurement, and solving frameworks | TASK-007 / TASK-030 |
+| RES-009 | Agent skill for polished HTML/CSS/JS visual artifacts, presentations, and docs | `processes/artifact-creation.md` |
+| RES-010 | React 19 + TypeScript + Vite/Bun development best practices | TASK-005 |
+| RES-011 | Product practices for solo-owner + AI-agent software work | TASK-007 |
+| RES-012 | QA and testing best practices for Jazz Master | TASK-006 |
+| RES-013 | Notation + tablature rendering approach for exercise display | TASK-014 / ADR-010 |
+| RES-014 | Browser audio recording & pitch-detection feasibility for guitar take scoring | TASK-015 / EPIC-010 |
+| RES-015 | Sampled-instrument playback for play-along | TASK-045 / ADR-011 |
+
 ## File format
 
 ```markdown

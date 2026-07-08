@@ -2,7 +2,7 @@
 id: INS-032
 title: Moving exercises — arpeggios over chord progressions, changing every bar
 status: deferred
-revisit_when: TASK-048, TASK-049, and TASK-050 ship; then design the moving-exercise model with JSON packs
+revisit_when: after TASK-054 and the current focus issues are handled, when picking the next product feature beyond hygiene
 created: 2026-07-07
 source: NOTE-009
 ---
@@ -21,7 +21,7 @@ moving exercise needs a sequence of chords over time (per-bar changes). That
 is a real content-model extension, not new authoring against the current
 model.
 
-**Sequencing decision (owner):** this waits for play-along ([[INS-031]]).
+**Sequencing decision (owner):** this waits for play-along ([[INS-036]]).
 Playing changes without hearing them was judged "static repetition with extra
 steps" — land the play-along loop first, then author moving exercises against
 it. The two form one arc: the loop, then content that moves inside it.
@@ -35,3 +35,9 @@ The pack format redesign this forces is also where "exercises as JSON"
 but NOTE-011 identified more basic runner usability problems (readability,
 timer/grading flow, tempo/volume controls) that should land first. Revisit once
 those are fixed, then promote this together with INS-033.
+
+2026-07-08 TASK-053 sweep - The runner usability blockers named above have
+shipped (TASK-048, TASK-049, TASK-050), so this is now the strongest next
+product-feature candidate. Kept deferred for the moment because TASK-054 and the
+confirmed focus defects are due hygiene/polish ahead of a content-model redesign.
+Promote together with INS-033 when the owner asks for the next feature task.

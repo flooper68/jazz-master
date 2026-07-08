@@ -2,7 +2,7 @@
 id: INS-014
 title: Session-record semantics questions and runner polish deferred from TASK-013 review
 status: deferred
-revisit_when: next runner-touching task (polish list), or the planner consuming session duration / EPIC-010 scoring work (remaining semantics questions)
+revisit_when: next content-model/error-boundary task, or EPIC-010 score persistence changing session semantics
 created: 2026-07-06
 source: TASK-013
 ---
@@ -63,3 +63,9 @@ wall-clock duration or a started-and-bailed signal — a question that only
 matters when planner heuristics evolve or EPIC-010 scoring lands — and (b) the
 polish list, which folds into the next runner-touching task. No standalone
 task warranted.
+
+2026-07-08 TASK-053 sweep - TASK-049 changed the timer to count active
+playthrough time, so the old "time to latest grade" caveat is no longer the
+dominant semantics risk. Keep this deferred for the next session-record shape
+change, most likely score persistence in TASK-043, or for content/error-boundary
+work that touches the runner's failure states.
