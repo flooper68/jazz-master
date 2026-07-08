@@ -2,6 +2,7 @@ export {
   createPlayAlongEngine,
   type PlayAlongEngine,
   type PlayAlongEngineOptions,
+  type PlayAlongVolumes,
 } from './engine'
 export { createFluidGuitarPreset } from './guitarSampler'
 export { fluidSampleName, midiForPosition } from './notes'

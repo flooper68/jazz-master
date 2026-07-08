@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  MAX_PLAY_ALONG_TEMPO_BPM,
   MIN_PLAY_ALONG_TEMPO_BPM,
   clampPlayAlongTempo,
   getPlayAlongTempo,
@@ -24,10 +25,17 @@ describe('playAlongTemposStore', () => {
     expect(getPlayAlongTempo('exercise-2', 80)).toBe(62)
   })
 
-  it('clamps tempos to the practice floor and authored ceiling', () => {
+  it('clamps tempos to the practice floor and 200 BPM ceiling', () => {
     expect(clampPlayAlongTempo(20, 72)).toBe(MIN_PLAY_ALONG_TEMPO_BPM)
-    expect(clampPlayAlongTempo(120, 72)).toBe(72)
+    expect(clampPlayAlongTempo(120, 72)).toBe(120)
+    expect(clampPlayAlongTempo(240, 72)).toBe(MAX_PLAY_ALONG_TEMPO_BPM)
     expect(clampPlayAlongTempo(Number.NaN, 72)).toBe(72)
+  })
+
+  it('restores saved tempos above the authored tempo', () => {
+    savePlayAlongTempo('exercise-1', 180, 72)
+
+    expect(getPlayAlongTempo('exercise-1', 72)).toBe(180)
   })
 
   it('falls back to authored tempo for malformed stored data', () => {

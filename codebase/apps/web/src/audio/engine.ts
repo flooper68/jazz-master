@@ -27,18 +27,27 @@ export interface PlayResolvedExerciseOptions {
   loop?: boolean
   click?: boolean
   countInBeats?: number
+  guitarVolume?: number
+  clickVolume?: number
 }
 
 export interface PlayMetronomeOptions {
   tempoBpm: number
   loop?: boolean
   countInBeats?: number
+  clickVolume?: number
+}
+
+export interface PlayAlongVolumes {
+  guitar?: number
+  click?: number
 }
 
 export interface PlayAlongEngine {
   playResolvedExercise(options: PlayResolvedExerciseOptions): Promise<void>
   playMetronome(options: PlayMetronomeOptions): Promise<void>
   setTempoBpm(tempoBpm: number): void
+  setVolumes(volumes: PlayAlongVolumes): void
   stop(): void
   dispose(): void
 }
@@ -65,6 +74,8 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
   #sampler: SmplrSampler | null = null
   #scheduler: PlayAlongScheduler | null = null
   #intervalId: number | null = null
+  #guitarVolume = 1
+  #clickVolume = 1
 
   constructor(options: PlayAlongEngineOptions) {
     this.#context = options.audioContext ?? createAudioContext()
@@ -74,6 +85,10 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
 
   async playResolvedExercise(options: PlayResolvedExerciseOptions): Promise<void> {
     const click = options.click ?? true
+    this.setVolumes({
+      guitar: options.guitarVolume,
+      click: options.clickVolume,
+    })
     const pattern = createExercisePattern(options.positions, { click })
     const midiNotes = options.positions.map(midiForPosition)
     const sampler = await this.#loadSampler(midiNotes)
@@ -85,6 +100,7 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
   }
 
   async playMetronome(options: PlayMetronomeOptions): Promise<void> {
+    this.setVolumes({ click: options.clickVolume })
     this.#startPattern(createClickPattern(), options.tempoBpm, {
       loop: options.loop ?? true,
       countInBeats: options.countInBeats ?? 0,
@@ -94,6 +110,15 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
 
   setTempoBpm(tempoBpm: number): void {
     this.#scheduler?.setTempoBpm(tempoBpm)
+  }
+
+  setVolumes(volumes: PlayAlongVolumes): void {
+    if (volumes.guitar !== undefined) {
+      this.#guitarVolume = clampVolume(volumes.guitar)
+    }
+    if (volumes.click !== undefined) {
+      this.#clickVolume = clampVolume(volumes.click)
+    }
   }
 
   stop(): void {
@@ -165,11 +190,11 @@ class BrowserPlayAlongEngine implements PlayAlongEngine {
         note: event.midi,
         time: event.time,
         duration: event.durationSeconds,
-        velocity: event.velocity,
+        velocity: scaleMidiVelocity(event.velocity, this.#guitarVolume),
       })
       return
     }
-    scheduleClick(this.#context, event.time, event.accent)
+    scheduleClick(this.#context, event.time, event.accent, this.#clickVolume)
   }
 }
 
@@ -220,16 +245,28 @@ function scheduleClick(
   context: AudioContext,
   time: number,
   accent: boolean,
+  volume: number,
 ): void {
+  if (volume <= 0) return
   const oscillator = context.createOscillator()
   const gain = context.createGain()
+  const peak = (accent ? 0.24 : 0.16) * volume
   oscillator.type = 'square'
   oscillator.frequency.setValueAtTime(accent ? 1200 : 880, time)
   gain.gain.setValueAtTime(0.0001, time)
-  gain.gain.exponentialRampToValueAtTime(accent ? 0.24 : 0.16, time + 0.005)
+  gain.gain.exponentialRampToValueAtTime(peak, time + 0.005)
   gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.06)
   oscillator.connect(gain)
   gain.connect(context.destination)
   oscillator.start(time)
   oscillator.stop(time + 0.07)
+}
+
+function clampVolume(volume: number): number {
+  if (!Number.isFinite(volume)) return 1
+  return Math.min(1, Math.max(0, volume))
+}
+
+function scaleMidiVelocity(velocity: number, volume: number): number {
+  return Math.max(0, Math.min(127, Math.round(velocity * volume)))
 }

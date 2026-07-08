@@ -20,6 +20,7 @@ const audioMock = vi.hoisted(() => {
   const engine = {
     playResolvedExercise: vi.fn(),
     setTempoBpm: vi.fn(),
+    setVolumes: vi.fn(),
     stop: vi.fn(),
     dispose: vi.fn(),
   }
@@ -193,6 +194,7 @@ beforeEach(() => {
   audioMock.engine.playResolvedExercise.mockReset()
   audioMock.engine.playResolvedExercise.mockResolvedValue(undefined)
   audioMock.engine.setTempoBpm.mockClear()
+  audioMock.engine.setVolumes.mockClear()
   audioMock.engine.stop.mockClear()
   audioMock.engine.dispose.mockClear()
   mediaRecorderInstances = []
@@ -416,6 +418,8 @@ describe('PracticeRunner', () => {
       loop: true,
       click: true,
       countInBeats: 4,
+      guitarVolume: 0.8,
+      clickVolume: 0.8,
     })
     expect(
       screen.getByRole('button', {
@@ -505,6 +509,33 @@ describe('PracticeRunner', () => {
     })
   })
 
+  it('persists and restores a tempo above the authored exercise tempo', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    const tempoSlider = screen.getByRole('slider', {
+      name: 'Tempo for C major — open position',
+    })
+    expect(tempoSlider).toHaveAttribute('max', '200')
+
+    fireEvent.change(tempoSlider, { target: { value: '200' } })
+
+    expect(getPlayAlongTempo('fx-1', 60)).toBe(200)
+    expect(screen.getAllByText('200 BPM').length).toBeGreaterThan(0)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
+        expect.objectContaining({ tempoBpm: 200 }),
+      )
+    })
+  })
+
   it('updates active playback tempo when the slider changes', async () => {
     const user = userEvent.setup()
     renderRunner()
@@ -526,6 +557,40 @@ describe('PracticeRunner', () => {
     )
 
     expect(audioMock.engine.setTempoBpm).toHaveBeenCalledWith(52)
+  })
+
+  it('exposes guitar and click volume controls and updates active playback', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    expect(screen.getByRole('slider', { name: 'Guitar volume' })).toHaveValue(
+      '80',
+    )
+    expect(screen.getByRole('slider', { name: 'Click volume' })).toHaveValue('80')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Play play-along for C major — open position',
+      }),
+    )
+    await waitFor(() => {
+      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
+        expect.objectContaining({
+          guitarVolume: 0.8,
+          clickVolume: 0.8,
+        }),
+      )
+    })
+
+    fireEvent.change(screen.getByRole('slider', { name: 'Guitar volume' }), {
+      target: { value: '35' },
+    })
+    fireEvent.change(screen.getByRole('slider', { name: 'Click volume' }), {
+      target: { value: '20' },
+    })
+
+    expect(audioMock.engine.setVolumes).toHaveBeenCalledWith({ guitar: 0.35 })
+    expect(audioMock.engine.setVolumes).toHaveBeenCalledWith({ click: 0.2 })
   })
 
   it('passes loop and click state to playback', async () => {
@@ -558,7 +623,7 @@ describe('PracticeRunner', () => {
     const fastLesson: Lesson = {
       ...lesson,
       exercises: [
-        { ...lesson.exercises[0], tempoBpm: 600 },
+        { ...lesson.exercises[0], tempoBpm: 200 },
         lesson.exercises[1],
       ],
     }
@@ -588,9 +653,11 @@ describe('PracticeRunner', () => {
     )
 
     expect(
-      await screen.findByRole('button', {
-        name: 'Stop recording C major — open position',
-      }),
+      await screen.findByRole(
+        'button',
+        { name: 'Stop recording C major — open position' },
+        { timeout: 2_500 },
+      ),
     ).toBeInTheDocument()
     expect(mediaRecorderInstances).toHaveLength(1)
     expect(mediaRecorderInstances[0].state).toBe('recording')
@@ -629,7 +696,7 @@ describe('PracticeRunner', () => {
     const fastLesson: Lesson = {
       ...lesson,
       exercises: [
-        { ...lesson.exercises[0], tempoBpm: 600 },
+        { ...lesson.exercises[0], tempoBpm: 200 },
         lesson.exercises[1],
       ],
     }
@@ -641,9 +708,11 @@ describe('PracticeRunner', () => {
       }),
     )
     expect(
-      await screen.findByRole('button', {
-        name: 'Stop recording C major — open position',
-      }),
+      await screen.findByRole(
+        'button',
+        { name: 'Stop recording C major — open position' },
+        { timeout: 2_500 },
+      ),
     ).toBeInTheDocument()
     expect(mediaRecorderInstances[0].state).toBe('recording')
 
@@ -667,7 +736,7 @@ describe('PracticeRunner', () => {
     const fastLesson: Lesson = {
       ...lesson,
       exercises: [
-        { ...lesson.exercises[0], tempoBpm: 600 },
+        { ...lesson.exercises[0], tempoBpm: 200 },
         lesson.exercises[1],
       ],
     }
@@ -679,9 +748,9 @@ describe('PracticeRunner', () => {
       }),
     )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Recorder refused to start',
-    )
+    expect(
+      await screen.findByRole('alert', undefined, { timeout: 2_500 }),
+    ).toHaveTextContent('Recorder refused to start')
     expect(
       screen.getByRole('button', {
         name: 'Record take for C major — open position',

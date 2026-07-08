@@ -50,8 +50,9 @@ Owner decisions this epic rests on (NOTE-009):
   count-in behavior decided at implementation.
 - Metronome: click at the session tempo, usable during play-along and while
   the player plays alone.
-- Tempo control in the runner: adjust below/at authored tempo, persisted per
-  exercise via a typed store.
+- Tempo control in the runner: adjust from the slow-practice floor up to 200 BPM,
+  persisted per exercise via a typed store.
+- Session-local guitar and click volume controls in the runner.
 - Local-first: play-along sample playback works after the app and assets have
   already loaded once, using cached samples where the browser supports it; no
   backend.
@@ -61,7 +62,7 @@ Owner decisions this epic rests on (NOTE-009):
 - Backing harmony / chord comping under the line — that arrives with the
   moving-exercise content model (INS-032), which waits on this epic.
 - The moving-exercise / JSON-pack model redesign itself (INS-032/INS-033).
-- Tempo above the authored target, swing feel, or humanized playback in v1.
+- Swing feel or humanized playback in v1.
 - Full PWA/offline app shell guarantees. EPIC-014 caches playback assets; it
   does not make first navigation to the app work with no network.
 
@@ -87,17 +88,19 @@ Owner decisions this epic rests on (NOTE-009):
 
 On any existing exercise the player can press play and hear its notes in
 sampled guitar (or fallback piano) timbre, loop them with a metronome click,
-drag the tempo down and back up, and find that tempo remembered next session
-— with sample playback working from cache after the app/assets have loaded once.
+drag the tempo from the slow-practice floor up to 200 BPM, balance guitar/click
+volume, and find that tempo remembered next session — with sample playback
+working from cache after the app/assets have loaded once.
 
 ## Current status
 
 Done. TASK-045 chose the playback stack in RES-015/ADR-011, TASK-046 added the
-sampled playback engine, and TASK-047 wired the runner controls plus per-exercise
-tempo persistence. 2026-07-08 owner feedback filed TASK-050 for post-epic
-control polish: separate guitar/click volumes and a 200 BPM ceiling.
+sampled playback engine, TASK-047 wired the runner controls plus per-exercise
+tempo persistence, and TASK-050 added guitar/click volume controls plus a
+200 BPM ceiling.
 
 ## Last reviewed
 
-2026-07-08 — completed by TASK-047; runner play-along, loop/click controls, and
-per-exercise remembered tempo are shipped.
+2026-07-08 — completed by TASK-050; runner play-along, loop/click controls,
+per-exercise remembered tempo, 200 BPM ceiling, and session-local guitar/click
+volume controls are shipped.

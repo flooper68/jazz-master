@@ -21,6 +21,7 @@ import {
 } from '../audio/recording'
 import { deriveRhythm, resolveExercise, type Exercise, type Lesson } from '../content'
 import {
+  MAX_PLAY_ALONG_TEMPO_BPM,
   MIN_PLAY_ALONG_TEMPO_BPM,
   clampPlayAlongTempo,
   getPlayAlongTempo,
@@ -46,6 +47,8 @@ const GRADE_LABELS: Record<ExerciseGrade, string> = {
 }
 
 const GRADE_ORDER: readonly ExerciseGrade[] = ['got-it', 'shaky', 'missed']
+const DEFAULT_GUITAR_VOLUME = 80
+const DEFAULT_CLICK_VOLUME = 80
 
 type PlaybackStatus = 'idle' | 'loading' | 'playing'
 type PlaythroughStatus = 'not-started' | 'active' | 'complete'
@@ -192,6 +195,8 @@ function ExercisePanel({
   const [gradePromptOpen, setGradePromptOpen] = useState(false)
   const [loopEnabled, setLoopEnabled] = useState(true)
   const [clickEnabled, setClickEnabled] = useState(true)
+  const [guitarVolume, setGuitarVolume] = useState(DEFAULT_GUITAR_VOLUME)
+  const [clickVolume, setClickVolume] = useState(DEFAULT_CLICK_VOLUME)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
   const [playbackError, setPlaybackError] = useState<string | null>(null)
   const [recordingState, dispatchRecording] = useReducer(
@@ -211,10 +216,7 @@ function ExercisePanel({
   const mountedRef = useRef(true)
   const playthroughStatusRef = useRef<PlaythroughStatus>('not-started')
   const playbackCompletionTimeoutRef = useRef<number | null>(null)
-  const tempoMax = Math.max(
-    MIN_PLAY_ALONG_TEMPO_BPM,
-    Math.floor(exercise.tempoBpm),
-  )
+  const tempoMax = MAX_PLAY_ALONG_TEMPO_BPM
   const highlights: FretboardHighlight[] = resolved.positions.map(
     (position) => ({
       string: position.string,
@@ -308,6 +310,8 @@ function ExercisePanel({
         loop: loopEnabled,
         click: clickEnabled,
         countInBeats: clickEnabled ? 4 : 0,
+        guitarVolume: volumePercentToUnit(guitarVolume),
+        clickVolume: volumePercentToUnit(clickVolume),
       })
       if (mountedRef.current) {
         beginPlaythrough()
@@ -345,6 +349,18 @@ function ExercisePanel({
   function updateClick(event: ChangeEvent<HTMLInputElement>): void {
     setClickEnabled(event.currentTarget.checked)
     if (playbackStatus === 'playing') stopPlayback()
+  }
+
+  function updateGuitarVolume(event: ChangeEvent<HTMLInputElement>): void {
+    const nextVolume = clampVolumePercent(Number(event.currentTarget.value))
+    setGuitarVolume(nextVolume)
+    engineRef.current?.setVolumes({ guitar: volumePercentToUnit(nextVolume) })
+  }
+
+  function updateClickVolume(event: ChangeEvent<HTMLInputElement>): void {
+    const nextVolume = clampVolumePercent(Number(event.currentTarget.value))
+    setClickVolume(nextVolume)
+    engineRef.current?.setVolumes({ click: volumePercentToUnit(nextVolume) })
   }
 
   function updateNotationDisplayMode(mode: NotationDisplayMode): void {
@@ -657,6 +673,20 @@ function ExercisePanel({
           aria-label={`Tempo for ${exercise.title}`}
           className="mt-2 w-full accent-amber-500"
         />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <VolumeControl
+            id={`guitar-volume-${exercise.id}`}
+            label="Guitar volume"
+            value={guitarVolume}
+            onChange={updateGuitarVolume}
+          />
+          <VolumeControl
+            id={`click-volume-${exercise.id}`}
+            label="Click volume"
+            value={clickVolume}
+            onChange={updateClickVolume}
+          />
+        </div>
         {playbackError && (
           <p role="alert" className="mt-2 text-sm text-red-300">
             {playbackError}
@@ -733,6 +763,41 @@ function ExercisePanel({
   )
 }
 
+function VolumeControl({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: number
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="flex items-center justify-between gap-4 text-sm text-zinc-300"
+      >
+        <span>{label}</span>
+        <span>{value}%</span>
+      </label>
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={value}
+        onChange={onChange}
+        aria-label={label}
+        className="mt-2 w-full accent-amber-500"
+      />
+    </div>
+  )
+}
+
 function NotationDisplayControls({
   exerciseTitle,
   displayMode,
@@ -770,6 +835,15 @@ function NotationDisplayControls({
       })}
     </div>
   )
+}
+
+function clampVolumePercent(volume: number): number {
+  if (!Number.isFinite(volume)) return 100
+  return Math.min(100, Math.max(0, Math.round(volume)))
+}
+
+function volumePercentToUnit(volume: number): number {
+  return clampVolumePercent(volume) / 100
 }
 
 function NotationFocusDialog({

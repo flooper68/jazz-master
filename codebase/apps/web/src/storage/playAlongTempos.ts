@@ -1,6 +1,7 @@
 import { defineStore } from './store'
 
 export const MIN_PLAY_ALONG_TEMPO_BPM = 40
+export const MAX_PLAY_ALONG_TEMPO_BPM = 200
 
 export type StoredPlayAlongTempos = Record<string, number>
 
@@ -14,9 +15,15 @@ export function clampPlayAlongTempo(
   tempoBpm: number,
   authoredTempoBpm: number,
 ): number {
-  const ceiling = Math.max(MIN_PLAY_ALONG_TEMPO_BPM, Math.floor(authoredTempoBpm))
-  if (!Number.isFinite(tempoBpm)) return ceiling
-  return Math.min(ceiling, Math.max(MIN_PLAY_ALONG_TEMPO_BPM, Math.round(tempoBpm)))
+  const ceiling = Math.max(MIN_PLAY_ALONG_TEMPO_BPM, MAX_PLAY_ALONG_TEMPO_BPM)
+  const fallback = Number.isFinite(authoredTempoBpm)
+    ? authoredTempoBpm
+    : MAX_PLAY_ALONG_TEMPO_BPM
+  const candidate = Number.isFinite(tempoBpm) ? tempoBpm : fallback
+  return Math.min(
+    ceiling,
+    Math.max(MIN_PLAY_ALONG_TEMPO_BPM, Math.round(candidate)),
+  )
 }
 
 export function getPlayAlongTempo(
