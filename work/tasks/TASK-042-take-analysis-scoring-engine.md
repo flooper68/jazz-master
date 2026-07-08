@@ -3,7 +3,7 @@ id: TASK-042
 title: Take analysis & scoring engine — detected vs expected notes to a 0–100 score
 epic: EPIC-010
 status: backlog
-depends_on: [TASK-040]
+depends_on: []
 source: TASK-015
 research: RES-014
 created: 2026-07-07
@@ -19,7 +19,10 @@ score with per-note verdicts.
 
 ## Context
 
-Per RES-014 Recommendations (Stage 1) and TASK-040's measured parameters:
+Per RES-014 Recommendations (Stage 1). TASK-040's measured-real-guitar
+parameter pass was abandoned by owner decision on 2026-07-08 (NOTE-010), so the
+first implementation should start with these RES-014 defaults and tune from
+synthesized fixtures plus later dogfooding:
 
 - **Detection (offline, after the take):** MPM (`pitchy`) or YIN (`pitchfinder`)
   over ~2048-sample hops; onsets from spectral flux fused with pitch-segment
@@ -52,3 +55,12 @@ sequences, plus deliberately wrong/late fixtures) — no mic needed in tests.
 
 `bun run --cwd codebase test` — fixture suite green, including deliberately
 flawed takes producing the expected verdicts and score ranges.
+
+## Log
+
+### 2026-07-08 - unblocked by owner risk decision (agent)
+
+Owner chose to skip TASK-040's real-guitar feasibility check and assume the
+RES-014 monophonic pipeline works well enough to proceed (NOTE-010). Removed
+TASK-040 from `depends_on`; this task remains backlog and should keep the
+accepted risk visible in scoring tolerances and follow-up QA.

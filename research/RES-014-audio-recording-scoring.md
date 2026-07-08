@@ -8,8 +8,8 @@ stale_when: >
   A browser-ready polyphonic guitar transcription model materially better than
   Basic Pitch ships; Safari/iOS changes mic-capture or AudioWorklet behavior in
   a way that removes the current caveats (e.g. reliable raw-input constraints on
-  iOS); the app gains a backend that could do server-side analysis; or our own
-  spike (recording pipeline on real guitar signals) contradicts the accuracy
+  iOS); the app gains a backend that could do server-side analysis; or
+  dogfooding/QA of the shipped recording pipeline contradicts the accuracy
   expectations recorded here.
 ---
 
@@ -23,6 +23,12 @@ offline-after-the-take analysis is credible in the browser today on well-trodden
 technology. Real-time note-by-note feedback and chord/polyphonic scoring are not
 credible for v1 — the first is a latency/complexity trap on iOS, the second is
 capped by model quality and bundle size. Details and staging below.
+
+**Outcome addendum 2026-07-08.** The recommendation to de-risk first with a
+throwaway real-guitar spike was superseded by owner decision (NOTE-010):
+TASK-040 was abandoned, and TASK-041/TASK-042 proceed from this research plus
+synthesized-fixture evidence. The technical risk is accepted rather than
+resolved.
 
 ## Research questions
 

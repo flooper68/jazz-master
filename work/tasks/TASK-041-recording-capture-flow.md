@@ -3,7 +3,7 @@ id: TASK-041
 title: Recording capture flow in the practice runner
 epic: EPIC-010
 status: backlog
-depends_on: [TASK-040]
+depends_on: []
 source: TASK-015
 research: RES-014
 created: 2026-07-07
@@ -40,7 +40,13 @@ gesture (iOS); read `audioContext.sampleRate` at runtime; MediaRecorder
 metronome anchors the take timeline — no backing track during recording in v1.
 Take stays in memory (replay), is NOT persisted. Audio never leaves the device.
 This task touches browser permissions → include `processes/security-review.md`
-in the plan. Carry forward any capture-path parameter picks from TASK-040's Log.
+in the plan.
+
+Owner decision 2026-07-08 (NOTE-010): TASK-040's real-guitar validation was
+abandoned. Proceed from RES-014's defaults and browser compatibility findings;
+do not wait for measured real-take capture parameters before building the
+capture flow. Watch for capture-path problems during manual browser verification
+and file issues rather than reviving the spike by default.
 
 ## Acceptance criteria
 
@@ -67,3 +73,12 @@ for the permission/level-meter/record state machine per
    two takes), or is strictly in-exercise replay enough for v1?
 3. iOS Safari is listed as a must-verify platform — is it actually a v1 target
    for recording, or is desktop-first acceptable if iOS quirks bite?
+
+## Log
+
+### 2026-07-08 - unblocked by owner risk decision (agent)
+
+Owner chose to skip TASK-040's real-guitar feasibility check and assume the
+RES-014 pipeline works well enough to proceed (NOTE-010). Removed TASK-040 from
+`depends_on`; this task remains backlog and should carry the accepted risk into
+its implementation plan.

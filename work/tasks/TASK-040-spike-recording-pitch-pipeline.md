@@ -2,15 +2,22 @@
 id: TASK-040
 title: Throwaway spike — record a take and extract pitches/onsets from real guitar
 epic: EPIC-010
-status: blocked
-blocked_reason: owner must record at least 3 real-guitar takes with the spike harness before detection quality and the TASK-042 go/no-go conclusion can be measured honestly
+status: abandoned
+abandoned_reason: owner decision 2026-07-08 (NOTE-010) — accept the feasibility risk, assume the RES-014 monophonic pipeline is good enough, and proceed without real-guitar validation
 depends_on: []
 source: TASK-015
 research: RES-014
 created: 2026-07-07
+abandoned: 2026-07-08
 ---
 
 # TASK-040 — Throwaway spike: record + offline pitch/onset extraction on real guitar
+
+> **Abandoned 2026-07-08** (owner decision, NOTE-010). The owner chose to skip
+> real-guitar validation and accept the risk that RES-014's monophonic
+> pitch/onset pipeline may need adjustment later. Downstream tasks proceed from
+> RES-014 defaults and synthesized-test evidence, not from measured real-take
+> parameters.
 
 ## Goal
 
@@ -74,3 +81,14 @@ environment because the exposed multi-agent tool requires an explicit user
 delegation request, so degraded self-review was used per `processes/code-review.md`.
 Not done: real-guitar capture and the 3-take accuracy table/conclusion still
 require the owner playing guitar through the harness.
+
+### 2026-07-08 - abandoned by owner decision (agent)
+
+Owner decided to skip the real-guitar feasibility check: "let's risk the
+feasibility check and assume it works and skip this task." Recorded in NOTE-010.
+TASK-041 and TASK-042 were unblocked by removing their TASK-040 dependency, with
+the accepted risk carried into their context/logs. No product code changed.
+Independent review subagent was not spawned because the current tool policy
+requires an explicit user delegation request despite the repo's standing
+authorization; degraded checklist self-review was used per
+`processes/code-review.md`.

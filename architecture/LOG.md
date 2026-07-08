@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — real-guitar scoring spike skipped by accepted risk (NOTE-010)
+
+Owner chose to skip TASK-040's real-guitar feasibility check and assume RES-014's
+monophonic offline pitch/onset pipeline is good enough to proceed. TASK-040 is
+abandoned, and TASK-041/TASK-042 are unblocked with explicit accepted-risk
+context: scoring work now starts from RES-014 defaults and synthesized fixtures,
+with real-signal problems expected to surface during implementation/dogfooding.
+
 ## 2026-07-08 — runner play-along controls shipped (TASK-047)
 
 The practice runner now lazy-loads the play-along engine from an exercise-level

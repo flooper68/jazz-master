@@ -18,7 +18,7 @@ Objective feedback closes the practice loop and feeds honest progress tracking. 
 
 ## Scope
 
-- **Feasibility research first** (blocking): browser guitar pitch detection — monophonic vs polyphonic limits, latency, libraries (Web Audio + WASM options), realistic scoring quality. Result decides how far this epic goes.
+- **Feasibility research first**: browser guitar pitch detection — monophonic vs polyphonic limits, latency, libraries (Web Audio + WASM options), realistic scoring quality. RES-014 returned staged-go; the owner later accepted the risk of skipping the recommended real-guitar spike (NOTE-010).
 - Microphone capture via Web Audio with a clean permission flow and level meter
 - Take analysis: detected notes/onsets vs the exercise's expected notes/timing → a 0–100 score with per-note feedback
 - Score persisted onto the session record (EPIC-008's runner), surfaced in history and dashboard (EPIC-012)
@@ -36,7 +36,7 @@ Objective feedback closes the practice loop and feeds honest progress tracking. 
 ## Tasks
 
 - TASK-015 — Research browser audio recording & pitch-detection feasibility (→ `research/RES-014-audio-recording-scoring.md`)
-- TASK-040 — Throwaway spike: record a take and extract pitches/onsets from real guitar
+- TASK-040 — Throwaway spike: record a take and extract pitches/onsets from real guitar (abandoned by owner risk decision, NOTE-010)
 - TASK-041 — Recording capture flow in the practice runner
 - TASK-042 — Take analysis & scoring engine — detected vs expected notes to a 0–100 score
 - TASK-043 — Score feedback UI & persistence onto the session record
@@ -52,12 +52,12 @@ In progress. Feasibility research landed (RES-014): **staged-go** — monophonic
 single-note-line scoring with offline-after-the-take analysis is credible in the
 browser (MPM/YIN pitch detection, spectral-flux onsets, metronome count-in
 instead of a backing track, score-only persistence); real-time note-by-note
-feedback and per-note chord scoring are out for v1. Implementation is staged:
-throwaway spike on real guitar signals first (TASK-040 — needs the owner
-playing), then capture flow, scoring engine, and score UI/persistence; a
-chroma-based chord "close enough" check is gated behind validated monophonic
-scoring.
+feedback and per-note chord scoring are out for v1. The recommended real-guitar
+spike was abandoned by owner decision on 2026-07-08 (NOTE-010): downstream work
+accepts that risk and proceeds with capture flow, scoring engine, and score
+UI/persistence from RES-014 defaults and synthesized fixtures. A chroma-based
+chord "close enough" check remains gated behind validated monophonic scoring.
 
 ## Last reviewed
 
-2026-07-07 — TASK-015 research complete; implementation tasks filed per RES-014's staged-go recommendation.
+2026-07-08 — owner accepted the risk of skipping TASK-040's real-guitar spike (NOTE-010); TASK-041 and TASK-042 are unblocked.
