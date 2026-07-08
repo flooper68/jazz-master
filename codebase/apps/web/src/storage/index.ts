@@ -1,5 +1,12 @@
 export { defineStore } from './store'
 export type { Store, StoreConfig } from './store'
+export {
+  createStorageBackup,
+  importStorageBackupText,
+  MAX_STORAGE_BACKUP_BYTES,
+  serializeStorageBackup,
+} from './backup'
+export type { ImportStorageBackupResult, StorageBackup } from './backup'
 export { dailyPlansStore, getDailyPlan, saveDailyPlan } from './dailyPlans'
 export type { StoredDailyPlans } from './dailyPlans'
 export {

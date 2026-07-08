@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { type ChangeEvent, useState } from 'react'
 import {
   GoalAreaFields,
   LevelFields,
   MinutesFields,
 } from '../../components/ProfileFields'
-import { defaultProfile, profileStore, type PracticeProfile } from '../../storage'
+import {
+  defaultProfile,
+  importStorageBackupText,
+  MAX_STORAGE_BACKUP_BYTES,
+  profileStore,
+  serializeStorageBackup,
+  type PracticeProfile,
+} from '../../storage'
 
 /** Edit surface for the onboarding answers (TASK-016). */
 export default function ProfilePage() {
@@ -14,10 +21,47 @@ export default function ProfilePage() {
     () => profileStore.get() ?? defaultProfile(new Date().toISOString()),
   )
   const [saved, setSaved] = useState(false)
+  const [backupStatus, setBackupStatus] = useState('')
 
   const edit = (changes: Partial<PracticeProfile>) => {
     setProfile({ ...profile, ...changes })
     setSaved(false)
+  }
+
+  const exportBackup = () => {
+    const exportedAt = new Date()
+    const json = serializeStorageBackup(exportedAt)
+    const link = document.createElement('a')
+    link.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`
+    link.download = `jazz-master-backup-${exportedAt.toISOString().slice(0, 10)}.json`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setBackupStatus('Backup downloaded.')
+  }
+
+  const importBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file) return
+
+    if (file.size > MAX_STORAGE_BACKUP_BYTES) {
+      setBackupStatus('Backup file is too large.')
+      return
+    }
+
+    try {
+      const result = importStorageBackupText(await file.text())
+      if (!result.ok) {
+        setBackupStatus(result.error)
+        return
+      }
+      setProfile(profileStore.get() ?? defaultProfile(new Date().toISOString()))
+      setSaved(false)
+      setBackupStatus('Backup imported.')
+    } catch {
+      setBackupStatus('Backup file could not be read.')
+    }
   }
 
   return (
@@ -70,6 +114,40 @@ export default function ProfilePage() {
           {profile.goalAreas.length === 0 ? 'Pick at least one goal area.' : ''}
         </p>
       </div>
+      <section className="mt-10">
+        <h2 className="text-sm font-medium text-zinc-400">Data backup</h2>
+        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">
+            Download a JSON backup of profile, plans, history, and practice
+            settings. Import replaces this browser's local data.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={exportBackup}
+              className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+            >
+              Export backup
+            </button>
+            <label
+              htmlFor="profile-backup-import"
+              className="cursor-pointer rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-zinc-400"
+            >
+              Import backup
+              <input
+                id="profile-backup-import"
+                type="file"
+                accept="application/json,.json"
+                onChange={importBackup}
+                className="sr-only"
+              />
+            </label>
+          </div>
+          <p aria-live="polite" className="mt-3 text-sm text-zinc-400">
+            {backupStatus}
+          </p>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore } from '../../storage'
+import { defaultProfile, profileStore, serializeStorageBackup } from '../../storage'
 import ProfilePage from './ProfilePage'
 
 beforeEach(() => {
@@ -58,5 +58,33 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
     expect(screen.getByText('Pick at least one goal area.')).toBeInTheDocument()
     expect(profileStore.get()?.goalAreas).toEqual(['scales', 'arpeggios'])
+  })
+
+  it('imports a backup and refreshes the visible profile', async () => {
+    const user = userEvent.setup()
+    profileStore.set({
+      ...defaultProfile('2026-07-06T10:00:00.000Z'),
+      minutesPerDay: 45,
+    })
+    const backup = serializeStorageBackup(new Date('2026-07-08T10:00:00.000Z'))
+
+    profileStore.set({
+      ...defaultProfile('2026-07-07T10:00:00.000Z'),
+      goalAreas: ['standards'],
+      minutesPerDay: 10,
+    })
+    render(<ProfilePage />)
+
+    expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked()
+    await user.upload(
+      screen.getByLabelText('Import backup'),
+      new File([backup], 'jazz-master-backup.json', {
+        type: 'application/json',
+      }),
+    )
+
+    expect(await screen.findByText('Backup imported.')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '45 min' })).toBeChecked()
+    expect(profileStore.get()?.minutesPerDay).toBe(45)
   })
 })

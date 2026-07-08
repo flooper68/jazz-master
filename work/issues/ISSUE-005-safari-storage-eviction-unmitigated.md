@@ -1,7 +1,7 @@
 ---
 id: ISSUE-005
 title: Safari/WebKit storage eviction can silently erase local-first practice data
-status: confirmed
+status: fixed
 severity: major
 created: 2026-07-08
 source: TASK-054
@@ -39,3 +39,27 @@ it can silently wipe the user's profile, plans, and session history.
 Candidate fixes: add a user-owned JSON export/import path for all typed stores,
 request persistent storage where browsers support it, and/or add product copy
 that makes the local-only durability trade-off explicit.
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+Plan: ship the narrow durability mitigation ADR-002 already names: user-owned JSON
+backup export/import for the typed local stores. Add the import/export contract
+inside `apps/web/src/storage/`, validate the whole backup before writing any
+store, expose controls on the Profile page, and cover the storage contract plus
+page behavior with Vitest. Security/privacy plan: no new dependency or network;
+reject malformed/oversized imports before durable writes.
+
+### 2026-07-08 - fixed
+Added Profile-page JSON backup export/import for `profile`, `sessions`,
+`daily-plans`, `play-along-tempos`, and `notation-preferences`. Restore validates
+the entire backup first, rejects oversized/malformed/unsupported/bad-date files,
+then writes versioned envelopes transactionally inside `apps/web/src/storage/`
+and verifies durable bytes before reporting success. Independent review found
+two issues in the first draft (false success on swallowed write failures and
+weak date validation); both were fixed with regression tests. Security/privacy
+checklist: no new dependency, no network, import schema validated before durable
+writes, malformed data fails closed. Verification: focused Vitest files green;
+`bun run --cwd codebase check` green (Wrangler printed the known sandbox
+log-file EPERM but exited 0); `bun run --cwd codebase check:e2e` initially hit
+sandbox `listen EPERM`, reran escalated, 5/5 Playwright smoke specs passed.

@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 - local storage backup and restore shipped (ISSUE-005)
+
+The Profile page now exposes JSON backup export/import for the typed local
+stores: profile, sessions, daily plans, play-along tempos, and notation
+preferences. Restore validates the full backup first, rejects oversized or
+malformed files, writes versioned envelopes inside `apps/web/src/storage/`, and
+verifies the durable bytes before reporting success. This mitigates the
+Safari/WebKit localStorage eviction risk without changing the no-account,
+local-first architecture.
+
 ## 2026-07-08 - manual regression process added
 
 Added `processes/regression-testing.md` and RES-016 to create a compiled

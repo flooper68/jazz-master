@@ -11,6 +11,10 @@
 
 const NAMESPACE = 'jazz-master'
 
+export function storageKey(name: string): string {
+  return `${NAMESPACE}:${name}`
+}
+
 export interface StoreConfig<T> {
   /** Unique store name; becomes the localStorage key `jazz-master:<name>`. */
   name: string
@@ -53,7 +57,7 @@ function isEnvelope(value: unknown): value is Envelope {
 }
 
 export function defineStore<T>(config: StoreConfig<T>): Store<T> {
-  const key = `${NAMESPACE}:${config.name}`
+  const key = storageKey(config.name)
 
   function write(value: T): void {
     const envelope: Envelope = { version: config.version, data: value }

@@ -18,6 +18,6 @@ All state (progress, sessions, repertoire) lives in the browser via localStorage
 ## Consequences
 
 - Ship and host anywhere static; zero operational cost.
-- Data is per-browser: no sync across devices, wiped if the user clears storage. Acceptable for validation; an export/import (JSON download) escape hatch is cheap insurance and should be an early task once real progress data exists.
-- Safari/WebKit privacy policy can evict all script-writable storage, including localStorage, after a period without user interaction; RES-014/INS-023 identified this as a real durability risk for practice history. Until a mitigation ships, local-first means "private and browser-local", not "backed up."
+- Data is per-browser: no sync across devices, wiped if the user clears storage. Acceptable for validation; since ISSUE-005, the Profile page includes a JSON backup export/import escape hatch for the typed local stores.
+- Safari/WebKit privacy policy can evict all script-writable storage, including localStorage, after a period without user interaction; RES-014/INS-023 identified this as a real durability risk for practice history. The ISSUE-005 backup path gives users a deliberate recovery option, but local-first still means "private and browser-local" rather than synced or automatically backed up.
 - The persistence wrapper is the seam: if the product proves itself, a backend replaces the wrapper's implementation, not the app (record that switch in a superseding ADR).
