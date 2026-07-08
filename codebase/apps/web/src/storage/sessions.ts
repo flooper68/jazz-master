@@ -20,7 +20,7 @@ export interface PracticeSession {
   lessonId: string
   /** ISO 8601 timestamp of when the lesson was started. */
   startedAt: string
-  /** Elapsed time from start to the latest grade. */
+  /** Accumulated active exercise time; setup and grading prompt time are excluded. */
   durationSeconds: number
   /** False until the last exercise is graded (abandoned runs stay false). */
   completed: boolean

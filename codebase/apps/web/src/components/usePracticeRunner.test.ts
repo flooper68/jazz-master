@@ -43,20 +43,54 @@ describe('runnerReducer', () => {
   it('starts at the first exercise with no results', () => {
     const state = start()
     expect(state.exerciseIndex).toBe(0)
+    expect(state.activeExerciseStartedAt).toBeNull()
+    expect(state.durationSeconds).toBe(0)
     expect(state.results).toEqual([])
     expect(state.finished).toBe(false)
   })
 
+  it('counts active exercise time from begin to completion', () => {
+    const active = runnerReducer(start(), { type: 'begin-exercise', at: 1_000 })
+    expect(active.activeExerciseStartedAt).toBe(1_000)
+
+    const completed = runnerReducer(active, {
+      type: 'complete-exercise',
+      at: 46_400,
+    })
+    expect(completed.activeExerciseStartedAt).toBeNull()
+    expect(completed.durationSeconds).toBe(45)
+  })
+
   it('records the grade and advances to the next exercise', () => {
-    const state = runnerReducer(start(), { type: 'grade', grade: 'got-it' })
+    const state = runnerReducer(start(), { type: 'grade', grade: 'got-it', at: 0 })
     expect(state.results).toEqual([{ exerciseId: 'fx-1', grade: 'got-it' }])
     expect(state.exerciseIndex).toBe(1)
     expect(state.finished).toBe(false)
   })
 
+  it('completes active time when a grade is recorded directly', () => {
+    const active = runnerReducer(start(), { type: 'begin-exercise', at: 2_000 })
+    const state = runnerReducer(active, {
+      type: 'grade',
+      grade: 'got-it',
+      at: 62_000,
+    })
+    expect(state.durationSeconds).toBe(60)
+    expect(state.activeExerciseStartedAt).toBeNull()
+    expect(state.exerciseIndex).toBe(1)
+  })
+
   it('finishes when the last exercise is graded', () => {
-    const afterFirst = runnerReducer(start(), { type: 'grade', grade: 'got-it' })
-    const done = runnerReducer(afterFirst, { type: 'grade', grade: 'shaky' })
+    const afterFirst = runnerReducer(start(), {
+      type: 'grade',
+      grade: 'got-it',
+      at: 0,
+    })
+    const done = runnerReducer(afterFirst, {
+      type: 'grade',
+      grade: 'shaky',
+      at: 0,
+    })
     expect(done.results).toEqual([
       { exerciseId: 'fx-1', grade: 'got-it' },
       { exerciseId: 'fx-2', grade: 'shaky' },
@@ -66,9 +100,11 @@ describe('runnerReducer', () => {
 
   it('ignores grades after the lesson is finished', () => {
     const done = runnerReducer(
-      runnerReducer(start(), { type: 'grade', grade: 'got-it' }),
-      { type: 'grade', grade: 'shaky' },
+      runnerReducer(start(), { type: 'grade', grade: 'got-it', at: 0 }),
+      { type: 'grade', grade: 'shaky', at: 0 },
     )
-    expect(runnerReducer(done, { type: 'grade', grade: 'missed' })).toBe(done)
+    expect(runnerReducer(done, { type: 'grade', grade: 'missed', at: 0 })).toBe(
+      done,
+    )
   })
 })

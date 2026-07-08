@@ -59,12 +59,17 @@ export async function skipOnboarding(page: Page): Promise<void> {
  */
 export async function gradeThroughLesson(page: Page): Promise<void> {
   const summaryHeading = page.getByRole('heading', { name: /^Lesson complete/ })
-  const gotIt = page.getByRole('button', { name: 'Got it' })
   for (let i = 0; i < 20; i++) {
     // Wait until the runner settles into one of its two states before acting.
-    await expect(summaryHeading.or(gotIt).first()).toBeVisible()
+    await expect(
+      summaryHeading.or(page.getByRole('button', { name: /^Begin / })).first(),
+    ).toBeVisible()
     if (await summaryHeading.isVisible()) break
-    await gotIt.click()
+    await page.getByRole('button', { name: /^Begin / }).click()
+    await page.getByRole('button', { name: /^End playthrough and grade / }).click()
+    const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
+    await expect(gradeDialog).toBeVisible()
+    await gradeDialog.getByRole('button', { name: 'Got it' }).click()
   }
   await expect(summaryHeading).toBeVisible()
 }

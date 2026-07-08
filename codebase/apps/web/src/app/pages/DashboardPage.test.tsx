@@ -53,7 +53,7 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('heading', { name: "Today's plan" }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Starts your/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Starts your/).length).toBeGreaterThan(0)
     expect(
       screen.getByRole('button', { name: 'Start practicing' }),
     ).toBeInTheDocument()

@@ -1,7 +1,12 @@
 import { noteName } from '@jazz-master/theory'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type {
+  ChangeEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  RefObject,
+} from 'react'
 import type { PlayAlongEngine } from '../audio'
+import { createExercisePattern, secondsPerBeat } from '../audio/timeline'
 import {
   RECORDING_COUNT_IN_BEATS,
   createInputLevelMeter,
@@ -43,6 +48,7 @@ const GRADE_LABELS: Record<ExerciseGrade, string> = {
 const GRADE_ORDER: readonly ExerciseGrade[] = ['got-it', 'shaky', 'missed']
 
 type PlaybackStatus = 'idle' | 'loading' | 'playing'
+type PlaythroughStatus = 'not-started' | 'active' | 'complete'
 
 type WindowWithWebkitAudio = Window &
   typeof globalThis & {
@@ -64,7 +70,11 @@ export function PracticeRunner({
   startedAt,
   onExit,
 }: PracticeRunnerProps) {
-  const { state, grade } = usePracticeRunner({ lesson, sessionId, startedAt })
+  const { state, beginExercise, completeExercise, grade } = usePracticeRunner({
+    lesson,
+    sessionId,
+    startedAt,
+  })
   const [exiting, setExiting] = useState(false)
   // ISSUE-002: the runner appearing (Start) and the summary replacing it (last
   // grade) are same-route view swaps; move focus to the incoming heading.
@@ -143,17 +153,26 @@ export function PracticeRunner({
         Exercise {state.exerciseIndex + 1} of {lesson.exercises.length}
       </p>
       {/* Keyed so per-exercise state (the countdown) resets on advance. */}
-      <ExercisePanel key={exercise.id} exercise={exercise} onGrade={grade} />
-      <GradeButtons onGrade={grade} layout="inline" />
+      <ExercisePanel
+        key={exercise.id}
+        exercise={exercise}
+        onBeginExercise={beginExercise}
+        onCompleteExercise={completeExercise}
+        onGrade={grade}
+      />
     </section>
   )
 }
 
 function ExercisePanel({
   exercise,
+  onBeginExercise,
+  onCompleteExercise,
   onGrade,
 }: {
   exercise: Exercise
+  onBeginExercise: () => void
+  onCompleteExercise: () => void
   onGrade: (grade: ExerciseGrade) => void
 }) {
   const resolved = useMemo(() => resolveExercise(exercise), [exercise])
@@ -168,6 +187,9 @@ function ExercisePanel({
     getNotationDisplayMode,
   )
   const [scoreFocusOpen, setScoreFocusOpen] = useState(false)
+  const [playthroughStatus, setPlaythroughStatus] =
+    useState<PlaythroughStatus>('not-started')
+  const [gradePromptOpen, setGradePromptOpen] = useState(false)
   const [loopEnabled, setLoopEnabled] = useState(true)
   const [clickEnabled, setClickEnabled] = useState(true)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
@@ -187,6 +209,8 @@ function ExercisePanel({
   const recordingTimeoutsRef = useRef<number[]>([])
   const takeUrlRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
+  const playthroughStatusRef = useRef<PlaythroughStatus>('not-started')
+  const playbackCompletionTimeoutRef = useRef<number | null>(null)
   const tempoMax = Math.max(
     MIN_PLAY_ALONG_TEMPO_BPM,
     Math.floor(exercise.tempoBpm),
@@ -200,10 +224,52 @@ function ExercisePanel({
     }),
   )
 
+  const clearPlaybackCompletionTimeout = useCallback(() => {
+    if (playbackCompletionTimeoutRef.current !== null) {
+      window.clearTimeout(playbackCompletionTimeoutRef.current)
+      playbackCompletionTimeoutRef.current = null
+    }
+  }, [])
+
   const stopPlayback = useCallback(() => {
+    clearPlaybackCompletionTimeout()
     engineRef.current?.stop()
     setPlaybackStatus('idle')
-  }, [])
+  }, [clearPlaybackCompletionTimeout])
+
+  function beginPlaythrough(): void {
+    if (playthroughStatusRef.current !== 'not-started') return
+    playthroughStatusRef.current = 'active'
+    setPlaythroughStatus('active')
+    onBeginExercise()
+  }
+
+  const completePlaythrough = useCallback(() => {
+    if (playthroughStatusRef.current !== 'active') return
+    playthroughStatusRef.current = 'complete'
+    setPlaythroughStatus('complete')
+    stopPlayback()
+    cleanupCapture({ revokeTake: true })
+    dispatchRecording({ type: 'reset' })
+    onCompleteExercise()
+    setGradePromptOpen(true)
+  }, [onCompleteExercise, stopPlayback])
+
+  function schedulePlaybackCompletion(tempo: number): void {
+    clearPlaybackCompletionTimeout()
+    if (loopEnabled) return
+    const countInBeats = clickEnabled ? 4 : 0
+    const pattern = createExercisePattern(resolved.positions, {
+      click: clickEnabled,
+    })
+    const durationMs = Math.ceil(
+      (countInBeats + pattern.lengthBeats) * secondsPerBeat(tempo) * 1000,
+    )
+    playbackCompletionTimeoutRef.current = window.setTimeout(
+      completePlaythrough,
+      durationMs,
+    )
+  }
 
   useEffect(() => {
     mountedRef.current = true
@@ -214,8 +280,9 @@ function ExercisePanel({
       void audioContextRef.current?.close()
       audioContextRef.current = null
       cleanupCapture({ revokeTake: true })
+      clearPlaybackCompletionTimeout()
     }
-  }, [])
+  }, [clearPlaybackCompletionTimeout])
 
   async function togglePlayback(): Promise<void> {
     if (playbackStatus === 'loading') return
@@ -242,7 +309,11 @@ function ExercisePanel({
         click: clickEnabled,
         countInBeats: clickEnabled ? 4 : 0,
       })
-      if (mountedRef.current) setPlaybackStatus('playing')
+      if (mountedRef.current) {
+        beginPlaythrough()
+        schedulePlaybackCompletion(tempoBpm)
+        setPlaybackStatus('playing')
+      }
     } catch (error) {
       engineRef.current?.stop()
       if (!mountedRef.current) return
@@ -261,6 +332,9 @@ function ExercisePanel({
     setTempoBpm(nextTempo)
     savePlayAlongTempo(exercise.id, nextTempo, exercise.tempoBpm)
     engineRef.current?.setTempoBpm(nextTempo)
+    if (playbackStatus === 'playing' && !loopEnabled) {
+      schedulePlaybackCompletion(nextTempo)
+    }
   }
 
   function updateLoop(event: ChangeEvent<HTMLInputElement>): void {
@@ -282,14 +356,6 @@ function ExercisePanel({
     setScoreFocusOpen(false)
   }, [])
 
-  const gradeFromScoreFocus = useCallback(
-    (grade: ExerciseGrade) => {
-      setScoreFocusOpen(false)
-      onGrade(grade)
-    },
-    [onGrade],
-  )
-
   function clearRecordingTimeouts(): void {
     for (const timeoutId of recordingTimeoutsRef.current) {
       window.clearTimeout(timeoutId)
@@ -300,6 +366,9 @@ function ExercisePanel({
   function cleanupCapture({ revokeTake }: { revokeTake: boolean }): void {
     clearRecordingTimeouts()
     if (recorderRef.current?.state === 'recording') {
+      recorderRef.current.ondataavailable = null
+      recorderRef.current.onstop = null
+      recorderRef.current.onerror = null
       recorderRef.current.stop()
     }
     recorderRef.current = null
@@ -383,6 +452,7 @@ function ExercisePanel({
         dispatchRecording({ type: 'level-changed', level })
       })
       dispatchRecording({ type: 'count-in-started' })
+      beginPlaythrough()
       const takeStartTime = scheduleCountInClicks(
         audioContext,
         tempoBpm,
@@ -508,13 +578,26 @@ function ExercisePanel({
       </div>
       <p className="mt-1 text-sm text-zinc-400">
         {exercise.duration.kind === 'minutes' ? (
-          <Countdown initialSeconds={exercise.duration.minutes * 60} />
+          <Countdown
+            initialSeconds={exercise.duration.minutes * 60}
+            active={playthroughStatus === 'active'}
+            onExpire={completePlaythrough}
+          />
         ) : (
           `${exercise.duration.count} repetitions`
         )}
       </p>
       <div className="mt-4 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={beginPlaythrough}
+            disabled={playthroughStatus !== 'not-started'}
+            aria-label={`Begin ${exercise.title}`}
+            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
+          >
+            Begin
+          </button>
           <button
             type="button"
             onClick={() => void togglePlayback()}
@@ -546,6 +629,15 @@ function ExercisePanel({
             />
             Click + count-in
           </label>
+          <button
+            type="button"
+            onClick={completePlaythrough}
+            disabled={playthroughStatus !== 'active'}
+            aria-label={`End playthrough and grade ${exercise.title}`}
+            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
+          >
+            Next
+          </button>
         </div>
         <label
           htmlFor={`tempo-${exercise.id}`}
@@ -624,10 +716,18 @@ function ExercisePanel({
               displayMode={notationDisplayMode}
               onDisplayModeChange={updateNotationDisplayMode}
               onClose={closeScoreFocus}
-              onGrade={gradeFromScoreFocus}
             />
           )}
         </div>
+      )}
+      {gradePromptOpen && (
+        <GradePromptDialog
+          exerciseTitle={exercise.title}
+          onGrade={(gradeValue) => {
+            setGradePromptOpen(false)
+            onGrade(gradeValue)
+          }}
+        />
       )}
     </div>
   )
@@ -678,14 +778,12 @@ function NotationFocusDialog({
   displayMode,
   onDisplayModeChange,
   onClose,
-  onGrade,
 }: {
   exerciseTitle: string
   measures: ReturnType<typeof deriveRhythm>
   displayMode: NotationDisplayMode
   onDisplayModeChange: (mode: NotationDisplayMode) => void
   onClose: () => void
-  onGrade: (grade: ExerciseGrade) => void
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -762,7 +860,63 @@ function NotationFocusDialog({
           aria-label={`${exerciseTitle} focus — ${NOTATION_DISPLAY_LABELS[displayMode]}`}
         />
       </div>
-      <GradeButtons onGrade={onGrade} layout="focus" />
+    </div>
+  )
+}
+
+function GradePromptDialog({
+  exerciseTitle,
+  onGrade,
+}: {
+  exerciseTitle: string
+  onGrade: (grade: ExerciseGrade) => void
+}) {
+  const firstGradeButtonRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    firstGradeButtonRef.current?.focus()
+  }, [])
+
+  function trapTabFocus(event: ReactKeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== 'Tab') return
+    const focusable = [
+      ...(dialogRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []),
+    ].filter((element) => !element.hasAttribute('disabled'))
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (!first || !last) return
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Grade ${exerciseTitle}`}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90 p-4 text-zinc-100"
+    >
+      <div
+        ref={dialogRef}
+        onKeyDown={trapTabFocus}
+        className="w-full max-w-sm rounded-lg border border-zinc-800 bg-zinc-900 p-4 shadow-2xl"
+      >
+        <p className="text-sm text-zinc-400">Grade exercise</p>
+        <h3 className="mt-1 font-display text-lg font-bold tracking-tight">
+          {exerciseTitle}
+        </h3>
+        <GradeButtons
+          onGrade={onGrade}
+          layout="focus"
+          firstButtonRef={firstGradeButtonRef}
+        />
+      </div>
     </div>
   )
 }
@@ -770,15 +924,18 @@ function NotationFocusDialog({
 function GradeButtons({
   onGrade,
   layout,
+  firstButtonRef,
 }: {
   onGrade: (grade: ExerciseGrade) => void
   layout: 'inline' | 'focus'
+  firstButtonRef?: RefObject<HTMLButtonElement | null>
 }) {
   return (
     <div className={layout === 'focus' ? 'flex flex-wrap gap-3' : 'mt-6 flex gap-3'}>
-      {GRADE_ORDER.map((gradeValue) => (
+      {GRADE_ORDER.map((gradeValue, index) => (
         <button
           key={gradeValue}
+          ref={index === 0 ? firstButtonRef : undefined}
           type="button"
           onClick={() => onGrade(gradeValue)}
           className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
@@ -930,16 +1087,27 @@ function formatSeconds(totalSeconds: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-function Countdown({ initialSeconds }: { initialSeconds: number }) {
+function Countdown({
+  initialSeconds,
+  active,
+  onExpire,
+}: {
+  initialSeconds: number
+  active: boolean
+  onExpire: () => void
+}) {
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds)
   const expired = secondsLeft === 0
   useEffect(() => {
-    if (expired) return
+    if (!active || expired) return
     const id = setInterval(() => {
       setSecondsLeft((current) => Math.max(current - 1, 0))
     }, 1000)
     return () => clearInterval(id)
-  }, [expired])
+  }, [active, expired])
+  useEffect(() => {
+    if (expired) onExpire()
+  }, [expired, onExpire])
   return (
     <>
       <span>{expired ? '' : formatSeconds(secondsLeft)}</span>

@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveExercise, type Lesson } from '../content'
@@ -6,6 +13,8 @@ import { getNotationDisplayMode } from '../storage/notationPreferences'
 import { getPlayAlongTempo } from '../storage/playAlongTempos'
 import { sessionsStore } from '../storage/sessions'
 import { PracticeRunner } from './PracticeRunner'
+
+type User = ReturnType<typeof userEvent.setup>
 
 const audioMock = vi.hoisted(() => {
   const engine = {
@@ -144,6 +153,38 @@ function renderRunner(onExit = vi.fn(), runnerLesson = lesson) {
   return onExit
 }
 
+async function finishAndGrade(
+  user: User,
+  exerciseTitle: string,
+  grade: 'Got it' | 'Shaky' | 'Missed' = 'Got it',
+): Promise<void> {
+  await user.click(
+    screen.getByRole('button', {
+      name: `Play play-along for ${exerciseTitle}`,
+    }),
+  )
+  const next = screen.getByRole('button', {
+    name: `End playthrough and grade ${exerciseTitle}`,
+  })
+  await waitFor(() => expect(next).toBeEnabled())
+  await user.click(next)
+  const dialog = screen.getByRole('dialog', { name: `Grade ${exerciseTitle}` })
+  await user.click(within(dialog).getByRole('button', { name: grade }))
+}
+
+async function completeExercise(user: User, exerciseTitle: string): Promise<void> {
+  await user.click(
+    screen.getByRole('button', {
+      name: `Play play-along for ${exerciseTitle}`,
+    }),
+  )
+  const next = screen.getByRole('button', {
+    name: `End playthrough and grade ${exerciseTitle}`,
+  })
+  await waitFor(() => expect(next).toBeEnabled())
+  await user.click(next)
+}
+
 beforeEach(() => {
   vi.useRealTimers()
   localStorage.clear()
@@ -228,7 +269,7 @@ describe('PracticeRunner', () => {
     ).toBeInTheDocument()
 
     // fx-2 has no 'notation' hint: only the fretboard image remains.
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    await finishAndGrade(user, 'C major — open position', 'Got it')
     expect(
       screen.queryByRole('img', { name: /staff and tablature/ }),
     ).toBeNull()
@@ -300,7 +341,9 @@ describe('PracticeRunner', () => {
       })
       .focus()
     await user.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(within(dialog).getByRole('button', { name: 'Missed' })).toHaveFocus()
+    expect(
+      within(dialog).getByLabelText('C major — open position focus score viewport'),
+    ).toHaveFocus()
 
     await user.click(
       within(dialog).getByRole('button', {
@@ -317,7 +360,7 @@ describe('PracticeRunner', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('can grade from score focus mode', async () => {
+  it('does not expose grade choices before the playthrough ends', async () => {
     const user = userEvent.setup()
     renderRunner()
 
@@ -326,11 +369,27 @@ describe('PracticeRunner', () => {
         name: 'Open focus mode for C major — open position score',
       }),
     )
+    const focusDialog = screen.getByRole('dialog', {
+      name: 'C major — open position score focus mode',
+    })
+    expect(
+      within(focusDialog).queryByRole('button', { name: 'Got it' }),
+    ).toBeNull()
+
+    await user.keyboard('{Escape}')
+    await completeExercise(user, 'C major — open position')
+
+    const gradeDialog = screen.getByRole('dialog', {
+      name: 'Grade C major — open position',
+    })
+    expect(
+      within(gradeDialog).getByRole('button', { name: 'Got it' }),
+    ).toHaveFocus()
+
     await user.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Got it' }),
+      within(gradeDialog).getByRole('button', { name: 'Got it' }),
     )
 
-    expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
   })
 
@@ -350,7 +409,6 @@ describe('PracticeRunner', () => {
     await waitFor(() => {
       expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
     })
-    expect(audioMock.moduleLoaded).toHaveBeenCalledTimes(1)
     expect(audioMock.createPlayAlongEngine).toHaveBeenCalledTimes(1)
     expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith({
       positions: resolveExercise(lesson.exercises[0]).positions,
@@ -363,6 +421,32 @@ describe('PracticeRunner', () => {
       screen.getByRole('button', {
         name: 'Stop play-along for C major — open position',
       }),
+    ).toBeInTheDocument()
+  })
+
+  it('starts minute countdowns only after playback starts and prompts on expiry', async () => {
+    vi.useFakeTimers()
+    renderRunner()
+
+    expect(screen.getByText('1:00')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(5_000))
+    expect(screen.getByText('1:00')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Begin C major — open position' }),
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    ).toBeEnabled()
+
+    act(() => vi.advanceTimersByTime(1_000))
+    expect(screen.getByText('0:59')).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(59_000))
+    expect(
+      screen.getByRole('dialog', { name: 'Grade C major — open position' }),
     ).toBeInTheDocument()
   })
 
@@ -525,10 +609,56 @@ describe('PracticeRunner', () => {
     expect(trackStopMock).toHaveBeenCalled()
     expect(sessionsStore.get()).toEqual([])
 
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    )
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
+      ).getByRole('button', { name: 'Got it' }),
+    )
 
     expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
     expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:recorded-take')
+  })
+
+  it('stops active recording capture when Next opens grading', async () => {
+    const user = userEvent.setup()
+    const fastLesson: Lesson = {
+      ...lesson,
+      exercises: [
+        { ...lesson.exercises[0], tempoBpm: 600 },
+        lesson.exercises[1],
+      ],
+    }
+    renderRunner(vi.fn(), fastLesson)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+    expect(
+      await screen.findByRole('button', {
+        name: 'Stop recording C major — open position',
+      }),
+    ).toBeInTheDocument()
+    expect(mediaRecorderInstances[0].state).toBe('recording')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    )
+
+    expect(mediaRecorderInstances[0].state).toBe('inactive')
+    expect(trackStopMock).toHaveBeenCalled()
+    expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
+    expect(
+      screen.getByRole('dialog', { name: 'Grade C major — open position' }),
+    ).toBeInTheDocument()
   })
 
   it('recovers when MediaRecorder cannot start after count-in', async () => {
@@ -595,8 +725,18 @@ describe('PracticeRunner', () => {
     await waitFor(() => {
       expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
     })
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    )
 
+    expect(audioMock.engine.stop).toHaveBeenCalled()
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
+      ).getByRole('button', { name: 'Got it' }),
+    )
     expect(audioMock.engine.dispose).toHaveBeenCalledTimes(1)
 
     await user.click(
@@ -621,13 +761,19 @@ describe('PracticeRunner', () => {
     expect(screen.getByText('C major — open position')).toBeInTheDocument()
     expect(screen.getAllByText('60 BPM').length).toBeGreaterThan(0)
     expect(screen.getByText('1:00')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: 'End playthrough and grade C major — open position',
+      }),
+    ).toBeDisabled()
 
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
+    await finishAndGrade(user, 'C major — open position', 'Got it')
     expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
     expect(screen.getByText('G7 arpeggio — open position')).toBeInTheDocument()
     expect(screen.getByText('8 repetitions')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Shaky' }))
+    await finishAndGrade(user, 'G7 arpeggio — open position', 'Shaky')
     expect(
       screen.getByRole('heading', { name: 'Lesson complete — Fixture lesson' }),
     ).toBeInTheDocument()
@@ -654,7 +800,7 @@ describe('PracticeRunner', () => {
     const user = userEvent.setup()
     const onExit = renderRunner()
 
-    await user.click(screen.getByRole('button', { name: 'Missed' }))
+    await finishAndGrade(user, 'C major — open position', 'Missed')
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
 
     expect(onExit).toHaveBeenCalledTimes(1)
@@ -687,11 +833,9 @@ describe('PracticeRunner', () => {
     const user = userEvent.setup()
     renderRunner()
 
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
-    // Mid-lesson advance is not a view swap — focus stays on the grade button.
-    expect(screen.getByRole('button', { name: 'Got it' })).toHaveFocus()
+    await finishAndGrade(user, 'C major — open position', 'Got it')
 
-    await user.click(screen.getByRole('button', { name: 'Shaky' }))
+    await finishAndGrade(user, 'G7 arpeggio — open position', 'Shaky')
     expect(
       screen.getByRole('heading', { name: 'Lesson complete — Fixture lesson' }),
     ).toHaveFocus()

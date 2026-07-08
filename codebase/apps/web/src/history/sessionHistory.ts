@@ -89,10 +89,7 @@ export function tallyGrades(results: readonly ExerciseResult[]): GradeTally {
   return tally
 }
 
-/**
- * `durationSeconds` measures start to the latest grade (see PracticeSession),
- * so sub-minute precision past the first minute carries no meaning — round.
- */
+/** `durationSeconds` is active exercise time (see PracticeSession); round for display. */
 export function formatDuration(durationSeconds: number): string {
   if (durationSeconds < 60) return `${Math.max(Math.round(durationSeconds), 0)} s`
   return `${Math.round(durationSeconds / 60)} min`

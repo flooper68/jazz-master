@@ -17,13 +17,23 @@ export interface RunnerState {
   sessionId: string
   /** Epoch ms of the Start click (owned by the page's event handler). */
   startedAt: number
+  /**
+   * Epoch ms of the current exercise's active playthrough, once playback or
+   * recording begins. Null while the user is setting up or grading.
+   */
+  activeExerciseStartedAt: number | null
+  /** Accumulated active playthrough time, excluding setup and grading prompt time. */
+  durationSeconds: number
   exerciseIndex: number
   results: { exerciseId: string; grade: ExerciseGrade }[]
   /** True once the last exercise is graded — show the summary. */
   finished: boolean
 }
 
-export type RunnerAction = { type: 'grade'; grade: ExerciseGrade }
+export type RunnerAction =
+  | { type: 'begin-exercise'; at: number }
+  | { type: 'complete-exercise'; at: number }
+  | { type: 'grade'; grade: ExerciseGrade; at: number }
 
 export interface RunnerInit {
   lesson: Lesson
@@ -40,9 +50,22 @@ export function createRunnerState({
     lesson,
     sessionId,
     startedAt,
+    activeExerciseStartedAt: null,
+    durationSeconds: 0,
     exerciseIndex: 0,
     results: [],
     finished: false,
+  }
+}
+
+function completeActiveExercise(state: RunnerState, at: number): RunnerState {
+  if (state.activeExerciseStartedAt === null) return state
+  return {
+    ...state,
+    activeExerciseStartedAt: null,
+    durationSeconds:
+      state.durationSeconds +
+      Math.max(Math.round((at - state.activeExerciseStartedAt) / 1000), 0),
   }
 }
 
@@ -51,18 +74,28 @@ export function runnerReducer(
   action: RunnerAction,
 ): RunnerState {
   switch (action.type) {
+    case 'begin-exercise': {
+      if (state.finished || state.activeExerciseStartedAt !== null) return state
+      return { ...state, activeExerciseStartedAt: action.at }
+    }
+    case 'complete-exercise':
+      return completeActiveExercise(state, action.at)
     case 'grade': {
       if (state.finished) return state
+      const completedState = completeActiveExercise(state, action.at)
       const exercise = state.lesson.exercises[state.exerciseIndex]
       const results = [
-        ...state.results,
+        ...completedState.results,
         { exerciseId: exercise.id, grade: action.grade },
       ]
-      const isLast = state.exerciseIndex + 1 >= state.lesson.exercises.length
+      const isLast =
+        completedState.exerciseIndex + 1 >= completedState.lesson.exercises.length
       return {
-        ...state,
+        ...completedState,
         results,
-        exerciseIndex: isLast ? state.exerciseIndex : state.exerciseIndex + 1,
+        exerciseIndex: isLast
+          ? completedState.exerciseIndex
+          : completedState.exerciseIndex + 1,
         finished: isLast,
       }
     }
@@ -74,7 +107,10 @@ function toSessionRecord(state: RunnerState, now: number): PracticeSession {
     id: state.sessionId,
     lessonId: state.lesson.id,
     startedAt: new Date(state.startedAt).toISOString(),
-    durationSeconds: Math.max(Math.round((now - state.startedAt) / 1000), 0),
+    durationSeconds:
+      state.activeExerciseStartedAt === null
+        ? state.durationSeconds
+        : completeActiveExercise(state, now).durationSeconds,
     completed: state.finished,
     results: state.results,
   }
@@ -92,9 +128,17 @@ export function usePracticeRunner(init: RunnerInit) {
     upsertSession(toSessionRecord(state, Date.now()))
   }, [state])
 
-  function grade(gradeValue: ExerciseGrade): void {
-    dispatch({ type: 'grade', grade: gradeValue })
+  function beginExercise(at = Date.now()): void {
+    dispatch({ type: 'begin-exercise', at })
   }
 
-  return { state, grade }
+  function completeExercise(at = Date.now()): void {
+    dispatch({ type: 'complete-exercise', at })
+  }
+
+  function grade(gradeValue: ExerciseGrade, at = Date.now()): void {
+    dispatch({ type: 'grade', grade: gradeValue, at })
+  }
+
+  return { state, beginExercise, completeExercise, grade }
 }

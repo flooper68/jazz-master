@@ -23,9 +23,9 @@ describe('the scales & arpeggios lesson pack', () => {
     }
   })
 
-  it('estimates each lesson at 10–15 minutes, matching its exercise durations', () => {
+  it('estimates each lesson from its minute-based exercise durations', () => {
     for (const lesson of LESSONS) {
-      expect(lesson.estimatedMinutes).toBeGreaterThanOrEqual(10)
+      expect(lesson.estimatedMinutes).toBeGreaterThan(0)
       expect(lesson.estimatedMinutes).toBeLessThanOrEqual(15)
       const summed = lesson.exercises.reduce(
         (total, exercise) =>

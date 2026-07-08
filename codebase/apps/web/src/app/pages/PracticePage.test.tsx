@@ -12,6 +12,8 @@ import {
 } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
 
+type User = ReturnType<typeof userEvent.setup>
+
 beforeEach(() => {
   localStorage.clear()
   profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
@@ -21,6 +23,15 @@ beforeEach(() => {
 // the real /practice route.
 function renderPage() {
   return renderRoute('/practice')
+}
+
+async function finishCurrentExercise(user: User): Promise<void> {
+  await user.click(screen.getByRole('button', { name: /^Begin / }))
+  await user.click(
+    screen.getByRole('button', { name: /^End playthrough and grade / }),
+  )
+  const gradeDialog = screen.getByRole('dialog', { name: /^Grade / })
+  await user.click(within(gradeDialog).getByRole('button', { name: 'Got it' }))
 }
 
 describe('PracticePage', () => {
@@ -91,7 +102,7 @@ describe('PracticePage', () => {
 
     // Runner → summary: the completion heading receives focus.
     for (const _exercise of first.exercises) {
-      await user.click(screen.getByRole('button', { name: 'Got it' }))
+      await finishCurrentExercise(user)
     }
     expect(
       screen.getByRole('heading', { name: `Lesson complete — ${first.title}` }),
@@ -123,7 +134,7 @@ describe('PracticePage', () => {
     const date = toPlanDate(new Date())
 
     expect(screen.getByRole('heading', { name: "Today's plan" })).toBeInTheDocument()
-    expect(screen.getByText(/Starts your/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Starts your/).length).toBeGreaterThan(0)
     await waitFor(() => {
       expect(getDailyPlan(date)?.items.length).toBeGreaterThan(0)
     })
@@ -167,14 +178,16 @@ describe('PracticePage', () => {
     const user = userEvent.setup()
     await renderPage()
 
-    await user.click(screen.getByRole('button', { name: /^Start planned lesson/ }))
+    await user.click(
+      screen.getAllByRole('button', { name: /^Start planned lesson/ })[0],
+    )
     const activeLesson = LESSONS.find((lesson) =>
       screen.queryByRole('heading', { level: 2, name: lesson.title }),
     )
     expect(activeLesson).toBeDefined()
 
     for (const _exercise of activeLesson!.exercises) {
-      await user.click(screen.getByRole('button', { name: 'Got it' }))
+      await finishCurrentExercise(user)
     }
     expect(
       screen.getByRole('heading', {

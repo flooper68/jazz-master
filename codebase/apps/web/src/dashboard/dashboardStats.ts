@@ -48,8 +48,8 @@ export function currentStreakDays(
 
 /**
  * Minutes practiced in the last WEEK_DAYS local calendar days, today included.
- * Sums `durationSeconds` (start to latest grade — the record's documented
- * semantics) and rounds the total once.
+ * Sums `durationSeconds` (active exercise time — the record's documented
+ * semantics, excluding setup and grading prompt time) and rounds the total once.
  */
 export function minutesThisWeek(
   sessions: readonly PracticeSession[],

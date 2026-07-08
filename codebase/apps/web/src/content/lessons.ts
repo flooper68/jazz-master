@@ -70,11 +70,11 @@ export const LESSONS: readonly Lesson[] = [
     area: 'scales',
     level: 1,
     prerequisites: [],
-    estimatedMinutes: 12,
+    estimatedMinutes: 6,
     exercises: [
-      scaleExercise('scales-major-open-c', 'C', 'ionian', 'open', 60, 4),
-      scaleExercise('scales-major-open-g', 'G', 'ionian', 'open', 60, 4),
-      scaleExercise('scales-major-open-f', 'F', 'ionian', 'open', 60, 4),
+      scaleExercise('scales-major-open-c', 'C', 'ionian', 'open', 60, 2),
+      scaleExercise('scales-major-open-g', 'G', 'ionian', 'open', 60, 2),
+      scaleExercise('scales-major-open-f', 'F', 'ionian', 'open', 60, 2),
     ],
   },
   {
@@ -83,11 +83,11 @@ export const LESSONS: readonly Lesson[] = [
     area: 'scales',
     level: 1,
     prerequisites: ['scales-major-open'],
-    estimatedMinutes: 12,
+    estimatedMinutes: 6,
     exercises: [
-      scaleExercise('scales-major-middle-bb', 'Bb', 'ionian', 'middle', 60, 4),
-      scaleExercise('scales-major-middle-eb', 'Eb', 'ionian', 'middle', 60, 4),
-      scaleExercise('scales-major-middle-c', 'C', 'ionian', 'middle', 60, 4),
+      scaleExercise('scales-major-middle-bb', 'Bb', 'ionian', 'middle', 60, 2),
+      scaleExercise('scales-major-middle-eb', 'Eb', 'ionian', 'middle', 60, 2),
+      scaleExercise('scales-major-middle-c', 'C', 'ionian', 'middle', 60, 2),
     ],
   },
   {

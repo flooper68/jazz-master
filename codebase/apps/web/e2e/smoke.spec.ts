@@ -63,6 +63,33 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
   await expect(page.getByText('1 day', { exact: true })).toBeVisible()
 })
 
+test('runner Play starts timing before Next opens grading', async ({ page }) => {
+  await page.goto('/app/practice')
+  await skipOnboarding(page)
+  await page
+    .getByRole('button', { name: /^Start planned lesson / })
+    .first()
+    .click()
+
+  await expect(page.getByText('2:00')).toBeVisible()
+  await page.waitForTimeout(1_500)
+  await expect(page.getByText('2:00')).toBeVisible()
+
+  await page.getByRole('button', { name: /^Play play-along for / }).click()
+  await expect(
+    page.getByRole('button', { name: /^Stop play-along for / }),
+  ).toBeVisible({ timeout: 30_000 })
+  await expect(
+    page.getByRole('button', { name: /^End playthrough and grade / }),
+  ).toBeEnabled()
+  await expect(page.getByText(/1:\d\d/)).toBeVisible()
+
+  await page.getByRole('button', { name: /^End playthrough and grade / }).click()
+  const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
+  await expect(gradeDialog).toBeVisible()
+  await expect(gradeDialog.getByRole('button', { name: 'Got it' })).toBeFocused()
+})
+
 test('persistence: profile, plan, and session records survive a reload mid-flow', async ({
   page,
 }) => {
@@ -78,7 +105,11 @@ test('persistence: profile, plan, and session records survive a reload mid-flow'
   await startPlanned.click()
 
   // One graded exercise is enough — the runner upserts the session per grade.
-  await page.getByRole('button', { name: 'Got it' }).click()
+  await page.getByRole('button', { name: /^Begin / }).click()
+  await page.getByRole('button', { name: /^End playthrough and grade / }).click()
+  const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
+  await expect(gradeDialog).toBeVisible()
+  await gradeDialog.getByRole('button', { name: 'Got it' }).click()
   await page.reload()
 
   // Profile persisted: the onboarding gate stays open.
