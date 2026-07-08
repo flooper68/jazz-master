@@ -2,7 +2,7 @@
 id: TASK-051
 title: Hide unfinished placeholder pages from the app shell
 epic: EPIC-001
-status: backlog
+status: done
 depends_on: []
 source: NOTE-011
 created: 2026-07-08
@@ -40,13 +40,13 @@ not abandoning those roadmap areas.
 
 ## Acceptance criteria
 
-- [ ] Primary navigation removes unfinished placeholder modules
-- [ ] Tests assert the current navigation set
-- [ ] Direct visits to hidden unfinished routes behave deliberately (redirect,
+- [x] Primary navigation removes unfinished placeholder modules
+- [x] Tests assert the current navigation set
+- [x] Direct visits to hidden unfinished routes behave deliberately (redirect,
       not found, or a minimal hidden-state decision documented in the task log)
-- [ ] Generated TanStack route tree is current if route files change
-- [ ] `bun run --cwd codebase check` passes
-- [ ] `bun run --cwd codebase check:e2e` passes
+- [x] Generated TanStack route tree is current if route files change
+- [x] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check:e2e` passes
 
 ## Verification
 
@@ -54,3 +54,25 @@ not abandoning those roadmap areas.
 - `bun run --cwd codebase check:e2e`
 - Manual browser pass: inspect app nav at desktop and phone width and verify no
   empty pages are exposed.
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+
+Plan: remove unfinished module links from primary navigation, delete their
+TanStack route/page stubs so direct visits intentionally render the existing
+not-found view, update router/layout tests to pin the current usable nav set,
+and run `check`, `check:e2e`, plus desktop and phone-width browser nav checks.
+
+### 2026-07-08 - done
+
+Primary nav now exposes only Dashboard, Practice, History, and Profile. Removed
+the unfinished voicings, progressions, repertoire, and ear-training route/page
+stubs, so direct visits intentionally render the existing not-found view. Added
+router tests for the current nav set and hidden-route behavior; updated layout
+regression tests to use `/practice`. Independent review found no issues.
+Verification: focused router/layout tests passed (21 tests), `bun run --cwd
+codebase check` passed, `bun run --cwd codebase check:e2e` passed after
+escalating past sandbox port binding, and a headless browser pass confirmed the
+same four nav links at 1280x720 and 375x812 with no hidden labels and no
+horizontal overflow.

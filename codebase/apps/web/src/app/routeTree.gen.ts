@@ -9,30 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VoicingsRouteImport } from './routes/voicings'
-import { Route as RepertoireRouteImport } from './routes/repertoire'
-import { Route as ProgressionsRouteImport } from './routes/progressions'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as EarTrainingRouteImport } from './routes/ear-training'
 import { Route as IndexRouteImport } from './routes/index'
 
-const VoicingsRoute = VoicingsRouteImport.update({
-  id: '/voicings',
-  path: '/voicings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RepertoireRoute = RepertoireRouteImport.update({
-  id: '/repertoire',
-  path: '/repertoire',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgressionsRoute = ProgressionsRouteImport.update({
-  id: '/progressions',
-  path: '/progressions',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -48,11 +29,6 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EarTrainingRoute = EarTrainingRouteImport.update({
-  id: '/ear-training',
-  path: '/ear-training',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -61,102 +37,40 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/ear-training': typeof EarTrainingRoute
   '/history': typeof HistoryRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
-  '/progressions': typeof ProgressionsRoute
-  '/repertoire': typeof RepertoireRoute
-  '/voicings': typeof VoicingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/ear-training': typeof EarTrainingRoute
   '/history': typeof HistoryRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
-  '/progressions': typeof ProgressionsRoute
-  '/repertoire': typeof RepertoireRoute
-  '/voicings': typeof VoicingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/ear-training': typeof EarTrainingRoute
   '/history': typeof HistoryRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
-  '/progressions': typeof ProgressionsRoute
-  '/repertoire': typeof RepertoireRoute
-  '/voicings': typeof VoicingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/ear-training'
-    | '/history'
-    | '/practice'
-    | '/profile'
-    | '/progressions'
-    | '/repertoire'
-    | '/voicings'
+  fullPaths: '/' | '/history' | '/practice' | '/profile'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/ear-training'
-    | '/history'
-    | '/practice'
-    | '/profile'
-    | '/progressions'
-    | '/repertoire'
-    | '/voicings'
-  id:
-    | '__root__'
-    | '/'
-    | '/ear-training'
-    | '/history'
-    | '/practice'
-    | '/profile'
-    | '/progressions'
-    | '/repertoire'
-    | '/voicings'
+  to: '/' | '/history' | '/practice' | '/profile'
+  id: '__root__' | '/' | '/history' | '/practice' | '/profile'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EarTrainingRoute: typeof EarTrainingRoute
   HistoryRoute: typeof HistoryRoute
   PracticeRoute: typeof PracticeRoute
   ProfileRoute: typeof ProfileRoute
-  ProgressionsRoute: typeof ProgressionsRoute
-  RepertoireRoute: typeof RepertoireRoute
-  VoicingsRoute: typeof VoicingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/voicings': {
-      id: '/voicings'
-      path: '/voicings'
-      fullPath: '/voicings'
-      preLoaderRoute: typeof VoicingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/repertoire': {
-      id: '/repertoire'
-      path: '/repertoire'
-      fullPath: '/repertoire'
-      preLoaderRoute: typeof RepertoireRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/progressions': {
-      id: '/progressions'
-      path: '/progressions'
-      fullPath: '/progressions'
-      preLoaderRoute: typeof ProgressionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -178,13 +92,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ear-training': {
-      id: '/ear-training'
-      path: '/ear-training'
-      fullPath: '/ear-training'
-      preLoaderRoute: typeof EarTrainingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -197,13 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EarTrainingRoute: EarTrainingRoute,
   HistoryRoute: HistoryRoute,
   PracticeRoute: PracticeRoute,
   ProfileRoute: ProfileRoute,
-  ProgressionsRoute: ProgressionsRoute,
-  RepertoireRoute: RepertoireRoute,
-  VoicingsRoute: VoicingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

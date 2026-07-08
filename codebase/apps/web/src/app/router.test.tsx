@@ -15,12 +15,8 @@ function seedProfile() {
 describe('app router', () => {
   it.each([
     ['/', 'Dashboard'],
-    ['/voicings', 'Voicings'],
-    ['/progressions', 'Progressions'],
     ['/practice', 'Practice'],
     ['/history', 'History'],
-    ['/repertoire', 'Repertoire'],
-    ['/ear-training', 'Ear Training'],
     ['/profile', 'Profile'],
   ])('renders the %s page heading', async (path, heading) => {
     seedProfile()
@@ -32,21 +28,53 @@ describe('app router', () => {
 
   it('shows the app title in the persistent layout', async () => {
     seedProfile()
-    await renderRoute('/voicings')
+    await renderRoute('/practice')
     expect(screen.getByText('Jazz Master')).toBeInTheDocument()
+  })
+
+  it('shows only the usable current surfaces in primary navigation', async () => {
+    seedProfile()
+    await renderRoute('/practice')
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    expect(
+      within(nav).getAllByRole('link').map((link) => link.textContent),
+    ).toEqual(['Dashboard', 'Practice', 'History', 'Profile'])
+    expect(
+      within(nav).queryByRole('link', { name: 'Voicings' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(nav).queryByRole('link', { name: 'Progressions' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(nav).queryByRole('link', { name: 'Repertoire' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(nav).queryByRole('link', { name: 'Ear Training' }),
+    ).not.toBeInTheDocument()
   })
 
   it('marks only the current page link as active', async () => {
     seedProfile()
-    await renderRoute('/voicings')
+    await renderRoute('/practice')
     const nav = screen.getByRole('navigation', { name: 'Main' })
     expect(nav).toContainElement(
-      screen.getByRole('link', { name: 'Voicings', current: 'page' }),
+      screen.getByRole('link', { name: 'Practice', current: 'page' }),
     )
     expect(
       screen.queryByRole('link', { name: 'Dashboard', current: 'page' }),
     ).not.toBeInTheDocument()
   })
+
+  it.each(['/voicings', '/progressions', '/repertoire', '/ear-training'])(
+    'renders not found for hidden unfinished route %s',
+    async (path) => {
+      seedProfile()
+      await renderRoute(path)
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Page not found' }),
+      ).toBeInTheDocument()
+    },
+  )
 
   it('renders a not-found page for unknown paths', async () => {
     seedProfile()
@@ -60,9 +88,9 @@ describe('app router', () => {
     const user = userEvent.setup()
     seedProfile()
     await renderRoute('/')
-    await user.click(screen.getByRole('link', { name: 'Repertoire' }))
+    await user.click(screen.getByRole('link', { name: 'History' }))
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Repertoire' }),
+      await screen.findByRole('heading', { level: 1, name: 'History' }),
     ).toBeInTheDocument()
   })
 

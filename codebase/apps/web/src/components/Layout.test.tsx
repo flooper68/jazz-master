@@ -15,18 +15,18 @@ beforeEach(() => {
 // possible overflow; real viewport checks stay in manual/browser QA.
 describe('Layout responsive shell (ISSUE-001)', () => {
   it('lets the main area shrink inside the flex row', async () => {
-    await renderRoute('/voicings')
+    await renderRoute('/practice')
     expect(screen.getByRole('main')).toHaveClass('min-w-0', 'flex-1')
   })
 
   it('stacks the shell vertically below md and side-by-side from md up', async () => {
-    await renderRoute('/voicings')
+    await renderRoute('/practice')
     const shell = screen.getByRole('main').parentElement
     expect(shell).toHaveClass('flex-col', 'md:flex-row')
   })
 
   it('gives the sidebar its fixed width only from md up', async () => {
-    await renderRoute('/voicings')
+    await renderRoute('/practice')
     const sidebar = screen.getByRole('complementary')
     expect(sidebar).toHaveClass('md:w-56')
     expect(sidebar).not.toHaveClass('w-56')

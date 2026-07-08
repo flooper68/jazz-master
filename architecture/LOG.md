@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 - unfinished placeholder app routes hidden (TASK-051)
+
+The SPA primary nav now exposes only usable surfaces: Dashboard, Practice,
+History, and Profile. Placeholder routes for voicings, progressions,
+repertoire, and ear training were removed from the TanStack file route tree, so
+direct visits intentionally hit the existing not-found page until those modules
+have real workflows.
+
 ## 2026-07-08 — synthesized take scoring engine added (TASK-042)
 
 Added `apps/web/src/scoring/` as a pure app-local scoring layer rather than a
