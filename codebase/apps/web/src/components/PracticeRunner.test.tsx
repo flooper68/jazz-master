@@ -321,11 +321,10 @@ describe('PracticeRunner', () => {
     const user = userEvent.setup()
     renderRunner()
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Open focus mode for C major — open position score',
-      }),
-    )
+    const openFocusButton = screen.getByRole('button', {
+      name: 'Open focus mode for C major — open position score',
+    })
+    await user.click(openFocusButton)
 
     const dialog = screen.getByRole('dialog', {
       name: 'C major — open position score focus mode',
@@ -360,6 +359,7 @@ describe('PracticeRunner', () => {
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
+    expect(openFocusButton).toHaveFocus()
   })
 
   it('does not expose grade choices before the playthrough ends', async () => {

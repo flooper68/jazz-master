@@ -203,6 +203,8 @@ function ExercisePanel({
     recordingReducer,
     initialRecordingState,
   )
+  const scoreFocusButtonRef = useRef<HTMLButtonElement>(null)
+  const restoreScoreFocusRef = useRef(false)
   const engineRef = useRef<PlayAlongEngine | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const captureAudioContextRef = useRef<AudioContext | null>(null)
@@ -368,9 +370,22 @@ function ExercisePanel({
     saveNotationDisplayMode(mode)
   }
 
+  function openScoreFocus(): void {
+    restoreScoreFocusRef.current = false
+    setScoreFocusOpen(true)
+  }
+
   const closeScoreFocus = useCallback(() => {
+    restoreScoreFocusRef.current = true
     setScoreFocusOpen(false)
   }, [])
+
+  useEffect(() => {
+    if (!scoreFocusOpen && restoreScoreFocusRef.current) {
+      restoreScoreFocusRef.current = false
+      scoreFocusButtonRef.current?.focus()
+    }
+  }, [scoreFocusOpen])
 
   function clearRecordingTimeouts(): void {
     for (const timeoutId of recordingTimeoutsRef.current) {
@@ -720,8 +735,9 @@ function ExercisePanel({
               onChange={updateNotationDisplayMode}
             />
             <button
+              ref={scoreFocusButtonRef}
               type="button"
-              onClick={() => setScoreFocusOpen(true)}
+              onClick={openScoreFocus}
               aria-label={`Open focus mode for ${exercise.title} score`}
               className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
             >
