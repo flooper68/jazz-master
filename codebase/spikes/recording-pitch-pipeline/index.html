@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recording pitch pipeline spike</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #111111;
+        color: #f5f5f4;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        line-height: 1.1;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+      }
+
+      p {
+        max-width: 76ch;
+        color: #d6d3d1;
+      }
+
+      button {
+        border: 1px solid #57534e;
+        border-radius: 6px;
+        background: #292524;
+        color: #fafaf9;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 650;
+        padding: 10px 14px;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      button.primary {
+        border-color: #f59e0b;
+        background: #f59e0b;
+        color: #1c1917;
+      }
+
+      button.danger {
+        border-color: #ef4444;
+        background: #7f1d1d;
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #44403c;
+        border-radius: 6px;
+        background: #1c1917;
+        color: #fafaf9;
+      }
+
+      textarea {
+        min-height: 160px;
+        padding: 12px;
+        font: 0.9rem ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      pre {
+        overflow: auto;
+        padding: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #44403c;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: #a8a29e;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+      }
+
+      .panel {
+        border: 1px solid #44403c;
+        border-radius: 8px;
+        background: #1c1917;
+        margin-top: 24px;
+        padding: 18px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .status {
+        min-height: 24px;
+        color: #fbbf24;
+        font-weight: 650;
+      }
+
+      .count {
+        display: inline-grid;
+        width: 72px;
+        height: 72px;
+        place-items: center;
+        border: 1px solid #57534e;
+        border-radius: 50%;
+        font-size: 2rem;
+        font-weight: 800;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .metric {
+        border: 1px solid #44403c;
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      .metric span {
+        display: block;
+        color: #a8a29e;
+        font-size: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Recording pitch pipeline spike</h1>
+      <p>
+        Quarantined TASK-040 harness. Record a single-note C major scale at 80 BPM:
+        C D E F G A B C, one quarter note per beat. The page keeps audio in memory,
+        decodes the take locally, and exports only the detected events and metrics.
+      </p>
+
+      <section class="panel">
+        <h2>Capture</h2>
+        <p>
+          Click record, wait through the visual four-beat count-in, then play the
+          scale. Use laptop mic or an interface. The page requests raw-ish mic
+          capture with echo cancellation, noise suppression, and auto gain off.
+        </p>
+        <div class="controls">
+          <button class="primary" id="recordButton" type="button">Record take</button>
+          <button class="danger" id="stopButton" type="button" disabled>Stop and analyze</button>
+          <button id="resetButton" type="button">Reset page</button>
+        </div>
+        <p class="status" id="status" aria-live="polite">Ready.</p>
+        <div class="count" id="count">-</div>
+      </section>
+
+      <section class="panel">
+        <h2>Results</h2>
+        <div class="grid" id="summary"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Expected</th>
+              <th>Detected</th>
+              <th>Onset delta</th>
+              <th>Verdict</th>
+              <th>Clarity</th>
+            </tr>
+          </thead>
+          <tbody id="events"></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Task log export</h2>
+        <p>
+          After at least three takes, copy this markdown table into TASK-040's Log and
+          add the go/no-go conclusion for TASK-042.
+        </p>
+        <div class="controls">
+          <button id="copyMarkdownButton" type="button">Copy markdown</button>
+          <button id="downloadJsonButton" type="button">Download JSON</button>
+        </div>
+        <textarea id="markdown" readonly></textarea>
+      </section>
+
+      <section class="panel">
+        <h2>Raw detected events</h2>
+        <pre id="raw">[]</pre>
+      </section>
+    </main>
+
+    <script type="module">
+      import { DEFAULT_EXERCISE, analyzeTake, mixToMono, resultsToMarkdown } from './analyzer.mjs'
+
+      const recordButton = document.querySelector('#recordButton')
+      const stopButton = document.querySelector('#stopButton')
+      const resetButton = document.querySelector('#resetButton')
+      const copyMarkdownButton = document.querySelector('#copyMarkdownButton')
+      const downloadJsonButton = document.querySelector('#downloadJsonButton')
+      const statusElement = document.querySelector('#status')
+      const countElement = document.querySelector('#count')
+      const summaryElement = document.querySelector('#summary')
+      const eventsElement = document.querySelector('#events')
+      const markdownElement = document.querySelector('#markdown')
+      const rawElement = document.querySelector('#raw')
+
+      let stream = null
+      let recorder = null
+      let chunks = []
+      let results = []
+      let recordingStartedAt = 0
+
+      recordButton.addEventListener('click', startRecording)
+      stopButton.addEventListener('click', stopAndAnalyze)
+      resetButton.addEventListener('click', () => window.location.reload())
+      copyMarkdownButton.addEventListener('click', () => navigator.clipboard.writeText(markdownElement.value))
+      downloadJsonButton.addEventListener('click', downloadJson)
+
+      async function startRecording() {
+        recordButton.disabled = true
+        setStatus('Requesting microphone access...')
+        try {
+          chunks = []
+          stream ??= await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+              channelCount: 1,
+            },
+          })
+          const mimeType = pickMimeType()
+          recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+          recorder.addEventListener('dataavailable', (event) => {
+            if (event.data.size > 0) chunks.push(event.data)
+          })
+
+          await visualCountIn()
+          recordingStartedAt = performance.now()
+          recorder.start()
+          stopButton.disabled = false
+          setStatus('Recording. Play C D E F G A B C as quarter notes at 80 BPM.')
+        } catch (error) {
+          recordButton.disabled = false
+          setStatus(error instanceof Error ? error.message : 'Recording could not start.')
+        }
+      }
+
+      async function stopAndAnalyze() {
+        if (!recorder || recorder.state === 'inactive') return
+        stopButton.disabled = true
+        setStatus('Stopping recorder...')
+        const stopped = new Promise((resolve) => recorder.addEventListener('stop', resolve, { once: true }))
+        recorder.stop()
+        await stopped
+        setStatus('Decoding and analyzing take...')
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+        const audioContext = new AudioContext()
+        const audioBuffer = await audioContext.decodeAudioData(await blob.arrayBuffer())
+        const samples = mixToMono(audioBuffer)
+        const result = analyzeTake({ samples, sampleRate: audioBuffer.sampleRate, exercise: DEFAULT_EXERCISE })
+        result.recordedAt = new Date().toISOString()
+        result.capture = {
+          mimeType: recorder.mimeType,
+          elapsedSeconds: (performance.now() - recordingStartedAt) / 1000,
+        }
+        results.push(result)
+        await audioContext.close()
+        renderResult(result)
+        renderExports()
+        recordButton.disabled = false
+        setStatus(`Analyzed take ${results.length}. Record ${Math.max(0, 3 - results.length)} more for TASK-040.`)
+      }
+
+      async function visualCountIn() {
+        for (let beat = 4; beat >= 1; beat -= 1) {
+          countElement.textContent = String(beat)
+          setStatus(`Count-in: ${beat}`)
+          await delay(60_000 / DEFAULT_EXERCISE.tempoBpm)
+        }
+        countElement.textContent = 'Go'
+        await delay(120)
+      }
+
+      function renderResult(result) {
+        const { summary } = result
+        summaryElement.innerHTML = ''
+        addMetric('Pitch-class accuracy', `${Math.round(summary.pitchClassAccuracy * 100)}%`)
+        addMetric('Octave errors', `${summary.octaveErrorCount}/${summary.expectedCount}`)
+        addMetric('Mean onset deviation', formatMilliseconds(summary.meanAbsOnsetMs))
+        addMetric('Median onset deviation', formatMilliseconds(summary.medianAbsOnsetMs))
+        addMetric('Max onset deviation', formatMilliseconds(summary.maxAbsOnsetMs))
+        addMetric('Detected notes', `${summary.detectedCount}/${summary.expectedCount}`)
+
+        eventsElement.innerHTML = ''
+        result.matched.forEach((match) => {
+          const row = document.createElement('tr')
+          appendCell(row, match.expected.label)
+          appendCell(row, match.detected?.note ?? 'missed')
+          appendCell(row, formatSignedMilliseconds(match.onsetDeviationMs))
+          appendCell(row, match.verdict)
+          appendCell(row, match.detected ? match.detected.clarity.toFixed(2) : 'n/a')
+          eventsElement.append(row)
+        })
+
+        rawElement.textContent = JSON.stringify(result.detected, null, 2)
+      }
+
+      function renderExports() {
+        markdownElement.value = resultsToMarkdown(results)
+      }
+
+      function addMetric(label, value) {
+        const metric = document.createElement('div')
+        metric.className = 'metric'
+        const labelElement = document.createElement('span')
+        labelElement.textContent = label
+        metric.append(labelElement, document.createTextNode(value))
+        summaryElement.append(metric)
+      }
+
+      function appendCell(row, value) {
+        const cell = document.createElement('td')
+        cell.textContent = value
+        row.append(cell)
+      }
+
+      function downloadJson() {
+        const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'recording-pitch-pipeline-results.json'
+        link.click()
+        URL.revokeObjectURL(url)
+      }
+
+      function pickMimeType() {
+        const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? ''
+      }
+
+      function setStatus(message) {
+        statusElement.textContent = message
+      }
+
+      function delay(milliseconds) {
+        return new Promise((resolve) => setTimeout(resolve, milliseconds))
+      }
+
+      function formatMilliseconds(value) {
+        return value === null ? 'n/a' : `${Math.round(value)} ms`
+      }
+
+      function formatSignedMilliseconds(value) {
+        if (value === null) return 'n/a'
+        const rounded = Math.round(value)
+        return `${rounded > 0 ? '+' : ''}${rounded} ms`
+      }
+    </script>
+  </body>
+</html>

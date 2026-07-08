@@ -2,7 +2,8 @@
 id: TASK-040
 title: Throwaway spike — record a take and extract pitches/onsets from real guitar
 epic: EPIC-010
-status: backlog
+status: blocked
+blocked_reason: owner must record at least 3 real-guitar takes with the spike harness before detection quality and the TASK-042 go/no-go conclusion can be measured honestly
 depends_on: []
 source: TASK-015
 research: RES-014
@@ -47,3 +48,29 @@ exercise (e.g. one octave of a C major scale at 80 BPM with count-in).
 
 Log contains the measured accuracy table and conclusion; `git grep` shows no
 spike imports from `apps/web/src/app/` product code; `bun run check` still green.
+
+## Log
+
+### 2026-07-08 - claimed (agent)
+
+Plan: build a quarantined browser spike under `codebase/spikes/recording-pitch-pipeline/`
+with explicit mic permission, MediaRecorder capture, offline PCM decode, YIN-style
+pitch detection, simple onset extraction, and markdown/JSON export for three
+real-guitar takes. Product code remains untouched; the task cannot be marked done
+until the owner records at least 3 known C major scale takes and the measured
+accuracy table is added here. Security/privacy checklist: mic access is user-gesture
+only, no network or durable storage is introduced, and take data stays in memory
+unless the owner manually downloads JSON.
+
+### 2026-07-08 - blocked on real-guitar takes (agent)
+
+Built the quarantined spike harness and README. Product code is untouched:
+`git grep -n "recording-pitch-pipeline" -- codebase/apps/web/src/app` returned
+no matches. Synthetic verification on generated C-major audio passes with 8/8
+pitch-class accuracy, zero octave errors, and max onset deviation under 20 ms.
+`bun run --cwd codebase check` passed (Wrangler printed sandbox-related log-file
+EPERM warnings but exited 0). Independent review subagent unavailable in this
+environment because the exposed multi-agent tool requires an explicit user
+delegation request, so degraded self-review was used per `processes/code-review.md`.
+Not done: real-guitar capture and the 3-take accuracy table/conclusion still
+require the owner playing guitar through the harness.
