@@ -4,6 +4,17 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-08 — runner recording capture implemented; manual browser verification pending (TASK-041)
+
+The practice runner now has an exercise-local take recorder: Record requests the
+microphone on the user gesture, shows an input level meter, plays a four-beat
+Web Audio count-in at the exercise tempo, captures via MediaRecorder
+(`audio/webm;codecs=opus` with `audio/mp4` fallback), and exposes an in-memory
+replay that is discarded when the exercise unmounts. No audio is persisted or
+uploaded. TASK-041 remains blocked, not done, because desktop Firefox/Safari and
+iOS Safari mic verification requires browsers/devices unavailable in this
+environment.
+
 ## 2026-07-08 — real-guitar scoring spike skipped by accepted risk (NOTE-010)
 
 Owner chose to skip TASK-040's real-guitar feasibility check and assume RES-014's

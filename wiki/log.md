@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-08 — `product/overview` updated for TASK-041: runner capture UI exists (mic permission, input meter, count-in, in-session replay), but completion is blocked on desktop Firefox/Safari and iOS Safari mic verification.
 - 2026-07-08 — `product/overview` updated for NOTE-010: TASK-040's real-guitar scoring spike is abandoned by accepted owner risk, so recording/scoring proceeds from RES-014 defaults.
 - 2026-07-08 — `product/overview` updated for runner play-along controls and per-exercise tempo persistence (TASK-047 done, EPIC-014 complete).
 - 2026-07-07 — `product/overview` built-today section updated for the notation bundle trim (TASK-039 done, EPIC-009 closed): the lazy VexFlow chunk is 389 KB gzip via `vexflow/bravura`.

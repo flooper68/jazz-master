@@ -1,7 +1,19 @@
 import { noteName } from '@jazz-master/theory'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { PlayAlongEngine } from '../audio'
+import {
+  RECORDING_COUNT_IN_BEATS,
+  createInputLevelMeter,
+  getCountInDurationMs,
+  getRecordingAudioConstraints,
+  getRecordingMimeType,
+  initialRecordingState,
+  isPermissionDeniedError,
+  recordingReducer,
+  scheduleCountInClicks,
+  type RecordedTake,
+} from '../audio/recording'
 import { deriveRhythm, resolveExercise, type Exercise, type Lesson } from '../content'
 import {
   MIN_PLAY_ALONG_TEMPO_BPM,
@@ -28,6 +40,7 @@ type PlaybackStatus = 'idle' | 'loading' | 'playing'
 type WindowWithWebkitAudio = Window &
   typeof globalThis & {
     webkitAudioContext?: typeof AudioContext
+    MediaRecorder?: typeof MediaRecorder
   }
 
 interface PracticeRunnerProps {
@@ -149,8 +162,20 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
   const [clickEnabled, setClickEnabled] = useState(true)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
   const [playbackError, setPlaybackError] = useState<string | null>(null)
+  const [recordingState, dispatchRecording] = useReducer(
+    recordingReducer,
+    initialRecordingState,
+  )
   const engineRef = useRef<PlayAlongEngine | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const captureAudioContextRef = useRef<AudioContext | null>(null)
+  const micStreamRef = useRef<MediaStream | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const levelMeterRef = useRef<{ stop: () => void } | null>(null)
+  const recordingChunksRef = useRef<Blob[]>([])
+  const recordingStartedAtRef = useRef<number | null>(null)
+  const recordingTimeoutsRef = useRef<number[]>([])
+  const takeUrlRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
   const tempoMax = Math.max(
     MIN_PLAY_ALONG_TEMPO_BPM,
@@ -178,6 +203,7 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
       engineRef.current = null
       void audioContextRef.current?.close()
       audioContextRef.current = null
+      cleanupCapture({ revokeTake: true })
     }
   }, [])
 
@@ -235,6 +261,207 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
   function updateClick(event: ChangeEvent<HTMLInputElement>): void {
     setClickEnabled(event.currentTarget.checked)
     if (playbackStatus === 'playing') stopPlayback()
+  }
+
+  function clearRecordingTimeouts(): void {
+    for (const timeoutId of recordingTimeoutsRef.current) {
+      window.clearTimeout(timeoutId)
+    }
+    recordingTimeoutsRef.current = []
+  }
+
+  function cleanupCapture({ revokeTake }: { revokeTake: boolean }): void {
+    clearRecordingTimeouts()
+    if (recorderRef.current?.state === 'recording') {
+      recorderRef.current.stop()
+    }
+    recorderRef.current = null
+    levelMeterRef.current?.stop()
+    levelMeterRef.current = null
+    micStreamRef.current?.getTracks().forEach((track) => track.stop())
+    micStreamRef.current = null
+    void captureAudioContextRef.current?.close()
+    captureAudioContextRef.current = null
+    recordingStartedAtRef.current = null
+    recordingChunksRef.current = []
+    if (revokeTake && takeUrlRef.current) {
+      URL.revokeObjectURL(takeUrlRef.current)
+      takeUrlRef.current = null
+    }
+  }
+
+  function resetTake(): void {
+    cleanupCapture({ revokeTake: true })
+    dispatchRecording({ type: 'reset' })
+  }
+
+  function failCapture(message: string): void {
+    cleanupCapture({ revokeTake: true })
+    if (mountedRef.current) {
+      dispatchRecording({ type: 'failed', message })
+    }
+  }
+
+  async function startCapture(): Promise<void> {
+    if (
+      recordingState.status === 'requesting-permission' ||
+      recordingState.status === 'counting-in'
+    ) {
+      return
+    }
+    if (recordingState.status === 'recording') {
+      recorderRef.current?.stop()
+      return
+    }
+
+    stopPlayback()
+    cleanupCapture({ revokeTake: true })
+    dispatchRecording({ type: 'request-permission' })
+
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      dispatchRecording({
+        type: 'unsupported',
+        message: 'Recording is not available in this browser.',
+      })
+      return
+    }
+    const constructors = window as WindowWithWebkitAudio
+    if (!constructors.MediaRecorder) {
+      dispatchRecording({
+        type: 'unsupported',
+        message: 'Recording is not available in this browser.',
+      })
+      return
+    }
+
+    try {
+      const audioContext = createUserGestureAudioContext()
+      if (!audioContext) {
+        throw new Error('Web Audio is not available in this browser.')
+      }
+      captureAudioContextRef.current = audioContext
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume()
+      }
+      const stream = await navigator.mediaDevices.getUserMedia(
+        getRecordingAudioConstraints(),
+      )
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+      micStreamRef.current = stream
+      if (!mountedRef.current) return
+      levelMeterRef.current = createInputLevelMeter(audioContext, stream, (level) => {
+        dispatchRecording({ type: 'level-changed', level })
+      })
+      dispatchRecording({ type: 'count-in-started' })
+      const takeStartTime = scheduleCountInClicks(
+        audioContext,
+        tempoBpm,
+        RECORDING_COUNT_IN_BEATS,
+      )
+      const beatMs = getCountInDurationMs(tempoBpm, 1)
+      for (let beat = 2; beat <= RECORDING_COUNT_IN_BEATS; beat += 1) {
+        recordingTimeoutsRef.current.push(
+          window.setTimeout(() => {
+            dispatchRecording({ type: 'count-in-beat', beat })
+          }, (beat - 1) * beatMs),
+        )
+      }
+      const takeStartDelayMs = Math.max(
+        (takeStartTime - audioContext.currentTime) * 1000,
+        0,
+      )
+      recordingTimeoutsRef.current.push(
+        window.setTimeout(() => {
+          try {
+            beginMediaRecording(stream, constructors.MediaRecorder!, audioContext)
+          } catch (error) {
+            failCapture(
+              error instanceof Error
+                ? error.message
+                : 'Recording could not start.',
+            )
+          }
+        }, takeStartDelayMs),
+      )
+    } catch (error) {
+      cleanupCapture({ revokeTake: true })
+      dispatchRecording(
+        isPermissionDeniedError(error)
+          ? {
+              type: 'permission-denied',
+              message:
+                'Microphone access was blocked. Allow it in your browser settings and try again.',
+            }
+          : {
+              type: 'failed',
+              message:
+                error instanceof Error
+                  ? error.message
+                  : 'Recording could not start.',
+            },
+      )
+    }
+  }
+
+  function beginMediaRecording(
+    stream: MediaStream,
+    MediaRecorderConstructor: typeof MediaRecorder,
+    audioContext: AudioContext,
+  ): void {
+    if (!mountedRef.current) return
+    clearRecordingTimeouts()
+    const mimeType = getRecordingMimeType(MediaRecorderConstructor)
+    const recorder = new MediaRecorderConstructor(
+      stream,
+      mimeType ? { mimeType } : undefined,
+    )
+    recordingChunksRef.current = []
+    recorderRef.current = recorder
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) recordingChunksRef.current.push(event.data)
+    }
+    recorder.onerror = () => {
+      recorder.ondataavailable = null
+      recorder.onstop = null
+      failCapture('Recording failed. Check the microphone and try again.')
+    }
+    recorder.onstop = () => {
+      const durationSeconds =
+        recordingStartedAtRef.current === null
+          ? 0
+          : Math.max((performance.now() - recordingStartedAtRef.current) / 1000, 0)
+      levelMeterRef.current?.stop()
+      levelMeterRef.current = null
+      micStreamRef.current?.getTracks().forEach((track) => track.stop())
+      micStreamRef.current = null
+      const blobType =
+        mimeType || recordingChunksRef.current[0]?.type || 'audio/webm'
+      const blob = new Blob(recordingChunksRef.current, { type: blobType })
+      const url = URL.createObjectURL(blob)
+      takeUrlRef.current = url
+      recorderRef.current = null
+      recordingStartedAtRef.current = null
+      recordingChunksRef.current = []
+      if (mountedRef.current) {
+        dispatchRecording({
+          type: 'recorded',
+          take: {
+            url,
+            mimeType: blob.type,
+            durationSeconds,
+            sampleRate: audioContext.sampleRate,
+          },
+        })
+      } else {
+        URL.revokeObjectURL(url)
+      }
+    }
+    recordingStartedAtRef.current = performance.now()
+    recorder.start()
+    dispatchRecording({ type: 'recording-started' })
   }
 
   const playbackButtonLabel =
@@ -317,6 +544,13 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
           </p>
         )}
       </div>
+      <RecordingPanel
+        exerciseTitle={exercise.title}
+        tempoBpm={tempoBpm}
+        state={recordingState}
+        onRecord={() => void startCapture()}
+        onReset={resetTake}
+      />
       {exercise.display.includes('fretboard') && (
         <div className="mt-3">
           <Fretboard
@@ -336,6 +570,131 @@ function ExercisePanel({ exercise }: { exercise: Exercise }) {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+function RecordingPanel({
+  exerciseTitle,
+  tempoBpm,
+  state,
+  onRecord,
+  onReset,
+}: {
+  exerciseTitle: string
+  tempoBpm: number
+  state: typeof initialRecordingState
+  onRecord: () => void
+  onReset: () => void
+}) {
+  const levelPercent = Math.round(state.level * 100)
+  const busy =
+    state.status === 'requesting-permission' || state.status === 'counting-in'
+  const buttonLabel =
+    state.status === 'recording'
+      ? `Stop recording ${exerciseTitle}`
+      : state.status === 'recorded'
+        ? `Record another take for ${exerciseTitle}`
+        : state.status === 'requesting-permission'
+          ? `Requesting microphone for ${exerciseTitle}`
+          : state.status === 'counting-in'
+            ? `Counting in ${exerciseTitle}`
+            : `Record take for ${exerciseTitle}`
+  const buttonText =
+    state.status === 'recording'
+      ? 'Stop'
+      : state.status === 'recorded'
+        ? 'Record again'
+        : state.status === 'requesting-permission'
+          ? 'Allow mic'
+          : state.status === 'counting-in'
+            ? 'Counting in'
+            : 'Record'
+
+  return (
+    <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-zinc-100">Take recorder</p>
+          <p className="mt-1 text-xs text-zinc-400">
+            Uses your microphone only for this exercise. Audio stays on this device and is discarded when you leave it.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRecord}
+          disabled={busy}
+          aria-label={buttonLabel}
+          className="rounded-md border border-emerald-500 bg-emerald-500 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-wait disabled:border-zinc-700 disabled:bg-zinc-700 disabled:text-zinc-300"
+        >
+          {buttonText}
+        </button>
+      </div>
+      {(state.status === 'counting-in' || state.status === 'recording') && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+            <span>
+              {state.status === 'counting-in'
+                ? `Count-in beat ${state.countInBeat ?? 1} of ${RECORDING_COUNT_IN_BEATS}`
+                : `Recording from beat 1 at ${tempoBpm} BPM`}
+            </span>
+            <span>{levelPercent}% input</span>
+          </div>
+          <div
+            role="meter"
+            aria-label="Input level"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={levelPercent}
+            className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+          >
+            <div
+              className="h-full rounded-full bg-emerald-400"
+              style={{ width: `${levelPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+      {state.take && (
+        <RecordedTakePlayer take={state.take} onReset={onReset} />
+      )}
+      {state.error && (
+        <p role="alert" className="mt-3 text-sm text-red-300">
+          {state.error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RecordedTakePlayer({
+  take,
+  onReset,
+}: {
+  take: RecordedTake
+  onReset: () => void
+}) {
+  return (
+    <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
+      <div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+        <span>
+          Take captured · {Math.max(Math.round(take.durationSeconds), 1)}s ·{' '}
+          {Math.round(take.sampleRate / 1000)} kHz
+        </span>
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        >
+          Discard
+        </button>
+      </div>
+      <audio
+        controls
+        src={take.url}
+        aria-label="Recorded take replay"
+        className="mt-2 w-full"
+      />
     </div>
   )
 }

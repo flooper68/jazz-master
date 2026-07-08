@@ -17,7 +17,7 @@ flowchart TD
         pages[apps/web/src/app/pages/ — route-level modules]
         components[apps/web/src/components/ — Fretboard, ChordDiagram, layout]
         content[apps/web/src/content/ — exercise/lesson model + curriculum data]
-        audio[apps/web/src/audio/ — play-along timeline, scheduler, Web Audio sampler seam]
+        audio[apps/web/src/audio/ — play-along + recording capture helpers]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
@@ -27,7 +27,7 @@ flowchart TD
     shell --> pages
     pages --> components
     pages --> content
-    pages -. lazy play-along .-> audio
+    pages -. browser audio .-> audio
     pages --> theory
     components --> theory
     content --> theory
@@ -45,7 +45,7 @@ flowchart TD
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
-| Audio | `codebase/apps/web/src/audio/` | App-local play-along infrastructure. Pure timeline/scheduler helpers are tested without Web Audio; `engine.ts` is the browser-only `smplr` seam that schedules FluidR3_GM guitar samples and synthesizes the metronome click. React imports this layer only lazily from playback controls. |
+| Audio | `codebase/apps/web/src/audio/` | App-local browser-audio infrastructure. Pure timeline/scheduler/recording helpers are tested without Web Audio; `engine.ts` is the browser-only `smplr` seam that schedules FluidR3_GM guitar samples and synthesizes the play-along metronome click. The runner owns browser permission flows and imports playback lazily. |
 | Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
 
 Dependency direction: `app/pages → components → @jazz-master/theory` and `app/pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours and never imports Astro.
@@ -118,6 +118,22 @@ click/count-in are toggles, tempo is capped at the authored exercise BPM, and
 the chosen slow-practice tempo persists per `Exercise.id` through the
 `play-along-tempos` typed store.
 
+## Recording capture (TASK-041)
+
+The runner now has an exercise-local capture flow backed by
+`apps/web/src/audio/recording.ts`. The Record button is the only place that
+requests microphone permission, using music-oriented constraints
+(`echoCancellation`, `noiseSuppression`, and `autoGainControl` requested off,
+with browser noncompliance tolerated per RES-014). Once permission is granted,
+the runner creates/resumes an AudioContext inside the gesture, shows a live RMS
+input meter, schedules a four-beat synthesized count-in at the exercise tempo,
+then starts MediaRecorder on the known beat grid. Capture prefers
+`audio/webm;codecs=opus` and falls back to `audio/mp4` for Safari; the recorded
+Blob becomes an in-memory object URL for replay only. No take audio is persisted
+or uploaded, and the URL plus mic tracks are cleaned up when the user discards
+the take or leaves the exercise. TASK-041 remains blocked pending manual
+desktop Firefox/Safari and iOS Safari mic verification.
+
 ## Current state (2026-07-08)
 
 App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — to the `sessions` store (`apps/web/src/storage/sessions.ts`), upserted after every grade so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011): a local `PracticeProfile` plus `generatePlan` produce a persisted Today's plan with reasons, runner handoff, and completion ticks from session records. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Astro shell landed (TASK-021): Astro 7 serves a barebones landing at `/` and hosts the React app as a client-only island under `/app/*`; React pages moved to `src/app/pages/`; build targets Workers via `@astrojs/cloudflare` (deploy is TASK-024). TanStack Router migration done (TASK-022): react-router removed, file-based routes under `src/app/routes/` with type-safe navigation and the same URLs. tRPC scaffold done (TASK-023): typed `/trpc/health` end to end — `appRouter` under `src/server/trpc/` with Zod boundaries, Astro fetch-adapter endpoint, `@trpc/tanstack-react-query` client on one shared `QueryClient`, health chip rendered in the SPA; jsdom tests exercise the real wire path via `src/test/trpcTestFetch.ts` (fetchRequestHandler in-process). Workers deploy done (TASK-024, 2026-07-07): redesigned twice mid-task by owner grills (ADR-009 + amendment; NOTE-006/007) — deploy tooling, production posture (dev-only health chip, stack-stripped tRPC errors), the workerd preview path, and a binding-free worker all landed, and the app is live on the dev environment at https://jazz-master.premysl-ciompa.workers.dev via **Cloudflare Workers Builds** (check gate in the build command; every push to `main` deploys). Production is off the roadmap (TASK-036 abandoned 2026-07-07, NOTE-008); the dev URL is the product's home.
@@ -125,6 +141,9 @@ App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done 
 EPIC-010 recording/scoring is in progress from a deliberately risk-accepted
 position: RES-014 returned staged-go for monophonic offline-after-take scoring,
 but the owner abandoned TASK-040's real-guitar spike on 2026-07-08 (NOTE-010).
-Capture and scoring work proceeds from RES-014 defaults and synthesized fixtures;
-real-signal quality issues should be handled in TASK-041/TASK-042 follow-up QA
-rather than treated as a current blocker.
+TASK-041's capture implementation is present in the runner and covered by
+component/unit tests, but the task is blocked pending required desktop
+Firefox/Safari and iOS Safari mic verification. Scoring work proceeds next from
+RES-014 defaults and synthesized fixtures; real-signal quality issues should be
+handled in TASK-041/TASK-042 follow-up QA rather than treated as a current
+blocker.

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveExercise, type Lesson } from '../content'
 import { getPlayAlongTempo } from '../storage/playAlongTempos'
 import { sessionsStore } from '../storage/sessions'
@@ -24,6 +24,83 @@ vi.mock('../audio', () => {
   audioMock.moduleLoaded()
   return { createPlayAlongEngine: audioMock.createPlayAlongEngine }
 })
+
+let mediaRecorderInstances: MockMediaRecorder[] = []
+const trackStopMock = vi.fn()
+const getUserMediaMock = vi.fn()
+const createObjectUrlMock = vi.fn()
+const revokeObjectUrlMock = vi.fn()
+const audioContextConstructedMock = vi.fn()
+let mediaRecorderStartError: Error | null = null
+
+class MockMediaRecorder {
+  static isTypeSupported = vi.fn((mimeType: string) =>
+    ['audio/webm;codecs=opus', 'audio/mp4'].includes(mimeType),
+  )
+
+  state: RecordingState = 'inactive'
+  readonly mimeType: string
+  ondataavailable: ((event: BlobEvent) => void) | null = null
+  onstop: (() => void) | null = null
+  onerror: (() => void) | null = null
+
+  constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
+    this.mimeType = options?.mimeType ?? ''
+    mediaRecorderInstances.push(this)
+  }
+
+  start(): void {
+    if (mediaRecorderStartError) throw mediaRecorderStartError
+    this.state = 'recording'
+  }
+
+  stop(): void {
+    if (this.state !== 'recording') return
+    this.state = 'inactive'
+    const data = new Blob(['take'], {
+      type: this.mimeType || 'audio/webm',
+    })
+    this.ondataavailable?.({ data } as BlobEvent)
+    this.onstop?.()
+  }
+}
+
+class MockAudioContext {
+  currentTime = 0
+  sampleRate = 48_000
+  state: AudioContextState = 'running'
+  destination = {}
+
+  constructor() {
+    audioContextConstructedMock()
+  }
+
+  resume = vi.fn().mockResolvedValue(undefined)
+  close = vi.fn().mockResolvedValue(undefined)
+  createMediaStreamSource = vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  }))
+  createAnalyser = vi.fn(() => ({
+    fftSize: 512,
+    getByteTimeDomainData: (data: Uint8Array) => data.fill(160),
+    disconnect: vi.fn(),
+  }))
+  createOscillator = vi.fn(() => ({
+    type: 'sine',
+    frequency: { setValueAtTime: vi.fn() },
+    connect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+  }))
+  createGain = vi.fn(() => ({
+    gain: {
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
+    connect: vi.fn(),
+  }))
+}
 
 const lesson: Lesson = {
   id: 'fixture-lesson',
@@ -54,10 +131,10 @@ const lesson: Lesson = {
   ],
 }
 
-function renderRunner(onExit = vi.fn()) {
+function renderRunner(onExit = vi.fn(), runnerLesson = lesson) {
   render(
     <PracticeRunner
-      lesson={lesson}
+      lesson={runnerLesson}
       sessionId="session-1"
       startedAt={Date.now()}
       onExit={onExit}
@@ -67,6 +144,7 @@ function renderRunner(onExit = vi.fn()) {
 }
 
 beforeEach(() => {
+  vi.useRealTimers()
   localStorage.clear()
   audioMock.moduleLoaded.mockClear()
   audioMock.createPlayAlongEngine.mockClear()
@@ -75,6 +153,52 @@ beforeEach(() => {
   audioMock.engine.setTempoBpm.mockClear()
   audioMock.engine.stop.mockClear()
   audioMock.engine.dispose.mockClear()
+  mediaRecorderInstances = []
+  mediaRecorderStartError = null
+  audioContextConstructedMock.mockClear()
+  trackStopMock.mockClear()
+  getUserMediaMock.mockReset()
+  getUserMediaMock.mockResolvedValue({
+    getTracks: () => [{ stop: trackStopMock }],
+  } as unknown as MediaStream)
+  createObjectUrlMock.mockReset()
+  createObjectUrlMock.mockReturnValue('blob:recorded-take')
+  revokeObjectUrlMock.mockClear()
+  MockMediaRecorder.isTypeSupported.mockClear()
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: { getUserMedia: getUserMediaMock },
+  })
+  Object.defineProperty(window, 'AudioContext', {
+    configurable: true,
+    value: MockAudioContext,
+  })
+  Object.defineProperty(window, 'MediaRecorder', {
+    configurable: true,
+    value: MockMediaRecorder,
+  })
+  Object.defineProperty(window, 'requestAnimationFrame', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(() => 1),
+  })
+  Object.defineProperty(window, 'cancelAnimationFrame', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(),
+  })
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: createObjectUrlMock,
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: revokeObjectUrlMock,
+  })
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('PracticeRunner', () => {
@@ -242,6 +366,120 @@ describe('PracticeRunner', () => {
         }),
       )
     })
+  })
+
+  it('records a take after a metronome count-in and replays it in-session', async () => {
+    const user = userEvent.setup()
+    const fastLesson: Lesson = {
+      ...lesson,
+      exercises: [
+        { ...lesson.exercises[0], tempoBpm: 600 },
+        lesson.exercises[1],
+      ],
+    }
+    renderRunner(vi.fn(), fastLesson)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+
+    expect(getUserMediaMock).toHaveBeenCalledWith({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    })
+    expect(audioContextConstructedMock).toHaveBeenCalled()
+    expect(
+      audioContextConstructedMock.mock.invocationCallOrder[0],
+    ).toBeLessThan(getUserMediaMock.mock.invocationCallOrder[0])
+    expect(await screen.findByText('Count-in beat 1 of 4')).toBeInTheDocument()
+    expect(screen.getByRole('meter', { name: 'Input level' })).toHaveAttribute(
+      'aria-valuenow',
+      '25',
+    )
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Stop recording C major — open position',
+      }),
+    ).toBeInTheDocument()
+    expect(mediaRecorderInstances).toHaveLength(1)
+    expect(mediaRecorderInstances[0].state).toBe('recording')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Stop recording C major — open position',
+      }),
+    )
+
+    expect(await screen.findByLabelText('Recorded take replay')).toHaveAttribute(
+      'src',
+      'blob:recorded-take',
+    )
+    expect(screen.getByText(/Take captured/)).toBeInTheDocument()
+    expect(trackStopMock).toHaveBeenCalled()
+    expect(sessionsStore.get()).toEqual([])
+
+    await user.click(screen.getByRole('button', { name: 'Got it' }))
+
+    expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
+    expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:recorded-take')
+  })
+
+  it('recovers when MediaRecorder cannot start after count-in', async () => {
+    const user = userEvent.setup()
+    mediaRecorderStartError = new Error('Recorder refused to start')
+    const fastLesson: Lesson = {
+      ...lesson,
+      exercises: [
+        { ...lesson.exercises[0], tempoBpm: 600 },
+        lesson.exercises[1],
+      ],
+    }
+    renderRunner(vi.fn(), fastLesson)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Recorder refused to start',
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    ).toBeEnabled()
+    expect(trackStopMock).toHaveBeenCalled()
+  })
+
+  it('shows a recoverable microphone denial state', async () => {
+    const user = userEvent.setup()
+    getUserMediaMock.mockRejectedValueOnce(
+      new DOMException('denied', 'NotAllowedError'),
+    )
+    renderRunner()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Microphone access was blocked',
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'Record take for C major — open position',
+      }),
+    ).toBeEnabled()
   })
 
   it('stops playback when advancing or ending a lesson', async () => {

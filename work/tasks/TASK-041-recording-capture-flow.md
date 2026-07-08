@@ -2,7 +2,8 @@
 id: TASK-041
 title: Recording capture flow in the practice runner
 epic: EPIC-010
-status: backlog
+status: blocked
+blocked_reason: desktop Firefox/Safari and iOS Safari microphone verification requires browsers/devices unavailable in this environment
 depends_on: []
 source: TASK-015
 research: RES-014
@@ -50,12 +51,12 @@ and file issues rather than reviving the spike by default.
 
 ## Acceptance criteria
 
-- [ ] Record button asks for mic permission on first use with a pre-permission explanation; denial produces a friendly recoverable state
-- [ ] Live input level meter while armed/recording
-- [ ] Count-in (metronome clicks at exercise tempo) precedes capture; take timeline starts at a known beat grid
-- [ ] Recorded take is replayable in-session; discarded on leaving the exercise (no persistence)
+- [x] Record button asks for mic permission on first use with a pre-permission explanation; denial produces a friendly recoverable state
+- [x] Live input level meter while armed/recording
+- [x] Count-in (metronome clicks at exercise tempo) precedes capture; take timeline starts at a known beat grid
+- [x] Recorded take is replayable in-session; discarded on leaving the exercise (no persistence)
 - [ ] Works on desktop Chrome/Firefox/Safari and iOS Safari (manual verification)
-- [ ] `bun run check` passes
+- [x] `bun run check` passes
 
 ## Verification
 
@@ -82,3 +83,43 @@ Owner chose to skip TASK-040's real-guitar feasibility check and assume the
 RES-014 pipeline works well enough to proceed (NOTE-010). Removed TASK-040 from
 `depends_on`; this task remains backlog and should carry the accepted risk into
 its implementation plan.
+
+### 2026-07-08 - claimed (agent)
+
+Plan: add an in-runner recording panel for each exercise with explicit
+pre-permission copy, gesture-bound mic request, Web Audio level meter, four-beat
+metronome count-in at the exercise tempo, MediaRecorder capture, and in-memory
+replay URL cleanup on exercise unmount. Keep takes out of storage and network;
+factor browser capture helpers plus the recording state reducer into
+`apps/web/src/audio/recording.ts` for focused unit coverage, then cover the
+runner permission/denial/replay states with Testing Library. Measurable aim:
+baseline = no take can be captured; target = a take can be armed, recorded, and
+replayed from the runner without persisting audio. Security/privacy checklist in
+scope because this requests microphone permission; no new dependencies planned.
+
+### 2026-07-08 - implemented, blocked on manual browser/device verification (agent)
+
+Added the runner take recorder and `apps/web/src/audio/recording.ts`: raw-ish
+`getUserMedia` constraints, Web Audio input-level meter, four-beat synthesized
+count-in, MediaRecorder MIME fallback (`audio/webm;codecs=opus` then
+`audio/mp4`), in-memory replay URL cleanup, and denial/unsupported/error states.
+Automated verification: focused recording + runner tests pass; `bun run --cwd
+codebase check` exits 0 (typecheck, lint, 587 tests, build; existing jsdom
+canvas warnings and Wrangler log-file sandbox warning observed). Security/privacy
+checklist: no new dependencies, no network, no durable audio storage; mic
+permission is tied to the Record button with explanatory copy. Blocker: the
+required desktop Firefox/Safari and iOS Safari manual mic verification cannot be
+performed from this environment, so the cross-browser acceptance criterion is
+left unchecked and the task remains blocked rather than done.
+
+### 2026-07-08 - review fixes (agent)
+
+Independent review found three capture-path issues: MediaRecorder constructor or
+`start()` failures were outside the count-in callback's error handling; recorder
+start used a separate wall-clock duration instead of the scheduled count-in beat
+time; AudioContext creation/resume happened after awaiting `getUserMedia`, which
+is risky for iOS user activation. Fixed all three: create/resume AudioContext
+before the permission await, use `scheduleCountInClicks`' returned beat-zero
+audio time to compute recorder-start delay, and recover recorder-start failures
+with cleanup plus an enabled retry state. Added component tests for AudioContext
+ordering and MediaRecorder start-failure recovery.
