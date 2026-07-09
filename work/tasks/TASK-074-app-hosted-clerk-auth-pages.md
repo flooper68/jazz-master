@@ -2,7 +2,7 @@
 id: TASK-074
 title: Add app-hosted Clerk sign-in and sign-up pages
 epic: EPIC-013
-status: backlog
+status: done
 priority: blocker
 depends_on: [TASK-063]
 source: owner request 2026-07-09
@@ -74,23 +74,23 @@ React/TanStack app still owns only `/app/*`.
 
 ## Acceptance criteria
 
-- [ ] `/sign-in` renders an Astro-owned Clerk `<SignIn />` page
-- [ ] `/sign-up` renders an Astro-owned Clerk `<SignUp />` page
-- [ ] Signed-out `/app/*` requests redirect to app-hosted `/sign-in` and
+- [x] `/sign-in` renders an Astro-owned Clerk `<SignIn />` page
+- [x] `/sign-up` renders an Astro-owned Clerk `<SignUp />` page
+- [x] Signed-out `/app/*` requests redirect to app-hosted `/sign-in` and
       preserve the return destination
-- [ ] Sign-in and sign-up cross-links stay on app-hosted routes rather than
+- [x] Sign-in and sign-up cross-links stay on app-hosted routes rather than
       Account Portal
-- [ ] Successful sign-in and sign-up fall back to `/app` when no explicit return
+- [x] Successful sign-in and sign-up fall back to `/app` when no explicit return
       destination is present
-- [ ] The sign-in page exposes Clerk's password recovery/reset path when
+- [x] The sign-in page exposes Clerk's password recovery/reset path when
       password auth is enabled in the Clerk instance
-- [ ] Clerk-enabled MFA/2FA and required session tasks are handled by Clerk's
+- [x] Clerk-enabled MFA/2FA and required session tasks are handled by Clerk's
       prebuilt UI, including authenticator app/SMS/backup-code prompts when
       those strategies are configured
-- [ ] Required Clerk local and production env vars are documented, including
+- [x] Required Clerk local and production env vars are documented, including
       app-hosted sign-in/sign-up URLs and fallback redirects
-- [ ] Tests cover route protection/redirect selection without calling Clerk
-- [ ] `bun run --cwd codebase check` passes
+- [x] Tests cover route protection/redirect selection without calling Clerk
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -110,6 +110,48 @@ React/TanStack app still owns only `/app/*`.
   shown and completable inside `/sign-in`
 
 ## Log
+
+### 2026-07-09 - done
+
+Added Astro-owned `/sign-in` and `/sign-up` pages using Clerk prebuilt
+components, with local cross-links and `/app` fallback redirects. Replaced the
+signed-out `/app/*` redirect helper with an app-hosted `/sign-in` redirect that
+preserves the requested app path in Clerk's `redirect_url` parameter, and added
+tests for direct app-route redirect selection and query-string preservation
+without calling Clerk. Documented the required app-hosted Clerk URL/fallback env
+vars in `apps/web/README.md`, updated architecture/wiki docs, and corrected the
+current `dbSmoke` documentation to match the restored observability probe.
+
+Review: independent review subagent was not spawned because the available
+subagent tool forbids spawning unless the user explicitly asks for delegation;
+completed the documented degraded self-review instead. Findings fixed before
+ship: README/wiki/architecture `dbSmoke` wording was stale/inconsistent with
+ISSUE-008's restored public observability probe. Security/privacy checklist: no
+concerns; no secrets or private data committed; auth redirects are same-origin
+and use a return path derived from the current request, not user-supplied
+external input.
+
+Verification: focused `bun run --cwd codebase test --
+apps/web/src/server/auth/appRouteAuth.test.ts` passed (18 tests). Final
+`bun run --cwd codebase check` passed (49 test files, 670 tests, build green).
+Wrangler still emits a sandbox EPERM warning when trying to write its log under
+`~/Library/Preferences/.wrangler`, but the build exits 0. Local live Clerk smoke
+steps for rendering `/sign-in`/`/sign-up`, test-mode sign-up/sign-in, password
+recovery, and MFA/session-task prompts were not run because this shell has no
+`PUBLIC_CLERK_PUBLISHABLE_KEY`, no `CLERK_SECRET_KEY`, and no local web `.env`.
+Those flows are delegated to Clerk's prebuilt UI per RES-020 and should be smoke
+checked when owner-provided Clerk development keys are present.
+
+### 2026-07-09 - claimed (agent)
+
+Plan: add Astro-owned `/sign-in` and `/sign-up` pages using Clerk prebuilt
+components; update the existing app-route auth redirect helper so signed-out
+`/app/*` requests target `/sign-in` with the requested app path preserved;
+document the app-hosted Clerk URL and fallback redirect env vars; add focused
+tests around redirect URL selection without calling Clerk. Security/privacy
+review applies because this is auth entry-point work; target verification is
+`bun run --cwd codebase check` plus the task's Clerk smoke steps where local
+owner-provided keys are available.
 
 ### 2026-07-09 - filed and prioritized (agent)
 

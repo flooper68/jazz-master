@@ -1,0 +1,32 @@
+---
+import { SignUp } from '@clerk/astro/components'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { clerkAuthRoutes } from '../server/auth/clerkRoutes'
+---
+
+<BaseLayout title="Sign up - Jazz Master">
+  <main
+    class="flex min-h-screen flex-col items-center justify-center gap-8 bg-zinc-950 px-6 py-12 text-zinc-100"
+  >
+    <div class="text-center">
+      <a
+        href="/"
+        class="font-display text-3xl font-bold tracking-tight text-zinc-100"
+      >
+        Jazz Master
+      </a>
+    </div>
+
+    <SignUp
+      routing="path"
+      path={clerkAuthRoutes.signUp}
+      signInUrl={clerkAuthRoutes.signIn}
+      fallbackRedirectUrl={clerkAuthRoutes.appFallback}
+      appearance={{
+        variables: {
+          colorPrimary: '#18181b',
+        },
+      }}
+    />
+  </main>
+</BaseLayout>

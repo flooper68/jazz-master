@@ -2,6 +2,8 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-09 — `product/overview` updated for TASK-074: app-hosted `/sign-in` and `/sign-up` pages now keep Clerk auth entry, recovery, MFA/2FA, and session tasks inside Jazz Master routes.
+- 2026-07-09 — `product/overview` corrected for ISSUE-008: `dbSmoke` remains as the public deployed database observability probe; only `mockPractice` stayed removed.
 - 2026-07-09 — `product/overview` updated for TASK-066: profile/onboarding now uses protected tRPC plus normalized Clerk/Postgres tables, and dbSmoke/mockPractice scaffolding is no longer current.
 - 2026-07-09 — `product/overview` updated for TASK-065: the server now has a Clerk-keyed `users` anchor and protected `users.ensure` path for future app-data tables.
 - 2026-07-09 — `product/overview` updated for TASK-063: Clerk now protects `/app/*`, the app shell has an account control, and protected tRPC procedures receive Clerk user IDs.

@@ -6,21 +6,14 @@ import {
   redirectSignedOutAppRequest,
   type AppRouteAuthObject,
 } from './appRouteAuth'
+import { clerkRedirectParam } from './clerkRoutes'
 
 function createAuthObject(userId: string | null) {
-  const calls: unknown[] = []
   const authObject = {
     userId,
-    redirectToSignIn(options) {
-      calls.push(options)
-      return new Response(null, {
-        status: 307,
-        headers: { location: '/sign-in' },
-      })
-    },
   } satisfies AppRouteAuthObject
 
-  return { authObject, calls }
+  return authObject
 }
 
 describe('app route auth', () => {
@@ -34,7 +27,7 @@ describe('app route auth', () => {
   })
 
   it('redirects signed-out app requests to Clerk sign-in', () => {
-    const { authObject, calls } = createAuthObject(null)
+    const authObject = createAuthObject(null)
 
     const response = redirectSignedOutAppRequest(
       authObject,
@@ -42,14 +35,29 @@ describe('app route auth', () => {
     )
 
     expect(response?.status).toBe(307)
-    expect(response?.headers.get('location')).toBe('/sign-in')
-    expect(calls).toEqual([
-      { returnBackUrl: 'http://localhost:4321/app/practice' },
-    ])
+    const location = new URL(response?.headers.get('location') ?? '')
+    expect(location.origin).toBe('http://localhost:4321')
+    expect(location.pathname).toBe('/sign-in')
+    expect(location.searchParams.get(clerkRedirectParam)).toBe('/app/practice')
+  })
+
+  it('preserves signed-out app request query strings in the return path', () => {
+    const authObject = createAuthObject(null)
+
+    const response = redirectSignedOutAppRequest(
+      authObject,
+      new URL('https://jazz.example/app/practice?lesson=major-scale'),
+    )
+
+    const location = new URL(response?.headers.get('location') ?? '')
+    expect(location.pathname).toBe('/sign-in')
+    expect(location.searchParams.get(clerkRedirectParam)).toBe(
+      '/app/practice?lesson=major-scale',
+    )
   })
 
   it('allows signed-in app requests', () => {
-    const { authObject, calls } = createAuthObject('user_123')
+    const authObject = createAuthObject('user_123')
 
     expect(
       redirectSignedOutAppRequest(
@@ -57,11 +65,10 @@ describe('app route auth', () => {
         new URL('http://localhost:4321/app'),
       ),
     ).toBeNull()
-    expect(calls).toEqual([])
   })
 
   it('allows public routes without auth', () => {
-    const { authObject, calls } = createAuthObject(null)
+    const authObject = createAuthObject(null)
 
     expect(
       redirectSignedOutAppRequest(
@@ -69,7 +76,6 @@ describe('app route auth', () => {
         new URL('http://localhost:4321/'),
       ),
     ).toBeNull()
-    expect(calls).toEqual([])
   })
 
   it.each([

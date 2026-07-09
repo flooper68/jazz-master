@@ -26,7 +26,9 @@ sources:
   - work/tasks/TASK-061-db-backed-mock-app-data-flow.md
   - work/tasks/TASK-062-adr-server-owned-persistence.md
   - work/tasks/TASK-063-clerk-auth-foundation.md
+  - work/tasks/TASK-074-app-hosted-clerk-auth-pages.md
   - work/tasks/TASK-065-user-database-anchor.md
+  - research/RES-020-clerk-app-hosted-auth-pages.md
   - research/RES-017-local-postgres-drizzle.md
 ---
 
@@ -51,18 +53,21 @@ Each pillar maps to an epic (VIS-001): foundation (EPIC-001), chord voicings (00
 
 ## How it works under the hood
 
-The app is in a persistence migration. Clerk protects `/app/*`, and
-profile/onboarding data now uses protected tRPC plus normalized Postgres tables
-keyed by Clerk user ID. Sessions, planner snapshots, score metadata, and
-preferences still use browser-local typed stores in `apps/web/src/storage/`
-(details: architecture/overview.md). Since TASK-066, `/app/profile` JSON backup
-export/import covers plans, history, and practice settings but no longer carries
-profile data. ADR-012 is the destination: Clerk owns identity, browser code
-talks to typed tRPC procedures, server code owns Drizzle/Postgres access, and
-Postgres becomes the source of truth for long-run app data. Existing local
-browser data is intentionally discarded rather than migrated, and localStorage
-remains only as temporary state until the migration tasks retire it feature by
-feature.
+The app is in a persistence migration. Clerk protects `/app/*`, and signed-out
+app entry lands on Jazz Master's own `/sign-in` page, with `/sign-up` as the
+local account-creation counterpart. Those Astro pages render Clerk's prebuilt
+auth UI, so password recovery, MFA/2FA, and required session tasks remain Clerk
+configured rather than custom app code. Profile/onboarding data now uses
+protected tRPC plus normalized Postgres tables keyed by Clerk user ID. Sessions,
+planner snapshots, score metadata, and preferences still use browser-local
+typed stores in `apps/web/src/storage/` (details: architecture/overview.md).
+Since TASK-066, `/app/profile` JSON backup export/import covers plans, history,
+and practice settings but no longer carries profile data. ADR-012 is the
+destination: Clerk owns identity, browser code talks to typed tRPC procedures,
+server code owns Drizzle/Postgres access, and Postgres becomes the source of
+truth for long-run app data. Existing local browser data is intentionally
+discarded rather than migrated, and localStorage remains only as temporary state
+until the migration tasks retire it feature by feature.
 
 Domain logic — notes, intervals, chord spelling, scales, arpeggios, fretboard
 positions, with enharmonics correct by construction — lives in the pure
@@ -75,8 +80,9 @@ shipped as TASK-021): Astro serves a barebones landing page at `/` and hosts the
 whole React practice app as a client-only SPA island under `/app/*` — so every
 product route above now carries the `/app` prefix (`/app/practice`,
 `/app/history`, …). The build targets Cloudflare Workers; Clerk middleware
-protects `/app/*` and the app shell exposes Clerk's account control. A typed
-tRPC API surface now exists (TASK-023/TASK-066): `/trpc/health`, protected
+protects `/app/*`, app-hosted `/sign-in` and `/sign-up` pages own auth entry,
+and the app shell exposes Clerk's account control. A typed tRPC API surface now
+exists (TASK-023/TASK-066): `/trpc/health`, protected
 procedure support via `auth.clerkUserId`, `users.ensure` for the DB-backed
 app-user anchor, and `profile.get`/`profile.save` for profile/onboarding.
 Since TASK-055/TASK-066, server-side Postgres work has Drizzle migration
@@ -86,7 +92,8 @@ migrations run from that `apps/migration` service with Railway-owned
 `DATABASE_URL`, a minimal `users` table keyed directly by Clerk user ID scopes
 app data, and normalized `practice_profiles` / `practice_profile_goal_areas`
 tables store the first real product data slice. The earlier smoke-only
-`dbSmoke` and `mockPractice` scaffolding has been removed.
+`mockPractice` scaffolding has been removed; `dbSmoke` remains as a public
+observability probe for deployed database connectivity.
 Cloudflare Workers Builds does not receive database credentials, and the Worker
 request path does not run migrations. Deployment is CI-only per ADR-009 —
 Cloudflare Workers Builds auto-deploys the dev environment at

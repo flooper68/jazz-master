@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-074 app-hosted Clerk auth pages
+
+Added Astro-owned `/sign-in` and `/sign-up` pages using Clerk's prebuilt
+components. Signed-out `/app/*` requests now redirect to local `/sign-in` with a
+`redirect_url` back to the requested app path, and the auth pages cross-link
+locally with `/app` fallback redirects. Password recovery/reset, MFA/2FA, and
+required session-task handling stay in Clerk's prebuilt UI and Dashboard
+configuration.
+
 ## 2026-07-09 — ISSUE-008 live Worker all-routes 500 fixed forward
 
 Fixed a blocker deployed-runtime incident where every probed live Worker route
