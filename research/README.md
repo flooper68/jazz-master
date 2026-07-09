@@ -31,6 +31,7 @@ collision; numbering resumes at `RES-002`.
 | RES-015 | Sampled-instrument playback for play-along | TASK-045 / ADR-011 |
 | RES-016 | Manual regression testing for agent-run browser passes | `processes/regression-testing.md` |
 | RES-017 | Local PostgreSQL, psql, Drizzle ORM, and migrations | TASK-028 / TASK-055 / TASK-056; TASK-025 abandoned |
+| RES-018 | Railway declarative service configuration | Direct owner research question; no immediate follow-up |
 
 ## File format
 
