@@ -12,6 +12,37 @@ if (!databaseUrl) {
 
 const connectionString = databaseUrl
 
+assertRailwayDatabaseUrlIsNotLoopback(connectionString)
+
+function assertRailwayDatabaseUrlIsNotLoopback(urlString: string): void {
+  if (!process.env.RAILWAY_PROJECT_ID) {
+    return
+  }
+
+  let url: URL
+
+  try {
+    url = new URL(urlString)
+  } catch {
+    return
+  }
+
+  const loopbackHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'])
+
+  if (!loopbackHosts.has(url.hostname) && !url.hostname.startsWith('127.')) {
+    return
+  }
+
+  throw new Error(
+    [
+      `DATABASE_URL points at "${url.hostname}" inside Railway.`,
+      'That is the migration container itself, not the Railway Postgres service.',
+      'Set the migration service DATABASE_URL to a Railway reference variable such as ${{Postgres.DATABASE_URL}},',
+      'replacing "Postgres" with the actual database service name.',
+    ].join(' '),
+  )
+}
+
 function describeError(error: unknown): string {
   if (error instanceof Error) {
     const cause = error.cause ? `\nCause: ${describeError(error.cause)}` : ''

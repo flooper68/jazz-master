@@ -123,3 +123,13 @@ without useful diagnostics. Verification: the script succeeded against local
 Postgres on port 55432 after sandbox escalation for localhost Docker access;
 the rebuilt Docker image also ran the same startup command and applied
 migrations successfully against that database.
+
+### 2026-07-09 — Railway DATABASE_URL guard
+
+Railway logs then showed the migration service using a loopback database host:
+`connect ECONNREFUSED 127.0.0.1:5432`. That means the service variable was set
+to the local development URL; inside Railway, `127.0.0.1` is the migration
+container, not the Railway Postgres service. Added a Railway-only startup guard
+that fails immediately with an actionable message when `DATABASE_URL` points to
+loopback, and updated the setup docs to use a Railway reference variable such as
+`${{Postgres.DATABASE_URL}}` instead.

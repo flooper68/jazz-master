@@ -12,7 +12,8 @@ service:
 - Root directory: `codebase/apps/migration`
 - Builder: Dockerfile, using `codebase/apps/migration/Dockerfile`
 - Start command: leave unset to use the Dockerfile `CMD`, or set `bun run start`
-- Service variable: `DATABASE_URL=<deployment Postgres connection string>`
+- Service variable: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, replacing
+  `Postgres` with the actual Railway Postgres service name
 - Restart policy: `On Failure` is acceptable; `Never` is also fine for a
   deliberate one-shot migration service.
 
@@ -29,6 +30,11 @@ enough for this one-shot service.
 
 Do not put the deployment connection string in the repository, Cloudflare
 Workers Builds, or local shell startup files.
+
+Do not paste the local development URL
+`postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master` into Railway.
+Inside Railway, `127.0.0.1` means the migration container itself, so no
+Postgres server is listening there.
 
 ## Local use
 
