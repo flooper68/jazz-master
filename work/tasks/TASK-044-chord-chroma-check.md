@@ -48,3 +48,12 @@ manual dogfood on real strums recorded via TASK-041's capture flow.
    does anything short of per-note feedback disappoint more than it helps?
 2. The gate re-checks the polyphonic-model landscape — if a credible browser
    model exists by then, should this task be replaced rather than built?
+
+## Log
+
+### 2026-07-09 — paused with epic
+
+Owner paused EPIC-010 so the project can focus on EPIC-013's server-owned
+persistence work. This task remains `gated` and should not be picked until the
+epic is resumed, monophonic scoring has been dogfooded, and the polyphonic model
+landscape is re-checked against RES-014.

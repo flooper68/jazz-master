@@ -2,7 +2,7 @@
 id: EPIC-010
 title: Recording & scoring — record a take, get a score
 vision: VIS-001
-status: in-progress
+status: backlog
 created: 2026-07-05
 ---
 
@@ -48,7 +48,8 @@ A user records a monophonic scale exercise and gets a credible score with per-no
 
 ## Current status
 
-In progress. Feasibility research landed (RES-014): **staged-go** — monophonic
+Paused by owner direction on 2026-07-09 so current focus can stay on EPIC-013's
+server-owned persistence path. Feasibility research landed (RES-014): **staged-go** — monophonic
 single-note-line scoring with offline-after-the-take analysis is credible in the
 browser (MPM/YIN pitch detection, spectral-flux onsets, metronome count-in
 instead of a backing track, score-only persistence); real-time note-by-note
@@ -62,5 +63,8 @@ coverage rather than a task gate. A chroma-based chord "close enough" check
 remains gated behind validated monophonic scoring.
 
 ## Last reviewed
+
+2026-07-09 — Owner paused this epic while EPIC-013 remains the focus. TASK-044
+stays gated, so no recording/scoring work is dependency-ready.
 
 2026-07-08 — NOTE-012 moved human-only browser/device verification to QA/product review; TASK-041 and TASK-042 are done, so TASK-043 is dependency-ready.
