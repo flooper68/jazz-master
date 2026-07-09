@@ -1,6 +1,11 @@
-import { UserButton } from '@clerk/astro/react'
 import { Link, Outlet } from '@tanstack/react-router'
+import { lazy, Suspense } from 'react'
 import type { Ref } from 'react'
+
+const ClerkUserButton = lazy(async () => {
+  const clerk = await import('@clerk/astro/react')
+  return { default: clerk.UserButton }
+})
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -19,6 +24,9 @@ interface LayoutProps {
 }
 
 export function Layout({ mainRef }: LayoutProps) {
+  const usePlaywrightAccountStub =
+    import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-100 md:flex-row">
       <aside className="flex shrink-0 flex-col gap-4 border-b border-zinc-800 px-4 py-4 md:w-56 md:gap-8 md:border-r md:border-b-0 md:py-6">
@@ -54,7 +62,15 @@ export function Layout({ mainRef }: LayoutProps) {
           </ul>
         </nav>
         <div className="mt-auto flex items-center justify-start border-t border-zinc-800 pt-4">
-          <UserButton />
+          {usePlaywrightAccountStub ? (
+            <span className="text-xs font-medium text-zinc-400">
+              Test account
+            </span>
+          ) : (
+            <Suspense fallback={null}>
+              <ClerkUserButton />
+            </Suspense>
+          )}
         </div>
       </aside>
       <main ref={mainRef} tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-10">

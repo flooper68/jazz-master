@@ -1,4 +1,6 @@
 import { expect, test as base, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+import { playwrightTestAuthHeader } from '../src/server/auth/appRouteAuth'
 
 /**
  * Shared test base: every spec automatically asserts that the paths it covered
@@ -9,8 +11,35 @@ import { expect, test as base, type Page } from '@playwright/test'
 // Dev-server noise that is not a product defect. Vite ping failures can appear
 // when the HMR websocket races a page.goto; nothing in the app itself fails.
 const IGNORED_REQUEST_FAILURES = ['net::ERR_ABORTED']
+const SILENT_WAV = createSilentWav()
 
-export const test = base.extend<{ cleanConsole: void }>({
+export const test = base.extend<{
+  cleanConsole: void
+  sampleAudio: void
+  testAuth: void
+}>({
+  testAuth: [
+    async ({ page }, use) => {
+      await page.setExtraHTTPHeaders({
+        [playwrightTestAuthHeader]: `user_e2e_${randomUUID()}`,
+      })
+      await use()
+    },
+    { auto: true },
+  ],
+  sampleAudio: [
+    async ({ page }, use) => {
+      await page.route('https://gleitz.github.io/**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'audio/wav',
+          body: SILENT_WAV,
+        })
+      })
+      await use()
+    },
+    { auto: true },
+  ],
   cleanConsole: [
     async ({ page, baseURL }, use) => {
       const consoleErrors: string[] = []
@@ -72,4 +101,30 @@ export async function gradeThroughLesson(page: Page): Promise<void> {
     await gradeDialog.getByRole('button', { name: 'Got it' }).click()
   }
   await expect(summaryHeading).toBeVisible()
+}
+
+function createSilentWav(): Buffer {
+  const sampleRate = 8_000
+  const durationSeconds = 0.1
+  const channelCount = 1
+  const bitsPerSample = 16
+  const sampleCount = Math.floor(sampleRate * durationSeconds)
+  const dataByteLength = sampleCount * channelCount * (bitsPerSample / 8)
+  const buffer = Buffer.alloc(44 + dataByteLength)
+
+  buffer.write('RIFF', 0)
+  buffer.writeUInt32LE(36 + dataByteLength, 4)
+  buffer.write('WAVE', 8)
+  buffer.write('fmt ', 12)
+  buffer.writeUInt32LE(16, 16)
+  buffer.writeUInt16LE(1, 20)
+  buffer.writeUInt16LE(channelCount, 22)
+  buffer.writeUInt32LE(sampleRate, 24)
+  buffer.writeUInt32LE(sampleRate * channelCount * (bitsPerSample / 8), 28)
+  buffer.writeUInt16LE(channelCount * (bitsPerSample / 8), 32)
+  buffer.writeUInt16LE(bitsPerSample, 34)
+  buffer.write('data', 36)
+  buffer.writeUInt32LE(dataByteLength, 40)
+
+  return buffer
 }

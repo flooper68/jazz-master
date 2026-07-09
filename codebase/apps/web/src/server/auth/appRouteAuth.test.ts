@@ -3,6 +3,8 @@ import {
   createAuthConfigurationUnavailableResponse,
   getAuthRouteMode,
   isProtectedAppPath,
+  playwrightTestAuthHeader,
+  readPlaywrightTestAuthUserId,
   redirectSignedOutAppRequest,
   type AppRouteAuthObject,
 } from './appRouteAuth'
@@ -105,5 +107,46 @@ describe('app route auth', () => {
     await expect(response.text()).resolves.toBe(
       'Authentication is not configured.',
     )
+  })
+
+  it('reads Playwright test auth only when explicitly enabled outside production', () => {
+    const request = new Request('http://localhost:4321/app', {
+      headers: { [playwrightTestAuthHeader]: ' user_e2e ' },
+    })
+
+    expect(
+      readPlaywrightTestAuthUserId(request, {
+        processEnv: { PLAYWRIGHT_TEST_AUTH: '1' },
+        metaEnv: { PROD: false },
+      }),
+    ).toBe('user_e2e')
+  })
+
+  it('ignores Playwright test auth without the test flag', () => {
+    const request = new Request('http://localhost:4321/app', {
+      headers: { [playwrightTestAuthHeader]: 'user_e2e' },
+    })
+
+    expect(
+      readPlaywrightTestAuthUserId(request, {
+        processEnv: {},
+        metaEnv: { PROD: false },
+      }),
+    ).toBeNull()
+  })
+
+  it('disables Playwright test auth in production', () => {
+    const request = new Request('http://localhost:4321/app', {
+      headers: { [playwrightTestAuthHeader]: 'user_e2e' },
+    })
+
+    expect(
+      readPlaywrightTestAuthUserId(request, {
+        processEnv: {
+          PLAYWRIGHT_TEST_AUTH: '1',
+        },
+        metaEnv: { PROD: true },
+      }),
+    ).toBeNull()
   })
 })

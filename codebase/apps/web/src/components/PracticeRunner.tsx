@@ -56,7 +56,7 @@ import type {
 import { Fretboard, type FretboardHighlight } from './Fretboard'
 import { Notation } from './Notation'
 import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
-import { usePracticeRunner } from './usePracticeRunner'
+import { toSessionRecord, usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
 
 const GRADE_LABELS: Record<ExerciseGrade, string> = {
@@ -109,7 +109,7 @@ interface PracticeRunnerProps {
   /** Session identity is owned by the Start handler, not this component. */
   sessionId: string
   startedAt: number
-  onSessionChange: (session: PracticeSession) => void
+  onSessionChange: (session: PracticeSession) => void | Promise<void>
   onExit: () => void
 }
 
@@ -134,7 +134,10 @@ export function PracticeRunner({
     { focusOnMount: true },
   )
 
-  function exitRunner(): void {
+  async function exitRunner(): Promise<void> {
+    if (state.results.length > 0) {
+      await onSessionChange(toSessionRecord(state, Date.now()))
+    }
     setExiting(true)
     onExit()
   }
@@ -172,7 +175,9 @@ export function PracticeRunner({
         </ul>
         <button
           type="button"
-          onClick={exitRunner}
+          onClick={() => {
+            void exitRunner()
+          }}
           className="mt-6 rounded-md bg-amber-500 px-4 py-2 font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
         >
           Done

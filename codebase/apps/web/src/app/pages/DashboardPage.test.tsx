@@ -4,13 +4,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
 import type { PracticeSession } from '../../appData/session'
 import { LESSONS } from '../../content'
-import { toPlanDate } from '../../planner'
-import { saveDailyPlan } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
 import {
   resetTrpcTestData,
   seedTrpcTestProfile,
   seedTrpcTestSessions,
+  setTrpcTestSessionsRepositoryAvailable,
 } from '../../test/trpcTestFetch'
 
 beforeEach(() => {
@@ -55,7 +54,7 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('heading', { name: "Today's plan" }),
     ).toBeInTheDocument()
-    expect(screen.getAllByText(/Starts your/).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText(/Starts your/)).length).toBeGreaterThan(0)
     expect(
       screen.getByRole('button', { name: 'Start practicing' }),
     ).toBeInTheDocument()
@@ -67,6 +66,17 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('link', { name: 'See full practice history →' }),
     ).toBeInTheDocument()
+  })
+
+  it('shows a planner error instead of the empty-plan prompt when sessions are unavailable', async () => {
+    setTrpcTestSessionsRepositoryAvailable(false)
+
+    await renderDashboard()
+
+    expect(
+      await screen.findByText('Planner database is not configured.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/No matching lessons yet/)).not.toBeInTheDocument()
   })
 
   it('computes streak and minutes this week from session history', async () => {
@@ -120,26 +130,18 @@ describe('DashboardPage', () => {
   })
 
   it('marks done plan items and offers Practice again once the plan is complete', async () => {
-    const lesson = LESSONS[0]
-    const date = toPlanDate(new Date())
-    saveDailyPlan({
-      date,
-      totalMinutes: lesson.estimatedMinutes,
-      items: [
-        {
-          lessonId: lesson.id,
-          lessonTitle: lesson.title,
-          area: lesson.area,
-          estimatedMinutes: lesson.estimatedMinutes,
-          reason: 'Saved for today.',
-        },
-      ],
-    })
-    seedTrpcTestSessions([session({ lessonId: lesson.id })])
+    seedTrpcTestSessions(
+      [
+        'scales-major-open',
+        'scales-major-middle',
+        'arpeggios-maj7',
+        'arpeggios-m7',
+      ].map((lessonId) => session({ lessonId })),
+    )
     await renderDashboard()
 
     await waitFor(() => {
-      expect(screen.getByText('Done today')).toBeInTheDocument()
+      expect(screen.getAllByText('Done today').length).toBeGreaterThan(0)
     })
     expect(screen.getByText('Plan complete — nice work.')).toBeInTheDocument()
     expect(
@@ -148,31 +150,20 @@ describe('DashboardPage', () => {
   })
 
   it('starts the next planned lesson in the runner via the primary action', async () => {
-    const lesson = LESSONS[0]
-    saveDailyPlan({
-      date: toPlanDate(new Date()),
-      totalMinutes: lesson.estimatedMinutes,
-      items: [
-        {
-          lessonId: lesson.id,
-          lessonTitle: lesson.title,
-          area: lesson.area,
-          estimatedMinutes: lesson.estimatedMinutes,
-          reason: 'Saved for today.',
-        },
-      ],
-    })
     const user = userEvent.setup()
     await renderDashboard()
+    const nextUp = await screen.findByText(/^Next up: /)
+    const lessonTitle = nextUp.textContent?.replace('Next up: ', '')
+    const lesson = LESSONS.find((candidate) => candidate.title === lessonTitle)
+    expect(lesson).toBeDefined()
 
-    expect(screen.getByText(`Next up: ${lesson.title}`)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Start practicing' }))
 
     expect(
-      screen.getByText(`Exercise 1 of ${lesson.exercises.length}`),
+      screen.getByText(`Exercise 1 of ${lesson!.exercises.length}`),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: lesson.title }),
+      screen.getByRole('heading', { name: lesson!.title }),
     ).toBeInTheDocument()
   })
 })

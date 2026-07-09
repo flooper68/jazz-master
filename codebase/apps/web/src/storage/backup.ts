@@ -1,4 +1,3 @@
-import type { DailyPlan } from '../planner'
 import {
   DEFAULT_NOTATION_DISPLAY_MODE,
   isNotationDisplayMode,
@@ -17,14 +16,12 @@ import {
   scoringPreferencesStore,
   type ScoringPreferences,
 } from './scoringPreferences'
-import { dailyPlansStore, type StoredDailyPlans } from './dailyPlans'
 import { storageKey } from './store'
 
 export const STORAGE_BACKUP_APP = 'jazz-master'
 export const STORAGE_BACKUP_VERSION = 1
 export const MAX_STORAGE_BACKUP_BYTES = 1024 * 1024
 
-const PLAN_AREAS = ['scales', 'arpeggios', 'chords', 'standards'] as const
 interface StoreBackup<T> {
   version: number
   data: T
@@ -45,7 +42,6 @@ export interface StorageBackup {
   version: typeof STORAGE_BACKUP_VERSION
   exportedAt: string
   stores: {
-    dailyPlans: StoreBackup<StoredDailyPlans>
     playAlongTempos: StoreBackup<StoredPlayAlongTempos>
     notationPreferences: StoreBackup<NotationPreferences>
     scoringPreferences: StoreBackup<ScoringPreferences>
@@ -62,7 +58,6 @@ export function createStorageBackup(exportedAt = new Date()): StorageBackup {
     version: STORAGE_BACKUP_VERSION,
     exportedAt: exportedAt.toISOString(),
     stores: {
-      dailyPlans: { version: 1, data: dailyPlansStore.get() },
       playAlongTempos: { version: 1, data: playAlongTemposStore.get() },
       notationPreferences: {
         version: 1,
@@ -106,7 +101,6 @@ export function importStorageBackupText(
 
 function persistBackupStores(backup: StorageBackup): boolean {
   const entries: PersistedEntry[] = [
-    toPersistedEntry('daily-plans', backup.stores.dailyPlans),
     toPersistedEntry('play-along-tempos', backup.stores.playAlongTempos),
     toPersistedEntry('notation-preferences', backup.stores.notationPreferences),
     toPersistedEntry('scoring-preferences', backup.stores.scoringPreferences),
@@ -174,7 +168,6 @@ function parseStorageBackup(
     return { ok: false, error: 'Backup stores are missing.' }
   }
 
-  const dailyPlans = parseStoreBackup(value.stores.dailyPlans, isStoredDailyPlans)
   const playAlongTempos = parseStoreBackup(
     value.stores.playAlongTempos,
     isStoredPlayAlongTempos,
@@ -192,7 +185,6 @@ function parseStorageBackup(
         }
       : parseStoreBackup(value.stores.scoringPreferences, isScoringPreferences)
 
-  if (!dailyPlans.ok) return { ok: false, error: 'Daily plans are invalid.' }
   if (!playAlongTempos.ok) {
     return { ok: false, error: 'Play-along tempos are invalid.' }
   }
@@ -210,7 +202,6 @@ function parseStorageBackup(
       version: STORAGE_BACKUP_VERSION,
       exportedAt: value.exportedAt,
       stores: {
-        dailyPlans: toStoreBackup(dailyPlans),
         playAlongTempos: toStoreBackup(playAlongTempos),
         notationPreferences: toStoreBackup(notationPreferences),
         scoringPreferences: toStoreBackup(scoringPreferences),
@@ -237,51 +228,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isStoredDailyPlans(value: unknown): value is StoredDailyPlans {
-  if (!isRecord(value)) return false
-  return Object.entries(value).every(
-    ([date, plan]) =>
-      typeof date === 'string' && isDailyPlan(plan) && plan.date === date,
-  )
-}
-
-function isDailyPlan(value: unknown): value is DailyPlan {
-  if (!isRecord(value)) return false
-  return (
-    isPlanDateString(value.date) &&
-    typeof value.totalMinutes === 'number' &&
-    Number.isFinite(value.totalMinutes) &&
-    value.totalMinutes >= 0 &&
-    Array.isArray(value.items) &&
-    value.items.every(isPlanItem)
-  )
-}
-
 function isIsoDateTimeString(value: unknown): value is string {
   if (typeof value !== 'string') return false
   const date = new Date(value)
   return Number.isFinite(date.valueOf()) && date.toISOString() === value
-}
-
-function isPlanDateString(value: unknown): value is string {
-  if (typeof value !== 'string') return false
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const date = new Date(`${value}T00:00:00.000Z`)
-  return Number.isFinite(date.valueOf()) && date.toISOString().startsWith(value)
-}
-
-function isPlanItem(value: unknown): boolean {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.lessonId === 'string' &&
-    typeof value.lessonTitle === 'string' &&
-    typeof value.area === 'string' &&
-    PLAN_AREAS.includes(value.area as (typeof PLAN_AREAS)[number]) &&
-    typeof value.estimatedMinutes === 'number' &&
-    Number.isFinite(value.estimatedMinutes) &&
-    value.estimatedMinutes >= 0 &&
-    typeof value.reason === 'string'
-  )
 }
 
 function isStoredPlayAlongTempos(

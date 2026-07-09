@@ -23,6 +23,11 @@ export default defineConfig({
     // Astro 7 daemonizes `astro dev` when it detects an agentic environment,
     // making the launcher exit — which Playwright treats as a dead webServer.
     // This env var suppresses that detection so the server stays foreground.
-    env: { ...process.env, ASTRO_DEV_BACKGROUND: '1' },
+    env: {
+      ...process.env,
+      ASTRO_DEV_BACKGROUND: '1',
+      PLAYWRIGHT_TEST_AUTH: '1',
+      PUBLIC_PLAYWRIGHT_TEST_AUTH: '1',
+    },
   },
 })

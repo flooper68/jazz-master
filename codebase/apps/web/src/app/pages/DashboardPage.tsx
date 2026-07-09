@@ -16,7 +16,7 @@ const linkClasses =
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { today, profile, sessions, plan } = useTodayPlan()
+  const { status, message, today, profile, sessions, plan } = useTodayPlan()
   const completedLessonIds = useMemo(
     () => completedLessonIdsOn(sessions, plan.date),
     [plan.date, sessions],
@@ -63,7 +63,17 @@ export default function DashboardPage() {
             {plan.totalMinutes} min · {plan.date}
           </span>
         </div>
-        {plan.items.length === 0 ? (
+        {status === 'pending' ? (
+          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+            <p className="text-sm text-zinc-300">Loading today's plan...</p>
+          </div>
+        ) : status !== 'ready' ? (
+          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+            <p className="text-sm text-zinc-300">
+              {message ?? "Today's plan could not be loaded."}
+            </p>
+          </div>
+        ) : plan.items.length === 0 ? (
           <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             <p className="text-sm text-zinc-300">
               No matching lessons yet. Adjust your goals on the{' '}

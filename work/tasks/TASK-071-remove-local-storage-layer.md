@@ -60,9 +60,9 @@ Keep server repositories under `src/server/db/` and tRPC routers under
       `src/appData/`, not `src/storage/`
 - [ ] `storage/store.ts` is deleted
 - [ ] `storage/store.test.ts` is deleted
-- [ ] Remaining localStorage-backed store files are deleted:
-      `profile.ts`, `sessions.ts`, `dailyPlans.ts`, `notationPreferences.ts`,
-      `playAlongTempos.ts`, and `scoringPreferences.ts`
+- [ ] Remaining localStorage-backed preference store files are deleted:
+      `notationPreferences.ts`, `playAlongTempos.ts`, and
+      `scoringPreferences.ts`
 - [ ] `src/storage/` is deleted if empty
 - [ ] `rg localStorage codebase/apps/web/src` returns no product persistence
       usage

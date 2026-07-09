@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DailyPlan } from '../planner'
 import {
   createStorageBackup,
-  dailyPlansStore,
   importStorageBackupText,
   MAX_STORAGE_BACKUP_BYTES,
   notationPreferencesStore,
@@ -13,20 +11,6 @@ import {
 
 const exportedAt = new Date('2026-07-08T10:00:00.000Z')
 
-const plan: DailyPlan = {
-  date: '2026-07-08',
-  totalMinutes: 12,
-  items: [
-    {
-      lessonId: 'major-scale-open',
-      lessonTitle: 'Major scale I - open position',
-      area: 'scales',
-      estimatedMinutes: 12,
-      reason: 'Starts your scales goal at level 1.',
-    },
-  ],
-}
-
 beforeEach(() => {
   localStorage.clear()
 })
@@ -36,8 +20,7 @@ afterEach(() => {
 })
 
 describe('storage backup', () => {
-  it('exports remaining typed local stores without session history', () => {
-    dailyPlansStore.set({ [plan.date]: plan })
+  it('exports remaining typed local stores without plans or session history', () => {
     playAlongTemposStore.set({ 'exercise-1': 88 })
     notationPreferencesStore.set({ displayMode: 'tab' })
     scoringPreferencesStore.set({ tolerance: 'lenient' })
@@ -47,7 +30,6 @@ describe('storage backup', () => {
       version: 1,
       exportedAt: '2026-07-08T10:00:00.000Z',
       stores: {
-        dailyPlans: { version: 1, data: { [plan.date]: plan } },
         playAlongTempos: { version: 1, data: { 'exercise-1': 88 } },
         notationPreferences: { version: 1, data: { displayMode: 'tab' } },
         scoringPreferences: { version: 1, data: { tolerance: 'lenient' } },
@@ -56,53 +38,50 @@ describe('storage backup', () => {
   })
 
   it('imports a valid backup into every store', () => {
-    dailyPlansStore.set({})
-
     const backup = serializeStorageBackup(exportedAt)
     localStorage.clear()
 
     expect(importStorageBackupText(backup)).toEqual({ ok: true })
-    expect(dailyPlansStore.get()).toEqual({})
     expect(playAlongTemposStore.get()).toEqual({})
     expect(notationPreferencesStore.get()).toEqual({ displayMode: 'both' })
     expect(scoringPreferencesStore.get()).toEqual({ tolerance: 'standard' })
   })
 
   it('rejects malformed backups without overwriting existing data', () => {
-    dailyPlansStore.set({ [plan.date]: plan })
+    playAlongTemposStore.set({ 'exercise-1': 88 })
 
     const invalid = JSON.stringify({
       ...createStorageBackup(exportedAt),
       stores: {
         ...createStorageBackup(exportedAt).stores,
-        dailyPlans: {
+        playAlongTempos: {
           version: 1,
-          data: { '2026-07-09': plan },
+          data: { 'exercise-1': 999 },
         },
       },
     })
 
     expect(importStorageBackupText(invalid)).toEqual({
       ok: false,
-      error: 'Daily plans are invalid.',
+      error: 'Play-along tempos are invalid.',
     })
-    expect(dailyPlansStore.get()).toEqual({ [plan.date]: plan })
+    expect(playAlongTemposStore.get()).toEqual({ 'exercise-1': 88 })
   })
 
   it('rolls back when a backup cannot be fully written', () => {
     const originalSetItem = Storage.prototype.setItem
-    dailyPlansStore.set({ [plan.date]: plan })
+    playAlongTemposStore.set({ 'exercise-1': 88 })
 
-    dailyPlansStore.set({})
+    playAlongTemposStore.set({})
     const backup = serializeStorageBackup(exportedAt)
 
-    dailyPlansStore.set({ [plan.date]: plan })
+    playAlongTemposStore.set({ 'exercise-1': 88 })
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
       this: Storage,
       key,
       value,
     ) {
-      if (key === 'jazz-master:daily-plans') {
+      if (key === 'jazz-master:play-along-tempos') {
         throw new DOMException('quota exceeded', 'QuotaExceededError')
       }
       return originalSetItem.call(this, key, value)
@@ -112,7 +91,7 @@ describe('storage backup', () => {
       ok: false,
       error: 'Backup could not be written.',
     })
-    expect(dailyPlansStore.get()).toEqual({ [plan.date]: plan })
+    expect(playAlongTemposStore.get()).toEqual({ 'exercise-1': 88 })
   })
 
   it('ignores legacy profile data in imported backups', () => {
@@ -127,22 +106,26 @@ describe('storage backup', () => {
     expect(importStorageBackupText(invalid)).toEqual({ ok: true })
   })
 
-  it('rejects daily plans stored under the wrong date key', () => {
-    const invalid = JSON.stringify({
+  it('ignores legacy daily plan data in imported backups', () => {
+    const legacy = JSON.stringify({
       ...createStorageBackup(exportedAt),
       stores: {
         ...createStorageBackup(exportedAt).stores,
         dailyPlans: {
           version: 1,
-          data: { '2026-07-09': plan },
+          data: {
+            '2026-07-09': {
+              date: 'wrong-date',
+              totalMinutes: -1,
+              items: 'invalid',
+            },
+          },
         },
       },
     })
 
-    expect(importStorageBackupText(invalid)).toEqual({
-      ok: false,
-      error: 'Daily plans are invalid.',
-    })
+    expect(importStorageBackupText(legacy)).toEqual({ ok: true })
+    expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
   })
 
   it('rejects invalid JSON', () => {

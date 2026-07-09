@@ -7,8 +7,6 @@ export {
   serializeStorageBackup,
 } from './backup'
 export type { ImportStorageBackupResult, StorageBackup } from './backup'
-export { dailyPlansStore, getDailyPlan, saveDailyPlan } from './dailyPlans'
-export type { StoredDailyPlans } from './dailyPlans'
 export {
   MIN_PLAY_ALONG_TEMPO_BPM,
   clampPlayAlongTempo,

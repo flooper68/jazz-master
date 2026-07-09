@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { defaultProfile, type PracticeProfile } from '../../appData/profile'
 import type { PracticeSession } from '../../appData/session'
+import { LESSONS } from '../../content'
+import { generatePlan } from '../../planner/dailyPlan'
 import type { StructuredLogger } from '../observability/logger'
 import type { ProfileRepository } from '../db/profiles'
 import {
@@ -489,6 +491,180 @@ describe('appRouter.sessions', () => {
   })
 })
 
+describe('appRouter.planner.today', () => {
+  it('computes a baseline plan from the authenticated profile and curriculum', async () => {
+    const profiles = createMemoryProfileRepository()
+    const sessions = createMemorySessionRepository()
+    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+        sessions,
+      }),
+    )
+
+    await profiles.saveProfile('user_123', profile)
+
+    const result = await caller.planner.today({ date: '2026-07-09' })
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.profile).toEqual(profile)
+    expect(result.sessions).toEqual([])
+    expect(result.plan).toEqual(
+      generatePlan(profile, [], LESSONS, planDate('2026-07-09')),
+    )
+    expect(result.plan.items.length).toBeGreaterThan(0)
+  })
+
+  it('uses session history when deciding lesson progress and attention', async () => {
+    const profiles = createMemoryProfileRepository()
+    const sessions = createMemorySessionRepository()
+    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+        sessions,
+      }),
+    )
+    const missed = sessionRecord({
+      lessonId: 'scales-major-open',
+      completed: true,
+      results: [{ exerciseId: 'scales-major-open-c', grade: 'missed' }],
+    })
+
+    await profiles.saveProfile('user_123', profile)
+    await sessions.upsertSession('user_123', missed)
+
+    const result = await caller.planner.today({ date: '2026-07-09' })
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.sessions).toEqual([missed])
+    expect(result.plan.items).toContainEqual(
+      expect.objectContaining({
+        lessonId: 'scales-major-open',
+        reason: expect.stringContaining('was missed'),
+      }),
+    )
+  })
+
+  it('reports missing-profile before generating a plan', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles: createMemoryProfileRepository(),
+        sessions: createMemorySessionRepository(),
+      }),
+    )
+
+    await expect(
+      caller.planner.today({ date: '2026-07-09' }),
+    ).resolves.toEqual({
+      status: 'missing-profile',
+    })
+  })
+
+  it('uses the caller local date instead of server wall-clock time', async () => {
+    const profiles = createMemoryProfileRepository()
+    const sessions = createMemorySessionRepository()
+    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+        sessions,
+      }),
+    )
+
+    await profiles.saveProfile('user_123', profile)
+
+    const result = await caller.planner.today({ date: '2030-02-03' })
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.plan.date).toBe('2030-02-03')
+    expect(result.plan).toEqual(
+      generatePlan(profile, [], LESSONS, planDate('2030-02-03')),
+    )
+  })
+
+  it('returns the same server-computed plan on repeated reads with unchanged data', async () => {
+    const profiles = createMemoryProfileRepository()
+    const sessions = createMemorySessionRepository()
+    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+        sessions,
+      }),
+    )
+
+    await profiles.saveProfile('user_123', profile)
+
+    const first = await caller.planner.today({ date: '2026-07-09' })
+    const second = await caller.planner.today({ date: '2026-07-09' })
+
+    expect(first).toEqual(second)
+  })
+
+  it('reports unconfigured when a required repository is unavailable', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles: createMemoryProfileRepository(),
+        sessions: null,
+      }),
+    )
+
+    await expect(
+      caller.planner.today({ date: '2026-07-09' }),
+    ).resolves.toEqual({
+      status: 'unconfigured',
+    })
+  })
+
+  it('rejects unauthenticated planner reads before repositories are called', async () => {
+    let calls = 0
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: null },
+        profiles: {
+          async getProfile() {
+            calls += 1
+            return null
+          },
+          async saveProfile(_clerkUserId, profile) {
+            calls += 1
+            return profile
+          },
+        } satisfies ProfileRepository,
+        sessions: {
+          async listSessions() {
+            calls += 1
+            return []
+          },
+          async upsertSession(_clerkUserId, session) {
+            calls += 1
+            return session
+          },
+        } satisfies SessionRepository,
+      }),
+    )
+
+    await expect(
+      caller.planner.today({ date: '2026-07-09' }),
+    ).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+    expect(calls).toBe(0)
+  })
+})
+
 function createMemoryProfileRepository(): ProfileRepository {
   const profiles = new Map<string, PracticeProfile>()
 
@@ -545,6 +721,11 @@ function sessionRecord(
     results: [{ exerciseId: 'exercise-1', grade: 'missed' }],
     ...overrides,
   }
+}
+
+function planDate(date: string): Date {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day, 12)
 }
 
 function cloneSession(session: PracticeSession): PracticeSession {

@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-068 server-computed daily plans
+
+Removed the `daily-plans` localStorage store and local plan backup/import
+handling. Protected `planner.today` now computes today's plan from the
+authenticated Clerk/Postgres profile, Postgres session history, curriculum
+lessons, and the browser's local plan date; the dashboard and practice page read
+plan/progress through that tRPC result and distinguish planner errors from an
+empty plan. Existing `jazz-master:daily-plans` browser data is ignored by
+design.
+
 ## 2026-07-09 — TASK-075 public landing/auth polish
 
 Replaced the bare public `/` page with a full signed-out landing page using

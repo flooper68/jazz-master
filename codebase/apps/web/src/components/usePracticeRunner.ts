@@ -40,7 +40,7 @@ export interface RunnerInit {
   lesson: Lesson
   sessionId: string
   startedAt: number
-  onSessionChange: (session: PracticeSession) => void
+  onSessionChange: (session: PracticeSession) => void | Promise<void>
 }
 
 export function createRunnerState({

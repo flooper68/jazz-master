@@ -8,7 +8,7 @@ import { useViewFocus } from '../../components/useViewFocus'
 import { LESSONS } from '../../content'
 import type { Lesson } from '../../content'
 import { completedLessonIdsOn } from '../../dashboard'
-import { useTodayPlan, type DailyPlan } from '../../planner'
+import { useTodayPlan, type DailyPlan, type TodayPlanStatus } from '../../planner'
 import { useTRPC } from '../trpc'
 
 // Authored order is curriculum order, so grouping preserves level progression.
@@ -40,10 +40,11 @@ export default function PracticePage() {
   const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
-  const { plan, sessions, refreshSessions } = useTodayPlan()
+  const { status, message, plan, sessions, refreshSessions } = useTodayPlan()
   const { mutate: saveSession } = useMutation(
     trpc.sessions.upsert.mutationOptions({
       onSuccess() {
+        refreshSessions()
         void queryClient.invalidateQueries({
           queryKey: trpc.sessions.list.queryKey(),
         })
@@ -81,6 +82,7 @@ export default function PracticePage() {
               })
             }),
         )
+      return saveQueueRef.current
     },
     [saveSession],
   )
@@ -138,6 +140,8 @@ export default function PracticePage() {
         start a guided session.
       </p>
       <TodayPlan
+        status={status}
+        message={message}
         plan={plan}
         completedLessonIds={completedLessonIds}
         onStart={startLesson}
@@ -183,10 +187,14 @@ export default function PracticePage() {
 }
 
 function TodayPlan({
+  status,
+  message,
   plan,
   completedLessonIds,
   onStart,
 }: {
+  status: TodayPlanStatus
+  message: string | null
   plan: DailyPlan
   completedLessonIds: ReadonlySet<string>
   onStart: (lesson: Lesson) => void
@@ -199,7 +207,17 @@ function TodayPlan({
           {plan.totalMinutes} min · {plan.date}
         </span>
       </div>
-      {plan.items.length === 0 ? (
+      {status === 'pending' ? (
+        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">Loading today's plan...</p>
+        </div>
+      ) : status !== 'ready' ? (
+        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">
+            {message ?? "Today's plan could not be loaded."}
+          </p>
+        </div>
+      ) : plan.items.length === 0 ? (
         <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
           <p className="text-sm text-zinc-300">
             No matching lessons yet. Adjust your profile goals or browse the

@@ -1,17 +1,22 @@
 import { expect, gradeThroughLesson, skipOnboarding, test } from './fixtures'
 
-// Each test gets a fresh browser context (no stored profile), so every /app
-// visit starts at the first-run onboarding gate.
+// Each test gets a fresh test-auth user, so every /app visit starts at the
+// first-run onboarding gate without needing real Clerk credentials.
 
-test('landing page renders and links into the practice app', async ({ page }) => {
+test('landing page renders and links to app-hosted auth', async ({ page }) => {
   await page.goto('/')
   await expect(
-    page.getByRole('heading', { name: 'Jazz Master', level: 1 }),
+    page.getByRole('heading', {
+      name: 'Build jazz guitar habits that survive the gig.',
+      level: 1,
+    }),
   ).toBeVisible()
-  await page.getByRole('link', { name: 'Open the practice app' }).click()
   await expect(
-    page.getByRole('heading', { name: 'How comfortable are you?' }),
-  ).toBeVisible()
+    page.getByRole('link', { name: 'Start practicing' }).first(),
+  ).toHaveAttribute('href', '/sign-up')
+  await expect(
+    page.getByRole('link', { name: 'Sign in' }).first(),
+  ).toHaveAttribute('href', '/sign-in')
 })
 
 test('happy path: onboard, run a planned lesson, see it in history and on the dashboard', async ({
@@ -52,7 +57,7 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
   await gradeThroughLesson(page)
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Practice', level: 1 }),
+    page.getByRole('button', { name: 'Start Major scale I — open position' }),
   ).toBeVisible()
 
   // The completed session shows up in history, not marked incomplete.
@@ -60,18 +65,17 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
   await expect(page.getByRole('heading', { name: lessonTitle })).toBeVisible()
   await expect(page.getByText('Incomplete')).not.toBeVisible()
 
-  // And the dashboard reflects it: plan item done, streak started.
+  // And the dashboard reflects it: streak started, area progress updated.
   await page.goto('/app')
-  await expect(page.getByText('Done today').first()).toBeVisible()
   await expect(page.getByText('1 day', { exact: true })).toBeVisible()
+  await expect(page.getByText('1 of 5 lessons completed')).toBeVisible()
 })
 
 test('runner Play starts timing before Next opens grading', async ({ page }) => {
   await page.goto('/app/practice')
   await skipOnboarding(page)
   await page
-    .getByRole('button', { name: /^Start planned lesson / })
-    .first()
+    .getByRole('button', { name: 'Start Major scale I — open position' })
     .click()
 
   await expect(page.getByText('2:00')).toBeVisible()

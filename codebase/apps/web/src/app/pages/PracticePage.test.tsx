@@ -2,14 +2,15 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
+import type { PracticeSession } from '../../appData/session'
 import { LESSONS } from '../../content'
-import { toPlanDate } from '../../planner'
-import { getDailyPlan, saveDailyPlan } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
 import {
+  getTrpcTestSessions,
   resetTrpcTestData,
   seedTrpcTestProfile,
   seedTrpcTestSessions,
+  setTrpcTestSessionsRepositoryAvailable,
 } from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -33,6 +34,18 @@ async function finishCurrentExercise(user: User): Promise<void> {
   )
   const gradeDialog = screen.getByRole('dialog', { name: /^Grade / })
   await user.click(within(gradeDialog).getByRole('button', { name: 'Got it' }))
+}
+
+function session(overrides: Partial<PracticeSession>): PracticeSession {
+  return {
+    id: crypto.randomUUID(),
+    lessonId: LESSONS[0].id,
+    startedAt: new Date().toISOString(),
+    durationSeconds: 300,
+    completed: true,
+    results: [{ exerciseId: LESSONS[0].exercises[0].id, grade: 'got-it' }],
+    ...overrides,
+  }
 }
 
 describe('PracticePage', () => {
@@ -130,57 +143,74 @@ describe('PracticePage', () => {
     ).toHaveFocus()
   })
 
-  it("renders and persists today's plan with reasons", async () => {
+  it("renders today's server-computed plan with reasons without writing local plan storage", async () => {
     await renderPage()
-    const date = toPlanDate(new Date())
 
     expect(screen.getByRole('heading', { name: "Today's plan" })).toBeInTheDocument()
-    expect(screen.getAllByText(/Starts your/).length).toBeGreaterThan(0)
-    await waitFor(() => {
-      expect(getDailyPlan(date)?.items.length).toBeGreaterThan(0)
-    })
+    expect(await screen.findAllByText(/Starts your/)).not.toHaveLength(0)
+    expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
   })
 
-  it('reuses the saved plan for the day instead of reshuffling after history changes', async () => {
-    const date = toPlanDate(new Date())
-    saveDailyPlan({
-      date,
-      totalMinutes: 12,
-      items: [
-        {
-          lessonId: 'arpeggios-maj7',
-          lessonTitle: 'Maj7 arpeggios',
-          area: 'arpeggios',
-          estimatedMinutes: 12,
-          reason: 'Already saved for today.',
+  it('shows a planner error instead of the empty-plan prompt when sessions are unavailable', async () => {
+    setTrpcTestSessionsRepositoryAvailable(false)
+
+    await renderPage()
+
+    expect(
+      await screen.findByText('Planner database is not configured.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/No matching lessons yet/)).not.toBeInTheDocument()
+  })
+
+  it('ignores saved local daily plans and uses server session history', async () => {
+    localStorage.setItem(
+      'jazz-master:daily-plans',
+      JSON.stringify({
+        version: 1,
+        data: {
+          legacy: {
+            date: 'legacy',
+            totalMinutes: 12,
+            items: [
+              {
+                lessonId: 'arpeggios-maj7',
+                lessonTitle: 'Maj7 arpeggios',
+                area: 'arpeggios',
+                estimatedMinutes: 12,
+                reason: 'Already saved for today.',
+              },
+            ],
+          },
         },
-      ],
-    })
+      }),
+    )
     seedTrpcTestSessions([
-      {
-        id: crypto.randomUUID(),
+      session({
         lessonId: 'scales-major-open',
-        startedAt: `${date}T10:00:00.000Z`,
-        durationSeconds: 60,
         completed: true,
         results: [{ exerciseId: 'scales-major-open-c', grade: 'missed' }],
-      },
+      }),
     ])
 
     await renderPage()
 
-    expect(screen.getByText('Already saved for today.')).toBeInTheDocument()
+    expect(screen.queryByText('Already saved for today.')).not.toBeInTheDocument()
+    expect(await screen.findByText(/was missed on/)).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Start planned lesson Maj7 arpeggios' }),
+      screen.getByRole('button', {
+        name: 'Start planned lesson Major scale I — open position',
+      }),
     ).toBeInTheDocument()
   })
 
-  it('starts a planned lesson and marks it done after completion', async () => {
+  it('starts a planned lesson and records completion in server history', async () => {
     const user = userEvent.setup()
     await renderPage()
 
     await user.click(
-      screen.getAllByRole('button', { name: /^Start planned lesson/ })[0],
+      (await screen.findAllByRole('button', {
+        name: /^Start planned lesson/,
+      }))[0],
     )
     const activeLesson = LESSONS.find((lesson) =>
       screen.queryByRole('heading', { level: 2, name: lesson.title }),
@@ -195,11 +225,21 @@ describe('PracticePage', () => {
         name: `Lesson complete — ${activeLesson!.title}`,
       }),
     ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        getTrpcTestSessions().some(
+          (session) => session.lessonId === activeLesson!.id && session.completed,
+        ),
+      ).toBe(true)
+    })
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Done today')).toBeInTheDocument()
+      expect(
+        screen.getAllByRole('button', { name: /^Start planned lesson/ }).length,
+      ).toBeGreaterThan(0)
     })
+    expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
   })
 })

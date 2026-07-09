@@ -4,6 +4,7 @@ import { env } from 'cloudflare:workers'
 import {
   createAuthConfigurationUnavailableResponse,
   getAuthRouteMode,
+  readPlaywrightTestAuthUserId,
   redirectSignedOutAppRequest,
 } from './server/auth/appRouteAuth'
 import {
@@ -21,12 +22,29 @@ const clerkAuthMiddleware = clerkMiddleware((auth, context, next) => {
   return next()
 })
 
+type LocalsWithAuth = App.Locals & {
+  auth?: () => { userId: string | null }
+}
+
 export const onRequest: MiddlewareHandler = (context, next) => {
   const runtimeEnv = {
     cloudflareEnv: env,
     metaEnv: import.meta.env,
     processEnv: typeof process === 'undefined' ? undefined : process.env,
   } satisfies ClerkRuntimeEnvSources
+  const playwrightUserId = readPlaywrightTestAuthUserId(
+    context.request,
+    runtimeEnv,
+  )
+
+  if (playwrightUserId) {
+    const locals = context.locals as LocalsWithAuth
+    locals.auth = () => ({
+      userId: playwrightUserId,
+    })
+    return next()
+  }
+
   const routeMode = getAuthRouteMode(
     context.url.pathname,
     hasClerkRuntimeEnv(runtimeEnv),

@@ -10,10 +10,12 @@ export const TEST_CLERK_USER_ID = 'user_test_123'
 
 const profiles = new Map<string, PracticeProfile>()
 const sessions = new Map<string, Map<string, PracticeSession>>()
+let sessionsRepositoryAvailable = true
 
 export function resetTrpcTestData() {
   profiles.clear()
   sessions.clear()
+  sessionsRepositoryAvailable = true
 }
 
 export function seedTrpcTestProfile(profile: PracticeProfile) {
@@ -34,6 +36,10 @@ export function seedTrpcTestSessions(seedSessions: PracticeSession[]) {
 
 export function getTrpcTestSessions(): PracticeSession[] {
   return listStoredSessions(TEST_CLERK_USER_ID)
+}
+
+export function setTrpcTestSessionsRepositoryAvailable(available: boolean) {
+  sessionsRepositoryAvailable = available
 }
 
 const profileRepository = {
@@ -118,7 +124,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         profiles: profileRepository,
-        sessions: sessionRepository,
+        sessions: sessionsRepositoryAvailable ? sessionRepository : null,
         users: null,
       }),
   })

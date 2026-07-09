@@ -1,62 +1,97 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useProfile } from '../app/ProfileProvider'
 import { useTRPC } from '../app/trpc'
 import type { PracticeProfile } from '../appData/profile'
 import type { PracticeSession } from '../appData/session'
-import { LESSONS } from '../content'
-import { getDailyPlan, saveDailyPlan } from '../storage'
-import { generatePlan, toPlanDate, type DailyPlan } from './dailyPlan'
+import { toPlanDate, type DailyPlan } from './dailyPlan'
 
 const EMPTY_SESSIONS: readonly PracticeSession[] = []
+export type TodayPlanStatus =
+  | 'pending'
+  | 'ready'
+  | 'missing-profile'
+  | 'unconfigured'
+  | 'error'
+type PlannerTodayResult =
+  | { status: 'ok' }
+  | { status: 'missing-profile' }
+  | { status: 'unconfigured' }
+  | { status: 'error'; message: string }
+  | undefined
 
 export interface TodayPlan {
+  status: TodayPlanStatus
+  message: string | null
   today: Date
   profile: PracticeProfile
   sessions: readonly PracticeSession[]
   plan: DailyPlan
-  /** Re-read the sessions store, e.g. after a practice run exits. */
+  /** Re-read server-computed plan/progress, e.g. after a practice run exits. */
   refreshSessions: () => void
 }
 
-/**
- * Today's plan as every page must see it: the stored plan for the local date,
- * or a freshly generated one persisted on first render. Each page holds its
- * own hook instance — they agree because both read the same persisted plan,
- * so the day's plan never reshuffles as history changes.
- */
 export function useTodayPlan(): TodayPlan {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [today] = useState(() => new Date())
+  const planDate = toPlanDate(today)
   const { profile } = useProfile()
-  const resolvedProfile = profile as PracticeProfile
-  const sessionsQuery = useQuery(trpc.sessions.list.queryOptions())
-  const sessions =
-    sessionsQuery.data?.status === 'ok'
-      ? sessionsQuery.data.sessions
-      : EMPTY_SESSIONS
-  const sessionsReady = sessionsQuery.data?.status === 'ok'
-  const [storedPlan, setStoredPlan] = useState<DailyPlan | null>(() =>
-    getDailyPlan(toPlanDate(today)),
-  )
-  const plan = useMemo(
-    () => storedPlan ?? generatePlan(resolvedProfile, sessions, LESSONS, today),
-    [resolvedProfile, sessions, storedPlan, today],
-  )
-
-  useEffect(() => {
-    if (!sessionsReady) return
-    if (storedPlan !== null) return
-    saveDailyPlan(plan)
-    setStoredPlan(plan)
-  }, [plan, sessionsReady, storedPlan])
+  const plannerInput = { date: planDate }
+  const plannerQuery = useQuery(trpc.planner.today.queryOptions(plannerInput))
+  const result = plannerQuery.data
+  const resolvedProfile =
+    result?.status === 'ok' ? result.profile : (profile as PracticeProfile)
+  const sessions = result?.status === 'ok' ? result.sessions : EMPTY_SESSIONS
+  const status = resolveStatus(plannerQuery.isPending, plannerQuery.isError, result)
+  const message = resolveMessage(status, result)
+  const plan =
+    result?.status === 'ok'
+      ? result.plan
+      : {
+          date: planDate,
+          totalMinutes: 0,
+          items: [],
+        }
 
   const refreshSessions = () => {
     void queryClient.invalidateQueries({
-      queryKey: trpc.sessions.list.queryKey(),
+      queryKey: trpc.planner.today.queryKey(plannerInput),
     })
   }
 
-  return { today, profile: resolvedProfile, sessions, plan, refreshSessions }
+  return {
+    status,
+    message,
+    today,
+    profile: resolvedProfile,
+    sessions,
+    plan,
+    refreshSessions,
+  }
+}
+
+function resolveStatus(
+  isPending: boolean,
+  isError: boolean,
+  result: PlannerTodayResult,
+): TodayPlanStatus {
+  if (isPending) return 'pending'
+  if (isError) return 'error'
+  if (result?.status === 'ok') return 'ready'
+  if (result?.status === 'missing-profile') return 'missing-profile'
+  if (result?.status === 'unconfigured') return 'unconfigured'
+  return 'error'
+}
+
+function resolveMessage(
+  status: TodayPlanStatus,
+  result: PlannerTodayResult,
+): string | null {
+  if (status === 'ready' || status === 'pending') return null
+  if (status === 'missing-profile') return 'Profile could not be loaded.'
+  if (status === 'unconfigured') return 'Planner database is not configured.'
+  return result?.status === 'error'
+    ? result.message
+    : 'Planner could not be loaded.'
 }
