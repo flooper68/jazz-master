@@ -13,7 +13,6 @@ import {
 } from '../../test/trpcTestFetch'
 
 beforeEach(() => {
-  localStorage.clear()
   resetTrpcTestData()
   seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })

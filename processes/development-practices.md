@@ -13,7 +13,7 @@ Project-specific engineering standards distilled from RES-010 and RES-005. Use t
 
 - Components and Hooks must be render-pure: no side effects during render, no mutation of props/state/Hook arguments, no reads that make output non-idempotent such as `Date.now()` or `Math.random()` in render. Source: RES-010 recommendation 3.
 - Use event handlers for event-specific work. Use `useEffect` only to synchronize with an external system such as browser APIs, timers, subscriptions, or imperative libraries. Derived data belongs in render; reusable React-specific behavior belongs in a custom Hook. Source: RES-010 recommendation 3.
-- Keep components thin. Move music/domain logic to `@jazz-master/theory`; move browser persistence to `apps/web/src/storage/`; move reusable state transitions to pure functions or reducers when component state becomes hard to inspect. Source: RES-010 recommendations 1, 3, 6.
+- Keep components thin. Move music/domain logic to `@jazz-master/theory`; keep client-safe app-data contracts in `apps/web/src/appData/` and durable persistence behind server tRPC/database boundaries; move reusable state transitions to pure functions or reducers when component state becomes hard to inspect. Source: RES-010 recommendations 1, 3, 6.
 - Use React 19 client APIs only when they simplify the local UI. Do not introduce Server Components, Server Actions, or React Compiler without a dedicated work item and architecture update. Source: RES-010 recommendation 4.
 - For TypeScript React code, type component props at the boundary, prefer discriminated unions for finite UI states, type extracted event handlers, and use context consumer Hooks to narrow nullable context values. Source: RES-010 recommendations 4, 6.
 

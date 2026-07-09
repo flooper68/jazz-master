@@ -18,7 +18,6 @@ import {
 type User = ReturnType<typeof userEvent.setup>
 
 beforeEach(() => {
-  localStorage.clear()
   resetTrpcTestData()
   seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
@@ -182,12 +181,11 @@ describe('PracticePage', () => {
     ).toHaveFocus()
   })
 
-  it("renders today's server-computed plan with reasons without writing local plan storage", async () => {
+  it("renders today's server-computed plan with reasons", async () => {
     await renderPage()
 
     expect(screen.getByRole('heading', { name: "Today's plan" })).toBeInTheDocument()
     expect(await screen.findAllByText(/Starts your/)).not.toHaveLength(0)
-    expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
   })
 
   it('shows a planner error instead of the empty-plan prompt when sessions are unavailable', async () => {
@@ -201,28 +199,7 @@ describe('PracticePage', () => {
     expect(screen.queryByText(/No matching lessons yet/)).not.toBeInTheDocument()
   })
 
-  it('ignores saved local daily plans and uses server session history', async () => {
-    localStorage.setItem(
-      'jazz-master:daily-plans',
-      JSON.stringify({
-        version: 1,
-        data: {
-          legacy: {
-            date: 'legacy',
-            totalMinutes: 12,
-            items: [
-              {
-                lessonId: 'arpeggios-maj7',
-                lessonTitle: 'Maj7 arpeggios',
-                area: 'arpeggios',
-                estimatedMinutes: 12,
-                reason: 'Already saved for today.',
-              },
-            ],
-          },
-        },
-      }),
-    )
+  it('uses server session history to prioritize the plan', async () => {
     seedTrpcTestSessions([
       session({
         lessonId: 'scales-major-open',
@@ -233,7 +210,6 @@ describe('PracticePage', () => {
 
     await renderPage()
 
-    expect(screen.queryByText('Already saved for today.')).not.toBeInTheDocument()
     expect(await screen.findByText(/was missed on/)).toBeInTheDocument()
     expect(
       screen.getByRole('button', {
@@ -279,15 +255,10 @@ describe('PracticePage', () => {
         screen.getAllByRole('button', { name: /^Start planned lesson/ }).length,
       ).toBeGreaterThan(0)
     })
-    expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
   })
 
-  it('restores all preferences from the server after browser storage is cleared', async () => {
+  it('restores all preferences from the server after the page remounts', async () => {
     const user = userEvent.setup()
-    localStorage.setItem(
-      'jazz-master:notation-preferences',
-      JSON.stringify({ version: 1, data: { displayMode: 'tab' } }),
-    )
     const first = LESSONS[0]
     const firstExercise = first.exercises[0]
     const initialRender = await renderPage()
@@ -317,7 +288,6 @@ describe('PracticePage', () => {
     })
 
     initialRender.unmount()
-    localStorage.clear()
     await renderPage()
     await user.click(
       screen.getByRole('button', { name: `Start ${first.title}` }),
@@ -334,6 +304,5 @@ describe('PracticePage', () => {
         name: `Tempo for ${firstExercise.title}`,
       }),
     ).toHaveValue('72')
-    expect(localStorage.length).toBe(0)
   })
 })

@@ -1,6 +1,9 @@
 # Process: security and privacy review
 
-Lightweight review for a local-first browser app. Use it before shipping security-sensitive changes, during code review when a diff touches storage/input/dependencies, and during QA product reviews.
+Lightweight review for a Clerk-authenticated app with server-owned persistence
+and browser audio/recording capabilities. Use it before shipping
+security-sensitive changes, during code review when a diff touches persistence,
+input, dependencies, or browser capabilities, and during QA product reviews.
 
 ## When required
 

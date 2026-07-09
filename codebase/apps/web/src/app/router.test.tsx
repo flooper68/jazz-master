@@ -10,7 +10,6 @@ import {
 } from '../test/trpcTestFetch'
 
 beforeEach(() => {
-  localStorage.clear()
   resetTrpcTestData()
 })
 

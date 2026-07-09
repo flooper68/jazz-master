@@ -55,7 +55,6 @@ function sessionItem(accessibleTitle: string | RegExp): HTMLElement {
 }
 
 beforeEach(() => {
-  localStorage.clear()
   // The route renders behind the onboarding gate, so a profile must exist.
   resetTrpcTestData()
   seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))

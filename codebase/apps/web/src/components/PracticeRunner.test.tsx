@@ -261,7 +261,6 @@ async function completeExercise(user: User, exerciseTitle: string): Promise<void
 
 beforeEach(() => {
   vi.useRealTimers()
-  localStorage.clear()
   audioMock.moduleLoaded.mockClear()
   audioMock.createPlayAlongEngine.mockClear()
   audioMock.engine.playResolvedExercise.mockReset()

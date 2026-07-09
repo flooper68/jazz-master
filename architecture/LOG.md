@@ -4,6 +4,13 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-10 — TASK-071 generic browser persistence removed
+
+Deleted the obsolete typed local persistence wrapper and compatibility exports
+after every feature moved to Clerk-scoped Postgres. Client-safe profile,
+session, and preference contracts now live in `apps/web/src/appData/`; product
+source contains no browser persistence path.
+
 ## 2026-07-10 — TASK-070 local backup/import removed
 
 Deleted the transitional local JSON backup parser, serializer, tests, and public

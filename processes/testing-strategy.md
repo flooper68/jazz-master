@@ -18,7 +18,7 @@ gate with a narrower command.
 |---|---|---|---|
 | Unit | Pure functions, parsers, music theory, reducers, validation | colocated `*.test.ts` | Vitest in node |
 | Component | Reusable UI behavior, rendering contracts, accessible names, edge states | colocated `*.test.tsx` | Vitest + Testing Library in jsdom |
-| Page/integration | Routes, composed page behavior, storage-facing workflows with controlled stores | colocated page/app `*.test.tsx` | Vitest + Testing Library in jsdom |
+| Page/integration | Routes, composed page behavior, server-persistence workflows with controlled tRPC/repository boundaries | colocated page/app `*.test.tsx` | Vitest + Testing Library in jsdom |
 | E2E | Cross-page browser flows, persistence across refresh, responsive/keyboard behavior that jsdom cannot prove | `apps/web/e2e/*.spec.ts` | Playwright via `bun run --cwd codebase check:e2e` (TASK-035) |
 | Manual QA | Product judgment, visual layout, console/network/a11y sweep, human-only device/browser coverage, exploratory risks | `work/reviews/REV-*` | `processes/qa-product-review.md` |
 
@@ -34,9 +34,11 @@ cover a user workflow, not duplicate every branch already covered below it.
   input props, empty/error states, keyboard interaction when interactive, and any
   SVG/diagram semantics users rely on.
 - Pages: test route-level composition, navigation, meaningful user workflows,
-  storage behavior through stores, and failure/empty states that affect the user.
-- Storage: test corrupt/missing data, version envelopes, migrations, reset, and
-  that reads fail closed to defaults without throwing.
+  persistence behavior through controlled tRPC boundaries, and failure/empty
+  states that affect the user.
+- Server persistence: test schema validation, authenticated ownership scoping,
+  repository serialization/deserialization, missing rows, and database failure
+  states at the cheapest boundary that proves the contract.
 - Bug fixes: add a regression test at the lowest layer that would have failed
   before the fix, unless the issue is only observable in human QA. In that case,
   record the risk or suggested check for the next QA/product review; do not make
@@ -50,7 +52,7 @@ cover a user workflow, not duplicate every branch already covered below it.
 - Use `userEvent.setup()` in the test for user interactions. Use `fireEvent`
   only when `user-event` cannot model the browser behavior needed.
 - Assert public behavior: visible text, accessible names, enabled/disabled
-  states, navigation, emitted callbacks, store results, or serialized domain
+  states, navigation, emitted callbacks, API/repository results, or serialized domain
   output. Avoid private state, internal helper calls, DOM structure, CSS class
   names, and broad snapshots unless they are the actual stable contract.
 - Test names should be short behavior statements, not generated prose.
