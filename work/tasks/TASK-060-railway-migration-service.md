@@ -111,3 +111,15 @@ Verification: rebuilt the migration Docker image, confirmed the previous missing
 dependency message was gone, then ran the image against local Postgres on the
 documented alternate port 55432; `drizzle-kit migrate` exited 0 with
 "migrations applied successfully".
+
+### 2026-07-09 — Railway migration error visibility fix
+
+Railway logs then showed `drizzle-kit migrate` reaching "applying migrations"
+but exiting 1 without printing the underlying Postgres error. Replaced the
+runtime migration command with a small Bun script using Drizzle ORM's
+`node-postgres` migrator. It logs full errors, closes the client, and retries
+briefly so Railway Postgres startup/readiness races do not crash the service
+without useful diagnostics. Verification: the script succeeded against local
+Postgres on port 55432 after sandbox escalation for localhost Docker access;
+the rebuilt Docker image also ran the same startup command and applied
+migrations successfully against that database.

@@ -7,7 +7,7 @@
   "scripts": {
     "start": "bun run migrate",
     "build": "tsc -b",
-    "migrate": "drizzle-kit migrate --config drizzle.config.ts"
+    "migrate": "bun run src/migrate.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
