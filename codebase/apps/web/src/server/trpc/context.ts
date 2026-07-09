@@ -1,12 +1,24 @@
 import type { HyperdriveConnection } from '../db/connection'
 import {
+  createDatabaseSmokeClient,
+  type DatabaseSmokeClient,
+} from '../db/smoke'
+import {
   createProfileRepository,
   type ProfileRepository,
 } from '../db/profiles'
 import { createUserRepository, type UserRepository } from '../db/users'
+import {
+  createNoopStructuredLogger,
+  type RequestLogMetadata,
+  type StructuredLogger,
+} from '../observability/logger'
 
 interface CreateContextOptions {
   auth?: AuthContext | null
+  dbSmoke?: DatabaseSmokeClient | null
+  logger?: StructuredLogger
+  requestMetadata?: RequestLogMetadata | null
   profiles?: ProfileRepository | null
   users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
@@ -18,6 +30,10 @@ export interface AuthContext {
 
 type AstroLocalsWithAuth = {
   auth?: () => { userId: string | null }
+}
+
+function hasDbSmokeOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'dbSmoke' in options
 }
 
 function hasUsersOption(options: unknown): options is CreateContextOptions {
@@ -34,6 +50,20 @@ function hasContextOptions(options: unknown): options is CreateContextOptions {
 
 function hasAuthOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'auth' in options
+}
+
+function hasLoggerOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'logger' in options
+}
+
+function hasRequestMetadataOption(
+  options: unknown,
+): options is CreateContextOptions {
+  return (
+    typeof options === 'object' &&
+    options !== null &&
+    'requestMetadata' in options
+  )
 }
 
 export function createAuthContextFromLocals(locals: unknown): AuthContext {
@@ -54,6 +84,15 @@ export function createContext(options?: unknown) {
     ? (options.auth ?? { clerkUserId: null })
     : { clerkUserId: null }
   const hyperdrive = hasContextOptions(options) ? options.hyperdrive : null
+  const dbSmoke = hasDbSmokeOption(options)
+    ? options.dbSmoke
+    : createDatabaseSmokeClient({ hyperdrive })
+  const logger = hasLoggerOption(options)
+    ? (options.logger ?? createNoopStructuredLogger())
+    : createNoopStructuredLogger()
+  const requestMetadata = hasRequestMetadataOption(options)
+    ? (options.requestMetadata ?? null)
+    : null
   const userRepository = hasUsersOption(options)
     ? options.users
     : createUserRepository({ hyperdrive })
@@ -61,7 +100,14 @@ export function createContext(options?: unknown) {
     ? options.profiles
     : createProfileRepository({ hyperdrive })
 
-  return { auth, profiles: profileRepository, users: userRepository }
+  return {
+    auth,
+    dbSmoke,
+    logger,
+    requestMetadata,
+    profiles: profileRepository,
+    users: userRepository,
+  }
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>

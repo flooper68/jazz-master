@@ -4,6 +4,17 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-073 Workers observability
+
+Enabled Cloudflare Workers Logs and source-map upload in `wrangler.jsonc`
+(`observability.enabled: true`, `head_sampling_rate: 1`,
+`upload_source_maps: true`) and added server-side structured JSON logs for tRPC
+request outcomes plus the restored `/trpc/dbSmoke` Hyperdrive/Postgres probe.
+The log helper redacts or drops Clerk identifiers, auth/cookie headers,
+database URLs, request/response bodies, SQL fields, and tokens. Owner log
+inspection remains dashboard-only under ADR-009; agents still hold no
+Cloudflare credentials.
+
 ## 2026-07-09 — TASK-066 profile moved to Clerk/Postgres
 
 Moved practice profile and onboarding completion off localStorage and into

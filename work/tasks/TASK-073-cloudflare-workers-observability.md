@@ -2,7 +2,7 @@
 id: TASK-073
 title: Enable Cloudflare Workers logs and observability
 epic: EPIC-013
-status: backlog
+status: done
 priority: blocker
 depends_on: [TASK-024, TASK-064]
 source: owner request 2026-07-09
@@ -79,31 +79,31 @@ Boundaries:
 
 ## Acceptance criteria
 
-- [ ] `apps/web/wrangler.jsonc` enables Workers Logs with
+- [x] `apps/web/wrangler.jsonc` enables Workers Logs with
       `observability.enabled: true`
-- [ ] The Workers Logs `head_sampling_rate` is set deliberately and documented
+- [x] The Workers Logs `head_sampling_rate` is set deliberately and documented
       in the task log; default to `1` unless cost/noise evidence says otherwise
-- [ ] `apps/web/wrangler.jsonc` enables `upload_source_maps: true`
-- [ ] Server-side code uses a small structured logging helper or equivalent
+- [x] `apps/web/wrangler.jsonc` enables `upload_source_maps: true`
+- [x] Server-side code uses a small structured logging helper or equivalent
       convention for Worker/tRPC events rather than ad hoc strings
-- [ ] Logs are JSON-serializable and include stable event names, outcome,
+- [x] Logs are JSON-serializable and include stable event names, outcome,
       route/procedure when known, status/error code when known, duration in ms
       when known, and safe Cloudflare request metadata such as `cf-ray` or a
       generated request id
-- [ ] tRPC request/error paths emit safe structured logs for failed procedures,
+- [x] tRPC request/error paths emit safe structured logs for failed procedures,
       including protected-procedure unauthenticated failures
-- [ ] DB/Hyperdrive smoke failures emit a safe structured log that distinguishes
+- [x] DB/Hyperdrive smoke failures emit a safe structured log that distinguishes
       unconfigured runtime from query/connectivity failure
-- [ ] Logging tests prove sensitive fields are redacted or absent, including
+- [x] Logging tests prove sensitive fields are redacted or absent, including
       Clerk identifiers, cookies, authorization headers, database URLs, and raw
       request bodies
-- [ ] Existing production tRPC error sanitization remains intact: clients do
+- [x] Existing production tRPC error sanitization remains intact: clients do
       not receive stack traces just because server logs/source maps exist
-- [ ] Architecture docs record the Workers Logs/source-map setup, the owner
+- [x] Architecture docs record the Workers Logs/source-map setup, the owner
       dashboard path for log inspection, and the ADR-009 credential boundary
-- [ ] Verification includes an owner-runnable post-deploy log check for `/`,
+- [x] Verification includes an owner-runnable post-deploy log check for `/`,
       `/trpc/health`, `/trpc/dbSmoke`, and one representative server error
-- [ ] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -118,8 +118,41 @@ Boundaries:
 curl https://jazz-master.premysl-ciompa.workers.dev/
 curl https://jazz-master.premysl-ciompa.workers.dev/trpc/health
 curl https://jazz-master.premysl-ciompa.workers.dev/trpc/dbSmoke
+curl https://jazz-master.premysl-ciompa.workers.dev/trpc/users.ensure
 ```
 
 - Owner-runnable dashboard check: Cloudflare dashboard -> Workers & Pages ->
-  `jazz-master-web` -> Logs -> filter for the generated event names and confirm
-  the requests above appear with no PII/secrets
+  `jazz-master-web` -> Logs -> filter for `trpc.request.completed` and
+  `db.smoke.completed`; confirm the requests above appear with route/procedure,
+  outcome, status, duration/request metadata, and no PII/secrets. The final
+  `users.ensure` call is expected to produce an unauthenticated tRPC error log
+  when run without Clerk session cookies.
+
+## Log
+
+### 2026-07-09 — claimed (agent)
+Plan: enable Cloudflare Workers Logs/source-map settings in `wrangler.jsonc`;
+add a server-side structured logging helper with explicit redaction and tests;
+wire tRPC request/error and DB smoke failure paths to safe JSON logs; document
+the owner dashboard inspection path and ADR-009 credential boundary. Sampling
+rate choice starts at `head_sampling_rate: 1` per Cloudflare's documented
+default because this is a low-traffic solo app and the task prioritizes
+debuggability over volume reduction.
+
+### 2026-07-09 — done
+Implemented repo-side Workers observability: `wrangler.jsonc` now enables
+Workers Logs at `head_sampling_rate: 1` and source-map upload, and the resolved
+`dist/server/wrangler.json` preserves both settings after build. Added
+`src/server/observability/logger.ts` for safe JSON logs, wired
+`trpc.request.completed` around the tRPC endpoint, restored `/trpc/dbSmoke` as
+an observability probe, and logged `db.smoke.completed` with separate
+`unconfigured_runtime` and `query_or_connectivity_failure` outcomes. Tests cover
+JSON serialization, request metadata, unauthenticated protected-procedure
+failures, DB smoke failure kinds, and redaction/absence of Clerk IDs, cookies,
+auth headers, database URLs, raw bodies, SQL-like fields, and tokens.
+Security/privacy checklist: no secrets or PII logged, no new dependencies, no
+dashboard credentials added. Verification run: narrow logging/router tests
+green; `bun run --cwd codebase check` green. Independent review returned no
+findings. Build emitted a sandbox-only Wrangler log-file EPERM warning while
+still exiting green; resolved Worker config inspection confirmed
+`observability` and `upload_source_maps`.

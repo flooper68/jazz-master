@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultProfile, type PracticeProfile } from '../../appData/profile'
+import type { StructuredLogger } from '../observability/logger'
 import type { ProfileRepository } from '../db/profiles'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
@@ -32,6 +33,72 @@ describe('appRouter.health', () => {
     )
 
     await expect(caller.health()).resolves.toMatchObject({ status: 'ok' })
+  })
+})
+
+describe('appRouter.dbSmoke', () => {
+  it('reports unconfigured and emits a structured unconfigured log when no smoke client is available', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const caller = createCaller(
+      createContext({
+        dbSmoke: null,
+        logger: {
+          emit(_level, event) {
+            events.push(event)
+          },
+        } satisfies StructuredLogger,
+        requestMetadata: { requestId: 'req_test' },
+      }),
+    )
+
+    await expect(caller.dbSmoke()).resolves.toMatchObject({
+      status: 'unconfigured',
+    })
+    expect(events).toEqual([
+      {
+        event: 'db.smoke.completed',
+        procedure: 'dbSmoke',
+        route: '/trpc/dbSmoke',
+        requestId: 'req_test',
+        outcome: 'unconfigured',
+        status: 200,
+        errorKind: 'unconfigured_runtime',
+      },
+    ])
+  })
+
+  it('reports an error and emits a structured failure log when the smoke query fails', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const caller = createCaller(
+      createContext({
+        dbSmoke: {
+          async check() {
+            throw new Error('connection failed')
+          },
+        },
+        logger: {
+          emit(_level, event) {
+            events.push(event)
+          },
+        } satisfies StructuredLogger,
+        requestMetadata: { requestId: 'req_test' },
+      }),
+    )
+
+    await expect(caller.dbSmoke()).resolves.toMatchObject({
+      status: 'error',
+      message: 'Database smoke check failed',
+    })
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      event: 'db.smoke.completed',
+      procedure: 'dbSmoke',
+      route: '/trpc/dbSmoke',
+      requestId: 'req_test',
+      outcome: 'error',
+      status: 503,
+      errorKind: 'query_or_connectivity_failure',
+    })
   })
 })
 
