@@ -6,7 +6,16 @@ The Astro app uses `@clerk/astro` middleware for authentication. `/` is public;
 `/app/*` requires a signed-in Clerk user, and protected tRPC procedures read the
 Clerk user ID from Astro locals.
 
-Required local `.env` values:
+Required local Clerk values can live in the repo-root `.env` used by the owner:
+
+```sh
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+```
+
+The web app itself reads `codebase/apps/web/.env` during Astro dev/preview. That
+file is gitignored and may be generated from the root `.env`; it must expose the
+publishable key under Clerk Astro's `PUBLIC_` name:
 
 ```sh
 PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -34,6 +43,10 @@ CLERK_SIGN_UP_URL=/sign-up
 CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/app
 CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/app
 ```
+
+`PUBLIC_CLERK_PUBLISHABLE_KEY` is also committed in `wrangler.jsonc` as a
+public Worker var; `CLERK_SECRET_KEY` must remain a Worker secret and must not be
+committed.
 
 `dbSmoke` remains a public observability probe for deployed database
 connectivity. It does not carry user data; real app data goes through protected

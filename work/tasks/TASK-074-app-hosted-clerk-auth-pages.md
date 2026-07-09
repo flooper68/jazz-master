@@ -111,6 +111,21 @@ React/TanStack app still owns only `/app/*`.
 
 ## Log
 
+### 2026-07-09 - follow-up config (agent)
+
+Owner clarified that the correct Clerk values already exist in the repo-root
+gitignored `.env` as `VITE_CLERK_PUBLISHABLE_KEY` plus `CLERK_SECRET_KEY`.
+Created an ignored `codebase/apps/web/.env` for local Astro/Clerk runtime using
+those values, mapped the publishable key to Clerk Astro's required
+`PUBLIC_CLERK_PUBLISHABLE_KEY` name, and configured that publishable key as a
+public Worker var in `apps/web/wrangler.jsonc`. The secret key remains local/a
+Worker secret only and is not committed. Verification: `bun run --cwd codebase
+check` passed, the build output includes the Worker public publishable-key var,
+and the ignored app `.env` contains the expected Clerk variable names. Local
+Worker preview was not run because the required sandbox escalation was rejected:
+the Cloudflare preview runtime would bind an inspector on `0.0.0.0:9229` while
+real Clerk keys were loaded.
+
 ### 2026-07-09 - done
 
 Added Astro-owned `/sign-in` and `/sign-up` pages using Clerk prebuilt
