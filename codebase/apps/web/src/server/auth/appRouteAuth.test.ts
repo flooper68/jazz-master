@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createAuthConfigurationUnavailableResponse,
+  getAuthRouteMode,
   isProtectedAppPath,
   redirectSignedOutAppRequest,
   type AppRouteAuthObject,
@@ -68,5 +70,34 @@ describe('app route auth', () => {
       ),
     ).toBeNull()
     expect(calls).toEqual([])
+  })
+
+  it.each([
+    ['/', false, 'public'],
+    ['/trpc/health', false, 'public'],
+    ['/trpc/dbSmoke', false, 'public'],
+    ['/trpc/users.ensure', false, 'public'],
+    ['/app', false, 'unconfiguredProtectedApp'],
+    ['/app/practice', false, 'unconfiguredProtectedApp'],
+    ['/', true, 'clerk'],
+    ['/trpc/users.ensure', true, 'clerk'],
+    ['/app/practice', true, 'clerk'],
+  ] as const)(
+    'routes %s with configured=%s as %s',
+    (pathname, clerkConfigured, expected) => {
+      expect(getAuthRouteMode(pathname, clerkConfigured)).toBe(expected)
+    },
+  )
+
+  it('returns a controlled response when protected app auth is unavailable', async () => {
+    const response = createAuthConfigurationUnavailableResponse()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toBe(
+      'text/plain; charset=utf-8',
+    )
+    await expect(response.text()).resolves.toBe(
+      'Authentication is not configured.',
+    )
   })
 })

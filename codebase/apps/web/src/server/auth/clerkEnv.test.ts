@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertClerkRuntimeEnv,
   getMissingClerkRuntimeEnv,
+  hasClerkRuntimeEnv,
 } from './clerkEnv'
 
 describe('Clerk runtime env', () => {
@@ -27,5 +28,17 @@ describe('Clerk runtime env', () => {
     expect(() => assertClerkRuntimeEnv({})).toThrow(
       'Jazz Master Clerk auth is not configured. Set PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY before starting the web app.',
     )
+  })
+
+  it('reports whether all runtime keys are configured', () => {
+    expect(hasClerkRuntimeEnv({})).toBe(false)
+    expect(
+      hasClerkRuntimeEnv({
+        metaEnv: {
+          PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_123',
+          CLERK_SECRET_KEY: 'sk_test_123',
+        },
+      }),
+    ).toBe(true)
   })
 })

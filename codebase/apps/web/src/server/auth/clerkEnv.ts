@@ -7,7 +7,7 @@ export type RequiredClerkEnvVar = (typeof requiredClerkEnvVars)[number]
 
 type RuntimeEnv = Record<string, unknown>
 
-interface ClerkRuntimeEnvSources {
+export interface ClerkRuntimeEnvSources {
   cloudflareEnv?: RuntimeEnv
   metaEnv?: RuntimeEnv
   processEnv?: RuntimeEnv
@@ -26,6 +26,10 @@ export function getMissingClerkRuntimeEnv(
   sources: ClerkRuntimeEnvSources,
 ): RequiredClerkEnvVar[] {
   return requiredClerkEnvVars.filter((name) => !readEnvValue(sources, name))
+}
+
+export function hasClerkRuntimeEnv(sources: ClerkRuntimeEnvSources) {
+  return getMissingClerkRuntimeEnv(sources).length === 0
 }
 
 export function assertClerkRuntimeEnv(sources: ClerkRuntimeEnvSources) {

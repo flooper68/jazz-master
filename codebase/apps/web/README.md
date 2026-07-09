@@ -13,8 +13,9 @@ PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 ```
 
-The local runtime fails on startup requests when either value is missing so
-Clerk keyless development mode is not used.
+When either value is missing, public routes still respond, but `/app/*` returns
+a controlled 503 because sign-in cannot be initialized. Clerk keyless
+development mode is not used.
 
 Required production Worker secrets/bindings:
 

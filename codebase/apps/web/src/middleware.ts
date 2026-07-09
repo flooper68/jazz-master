@@ -1,8 +1,15 @@
 import { clerkMiddleware } from '@clerk/astro/server'
 import type { MiddlewareHandler } from 'astro'
 import { env } from 'cloudflare:workers'
-import { redirectSignedOutAppRequest } from './server/auth/appRouteAuth'
-import { assertClerkRuntimeEnv } from './server/auth/clerkEnv'
+import {
+  createAuthConfigurationUnavailableResponse,
+  getAuthRouteMode,
+  redirectSignedOutAppRequest,
+} from './server/auth/appRouteAuth'
+import {
+  hasClerkRuntimeEnv,
+  type ClerkRuntimeEnvSources,
+} from './server/auth/clerkEnv'
 
 const clerkAuthMiddleware = clerkMiddleware((auth, context, next) => {
   const redirect = redirectSignedOutAppRequest(auth(), context.url)
@@ -15,11 +22,23 @@ const clerkAuthMiddleware = clerkMiddleware((auth, context, next) => {
 })
 
 export const onRequest: MiddlewareHandler = (context, next) => {
-  assertClerkRuntimeEnv({
+  const runtimeEnv = {
     cloudflareEnv: env,
     metaEnv: import.meta.env,
     processEnv: typeof process === 'undefined' ? undefined : process.env,
-  })
+  } satisfies ClerkRuntimeEnvSources
+  const routeMode = getAuthRouteMode(
+    context.url.pathname,
+    hasClerkRuntimeEnv(runtimeEnv),
+  )
+
+  if (routeMode === 'public') {
+    return next()
+  }
+
+  if (routeMode === 'unconfiguredProtectedApp') {
+    return createAuthConfigurationUnavailableResponse()
+  }
 
   return clerkAuthMiddleware(context, next)
 }

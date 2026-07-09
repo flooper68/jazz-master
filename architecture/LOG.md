@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — ISSUE-008 live Worker all-routes 500 fixed forward
+
+Fixed a blocker deployed-runtime incident where every probed live Worker route
+returned HTTP 500 after TASK-073. Clerk middleware no longer requires Clerk
+runtime keys before public `/` and public tRPC smoke routes can respond:
+configured environments still use Clerk, unconfigured public routes bypass auth,
+and unconfigured `/app/*` returns a controlled 503 rather than crashing Worker
+startup.
+
 ## 2026-07-09 — TASK-073 Workers observability
 
 Enabled Cloudflare Workers Logs and source-map upload in `wrangler.jsonc`
