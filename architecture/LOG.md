@@ -4,6 +4,13 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-10 — TASK-070 local backup/import removed
+
+Deleted the transitional local JSON backup parser, serializer, tests, and public
+exports after all durable feature data moved to Clerk-scoped Postgres. The
+Profile surface now describes account sync without offering or referencing a
+browser-local portability path; server-backed export remains out of scope.
+
 ## 2026-07-09 — TASK-077 Jazz Master APSS map proposed before migration
 
 Mapped the current operating model as a proposed `jazz-master` root with eight

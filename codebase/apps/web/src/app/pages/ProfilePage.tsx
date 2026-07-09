@@ -83,8 +83,7 @@ export default function ProfilePage() {
         <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
           <p className="text-sm text-zinc-300">
             Your profile, practice history, plans, and settings sync to your
-            signed-in account. Legacy browser-local JSON backups are no longer
-            imported.
+            signed-in account, so they are available wherever you sign in.
           </p>
         </div>
       </section>

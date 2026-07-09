@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-10 — `product/overview` updated for TASK-070: local JSON backup/import is removed, leaving only the generic localStorage compatibility layer for TASK-071.
 - 2026-07-09 — `project/overview` records TASK-077's proposed Jazz Master APSS hierarchy, derived map, explicit incomplete-loop gaps, and owner-gated TASK-079–084 migration sequence; current layer paths remain canonical.
 - 2026-07-09 — `project/overview` now links the public `flooper68/adaptive-problem-solving-systems` repository after TASK-078 extracted the framework; Jazz Master keeps no vendored APSS copy or submodule.
 - 2026-07-09 — `project/overview` records the staged APSS framework from TASK-076/ADR-013 and makes explicit that Jazz Master's current layer-based paths remain canonical until TASK-077 maps and plans the migration.

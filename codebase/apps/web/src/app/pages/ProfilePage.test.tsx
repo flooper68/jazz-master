@@ -66,12 +66,13 @@ describe('ProfilePage', () => {
     expect(getTrpcTestProfile()?.goalAreas).toEqual(['scales', 'arpeggios'])
   })
 
-  it('explains account sync without offering obsolete local backup actions', async () => {
+  it('explains account sync without offering local file actions', async () => {
     seedTrpcTestProfile(defaultProfile('2026-07-07T10:00:00.000Z'))
     await renderRoute('/profile')
 
     expect(await screen.findByRole('heading', { name: 'Data sync' })).toBeInTheDocument()
     expect(screen.getByText(/sync to your signed-in account/)).toBeInTheDocument()
+    expect(screen.getByText(/available wherever you sign in/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Export backup' })).toBeNull()
     expect(screen.queryByLabelText('Import backup')).toBeNull()
   })
