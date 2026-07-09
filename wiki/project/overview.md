@@ -3,7 +3,6 @@ title: How the project works
 updated: 2026-07-09
 sources:
   - AGENTS.md
-  - framework/apss/README.md
   - architecture/decisions/ADR-003-knowledge-system.md
   - architecture/decisions/ADR-004-closed-loop-product-process.md
   - architecture/decisions/ADR-007-wiki-derived-knowledge-layer.md
@@ -25,7 +24,7 @@ Jazz Master is built by a solo owner plus AI agents running in loops. The repo i
 | Layer | Role | Who writes |
 |---|---|---|
 | `strategy/` | Vision (VIS-001) and current goals | Owner only — agents read, never edit |
-| `framework/` | Portable, domain-independent specifications; APSS is staged here before project migration | Agents with owner-shaped decisions |
+| [External APSS repository](https://github.com/flooper68/adaptive-problem-solving-systems) | Portable, domain-independent framework referenced by Jazz Master | Framework maintainers; Jazz Master reads it |
 | `processes/` | Executable playbooks — the quality system itself | Agents propose, owner-shaped |
 | `work/` | Lifecycle-managed flow: epics, tasks, insights, issues, reviews | Agents freely (epics only when asked) |
 | `notes/` | Raw inputs — feedback, meetings, observations (ADR-004) | Anyone; processed, never implemented directly |
@@ -37,11 +36,13 @@ Jazz Master is built by a solo owner plus AI agents running in loops. The repo i
 
 ## Adaptive Problem-Solving Systems — staged, not migrated
 
-ADR-013 introduces a portable framework under `framework/apss/` for declaring
-hierarchical systems by problem, roles, strategy, artifact, consumer outcome,
-full execution/feedback loop, evidence streams, compiled knowledge, validation,
-and adaptation authority. The framework grew from NOTE-015's owner grill and is
-intended to generalize beyond software.
+ADR-013 adopts the external public
+[APSS framework](https://github.com/flooper68/adaptive-problem-solving-systems)
+for declaring hierarchical systems by problem, roles, strategy, artifact,
+consumer outcome, full execution/feedback loop, evidence streams, compiled
+knowledge, validation, and adaptation authority. TASK-076 grew the framework
+from NOTE-015's owner grill; TASK-078 extracted it from Jazz Master so it can
+generalize and evolve independently.
 
 The current project is **not yet organized into APSS system capsules**. The
 layered paths in the table above remain canonical. TASK-077 will map which

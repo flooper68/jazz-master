@@ -112,3 +112,11 @@ log-file EPERM warnings appeared; the command exited 0.
   `git diff --check` is clean.
 - Reuse: task-local confirmation of the existing shared-tree rule—re-read live
   context before patching frequently updated append-only indexes.
+
+### 2026-07-09 — relocated by TASK-078
+
+The framework files created at `framework/apss/` were moved immediately after
+this task into the public
+[`flooper68/adaptive-problem-solving-systems`](https://github.com/flooper68/adaptive-problem-solving-systems)
+repository. This task retains its original paths as historical execution
+evidence; the external repository is now canonical.

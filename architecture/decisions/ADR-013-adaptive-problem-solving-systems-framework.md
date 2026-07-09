@@ -25,7 +25,10 @@ entire repository depend on an unreviewed first draft.
 ## Decision
 
 - Define **Adaptive Problem-Solving Systems (APSS)** as a reusable,
-  domain-independent framework under `framework/apss/`.
+  domain-independent framework. TASK-076 initially defined it under
+  `framework/apss/`; TASK-078 moved its canonical home to the public
+  [APSS repository](https://github.com/flooper68/adaptive-problem-solving-systems)
+  so it can evolve independently and be reused by other projects.
 - APSS standardizes system responsibilities and declarations, not the mechanics
   of their strategy. Every declared system owns a full adaptive loop: durable
   planning/work logging, execution and artifact production, separate artifact
@@ -58,8 +61,8 @@ entire repository depend on an unreviewed first draft.
 
 ## Consequences
 
-- The repository gains a portable framework package without invalidating the
-  current canonical paths or dev loop.
+- Jazz Master references a portable public framework without vendoring it or
+  invalidating the current canonical paths and dev loop.
 - The next migration can assess current loops against an explicit contract
   instead of reorganizing files by intuition.
 - APSS is intentionally broad and initially grounded in owner reasoning rather
@@ -75,6 +78,7 @@ entire repository depend on an unreviewed first draft.
 
 - NOTE-015 — owner grill and full decision provenance.
 - TASK-076 — portable framework definition.
+- TASK-078 — extraction to the public APSS repository.
 - ADR-003 — current file-based knowledge system.
 - ADR-004 — current closed-loop product process.
 - ADR-007 — current derived wiki layer.

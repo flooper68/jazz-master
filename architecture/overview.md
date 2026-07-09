@@ -208,10 +208,12 @@ Target is **Cloudflare Workers** (not Pages — RES-002; ADR-006). `apps/web/wra
 
 The repo is also the product operating system. `strategy/` sets direction, `processes/` defines executable playbooks, `work/` tracks lifecycle-managed epics/tasks/insights/issues/reviews, `notes/` preserves raw feedback and observations, `research/` stores completed research, `architecture/` records system shape and decisions, and `artifacts/` stores human-facing rendered outputs such as presentations and visual reports. `wiki/` is a derived layer on top: compiled "how the product/project works" pages that cite the canonical files and lose to them on conflict (ADR-007; ops in `processes/wiki-maintenance.md`). Markdown files remain the canonical source for agent-facing instructions and project knowledge. See ADR-003 and ADR-004.
 
-ADR-013 adds `framework/apss/`, a portable specification for Adaptive
-Problem-Solving Systems: hierarchical systems that produce and validate
-artifacts, preserve evidence, compile knowledge, and adapt their own operation.
-It is a staged framework definition, not a claim that the current repository is
+ADR-013 adopts the external public
+[Adaptive Problem-Solving Systems framework](https://github.com/flooper68/adaptive-problem-solving-systems):
+hierarchical systems that produce and validate artifacts, preserve evidence,
+compile knowledge, and adapt their own operation. TASK-076 initially defined it
+inside Jazz Master; TASK-078 extracted it so other projects can use and evolve
+it independently. This link does not claim that the current repository is
 already organized as APSS system capsules. TASK-077 owns the mapping and
 migration plan; current `strategy/`, `processes/`, `work/`, and `wiki/` paths
 remain canonical until that work ships.

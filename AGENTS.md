@@ -9,7 +9,7 @@ This file is the canonical agent index; `CLAUDE.md` is a symlink to it. Edit onl
 | Layer | Path | What / rule |
 |---|---|---|
 | Strategy | `strategy/` | Vision (`VIS-001`) and current goals. **Read-only for agents.** |
-| Frameworks | `framework/` | Portable, domain-independent specifications. APSS lives in `framework/apss/`; Jazz Master has not migrated to it yet (ADR-013). |
+| Framework | [APSS](https://github.com/flooper68/adaptive-problem-solving-systems) | External public specification for Adaptive Problem-Solving Systems; Jazz Master has not migrated to system capsules yet (ADR-013, TASK-077). |
 | Processes | `processes/` | Executable playbooks — how we work (index below) |
 | Architecture | `architecture/` | `overview.md` (living map), `decisions/ADR-*` (decision records), `LOG.md` (engineering log) |
 | Work | `work/` | Flow items: epics, tasks, insights, issues, reviews — formats in `work/README.md` |

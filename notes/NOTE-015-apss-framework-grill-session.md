@@ -139,6 +139,9 @@ and Jazz Master migration are intentionally deferred work.
 ## Extracted work
 
 - TASK-076 — define and ship the APSS framework.
-- `framework/apss/work/research-foundations.md` — compare APSS with established
-  problem-solving and adaptive-systems literature.
+- [APSS foundations research](https://github.com/flooper68/adaptive-problem-solving-systems/blob/main/work/research-foundations.md)
+  — compare APSS with established problem-solving and adaptive-systems literature.
 - TASK-077 — map Jazz Master's concrete APSS hierarchy and plan its migration.
+
+Relocation follow-up: TASK-078 moved the framework from its initial local path
+to `flooper68/adaptive-problem-solving-systems` as decided in NOTE-016.

@@ -4,6 +4,13 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-078 APSS extracted to a public repository
+
+Moved the APSS specification out of Jazz Master into the public
+`flooper68/adaptive-problem-solving-systems` repository with a sibling local
+checkout. Jazz Master now references that canonical repository and keeps no
+vendored copy or submodule; TASK-077 remains the concrete-system mapping step.
+
 ## 2026-07-09 — TASK-076 APSS framework defined before migration
 
 Defined Adaptive Problem-Solving Systems as a portable framework for nested,

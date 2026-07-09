@@ -17,7 +17,9 @@ canonical files.
 
 ## Context
 
-TASK-076 defines APSS without changing the current layer-based repository.
+TASK-076 defined APSS without changing the current layer-based repository;
+TASK-078 moved that specification to the public
+[APSS repository](https://github.com/flooper68/adaptive-problem-solving-systems).
 Inventory the current strategy, planning, delivery, quality, product-learning,
 governance, research, and knowledge loops. Decide which qualify as independent
 adaptive systems, which remain processes/capabilities, and where the current
