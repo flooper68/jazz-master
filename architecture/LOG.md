@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-056 server DB smoke path
+
+Added the first app-side Drizzle runtime path: `src/server/db/smoke.ts` creates
+an optional server-only smoke client from `DATABASE_URL`, tRPC context exposes it
+without requiring configuration, and `/trpc/dbSmoke` runs `select 1` through
+Drizzle when a database is configured. Missing database config returns an
+`unconfigured` status, so normal dev/test/build flows still work with Docker
+stopped and product practice state remains local.
+
 ## 2026-07-09 — TASK-060 Railway migration service follow-up
 
 Railway service isolation was tightened after a deploy built
