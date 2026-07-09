@@ -90,3 +90,8 @@ src/server/trpc/router.test.ts` passed; `bun run --cwd codebase typecheck`
 passed; `bun run --cwd codebase check` passed with the known sandbox Wrangler
 log-file EPERM message during build, exiting 0. Deployed endpoint verification
 must run after this commit is pushed and Cloudflare Workers Builds deploys it.
+
+Post-push verification: immediately after push, `/trpc/dbSmoke` still returned
+`unconfigured` while Cloudflare Workers Builds caught up; after a short wait it
+returned `{"status":"ok","checkedAt":"2026-07-09T08:43:10.285Z"}`, confirming
+the deployed Worker is using the Hyperdrive-backed smoke path.
