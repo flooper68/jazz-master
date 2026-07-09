@@ -45,7 +45,7 @@ flowchart TD
 | Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
 | Astro shell | `codebase/apps/web/src/pages/` + `src/layouts/` | Astro's file router: public/server pages and API endpoints only (`index.astro`, `app/[...path].astro`, `trpc/[trpc].ts`). Never practice UI — that lives in the island. |
 | Server API | `codebase/apps/web/src/server/trpc/` | tRPC procedures (`init.ts`, `context.ts`, `router.ts`, `routers/`), Zod at every procedure boundary, served through the fetch adapter in `src/pages/trpc/[trpc].ts`. Runs in workerd — no React/DOM. Client consumes it only via `src/app/trpc.ts` (`AppRouter` imported as type only, so server code never enters the client bundle). |
-| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` | Server-only Drizzle schema and generated SQL migrations. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. Product practice state still uses local storage until a future task deliberately moves a server-owned feature to Postgres. |
+| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` + `codebase/apps/migration/drizzle/` | Server-only Drizzle schema and generated SQL migrations. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. Product practice state still uses local storage until a future task deliberately moves a server-owned feature to Postgres. |
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
@@ -89,9 +89,10 @@ and the default host port.
 Drizzle schema generation lives in the web workspace as migration infrastructure
 only: `apps/web/drizzle.config.ts` reads `DATABASE_URL`, uses PostgreSQL, points
 at `apps/web/src/server/db/schema.ts`, and writes generated migrations to
-`apps/web/drizzle/`. Applying migrations is owned by the dedicated
-`apps/migration` workspace app, whose config points at that same schema and
-committed migration directory. Run migrations from the repo root with:
+`apps/migration/drizzle/`. Applying migrations is owned by the dedicated
+`apps/migration` workspace app, whose deploy-time config reads that committed
+migration directory without needing the web workspace. Run migrations from the
+repo root with:
 
 ```sh
 DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master bun run --cwd codebase db:migrate
@@ -103,12 +104,14 @@ schema changes require them. `drizzle-kit push` is not the default workflow.
 with Docker stopped and without `DATABASE_URL`.
 
 Deployment migrations run from a Railway service, not from the Cloudflare build.
-Configure the Railway service against the shared Bun monorepo with root
-directory `codebase`, start command `bun run --cwd apps/migration start`, and a
-service-scoped `DATABASE_URL` variable containing the deployment Postgres
-connection string. The migration process exits after applying committed Drizzle
-migrations; Railway's default `On Failure` restart policy is acceptable, and
-`Never` is also fine for an intentional one-shot migration service.
+Configure the Railway service as an isolated service with root directory
+`codebase/apps/migration`; Railway will use that directory's Dockerfile and its
+`CMD ["bun", "run", "start"]` unless the dashboard overrides the start command
+with `bun run start`. Add a service-scoped `DATABASE_URL` variable containing
+the deployment Postgres connection string. The migration process exits after
+applying committed Drizzle migrations; Railway's default `On Failure` restart
+policy is acceptable, and `Never` is also fine for an intentional one-shot
+migration service.
 
 ## Deployment (TASK-024)
 

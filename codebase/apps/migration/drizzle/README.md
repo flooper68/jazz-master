@@ -1,6 +1,8 @@
 # Drizzle migrations
 
-Generated SQL migrations for the web app live in this directory.
+Generated SQL migrations for the web app live in this package so the Railway
+migration service can deploy from `codebase/apps/migration` without needing the
+full monorepo at runtime.
 
 Generate migrations from the repository root with a local `DATABASE_URL`:
 

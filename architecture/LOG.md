@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-060 Railway migration service follow-up
+
+Railway service isolation was tightened after a deploy built
+`codebase/apps/migration` with Railpack/npm and failed to resolve the monorepo
+`tsconfig.base.json`. The migration app now has a standalone `tsconfig`, its own
+Bun Dockerfile, and owns the committed Drizzle migration directory; web
+`db:generate` still reads the web schema but writes SQL metadata into
+`apps/migration/drizzle/`.
+
 ## 2026-07-09 — TASK-060 Railway migration service
 
 Deployment migrations moved out of Cloudflare Workers Builds and into a

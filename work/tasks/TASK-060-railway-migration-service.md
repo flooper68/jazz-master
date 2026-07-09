@@ -37,7 +37,8 @@ Boundaries:
 - [x] The migration app has a Railway-friendly `start` command that runs Drizzle
       migrations from committed SQL metadata using `DATABASE_URL`
 - [x] Root `db:migrate` routes through the migration app, while `db:generate`
-      still generates from the web schema/migration directory
+      still reads the web schema and writes committed migration SQL metadata
+      under the migration app
 - [x] Cloudflare Workers Builds documentation no longer requires `DATABASE_URL`
       or runs migrations
 - [x] Railway setup documentation says where to put the deployment Postgres
@@ -68,9 +69,8 @@ deployment `DATABASE_URL` plus migration service execution.
 ### 2026-07-09 — done
 
 Added `codebase/apps/migration` as the dedicated Bun workspace app for database
-migrations. Its Railway start command is `bun run --cwd apps/migration start`;
-root `db:migrate` routes through the app, while `db:generate` remains tied to the
-web schema/migration directory. Updated architecture, wiki, and Drizzle docs so
+migrations. Root `db:migrate` routes through the app, while `db:generate` remains
+tied to the web schema. Updated architecture, wiki, and Drizzle docs so
 Cloudflare Workers Builds only installs and runs `bun run check`; Railway owns
 the deployment `DATABASE_URL` and migration execution. The app was named
 `migration` per owner correction. Review: independent subagents are not allowed
@@ -84,3 +84,18 @@ escalation for localhost Docker access; stale operational contract search
 returned no matches; `bun run --cwd codebase check` passed with 46 test files and
 632 tests. The check build logged Wrangler's known sandbox EPERM for its home
 directory log file but exited 0.
+
+### 2026-07-09 — Railway build fix
+
+Railway deploy logs showed the service being built from `codebase/apps/migration`
+with Railpack/npm, so `tsc -b` resolved `../../tsconfig.base.json` to
+`/tsconfig.base.json` and failed before migrations could run. Follow-up fix:
+made the migration app self-contained for an isolated Railway service by copying
+the shared compiler options into its `tsconfig`, moving committed migration SQL
+metadata to `apps/migration/drizzle/`, changing web `db:generate` to write
+there, and adding a Bun Dockerfile. Railway setup is now root directory
+`codebase/apps/migration`, Dockerfile builder, `DATABASE_URL` as a service
+variable, and no required dashboard start-command override. Review: independent
+subagent spawning is blocked by the current tool policy unless the user
+explicitly asks for delegation, so the code-review and security/privacy
+checklists were completed as a degraded self-review.

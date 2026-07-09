@@ -43,7 +43,7 @@ Boundaries:
 - [ ] Drizzle schema includes a small mock practice-data table under
       `codebase/apps/web/src/server/db/schema.ts`
 - [ ] A generated SQL migration for the mock table is committed under
-      `codebase/apps/web/drizzle/`
+      `codebase/apps/migration/drizzle/`
 - [ ] Server-only repository/client code can create and read mock practice rows
       through Drizzle
 - [ ] A tRPC procedure validates input/output with Zod and exercises the
