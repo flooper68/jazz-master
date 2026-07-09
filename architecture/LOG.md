@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-069 preferences moved to Clerk/Postgres
+
+Moved notation display mode, scoring tolerance, and per-exercise play-along
+tempo from three typed localStorage stores to protected tRPC plus Clerk-scoped
+Postgres tables. Scalar preferences share one `user_preferences` row;
+`play_along_tempos` is uniquely keyed by user/exercise and clamps saved BPM to
+40–200. Existing local preference and backup payloads are ignored by design.
+
 ## 2026-07-09 — TASK-068 server-computed daily plans
 
 Removed the `daily-plans` localStorage store and local plan backup/import

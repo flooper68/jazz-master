@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
@@ -7,9 +7,11 @@ import { LESSONS } from '../../content'
 import { renderRoute } from '../../test/renderRoute'
 import {
   getTrpcTestSessions,
+  getTrpcTestPreferences,
   resetTrpcTestData,
   seedTrpcTestProfile,
   seedTrpcTestSessions,
+  setTrpcTestPreferenceBehavior,
   setTrpcTestSessionsRepositoryAvailable,
 } from '../../test/trpcTestFetch'
 
@@ -96,6 +98,43 @@ describe('PracticePage', () => {
     expect(screen.getByText(first.exercises[0].title)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
+    expect(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    ).toBeInTheDocument()
+  })
+
+  it('waits for server preferences before mounting runner controls', async () => {
+    const user = userEvent.setup()
+    setTrpcTestPreferenceBehavior({ readDelayMs: 100 })
+    await renderPage()
+    const first = LESSONS[0]
+
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+
+    expect(screen.getByText('Loading practice settings...')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Begin / })).toBeNull()
+    expect(await screen.findByRole('button', { name: /^Begin / })).toBeEnabled()
+  })
+
+  it('does not mount runner controls when preferences cannot be read', async () => {
+    const user = userEvent.setup()
+    setTrpcTestPreferenceBehavior({ repositoryAvailable: false })
+    await renderPage()
+    const first = LESSONS[0]
+
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+
+    expect(
+      await screen.findByText(
+        'Practice settings must load before this lesson can start.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Begin / })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Back to lessons' }))
     expect(
       screen.getByRole('button', { name: `Start ${first.title}` }),
     ).toBeInTheDocument()
@@ -241,5 +280,60 @@ describe('PracticePage', () => {
       ).toBeGreaterThan(0)
     })
     expect(localStorage.getItem('jazz-master:daily-plans')).toBeNull()
+  })
+
+  it('restores all preferences from the server after browser storage is cleared', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      'jazz-master:notation-preferences',
+      JSON.stringify({ version: 1, data: { displayMode: 'tab' } }),
+    )
+    const first = LESSONS[0]
+    const firstExercise = first.exercises[0]
+    const initialRender = await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: `Show staff notation for ${firstExercise.title}`,
+      }),
+    )
+    await user.selectOptions(screen.getByLabelText('Scoring tolerance'), 'strict')
+    fireEvent.change(
+      screen.getByRole('slider', {
+        name: `Tempo for ${firstExercise.title}`,
+      }),
+      { target: { value: '72' } },
+    )
+
+    await waitFor(() => {
+      expect(getTrpcTestPreferences()).toEqual({
+        notationDisplayMode: 'staff',
+        scoringTolerance: 'strict',
+        playAlongTempos: { [firstExercise.id]: 72 },
+      })
+    })
+
+    initialRender.unmount()
+    localStorage.clear()
+    await renderPage()
+    await user.click(
+      screen.getByRole('button', { name: `Start ${first.title}` }),
+    )
+
+    expect(
+      await screen.findByRole('img', {
+        name: `${firstExercise.title} — staff notation`,
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Scoring tolerance')).toHaveValue('strict')
+    expect(
+      screen.getByRole('slider', {
+        name: `Tempo for ${firstExercise.title}`,
+      }),
+    ).toHaveValue('72')
+    expect(localStorage.length).toBe(0)
   })
 })

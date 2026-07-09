@@ -2,7 +2,6 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
-import { serializeStorageBackup } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
 import {
   getTrpcTestProfile,
@@ -67,31 +66,13 @@ describe('ProfilePage', () => {
     expect(getTrpcTestProfile()?.goalAreas).toEqual(['scales', 'arpeggios'])
   })
 
-  it('imports a backup without replacing the server profile', async () => {
-    const user = userEvent.setup()
-    seedTrpcTestProfile({
-      ...defaultProfile('2026-07-06T10:00:00.000Z'),
-      minutesPerDay: 45,
-    })
-    const backup = serializeStorageBackup(new Date('2026-07-08T10:00:00.000Z'))
-
-    seedTrpcTestProfile({
-      ...defaultProfile('2026-07-07T10:00:00.000Z'),
-      goalAreas: ['standards'],
-      minutesPerDay: 10,
-    })
+  it('explains account sync without offering obsolete local backup actions', async () => {
+    seedTrpcTestProfile(defaultProfile('2026-07-07T10:00:00.000Z'))
     await renderRoute('/profile')
 
-    expect(await screen.findByRole('radio', { name: '10 min' })).toBeChecked()
-    await user.upload(
-      screen.getByLabelText('Import backup'),
-      new File([backup], 'jazz-master-backup.json', {
-        type: 'application/json',
-      }),
-    )
-
-    expect(await screen.findByText('Backup imported.')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked()
-    expect(getTrpcTestProfile()?.minutesPerDay).toBe(10)
+    expect(await screen.findByRole('heading', { name: 'Data sync' })).toBeInTheDocument()
+    expect(screen.getByText(/sync to your signed-in account/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Export backup' })).toBeNull()
+    expect(screen.queryByLabelText('Import backup')).toBeNull()
   })
 })

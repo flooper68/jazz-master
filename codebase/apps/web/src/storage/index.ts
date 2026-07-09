@@ -8,32 +8,6 @@ export {
 } from './backup'
 export type { ImportStorageBackupResult, StorageBackup } from './backup'
 export {
-  MIN_PLAY_ALONG_TEMPO_BPM,
-  clampPlayAlongTempo,
-  getPlayAlongTempo,
-  playAlongTemposStore,
-  savePlayAlongTempo,
-} from './playAlongTempos'
-export type { StoredPlayAlongTempos } from './playAlongTempos'
-export {
-  DEFAULT_NOTATION_DISPLAY_MODE,
-  NOTATION_DISPLAY_MODES,
-  getNotationDisplayMode,
-  isNotationDisplayMode,
-  notationPreferencesStore,
-  saveNotationDisplayMode,
-} from './notationPreferences'
-export type { NotationDisplayMode, NotationPreferences } from './notationPreferences'
-export {
-  DEFAULT_SCORE_TOLERANCE,
-  SCORE_TOLERANCE_PRESETS,
-  getScoreTolerance,
-  isScoreTolerancePreset,
-  scoringPreferencesStore,
-  saveScoreTolerance,
-} from './scoringPreferences'
-export type { ScoringPreferences } from './scoringPreferences'
-export {
   defaultProfile,
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,

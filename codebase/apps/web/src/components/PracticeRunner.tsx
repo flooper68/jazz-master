@@ -21,6 +21,16 @@ import {
 } from '../audio/recording'
 import { deriveRhythm, resolveExercise, type Exercise, type Lesson } from '../content'
 import {
+  MAX_PLAY_ALONG_TEMPO_BPM,
+  MIN_PLAY_ALONG_TEMPO_BPM,
+  NOTATION_DISPLAY_MODES,
+  SCORE_TOLERANCE_PRESETS,
+  clampPlayAlongTempo,
+  getPlayAlongTempo,
+  type NotationDisplayMode,
+  type PracticePreferences,
+} from '../appData/preferences'
+import {
   analyzeTake,
   scoreTake,
   type ExpectedNote,
@@ -28,24 +38,6 @@ import {
   type ScoreComponents,
   type TakeScore,
 } from '../scoring'
-import {
-  MAX_PLAY_ALONG_TEMPO_BPM,
-  MIN_PLAY_ALONG_TEMPO_BPM,
-  clampPlayAlongTempo,
-  getPlayAlongTempo,
-  savePlayAlongTempo,
-} from '../storage/playAlongTempos'
-import {
-  NOTATION_DISPLAY_MODES,
-  getNotationDisplayMode,
-  saveNotationDisplayMode,
-  type NotationDisplayMode,
-} from '../storage/notationPreferences'
-import {
-  SCORE_TOLERANCE_PRESETS,
-  getScoreTolerance,
-  saveScoreTolerance,
-} from '../storage/scoringPreferences'
 import type {
   ExerciseGrade,
   ExerciseScore,
@@ -111,6 +103,10 @@ interface PracticeRunnerProps {
   startedAt: number
   onSessionChange: (session: PracticeSession) => void | Promise<void>
   onExit: () => void
+  preferences: PracticePreferences
+  onNotationDisplayModeChange: (mode: NotationDisplayMode) => void
+  onScoringToleranceChange: (tolerance: ScoreTolerancePreset) => void
+  onPlayAlongTempoChange: (exerciseId: string, tempoBpm: number) => void
 }
 
 export function PracticeRunner({
@@ -119,6 +115,10 @@ export function PracticeRunner({
   startedAt,
   onSessionChange,
   onExit,
+  preferences,
+  onNotationDisplayModeChange,
+  onScoringToleranceChange,
+  onPlayAlongTempoChange,
 }: PracticeRunnerProps) {
   const { state, beginExercise, completeExercise, grade } = usePracticeRunner({
     lesson,
@@ -215,6 +215,10 @@ export function PracticeRunner({
         onBeginExercise={beginExercise}
         onCompleteExercise={completeExercise}
         onGrade={grade}
+        preferences={preferences}
+        onNotationDisplayModeChange={onNotationDisplayModeChange}
+        onScoringToleranceChange={onScoringToleranceChange}
+        onPlayAlongTempoChange={onPlayAlongTempoChange}
       />
     </section>
   )
@@ -225,24 +229,32 @@ function ExercisePanel({
   onBeginExercise,
   onCompleteExercise,
   onGrade,
+  preferences,
+  onNotationDisplayModeChange,
+  onScoringToleranceChange,
+  onPlayAlongTempoChange,
 }: {
   exercise: Exercise
   onBeginExercise: () => void
   onCompleteExercise: () => void
   onGrade: (grade: ExerciseGrade, score?: ExerciseScore) => void
+  preferences: PracticePreferences
+  onNotationDisplayModeChange: (mode: NotationDisplayMode) => void
+  onScoringToleranceChange: (tolerance: ScoreTolerancePreset) => void
+  onPlayAlongTempoChange: (exerciseId: string, tempoBpm: number) => void
 }) {
   const resolved = useMemo(() => resolveExercise(exercise), [exercise])
   const notationMeasures = useMemo(
     () => deriveRhythm(resolved.positions),
     [resolved.positions],
   )
-  const [tempoBpm, setTempoBpm] = useState(() =>
-    getPlayAlongTempo(exercise.id, exercise.tempoBpm),
+  const tempoBpm = getPlayAlongTempo(
+    preferences,
+    exercise.id,
+    exercise.tempoBpm,
   )
-  const [notationDisplayMode, setNotationDisplayMode] = useState(
-    getNotationDisplayMode,
-  )
-  const [scoreTolerance, setScoreTolerance] = useState(getScoreTolerance)
+  const notationDisplayMode = preferences.notationDisplayMode
+  const scoreTolerance = preferences.scoringTolerance
   const [scoreAnalysis, setScoreAnalysis] = useState<ScoreAnalysisState>(
     initialScoreAnalysisState,
   )
@@ -393,8 +405,7 @@ function ExercisePanel({
       Number(event.currentTarget.value),
       exercise.tempoBpm,
     )
-    setTempoBpm(nextTempo)
-    savePlayAlongTempo(exercise.id, nextTempo, exercise.tempoBpm)
+    onPlayAlongTempoChange(exercise.id, nextTempo)
     engineRef.current?.setTempoBpm(nextTempo)
     if (playbackStatus === 'playing' && !loopEnabled) {
       schedulePlaybackCompletion(nextTempo)
@@ -424,8 +435,7 @@ function ExercisePanel({
   }
 
   function updateNotationDisplayMode(mode: NotationDisplayMode): void {
-    setNotationDisplayMode(mode)
-    saveNotationDisplayMode(mode)
+    onNotationDisplayModeChange(mode)
   }
 
   function updateScoreTolerance(
@@ -434,8 +444,7 @@ function ExercisePanel({
     const value = event.currentTarget.value
     if (!SCORE_TOLERANCE_PRESETS.includes(value as ScoreTolerancePreset)) return
     const tolerance = value as ScoreTolerancePreset
-    setScoreTolerance(tolerance)
-    saveScoreTolerance(tolerance)
+    onScoringToleranceChange(tolerance)
     resetScoreAnalysis()
   }
 

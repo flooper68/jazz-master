@@ -7,13 +7,16 @@ import {
   within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  defaultPracticePreferences,
+  type NotationDisplayMode,
+  type PracticePreferences,
+} from '../appData/preferences'
 import type { PracticeSession } from '../appData/session'
 import { resolveExercise, type Lesson } from '../content'
 import type { ExpectedNote, TolerancePreset } from '../scoring'
-import { getNotationDisplayMode } from '../storage/notationPreferences'
-import { getPlayAlongTempo } from '../storage/playAlongTempos'
-import { getScoreTolerance } from '../storage/scoringPreferences'
 import { PracticeRunner } from './PracticeRunner'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -52,6 +55,9 @@ const createObjectUrlMock = vi.fn()
 const revokeObjectUrlMock = vi.fn()
 const audioContextConstructedMock = vi.fn()
 let mediaRecorderStartError: Error | null = null
+const saveNotationDisplayModeMock = vi.fn()
+const saveScoringToleranceMock = vi.fn()
+const savePlayAlongTempoMock = vi.fn()
 
 class MockMediaRecorder {
   static isTypeSupported = vi.fn((mimeType: string) =>
@@ -161,17 +167,64 @@ function renderRunner(
   onExit = vi.fn(),
   runnerLesson = lesson,
   onSessionChange: (session: PracticeSession) => void = vi.fn(),
+  initialPreferences: PracticePreferences = defaultPracticePreferences(),
 ) {
   render(
-    <PracticeRunner
+    <RunnerHarness
       lesson={runnerLesson}
       sessionId="session-1"
       startedAt={Date.now()}
       onSessionChange={onSessionChange}
       onExit={onExit}
+      initialPreferences={initialPreferences}
     />,
   )
   return onExit
+}
+
+function RunnerHarness({
+  initialPreferences,
+  ...runnerProps
+}: Omit<ComponentProps<typeof PracticeRunner>,
+  | 'preferences'
+  | 'onNotationDisplayModeChange'
+  | 'onScoringToleranceChange'
+  | 'onPlayAlongTempoChange'
+> & {
+  initialPreferences: PracticePreferences
+}) {
+  const [preferences, setPreferences] = useState(initialPreferences)
+
+  return (
+    <PracticeRunner
+      {...runnerProps}
+      preferences={preferences}
+      onNotationDisplayModeChange={(mode: NotationDisplayMode) => {
+        saveNotationDisplayModeMock(mode)
+        setPreferences((current) => ({
+          ...current,
+          notationDisplayMode: mode,
+        }))
+      }}
+      onScoringToleranceChange={(tolerance) => {
+        saveScoringToleranceMock(tolerance)
+        setPreferences((current) => ({
+          ...current,
+          scoringTolerance: tolerance,
+        }))
+      }}
+      onPlayAlongTempoChange={(exerciseId, tempoBpm) => {
+        savePlayAlongTempoMock(exerciseId, tempoBpm)
+        setPreferences((current) => ({
+          ...current,
+          playAlongTempos: {
+            ...current.playAlongTempos,
+            [exerciseId]: tempoBpm,
+          },
+        }))
+      }}
+    />
+  )
 }
 
 async function finishAndGrade(
@@ -241,6 +294,9 @@ beforeEach(() => {
       clarity: 0.95,
     },
   ])
+  saveNotationDisplayModeMock.mockClear()
+  saveScoringToleranceMock.mockClear()
+  savePlayAlongTempoMock.mockClear()
   scoringMock.scoreTake.mockReset()
   scoringMock.scoreTake.mockImplementation(
     (_events: unknown, expected: ExpectedNote[], tolerance: TolerancePreset) => ({
@@ -346,7 +402,7 @@ describe('PracticeRunner', () => {
       }),
     )
 
-    expect(getNotationDisplayMode()).toBe('staff')
+    expect(saveNotationDisplayModeMock).toHaveBeenLastCalledWith('staff')
     expect(
       screen.getByRole('img', {
         name: 'C major — open position — staff notation',
@@ -359,12 +415,32 @@ describe('PracticeRunner', () => {
       }),
     )
 
-    expect(getNotationDisplayMode()).toBe('tab')
+    expect(saveNotationDisplayModeMock).toHaveBeenLastCalledWith('tab')
     expect(
       screen.getByRole('img', {
         name: 'C major — open position — tablature',
       }),
     ).toBeInTheDocument()
+  })
+
+  it('uses server-provided preferences when an exercise opens', () => {
+    renderRunner(vi.fn(), lesson, vi.fn(), {
+      notationDisplayMode: 'tab',
+      scoringTolerance: 'strict',
+      playAlongTempos: { 'fx-1': 72 },
+    })
+
+    expect(
+      screen.getByRole('img', {
+        name: 'C major — open position — tablature',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Scoring tolerance')).toHaveValue('strict')
+    expect(
+      screen.getByRole('slider', {
+        name: 'Tempo for C major — open position',
+      }),
+    ).toHaveValue('72')
   })
 
   it('makes the score viewport keyboard focusable', async () => {
@@ -552,7 +628,7 @@ describe('PracticeRunner', () => {
       { target: { value: '48' } },
     )
 
-    expect(getPlayAlongTempo('fx-1', 60)).toBe(48)
+    expect(savePlayAlongTempoMock).toHaveBeenLastCalledWith('fx-1', 48)
     expect(screen.getAllByText('48 BPM').length).toBeGreaterThan(0)
 
     await user.click(
@@ -579,7 +655,7 @@ describe('PracticeRunner', () => {
 
     fireEvent.change(tempoSlider, { target: { value: '200' } })
 
-    expect(getPlayAlongTempo('fx-1', 60)).toBe(200)
+    expect(savePlayAlongTempoMock).toHaveBeenLastCalledWith('fx-1', 200)
     expect(screen.getAllByText('200 BPM').length).toBeGreaterThan(0)
 
     await user.click(
@@ -838,7 +914,7 @@ describe('PracticeRunner', () => {
       'strict',
     )
 
-    expect(getScoreTolerance()).toBe('strict')
+    expect(saveScoringToleranceMock).toHaveBeenLastCalledWith('strict')
   })
 
   it('does not persist a punitive score when the take is unclear', async () => {

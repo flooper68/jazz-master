@@ -1,7 +1,13 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import type { PracticeProfile } from '../appData/profile'
+import {
+  clampPlayAlongTempo,
+  defaultPracticePreferences,
+  type PracticePreferences,
+} from '../appData/preferences'
 import type { PracticeSession } from '../appData/session'
 import type { ProfileRepository } from '../server/db/profiles'
+import type { PreferenceRepository } from '../server/db/preferences'
 import type { SessionRepository } from '../server/db/sessions'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
@@ -9,13 +15,25 @@ import { appRouter } from '../server/trpc/router'
 export const TEST_CLERK_USER_ID = 'user_test_123'
 
 const profiles = new Map<string, PracticeProfile>()
+const preferences = new Map<string, PracticePreferences>()
 const sessions = new Map<string, Map<string, PracticeSession>>()
 let sessionsRepositoryAvailable = true
+let preferenceReadDelayMs = 0
+let preferenceWriteDelayMs = 0
+let preferenceWriteFailuresRemaining = 0
+let preferenceRepositoryAvailable = true
+const preferenceWriteCalls: string[] = []
 
 export function resetTrpcTestData() {
   profiles.clear()
+  preferences.clear()
   sessions.clear()
   sessionsRepositoryAvailable = true
+  preferenceReadDelayMs = 0
+  preferenceWriteDelayMs = 0
+  preferenceWriteFailuresRemaining = 0
+  preferenceRepositoryAvailable = true
+  preferenceWriteCalls.length = 0
 }
 
 export function seedTrpcTestProfile(profile: PracticeProfile) {
@@ -25,6 +43,37 @@ export function seedTrpcTestProfile(profile: PracticeProfile) {
 export function getTrpcTestProfile(): PracticeProfile | null {
   const profile = profiles.get(TEST_CLERK_USER_ID)
   return profile ? cloneProfile(profile) : null
+}
+
+export function seedTrpcTestPreferences(seed: PracticePreferences) {
+  preferences.set(TEST_CLERK_USER_ID, clonePreferences(seed))
+}
+
+export function getTrpcTestPreferences(): PracticePreferences {
+  return clonePreferences(
+    preferences.get(TEST_CLERK_USER_ID) ?? defaultPracticePreferences(),
+  )
+}
+
+export function setTrpcTestPreferenceBehavior({
+  readDelayMs = 0,
+  writeDelayMs = 0,
+  writeFailures = 0,
+  repositoryAvailable = true,
+}: {
+  readDelayMs?: number
+  writeDelayMs?: number
+  writeFailures?: number
+  repositoryAvailable?: boolean
+}) {
+  preferenceReadDelayMs = readDelayMs
+  preferenceWriteDelayMs = writeDelayMs
+  preferenceWriteFailuresRemaining = writeFailures
+  preferenceRepositoryAvailable = repositoryAvailable
+}
+
+export function getTrpcTestPreferenceWriteCalls(): string[] {
+  return [...preferenceWriteCalls]
 }
 
 export function seedTrpcTestSessions(seedSessions: PracticeSession[]) {
@@ -69,6 +118,71 @@ const sessionRepository = {
   },
 } satisfies SessionRepository
 
+const preferenceRepository = {
+  async getPreferences(clerkUserId) {
+    await delay(preferenceReadDelayMs)
+    return getStoredPreferences(clerkUserId)
+  },
+
+  async setNotationDisplayMode(clerkUserId, mode) {
+    await beforePreferenceWrite('notation')
+    const current = getStoredPreferences(clerkUserId)
+    preferences.set(
+      clerkUserId,
+      clonePreferences({ ...current, notationDisplayMode: mode }),
+    )
+    return mode
+  },
+
+  async setScoringTolerance(clerkUserId, tolerance) {
+    await beforePreferenceWrite('scoring')
+    const current = getStoredPreferences(clerkUserId)
+    preferences.set(
+      clerkUserId,
+      clonePreferences({ ...current, scoringTolerance: tolerance }),
+    )
+    return tolerance
+  },
+
+  async setPlayAlongTempo(clerkUserId, exerciseId, tempoBpm) {
+    await beforePreferenceWrite(`tempo:${exerciseId}`)
+    const current = getStoredPreferences(clerkUserId)
+    const clamped = clampPlayAlongTempo(tempoBpm)
+    preferences.set(
+      clerkUserId,
+      clonePreferences({
+        ...current,
+        playAlongTempos: {
+          ...current.playAlongTempos,
+          [exerciseId]: clamped,
+        },
+      }),
+    )
+    return clamped
+  },
+} satisfies PreferenceRepository
+
+async function beforePreferenceWrite(key: string): Promise<void> {
+  preferenceWriteCalls.push(key)
+  await delay(preferenceWriteDelayMs)
+  if (preferenceWriteFailuresRemaining > 0) {
+    preferenceWriteFailuresRemaining -= 1
+    throw new Error('Preference test write failed')
+  }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return milliseconds > 0
+    ? new Promise((resolve) => setTimeout(resolve, milliseconds))
+    : Promise.resolve()
+}
+
+function getStoredPreferences(clerkUserId: string): PracticePreferences {
+  return clonePreferences(
+    preferences.get(clerkUserId) ?? defaultPracticePreferences(),
+  )
+}
+
 function cloneProfile(profile: PracticeProfile): PracticeProfile {
   return {
     levels: { ...profile.levels },
@@ -93,6 +207,13 @@ function cloneSession(session: PracticeSession): PracticeSession {
           }
         : {}),
     })),
+  }
+}
+
+function clonePreferences(value: PracticePreferences): PracticePreferences {
+  return {
+    ...value,
+    playAlongTempos: { ...value.playAlongTempos },
   }
 }
 
@@ -124,6 +245,9 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         profiles: profileRepository,
+        preferences: preferenceRepositoryAvailable
+          ? preferenceRepository
+          : null,
         sessions: sessionsRepositoryAvailable ? sessionRepository : null,
         users: null,
       }),

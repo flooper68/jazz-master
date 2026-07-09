@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { defaultProfile, type PracticeProfile } from '../../appData/profile'
+import {
+  clampPlayAlongTempo,
+  defaultPracticePreferences,
+  type NotationDisplayMode,
+  type PracticePreferences,
+} from '../../appData/preferences'
 import type { PracticeSession } from '../../appData/session'
 import { LESSONS } from '../../content'
 import { generatePlan } from '../../planner/dailyPlan'
 import type { StructuredLogger } from '../observability/logger'
 import type { ProfileRepository } from '../db/profiles'
+import type { PreferenceRepository } from '../db/preferences'
 import {
   SessionOwnerMismatchError,
   type SessionRepository,
@@ -491,6 +498,138 @@ describe('appRouter.sessions', () => {
   })
 })
 
+describe('appRouter.preferences', () => {
+  it('returns current defaults before the user has saved preferences', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        preferences: createMemoryPreferenceRepository(),
+      }),
+    )
+
+    await expect(caller.preferences.get()).resolves.toEqual({
+      status: 'ok',
+      preferences: defaultPracticePreferences(),
+    })
+  })
+
+  it('writes and reads every preference for only the authenticated user', async () => {
+    const preferences = createMemoryPreferenceRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        preferences,
+      }),
+    )
+    const otherCaller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_456' },
+        preferences,
+      }),
+    )
+
+    await expect(
+      caller.preferences.setNotationDisplayMode({ mode: 'tab' }),
+    ).resolves.toEqual({ status: 'ok' })
+    await expect(
+      caller.preferences.setScoringTolerance({ tolerance: 'strict' }),
+    ).resolves.toEqual({ status: 'ok' })
+    await expect(
+      caller.preferences.setPlayAlongTempo({
+        exerciseId: 'exercise-1',
+        tempoBpm: 72,
+      }),
+    ).resolves.toEqual({ status: 'ok' })
+
+    await expect(caller.preferences.get()).resolves.toEqual({
+      status: 'ok',
+      preferences: {
+        notationDisplayMode: 'tab',
+        scoringTolerance: 'strict',
+        playAlongTempos: { 'exercise-1': 72 },
+      },
+    })
+    await expect(otherCaller.preferences.get()).resolves.toEqual({
+      status: 'ok',
+      preferences: defaultPracticePreferences(),
+    })
+  })
+
+  it('clamps finite tempo writes to the supported range', async () => {
+    const preferences = createMemoryPreferenceRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        preferences,
+      }),
+    )
+
+    await caller.preferences.setPlayAlongTempo({
+      exerciseId: 'slow',
+      tempoBpm: 12,
+    })
+    await caller.preferences.setPlayAlongTempo({
+      exerciseId: 'fast',
+      tempoBpm: 240,
+    })
+
+    await expect(caller.preferences.get()).resolves.toEqual({
+      status: 'ok',
+      preferences: expect.objectContaining({
+        playAlongTempos: { slow: 40, fast: 200 },
+      }),
+    })
+  })
+
+  it('rejects invalid modes, tolerances, exercise IDs, and non-finite tempos', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        preferences: createMemoryPreferenceRepository(),
+      }),
+    )
+
+    await expect(
+      caller.preferences.setNotationDisplayMode({ mode: 'score' as never }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      caller.preferences.setScoringTolerance({
+        tolerance: 'punitive' as never,
+      }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      caller.preferences.setPlayAlongTempo({ exerciseId: '', tempoBpm: 72 }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      caller.preferences.setPlayAlongTempo({
+        exerciseId: 'exercise-1',
+        tempoBpm: Number.NaN,
+      }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+  })
+
+  it('rejects unauthenticated reads and writes before the repository is called', async () => {
+    let calls = 0
+    const preferences = createMemoryPreferenceRepository(() => {
+      calls += 1
+    })
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: null },
+        preferences,
+      }),
+    )
+
+    await expect(caller.preferences.get()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+    })
+    await expect(
+      caller.preferences.setNotationDisplayMode({ mode: 'staff' }),
+    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+    expect(calls).toBe(0)
+  })
+})
+
 describe('appRouter.planner.today', () => {
   it('computes a baseline plan from the authenticated profile and curriculum', async () => {
     const profiles = createMemoryProfileRepository()
@@ -705,6 +844,54 @@ function createMemorySessionRepository(): SessionRepository {
       const stored = cloneSession(session)
       sessions.set(session.id, { clerkUserId, session: stored })
       return cloneSession(stored)
+    },
+  }
+}
+
+function createMemoryPreferenceRepository(
+  onCall: () => void = () => undefined,
+): PreferenceRepository {
+  const preferencesByUser = new Map<string, PracticePreferences>()
+  const get = (clerkUserId: string) => {
+    const stored = preferencesByUser.get(clerkUserId)
+    return stored
+      ? { ...stored, playAlongTempos: { ...stored.playAlongTempos } }
+      : defaultPracticePreferences()
+  }
+  const save = (clerkUserId: string, preferences: PracticePreferences) => {
+    preferencesByUser.set(clerkUserId, {
+      ...preferences,
+      playAlongTempos: { ...preferences.playAlongTempos },
+    })
+  }
+
+  return {
+    async getPreferences(clerkUserId) {
+      onCall()
+      return get(clerkUserId)
+    },
+    async setNotationDisplayMode(clerkUserId, mode: NotationDisplayMode) {
+      onCall()
+      save(clerkUserId, { ...get(clerkUserId), notationDisplayMode: mode })
+      return mode
+    },
+    async setScoringTolerance(clerkUserId, tolerance) {
+      onCall()
+      save(clerkUserId, { ...get(clerkUserId), scoringTolerance: tolerance })
+      return tolerance
+    },
+    async setPlayAlongTempo(clerkUserId, exerciseId, tempoBpm) {
+      onCall()
+      const clamped = clampPlayAlongTempo(tempoBpm)
+      const current = get(clerkUserId)
+      save(clerkUserId, {
+        ...current,
+        playAlongTempos: {
+          ...current.playAlongTempos,
+          [exerciseId]: clamped,
+        },
+      })
+      return clamped
     },
   }
 }

@@ -1,7 +1,7 @@
 import { displayAccidentals, noteName } from '@jazz-master/theory'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { NotationMeasure } from '../content/rhythm'
-import type { NotationDisplayMode } from '../storage/notationPreferences'
+import type { NotationDisplayMode } from '../appData/preferences'
 import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
 import type { NotationSize } from './notationRender'
 

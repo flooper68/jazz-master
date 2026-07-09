@@ -43,6 +43,57 @@ export const practiceProfiles = pgTable('practice_profiles', {
     .defaultNow(),
 })
 
+export const userPreferences = pgTable(
+  'user_preferences',
+  {
+    clerkUserId: text('clerk_user_id')
+      .primaryKey()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    notationDisplayMode: text('notation_display_mode').notNull(),
+    scoringTolerance: text('scoring_tolerance').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      'user_preferences_notation_display_mode_check',
+      sql`${table.notationDisplayMode} in ('both', 'staff', 'tab')`,
+    ),
+    check(
+      'user_preferences_scoring_tolerance_check',
+      sql`${table.scoringTolerance} in ('lenient', 'standard', 'strict')`,
+    ),
+  ],
+)
+
+export const playAlongTempos = pgTable(
+  'play_along_tempos',
+  {
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    exerciseId: text('exercise_id').notNull(),
+    tempoBpm: integer('tempo_bpm').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.clerkUserId, table.exerciseId] }),
+    check(
+      'play_along_tempos_tempo_bpm_check',
+      sql`${table.tempoBpm} >= 40 and ${table.tempoBpm} <= 200`,
+    ),
+  ],
+)
+
 export const practiceProfileGoalAreas = pgTable(
   'practice_profile_goal_areas',
   {
@@ -174,10 +225,12 @@ export const practiceSessionScoreNotes = pgTable(
 
 // Server-only Drizzle schema entrypoint.
 export const schema = {
+  playAlongTempos,
   practiceSessionResults,
   practiceSessionScoreNotes,
   practiceSessions,
   practiceProfileGoalAreas,
   practiceProfiles,
+  userPreferences,
   users,
 }

@@ -8,6 +8,10 @@ import {
   type ProfileRepository,
 } from '../db/profiles'
 import {
+  createPreferenceRepository,
+  type PreferenceRepository,
+} from '../db/preferences'
+import {
   createSessionRepository,
   type SessionRepository,
 } from '../db/sessions'
@@ -24,6 +28,7 @@ interface CreateContextOptions {
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
   profiles?: ProfileRepository | null
+  preferences?: PreferenceRepository | null
   sessions?: SessionRepository | null
   users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
@@ -47,6 +52,12 @@ function hasUsersOption(options: unknown): options is CreateContextOptions {
 
 function hasProfilesOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'profiles' in options
+}
+
+function hasPreferencesOption(options: unknown): options is CreateContextOptions {
+  return (
+    typeof options === 'object' && options !== null && 'preferences' in options
+  )
 }
 
 function hasSessionsOption(options: unknown): options is CreateContextOptions {
@@ -108,6 +119,9 @@ export function createContext(options?: unknown) {
   const profileRepository = hasProfilesOption(options)
     ? options.profiles
     : createProfileRepository({ hyperdrive })
+  const preferenceRepository = hasPreferencesOption(options)
+    ? options.preferences
+    : createPreferenceRepository({ hyperdrive })
   const sessionRepository = hasSessionsOption(options)
     ? options.sessions
     : createSessionRepository({ hyperdrive })
@@ -118,6 +132,7 @@ export function createContext(options?: unknown) {
     logger,
     requestMetadata,
     profiles: profileRepository,
+    preferences: preferenceRepository,
     sessions: sessionRepository,
     users: userRepository,
   }

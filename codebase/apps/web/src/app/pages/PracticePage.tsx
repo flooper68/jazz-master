@@ -10,6 +10,7 @@ import type { Lesson } from '../../content'
 import { completedLessonIdsOn } from '../../dashboard'
 import { useTodayPlan, type DailyPlan, type TodayPlanStatus } from '../../planner'
 import { useTRPC } from '../trpc'
+import { usePreferences } from '../usePreferences'
 
 // Authored order is curriculum order, so grouping preserves level progression.
 const areas = [...new Set(LESSONS.map((lesson) => lesson.area))]
@@ -41,6 +42,7 @@ export default function PracticePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { status, message, plan, sessions, refreshSessions } = useTodayPlan()
+  const preferenceControls = usePreferences()
   const { mutate: saveSession } = useMutation(
     trpc.sessions.upsert.mutationOptions({
       onSuccess() {
@@ -113,14 +115,49 @@ export default function PracticePage() {
           Practice
         </h1>
         <div className="mt-6">
-          <PracticeRunner
-            key={activeRun.sessionId}
-            lesson={activeRun.lesson}
-            sessionId={activeRun.sessionId}
-            startedAt={activeRun.startedAt}
-            onSessionChange={saveSessionProgress}
-            onExit={exitRun}
-          />
+          {preferenceControls.message && (
+            <p role="alert" className="mb-3 text-sm text-red-300">
+              {preferenceControls.message}
+            </p>
+          )}
+          {preferenceControls.status === 'pending' ? (
+            <p className="text-sm text-zinc-300">Loading practice settings...</p>
+          ) : preferenceControls.status === 'error' ? (
+            <div>
+              <p className="text-sm text-zinc-300">
+                Practice settings must load before this lesson can start.
+              </p>
+              <button
+                type="button"
+                onClick={exitRun}
+                className="mt-3 rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+              >
+                Back to lessons
+              </button>
+            </div>
+          ) : (
+            <>
+              <p aria-live="polite" className="mb-3 text-sm text-zinc-400">
+                {preferenceControls.isSaving ? 'Saving practice settings...' : ''}
+              </p>
+              <PracticeRunner
+                key={activeRun.sessionId}
+                lesson={activeRun.lesson}
+                sessionId={activeRun.sessionId}
+                startedAt={activeRun.startedAt}
+                onSessionChange={saveSessionProgress}
+                onExit={exitRun}
+                preferences={preferenceControls.preferences}
+                onNotationDisplayModeChange={
+                  preferenceControls.saveNotationDisplayMode
+                }
+                onScoringToleranceChange={
+                  preferenceControls.saveScoringTolerance
+                }
+                onPlayAlongTempoChange={preferenceControls.savePlayAlongTempo}
+              />
+            </>
+          )}
         </div>
       </div>
     )

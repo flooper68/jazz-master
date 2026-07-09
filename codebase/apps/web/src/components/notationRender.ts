@@ -19,7 +19,7 @@ import {
   Voice,
 } from 'vexflow/bravura'
 import type { NotationMeasure } from '../content/rhythm'
-import type { NotationDisplayMode } from '../storage/notationPreferences'
+import type { NotationDisplayMode } from '../appData/preferences'
 import { stavePitch } from './notationPitch'
 
 // VexFlow's default font stack puts Bravura (the music font) first even for
