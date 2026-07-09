@@ -4,14 +4,14 @@ Living document — update it whenever the shape of the system changes. Decision
 
 ## System shape
 
-Jazz Master is a local-first practice app, still with no accounts: all product practice state lives in the browser (localStorage), and the current server database path is infrastructure-only. See ADR-002 and ADR-006.
+Jazz Master is a local-first practice app, still with no accounts: all product practice state lives in the browser (localStorage), and the current server database paths are infrastructure/mock-only. See ADR-002 and ADR-006.
 
-Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Inside the island, routing is TanStack Router (file-based, TASK-022). Since TASK-023 there is also a **typed tRPC API surface**: server procedures under `apps/web/src/server/trpc/` served by the Astro catch-all endpoint `src/pages/trpc/[trpc].ts` (tRPC fetch adapter), consumed in the island through `@trpc/tanstack-react-query` on one shared React Query `QueryClient` (`src/app/providers.tsx`) — health plus database-smoke scaffolding for now, no auth. Since TASK-028/TASK-064, local server-persistence development has a repo-owned Docker Compose Postgres service, `.env.example` connection convention, Drizzle ORM migration workflow, and a server-only `dbSmoke` tRPC procedure that can run `select 1` through Drizzle using the deployed `HYPERDRIVE` binding or local `DATABASE_URL`. Product practice state remains local, and production database infrastructure remains owner-owned.
+Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Inside the island, routing is TanStack Router (file-based, TASK-022). Since TASK-023 there is also a **typed tRPC API surface**: server procedures under `apps/web/src/server/trpc/` served by the Astro catch-all endpoint `src/pages/trpc/[trpc].ts` (tRPC fetch adapter), consumed in the island through `@trpc/tanstack-react-query` on one shared React Query `QueryClient` (`src/app/providers.tsx`) — health, database smoke, and mock practice-data DB scaffolding for now, no auth. Since TASK-028/TASK-064, local server-persistence development has a repo-owned Docker Compose Postgres service, `.env.example` connection convention, Drizzle ORM migration workflow, and a server-only `dbSmoke` tRPC procedure that can run `select 1` through Drizzle using the deployed `HYPERDRIVE` binding or local `DATABASE_URL`. Since TASK-061, a separate `mockPractice.record` tRPC mutation can write/read practice-shaped mock rows through the same server-only Drizzle/Postgres boundary. Product practice state remains local, and production database infrastructure remains owner-owned.
 
 ```mermaid
 flowchart TD
     astro["Astro shell — src/pages/*.astro: landing at /, catch-all app/[...path].astro, tRPC endpoint trpc/[trpc].ts"]
-    server["apps/web/src/server/trpc/ — appRouter: typed procedures (health, dbSmoke)"]
+    server["apps/web/src/server/trpc/ — appRouter: typed procedures (health, dbSmoke, mockPractice)"]
     subgraph SPA island — client:only under /app/*
         shell[apps/web/src/app/AppShell.tsx — TanStack Router basepath=/app]
         pages[apps/web/src/app/pages/ — route-level modules]
@@ -22,10 +22,10 @@ flowchart TD
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
         storage[(apps/web/src/storage/ — typed stores over localStorage)]
     end
-    db[(apps/web/src/server/db/ — Drizzle client + Postgres smoke path)]
+    db[(apps/web/src/server/db/ — Drizzle clients + Postgres smoke/mock paths)]
     astro --> shell
     astro --> server
-    server -. server-only dbSmoke .-> db
+    server -. server-only dbSmoke/mockPractice .-> db
     shell -. typed tRPC calls over /trpc .-> server
     shell --> pages
     pages --> components
@@ -46,8 +46,8 @@ flowchart TD
 |---|---|---|
 | Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
 | Astro shell | `codebase/apps/web/src/pages/` + `src/layouts/` | Astro's file router: public/server pages and API endpoints only (`index.astro`, `app/[...path].astro`, `trpc/[trpc].ts`). Never practice UI — that lives in the island. |
-| Server API | `codebase/apps/web/src/server/trpc/` | tRPC procedures (`init.ts`, `context.ts`, `router.ts`, `routers/`), Zod at every procedure boundary, served through the fetch adapter in `src/pages/trpc/[trpc].ts`. Runs in workerd — no React/DOM. Client consumes it only via `src/app/trpc.ts` (`AppRouter` imported as type only, so server code never enters the client bundle). Current procedures are `health` and the server-only database smoke check. |
-| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` + `codebase/apps/migration/drizzle/` | Server-only Drizzle schema, generated SQL migrations, and a smoke client that prefers the deployed Cloudflare `HYPERDRIVE` binding and falls back to local `DATABASE_URL`. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. Product practice state still uses local storage until a future task deliberately moves a server-owned feature to Postgres. |
+| Server API | `codebase/apps/web/src/server/trpc/` | tRPC procedures (`init.ts`, `context.ts`, `router.ts`, `routers/`), Zod at every procedure boundary, served through the fetch adapter in `src/pages/trpc/[trpc].ts`. Runs in workerd — no React/DOM. Client consumes it only via `src/app/trpc.ts` (`AppRouter` imported as type only, so server code never enters the client bundle). Current procedures are `health`, the server-only database smoke check, and the mock practice-data write/read probe. |
+| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` + `codebase/apps/migration/drizzle/` | Server-only Drizzle schema, generated SQL migrations, a smoke client that prefers the deployed Cloudflare `HYPERDRIVE` binding and falls back to local `DATABASE_URL`, and a `mock_practice_rows` table/repository for practice-shaped mock data. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. Product practice state still uses local storage until ADR-012/TASK-063 deliberately moves a real server-owned feature to Postgres. |
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
@@ -124,6 +124,15 @@ context exposes no DB client. The root `dbSmoke` procedure returns
 after a Drizzle `select 1` succeeds, and returns a generic error shape if the
 query fails. This proves the server request path can reach Postgres without
 making Docker or a live database part of `bun run --cwd codebase check`.
+
+The mock practice-data path lives under
+`apps/web/src/server/db/mockPractice.ts` and
+`apps/web/src/server/trpc/routers/mockPractice.ts`. It writes rows to the
+`mock_practice_rows` table and reads the recent mock rows back through Drizzle,
+with Zod validating the tRPC input/output shape. It is deliberately not product
+persistence: profile, sessions, planner, scores, preferences, and backups remain
+owned by typed browser stores until ADR-012 chooses the server-owned persistence
+target and TASK-063 moves a real slice.
 
 ## Deployment (TASK-024)
 

@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-061 mock practice DB path
+
+Added the first committed Drizzle table, `mock_practice_rows`, plus a
+server-only repository and `mockPractice.record` tRPC mutation that writes a
+practice-shaped mock row and reads recent rows back. This proves a typed
+Postgres write/read path without moving real profile/session/planner/score data
+off local storage.
+
 ## 2026-07-09 — TASK-064 Hyperdrive binding wired to dbSmoke
 
 Added the owner-provided Cloudflare Hyperdrive config id to `apps/web/wrangler.jsonc`

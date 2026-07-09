@@ -1,4 +1,5 @@
 import { router } from './init'
+import { mockPractice } from './routers/mockPractice'
 import { dbSmoke, health } from './routers/system'
 
 // `health` mounts at the root (not under a `system.` prefix) so the endpoint
@@ -6,6 +7,7 @@ import { dbSmoke, health } from './routers/system'
 export const appRouter = router({
   health,
   dbSmoke,
+  mockPractice,
 })
 
 export type AppRouter = typeof appRouter

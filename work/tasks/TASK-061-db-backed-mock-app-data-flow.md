@@ -2,7 +2,7 @@
 id: TASK-061
 title: Add DB-backed mock app-data flow
 epic: EPIC-013
-status: backlog
+status: done
 depends_on: [TASK-056]
 source: NOTE-013
 created: 2026-07-09
@@ -40,22 +40,22 @@ Boundaries:
 
 ## Acceptance criteria
 
-- [ ] Drizzle schema includes a small mock practice-data table under
+- [x] Drizzle schema includes a small mock practice-data table under
       `codebase/apps/web/src/server/db/schema.ts`
-- [ ] A generated SQL migration for the mock table is committed under
+- [x] A generated SQL migration for the mock table is committed under
       `codebase/apps/migration/drizzle/`
-- [ ] Server-only repository/client code can create and read mock practice rows
+- [x] Server-only repository/client code can create and read mock practice rows
       through Drizzle
-- [ ] A tRPC procedure validates input/output with Zod and exercises the
+- [x] A tRPC procedure validates input/output with Zod and exercises the
       repository path
-- [ ] Tests cover the tRPC procedure through an in-process boundary without
+- [x] Tests cover the tRPC procedure through an in-process boundary without
       requiring a live database
-- [ ] With local Postgres running and migrations applied, an agent-runnable
+- [x] With local Postgres running and migrations applied, an agent-runnable
       local check proves a mock row can be written and read through the app
       server path
-- [ ] Client/shared-domain database leakage search returns no matches
-- [ ] Architecture docs explain this as mock DB usage, not product persistence
-- [ ] `bun run --cwd codebase check` passes
+- [x] Client/shared-domain database leakage search returns no matches
+- [x] Architecture docs explain this as mock DB usage, not product persistence
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -71,3 +71,34 @@ rg -n "DATABASE_URL|postgres://|drizzle-orm|from 'pg'|from \"pg\"" codebase/apps
 ```
 
 It must return no client/shared-domain database leakage.
+
+## Log
+
+### 2026-07-09 — claimed (agent)
+
+Plan: add a tiny mock practice table to the server Drizzle schema, generate a
+committed migration in the migration app, add server-only repository code for
+create/read, expose it through a validated tRPC procedure, cover the boundary
+with tests that inject a fake repository instead of requiring a live database,
+then run the task's local Postgres verification and leakage search. The mock
+path must stay clearly separate from real product persistence.
+
+### 2026-07-09 — done
+
+Added `mock_practice_rows` to the server-only Drizzle schema, generated
+`apps/migration/drizzle/0000_green_tigra.sql`, and added a
+`createMockPracticeRepository` path that inserts a mock practice row and reads
+recent rows back. Exposed it as `mockPractice.record` with Zod input/output
+contracts and in-process tRPC tests using an injected fake repository, so the
+normal test/check path does not need Docker. Updated architecture and wiki docs
+to state this is mock DB usage, not product persistence. Review: independent
+subagent spawning is blocked by the current tool policy unless the user
+explicitly asks for delegation, so the code-review and security/privacy
+checklists were completed as a degraded self-review. Verification: generated
+migration succeeded; local Postgres ran on alternate port 55432 because 5432 was
+occupied; `db:migrate` succeeded after sandbox escalation for localhost Docker
+access; a Bun app-router harness called `mockPractice.record` through real
+`createContext()` and read back the inserted row; the client/shared-domain DB
+leakage search returned no matches; Docker was stopped; `bun run --cwd codebase
+check` passed with 47 test files and 643 tests. The check build logged
+Wrangler's known sandbox EPERM for its home-directory log file but exited 0.

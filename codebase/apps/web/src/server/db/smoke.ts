@@ -1,12 +1,13 @@
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import {
+  readDatabaseUrl,
+  resolveDatabaseConnectionString,
+  type HyperdriveConnection,
+} from './connection'
 
 export interface DatabaseSmokeClient {
   check(): Promise<void>
-}
-
-export interface HyperdriveConnection {
-  connectionString?: string
 }
 
 interface DatabaseSmokeClientOptions {
@@ -14,23 +15,11 @@ interface DatabaseSmokeClientOptions {
   hyperdrive?: HyperdriveConnection | null
 }
 
-function readDatabaseUrl(): string | undefined {
-  if (typeof process === 'undefined') {
-    return undefined
-  }
-
-  return process.env.DATABASE_URL
-}
-
 export function resolveDatabaseSmokeConnectionString({
   databaseUrl,
   hyperdrive = null,
 }: DatabaseSmokeClientOptions): string | null {
-  const connectionString = (
-    hyperdrive?.connectionString ?? databaseUrl
-  )?.trim()
-
-  return connectionString || null
+  return resolveDatabaseConnectionString({ databaseUrl, hyperdrive })
 }
 
 export function createDatabaseSmokeClient({
