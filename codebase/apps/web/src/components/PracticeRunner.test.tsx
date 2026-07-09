@@ -8,12 +8,12 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PracticeSession } from '../appData/session'
 import { resolveExercise, type Lesson } from '../content'
 import type { ExpectedNote, TolerancePreset } from '../scoring'
 import { getNotationDisplayMode } from '../storage/notationPreferences'
 import { getPlayAlongTempo } from '../storage/playAlongTempos'
 import { getScoreTolerance } from '../storage/scoringPreferences'
-import { sessionsStore } from '../storage/sessions'
 import { PracticeRunner } from './PracticeRunner'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -157,12 +157,17 @@ const lesson: Lesson = {
   ],
 }
 
-function renderRunner(onExit = vi.fn(), runnerLesson = lesson) {
+function renderRunner(
+  onExit = vi.fn(),
+  runnerLesson = lesson,
+  onSessionChange: (session: PracticeSession) => void = vi.fn(),
+) {
   render(
     <PracticeRunner
       lesson={runnerLesson}
       sessionId="session-1"
       startedAt={Date.now()}
+      onSessionChange={onSessionChange}
       onExit={onExit}
     />,
   )
@@ -674,6 +679,7 @@ describe('PracticeRunner', () => {
 
   it('records a take after a metronome count-in and replays it in-session', async () => {
     const user = userEvent.setup()
+    const onSessionChange = vi.fn()
     const fastLesson: Lesson = {
       ...lesson,
       exercises: [
@@ -681,7 +687,7 @@ describe('PracticeRunner', () => {
         lesson.exercises[1],
       ],
     }
-    renderRunner(vi.fn(), fastLesson)
+    renderRunner(vi.fn(), fastLesson, onSessionChange)
 
     await user.click(
       screen.getByRole('button', {
@@ -728,7 +734,7 @@ describe('PracticeRunner', () => {
     )
     expect(screen.getByText(/Take captured/)).toBeInTheDocument()
     expect(trackStopMock).toHaveBeenCalled()
-    expect(sessionsStore.get()).toEqual([])
+    expect(onSessionChange).not.toHaveBeenCalled()
 
     await user.click(
       screen.getByRole('button', {
@@ -747,6 +753,7 @@ describe('PracticeRunner', () => {
 
   it('scores a recorded take and persists the score with the graded session', async () => {
     const user = userEvent.setup()
+    const onSessionChange = vi.fn()
     const fastLesson: Lesson = {
       ...lesson,
       exercises: [
@@ -754,7 +761,7 @@ describe('PracticeRunner', () => {
         lesson.exercises[1],
       ],
     }
-    renderRunner(vi.fn(), fastLesson)
+    renderRunner(vi.fn(), fastLesson, onSessionChange)
 
     await user.click(
       screen.getByRole('button', {
@@ -792,30 +799,34 @@ describe('PracticeRunner', () => {
       ).getByRole('button', { name: 'Got it' }),
     )
 
-    expect(sessionsStore.get()).toMatchObject([
-      {
-        id: 'session-1',
-        score: 92,
-        results: [
-          {
-            exerciseId: 'fx-1',
-            grade: 'got-it',
-            score: {
-              score: 92,
-              tolerance: 'standard',
-              components: { pitch: 100, timing: 83, completeness: 100 },
-              perNote: expect.arrayContaining([
-                expect.objectContaining({
-                  expectedId: 'fx-1-0',
-                  expectedNote: 'E',
-                  verdict: 'correct',
-                }),
-              ]),
+    await waitFor(() => {
+      expect(onSessionChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          id: 'session-1',
+          score: 92,
+          results: [
+            {
+              exerciseId: 'fx-1',
+              grade: 'got-it',
+              score: {
+                score: 92,
+                tolerance: 'standard',
+                components: { pitch: 100, timing: 83, completeness: 100 },
+                perNote: expect.arrayContaining([
+                  expect.objectContaining({
+                    expectedId: 'fx-1-0',
+                    expectedNote: 'E',
+                    verdict: 'correct',
+                  }),
+                ]),
+                extras: 0,
+                analyzedAt: expect.any(String),
+              },
             },
-          },
-        ],
-      },
-    ])
+          ],
+        }),
+      )
+    })
   })
 
   it('persists the selected scoring tolerance preference', async () => {
@@ -832,6 +843,7 @@ describe('PracticeRunner', () => {
 
   it('does not persist a punitive score when the take is unclear', async () => {
     const user = userEvent.setup()
+    const onSessionChange = vi.fn()
     scoringMock.analyzeTake.mockReturnValueOnce([])
     const fastLesson: Lesson = {
       ...lesson,
@@ -840,7 +852,7 @@ describe('PracticeRunner', () => {
         lesson.exercises[1],
       ],
     }
-    renderRunner(vi.fn(), fastLesson)
+    renderRunner(vi.fn(), fastLesson, onSessionChange)
 
     await user.click(
       screen.getByRole('button', {
@@ -871,14 +883,17 @@ describe('PracticeRunner', () => {
       ).getByRole('button', { name: 'Shaky' }),
     )
 
-    expect(sessionsStore.get()).toMatchObject([
-      {
-        id: 'session-1',
-        results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
-      },
-    ])
-    expect(sessionsStore.get()[0].score).toBeUndefined()
-    expect(sessionsStore.get()[0].results[0].score).toBeUndefined()
+    await waitFor(() => {
+      expect(onSessionChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          id: 'session-1',
+          results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
+        }),
+      )
+    })
+    const saved = onSessionChange.mock.lastCall?.[0]
+    expect(saved?.score).toBeUndefined()
+    expect(saved?.results[0].score).toBeUndefined()
   })
 
   it('stops active recording capture when Next opens grading', async () => {
@@ -1014,7 +1029,8 @@ describe('PracticeRunner', () => {
 
   it('runs the happy path: grade both exercises, see the summary, persist a completed session', async () => {
     const user = userEvent.setup()
-    const onExit = renderRunner()
+    const onSessionChange = vi.fn()
+    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
 
     expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
     expect(screen.getByText('C major — open position')).toBeInTheDocument()
@@ -1039,17 +1055,19 @@ describe('PracticeRunner', () => {
     expect(screen.getByText('Got it')).toBeInTheDocument()
     expect(screen.getByText('Shaky')).toBeInTheDocument()
 
-    expect(sessionsStore.get()).toMatchObject([
-      {
-        id: 'session-1',
-        lessonId: 'fixture-lesson',
-        completed: true,
-        results: [
-          { exerciseId: 'fx-1', grade: 'got-it' },
-          { exerciseId: 'fx-2', grade: 'shaky' },
-        ],
-      },
-    ])
+    await waitFor(() => {
+      expect(onSessionChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          id: 'session-1',
+          lessonId: 'fixture-lesson',
+          completed: true,
+          results: [
+            { exerciseId: 'fx-1', grade: 'got-it' },
+            { exerciseId: 'fx-2', grade: 'shaky' },
+          ],
+        }),
+      )
+    })
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(onExit).toHaveBeenCalledTimes(1)
@@ -1057,28 +1075,32 @@ describe('PracticeRunner', () => {
 
   it('persists a partial session marked incomplete when abandoned mid-lesson', async () => {
     const user = userEvent.setup()
-    const onExit = renderRunner()
+    const onSessionChange = vi.fn()
+    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
 
     await finishAndGrade(user, 'C major — open position', 'Missed')
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
 
     expect(onExit).toHaveBeenCalledTimes(1)
-    expect(sessionsStore.get()).toMatchObject([
-      {
-        id: 'session-1',
-        lessonId: 'fixture-lesson',
-        completed: false,
-        results: [{ exerciseId: 'fx-1', grade: 'missed' }],
-      },
-    ])
+    await waitFor(() => {
+      expect(onSessionChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          id: 'session-1',
+          lessonId: 'fixture-lesson',
+          completed: false,
+          results: [{ exerciseId: 'fx-1', grade: 'missed' }],
+        }),
+      )
+    })
   })
 
   it('persists nothing until an exercise is graded', async () => {
     const user = userEvent.setup()
-    const onExit = renderRunner()
+    const onSessionChange = vi.fn()
+    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
     expect(onExit).toHaveBeenCalledTimes(1)
-    expect(sessionsStore.get()).toEqual([])
+    expect(onSessionChange).not.toHaveBeenCalled()
   })
 
   it('moves focus to the lesson heading when the runner appears', () => {

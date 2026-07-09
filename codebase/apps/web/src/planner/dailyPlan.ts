@@ -1,7 +1,7 @@
 import type { Lesson, LessonArea } from '../content'
 import { defaultProfile } from '../appData/profile'
 import type { PracticeArea, PracticeProfile } from '../appData/profile'
-import type { ExerciseGrade, PracticeSession } from '../storage/sessions'
+import type { ExerciseGrade, PracticeSession } from '../appData/session'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const NEEDS_ATTENTION_GRADES = new Set<ExerciseGrade>(['shaky', 'missed'])

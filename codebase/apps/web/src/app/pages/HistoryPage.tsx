@@ -1,5 +1,7 @@
 import { useId, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import type { PracticeSession } from '../../appData/session'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { LESSONS } from '../../content'
 import type { LessonArea } from '../../content'
@@ -11,7 +13,7 @@ import {
   tallyGrades,
   type TimeRange,
 } from '../../history'
-import { sessionsStore, type PracticeSession } from '../../storage'
+import { useTRPC } from '../trpc'
 
 const GRADE_LABELS = {
   'got-it': 'Got it',
@@ -39,10 +41,15 @@ const exerciseTitleById = new Map(
 const selectClasses =
   'rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
 
+const EMPTY_SESSIONS: readonly PracticeSession[] = []
+
 export default function HistoryPage() {
-  // Read-only view: the store is only written by the runner, so one read at
-  // mount is current for the page's lifetime.
-  const [sessions] = useState(() => sessionsStore.get())
+  const trpc = useTRPC()
+  const sessionsQuery = useQuery(trpc.sessions.list.queryOptions())
+  const sessions =
+    sessionsQuery.data?.status === 'ok'
+      ? sessionsQuery.data.sessions
+      : EMPTY_SESSIONS
   const [now] = useState(() => new Date())
   const [area, setArea] = useState<LessonArea | 'all'>('all')
   const [range, setRange] = useState<TimeRange>('all')
@@ -62,7 +69,23 @@ export default function HistoryPage() {
         Every practice session, day by day. Expand a session for per-exercise
         grades.
       </p>
-      {sessions.length === 0 ? (
+      {sessionsQuery.isPending ? (
+        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">Loading history...</p>
+        </div>
+      ) : sessionsQuery.isError || sessionsQuery.data?.status === 'error' ? (
+        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">
+            Practice history could not be loaded.
+          </p>
+        </div>
+      ) : sessionsQuery.data?.status === 'unconfigured' ? (
+        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-sm text-zinc-300">
+            Practice history is not configured yet.
+          </p>
+        </div>
+      ) : sessions.length === 0 ? (
         <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
           <p className="text-sm text-zinc-300">
             No practice sessions yet. Run your first lesson on the{' '}

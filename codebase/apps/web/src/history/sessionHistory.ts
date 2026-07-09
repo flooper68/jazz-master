@@ -1,6 +1,6 @@
 import type { LessonArea } from '../content'
 import { toPlanDate } from '../planner'
-import type { ExerciseResult, PracticeSession } from '../storage/sessions'
+import type { ExerciseResult, PracticeSession } from '../appData/session'
 
 export type TimeRange = 'all' | '7d' | '30d'
 

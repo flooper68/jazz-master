@@ -1,14 +1,14 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useProfile } from '../app/ProfileProvider'
+import { useTRPC } from '../app/trpc'
 import type { PracticeProfile } from '../appData/profile'
+import type { PracticeSession } from '../appData/session'
 import { LESSONS } from '../content'
-import {
-  getDailyPlan,
-  saveDailyPlan,
-  sessionsStore,
-  type PracticeSession,
-} from '../storage'
+import { getDailyPlan, saveDailyPlan } from '../storage'
 import { generatePlan, toPlanDate, type DailyPlan } from './dailyPlan'
+
+const EMPTY_SESSIONS: readonly PracticeSession[] = []
 
 export interface TodayPlan {
   today: Date
@@ -26,10 +26,17 @@ export interface TodayPlan {
  * so the day's plan never reshuffles as history changes.
  */
 export function useTodayPlan(): TodayPlan {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const [today] = useState(() => new Date())
   const { profile } = useProfile()
   const resolvedProfile = profile as PracticeProfile
-  const [sessions, setSessions] = useState(() => sessionsStore.get())
+  const sessionsQuery = useQuery(trpc.sessions.list.queryOptions())
+  const sessions =
+    sessionsQuery.data?.status === 'ok'
+      ? sessionsQuery.data.sessions
+      : EMPTY_SESSIONS
+  const sessionsReady = sessionsQuery.data?.status === 'ok'
   const [storedPlan, setStoredPlan] = useState<DailyPlan | null>(() =>
     getDailyPlan(toPlanDate(today)),
   )
@@ -39,12 +46,17 @@ export function useTodayPlan(): TodayPlan {
   )
 
   useEffect(() => {
+    if (!sessionsReady) return
     if (storedPlan !== null) return
     saveDailyPlan(plan)
     setStoredPlan(plan)
-  }, [plan, storedPlan])
+  }, [plan, sessionsReady, storedPlan])
 
-  const refreshSessions = () => setSessions(sessionsStore.get())
+  const refreshSessions = () => {
+    void queryClient.invalidateQueries({
+      queryKey: trpc.sessions.list.queryKey(),
+    })
+  }
 
   return { today, profile: resolvedProfile, sessions, plan, refreshSessions }
 }

@@ -49,9 +49,10 @@ import {
 import type {
   ExerciseGrade,
   ExerciseScore,
+  PracticeSession,
   ScoreTolerancePreset,
   ScoreVerdict,
-} from '../storage/sessions'
+} from '../appData/session'
 import { Fretboard, type FretboardHighlight } from './Fretboard'
 import { Notation } from './Notation'
 import { NOTATION_DISPLAY_LABELS } from './notationDisplay'
@@ -108,6 +109,7 @@ interface PracticeRunnerProps {
   /** Session identity is owned by the Start handler, not this component. */
   sessionId: string
   startedAt: number
+  onSessionChange: (session: PracticeSession) => void
   onExit: () => void
 }
 
@@ -115,12 +117,14 @@ export function PracticeRunner({
   lesson,
   sessionId,
   startedAt,
+  onSessionChange,
   onExit,
 }: PracticeRunnerProps) {
   const { state, beginExercise, completeExercise, grade } = usePracticeRunner({
     lesson,
     sessionId,
     startedAt,
+    onSessionChange,
   })
   const [exiting, setExiting] = useState(false)
   // ISSUE-002: the runner appearing (Start) and the summary replacing it (last

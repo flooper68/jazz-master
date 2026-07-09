@@ -1,15 +1,16 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
+import type { PracticeSession } from '../../appData/session'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
-import {
-  sessionsStore,
-  type PracticeSession,
-} from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
-import { resetTrpcTestData, seedTrpcTestProfile } from '../../test/trpcTestFetch'
+import {
+  resetTrpcTestData,
+  seedTrpcTestProfile,
+  seedTrpcTestSessions,
+} from '../../test/trpcTestFetch'
 
 const scalesLesson = LESSONS.find((lesson) => lesson.area === 'scales')!
 const arpeggiosLesson = LESSONS.find((lesson) => lesson.area === 'arpeggios')!
@@ -22,12 +23,12 @@ function daysAgo(days: number, hour: number): Date {
 }
 
 function session(
-  id: string,
+  _id: string,
   startedAt: Date,
   overrides: Partial<PracticeSession> = {},
 ): PracticeSession {
   return {
-    id,
+    id: crypto.randomUUID(),
     lessonId: scalesLesson.id,
     startedAt: startedAt.toISOString(),
     durationSeconds: 300,
@@ -40,8 +41,12 @@ function session(
   }
 }
 
-function renderPage() {
-  return renderRoute('/history')
+async function renderPage() {
+  const result = await renderRoute('/history')
+  await waitFor(() => {
+    expect(screen.queryByText('Loading history...')).not.toBeInTheDocument()
+  })
+  return result
 }
 
 function sessionItem(accessibleTitle: string | RegExp): HTMLElement {
@@ -58,7 +63,7 @@ beforeEach(() => {
 
 describe('HistoryPage', () => {
   it('groups sessions by day, newest day first, with duration and grade tally', async () => {
-    sessionsStore.set([
+    seedTrpcTestSessions([
       session('older', daysAgo(2, 9), { durationSeconds: 45 }),
       session('today', daysAgo(0, 8), { durationSeconds: 725 }),
     ])
@@ -79,7 +84,7 @@ describe('HistoryPage', () => {
 
   it('expands a session to show per-exercise grades', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([session('one', daysAgo(0, 8))])
+    seedTrpcTestSessions([session('one', daysAgo(0, 8))])
     await renderPage()
 
     const details = screen.getByRole('button', { name: /^Details for/ })
@@ -95,7 +100,7 @@ describe('HistoryPage', () => {
 
   it('marks incomplete sessions and states how far they got', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([
+    seedTrpcTestSessions([
       session('partial', daysAgo(0, 8), {
         completed: false,
         results: [{ exerciseId: scalesLesson.exercises[0].id, grade: 'missed' }],
@@ -114,7 +119,7 @@ describe('HistoryPage', () => {
 
   it('filters by area', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([
+    seedTrpcTestSessions([
       session('scales-run', daysAgo(0, 8)),
       session('arps-run', daysAgo(0, 9), {
         lessonId: arpeggiosLesson.id,
@@ -133,7 +138,7 @@ describe('HistoryPage', () => {
 
   it('filters by time range', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([
+    seedTrpcTestSessions([
       session('recent', daysAgo(1, 8)),
       session('old', daysAgo(10, 8)),
     ])
@@ -149,7 +154,7 @@ describe('HistoryPage', () => {
 
   it('shows a distinct message when filters match nothing', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([session('scales-run', daysAgo(0, 8))])
+    seedTrpcTestSessions([session('scales-run', daysAgo(0, 8))])
     await renderPage()
 
     await user.selectOptions(screen.getByLabelText('Area'), 'arpeggios')
@@ -169,7 +174,7 @@ describe('HistoryPage', () => {
 
   it('falls back to lesson and exercise ids when the content is gone', async () => {
     const user = userEvent.setup()
-    sessionsStore.set([
+    seedTrpcTestSessions([
       session('orphan', daysAgo(0, 8), {
         lessonId: 'removed-lesson',
         results: [{ exerciseId: 'removed-exercise', grade: 'got-it' }],

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { defaultProfile, type PracticeProfile } from '../../appData/profile'
+import type { PracticeSession } from '../../appData/session'
 import type { StructuredLogger } from '../observability/logger'
 import type { ProfileRepository } from '../db/profiles'
+import {
+  SessionOwnerMismatchError,
+  type SessionRepository,
+} from '../db/sessions'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
@@ -347,6 +352,143 @@ describe('appRouter.profile', () => {
   })
 })
 
+describe('appRouter.sessions', () => {
+  it('reports unconfigured when no session repository is available', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        sessions: null,
+      }),
+    )
+
+    await expect(caller.sessions.list()).resolves.toEqual({
+      status: 'unconfigured',
+    })
+  })
+
+  it('writes and reads sessions for the authenticated user only', async () => {
+    const sessions = createMemorySessionRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        sessions,
+      }),
+    )
+    const otherCaller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_456' },
+        sessions,
+      }),
+    )
+    const session = sessionRecord()
+
+    await expect(caller.sessions.upsert(session)).resolves.toEqual({
+      status: 'ok',
+      session,
+    })
+    await expect(caller.sessions.list()).resolves.toEqual({
+      status: 'ok',
+      sessions: [session],
+    })
+    await expect(otherCaller.sessions.list()).resolves.toEqual({
+      status: 'ok',
+      sessions: [],
+    })
+  })
+
+  it('preserves ordered grades, score summary, and normalized note details', async () => {
+    const sessions = createMemorySessionRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        sessions,
+      }),
+    )
+    const session = sessionRecord({
+      score: 92,
+      results: [
+        {
+          exerciseId: 'exercise-1',
+          grade: 'got-it',
+          score: {
+            score: 92,
+            tolerance: 'standard',
+            components: { pitch: 100, timing: 83, completeness: 100 },
+            perNote: [
+              {
+                expectedId: 'exercise-1-0',
+                expectedNote: 'C',
+                verdict: 'correct',
+                timingOffsetSeconds: 0.01,
+                pitchCents: 2,
+              },
+            ],
+            extras: 0,
+            analyzedAt: '2026-07-09T10:01:00.000Z',
+          },
+        },
+        { exerciseId: 'exercise-2', grade: 'shaky' },
+      ],
+    })
+
+    await caller.sessions.upsert(session)
+
+    await expect(caller.sessions.list()).resolves.toEqual({
+      status: 'ok',
+      sessions: [session],
+    })
+  })
+
+  it('rejects attempts to overwrite another user session', async () => {
+    const sessions = createMemorySessionRepository()
+    const session = sessionRecord()
+    const ownerCaller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        sessions,
+      }),
+    )
+    const otherCaller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_456' },
+        sessions,
+      }),
+    )
+
+    await ownerCaller.sessions.upsert(session)
+
+    await expect(otherCaller.sessions.upsert(session)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'Session belongs to another user',
+    })
+  })
+
+  it('rejects unauthenticated session reads before the repository is called', async () => {
+    let calls = 0
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: null },
+        sessions: {
+          async listSessions() {
+            calls += 1
+            return []
+          },
+          async upsertSession(_clerkUserId, session) {
+            calls += 1
+            return session
+          },
+        } satisfies SessionRepository,
+      }),
+    )
+
+    await expect(caller.sessions.list()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+    expect(calls).toBe(0)
+  })
+})
+
 function createMemoryProfileRepository(): ProfileRepository {
   const profiles = new Map<string, PracticeProfile>()
 
@@ -358,5 +500,67 @@ function createMemoryProfileRepository(): ProfileRepository {
       profiles.set(clerkUserId, profile)
       return profile
     },
+  }
+}
+
+function createMemorySessionRepository(): SessionRepository {
+  const sessions = new Map<
+    string,
+    { clerkUserId: string; session: PracticeSession }
+  >()
+
+  return {
+    async listSessions(clerkUserId) {
+      return [...sessions.values()]
+        .filter((stored) => stored.clerkUserId === clerkUserId)
+        .map((stored) => cloneSession(stored.session))
+        .sort(
+          (a, b) =>
+            new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf(),
+        )
+    },
+    async upsertSession(clerkUserId, session) {
+      const existing = sessions.get(session.id)
+
+      if (existing && existing.clerkUserId !== clerkUserId) {
+        throw new SessionOwnerMismatchError()
+      }
+
+      const stored = cloneSession(session)
+      sessions.set(session.id, { clerkUserId, session: stored })
+      return cloneSession(stored)
+    },
+  }
+}
+
+function sessionRecord(
+  overrides: Partial<PracticeSession> = {},
+): PracticeSession {
+  return {
+    id: crypto.randomUUID(),
+    lessonId: 'lesson-1',
+    startedAt: '2026-07-09T10:00:00.000Z',
+    durationSeconds: 120,
+    completed: false,
+    results: [{ exerciseId: 'exercise-1', grade: 'missed' }],
+    ...overrides,
+  }
+}
+
+function cloneSession(session: PracticeSession): PracticeSession {
+  return {
+    ...session,
+    results: session.results.map((result) => ({
+      ...result,
+      ...(result.score
+        ? {
+            score: {
+              ...result.score,
+              components: { ...result.score.components },
+              perNote: result.score.perNote.map((note) => ({ ...note })),
+            },
+          }
+        : {}),
+    })),
   }
 }

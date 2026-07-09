@@ -12,14 +12,6 @@ import {
   type StoredPlayAlongTempos,
 } from './playAlongTempos'
 import {
-  sessionsStore,
-  type ExerciseScore,
-  type ExerciseGrade,
-  type PracticeSession,
-  type ScoreTolerancePreset,
-  type ScoreVerdict,
-} from './sessions'
-import {
   DEFAULT_SCORE_TOLERANCE,
   isScoreTolerancePreset,
   scoringPreferencesStore,
@@ -33,15 +25,6 @@ export const STORAGE_BACKUP_VERSION = 1
 export const MAX_STORAGE_BACKUP_BYTES = 1024 * 1024
 
 const PLAN_AREAS = ['scales', 'arpeggios', 'chords', 'standards'] as const
-const EXERCISE_GRADES: readonly ExerciseGrade[] = ['got-it', 'shaky', 'missed']
-const SCORE_VERDICTS: readonly ScoreVerdict[] = [
-  'correct',
-  'early',
-  'late',
-  'wrong-pitch',
-  'missed',
-]
-
 interface StoreBackup<T> {
   version: number
   data: T
@@ -62,7 +45,6 @@ export interface StorageBackup {
   version: typeof STORAGE_BACKUP_VERSION
   exportedAt: string
   stores: {
-    sessions: StoreBackup<PracticeSession[]>
     dailyPlans: StoreBackup<StoredDailyPlans>
     playAlongTempos: StoreBackup<StoredPlayAlongTempos>
     notationPreferences: StoreBackup<NotationPreferences>
@@ -80,7 +62,6 @@ export function createStorageBackup(exportedAt = new Date()): StorageBackup {
     version: STORAGE_BACKUP_VERSION,
     exportedAt: exportedAt.toISOString(),
     stores: {
-      sessions: { version: 1, data: sessionsStore.get() },
       dailyPlans: { version: 1, data: dailyPlansStore.get() },
       playAlongTempos: { version: 1, data: playAlongTemposStore.get() },
       notationPreferences: {
@@ -125,7 +106,6 @@ export function importStorageBackupText(
 
 function persistBackupStores(backup: StorageBackup): boolean {
   const entries: PersistedEntry[] = [
-    toPersistedEntry('sessions', backup.stores.sessions),
     toPersistedEntry('daily-plans', backup.stores.dailyPlans),
     toPersistedEntry('play-along-tempos', backup.stores.playAlongTempos),
     toPersistedEntry('notation-preferences', backup.stores.notationPreferences),
@@ -194,7 +174,6 @@ function parseStorageBackup(
     return { ok: false, error: 'Backup stores are missing.' }
   }
 
-  const sessions = parseStoreBackup(value.stores.sessions, isPracticeSessions)
   const dailyPlans = parseStoreBackup(value.stores.dailyPlans, isStoredDailyPlans)
   const playAlongTempos = parseStoreBackup(
     value.stores.playAlongTempos,
@@ -213,7 +192,6 @@ function parseStorageBackup(
         }
       : parseStoreBackup(value.stores.scoringPreferences, isScoringPreferences)
 
-  if (!sessions.ok) return { ok: false, error: 'Session history is invalid.' }
   if (!dailyPlans.ok) return { ok: false, error: 'Daily plans are invalid.' }
   if (!playAlongTempos.ok) {
     return { ok: false, error: 'Play-along tempos are invalid.' }
@@ -232,7 +210,6 @@ function parseStorageBackup(
       version: STORAGE_BACKUP_VERSION,
       exportedAt: value.exportedAt,
       stores: {
-        sessions: toStoreBackup(sessions),
         dailyPlans: toStoreBackup(dailyPlans),
         playAlongTempos: toStoreBackup(playAlongTempos),
         notationPreferences: toStoreBackup(notationPreferences),
@@ -258,86 +235,6 @@ function toStoreBackup<T>(parsed: { version: 1; data: T }): StoreBackup<T> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isPracticeSessions(value: unknown): value is PracticeSession[] {
-  return Array.isArray(value) && value.every(isPracticeSession)
-}
-
-function isPracticeSession(value: unknown): value is PracticeSession {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.id === 'string' &&
-    typeof value.lessonId === 'string' &&
-    isIsoDateTimeString(value.startedAt) &&
-    typeof value.durationSeconds === 'number' &&
-    Number.isFinite(value.durationSeconds) &&
-    value.durationSeconds >= 0 &&
-    typeof value.completed === 'boolean' &&
-    Array.isArray(value.results) &&
-    value.results.every(isExerciseResult) &&
-    (value.score === undefined ||
-      (typeof value.score === 'number' && Number.isFinite(value.score)))
-  )
-}
-
-function isExerciseResult(value: unknown): boolean {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.exerciseId === 'string' &&
-    EXERCISE_GRADES.includes(value.grade as ExerciseGrade) &&
-    (value.score === undefined || isExerciseScore(value.score))
-  )
-}
-
-function isExerciseScore(value: unknown): value is ExerciseScore {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.score === 'number' &&
-    Number.isFinite(value.score) &&
-    value.score >= 0 &&
-    value.score <= 100 &&
-    isScoreTolerancePreset(value.tolerance as ScoreTolerancePreset) &&
-    isScoreComponents(value.components) &&
-    Array.isArray(value.perNote) &&
-    value.perNote.every(isExerciseScoreNote) &&
-    typeof value.extras === 'number' &&
-    Number.isInteger(value.extras) &&
-    value.extras >= 0 &&
-    isIsoDateTimeString(value.analyzedAt)
-  )
-}
-
-function isScoreComponents(value: unknown): boolean {
-  if (!isRecord(value)) return false
-  return (
-    isPercent(value.pitch) &&
-    isPercent(value.timing) &&
-    isPercent(value.completeness)
-  )
-}
-
-function isPercent(value: unknown): boolean {
-  return (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    value >= 0 &&
-    value <= 100
-  )
-}
-
-function isExerciseScoreNote(value: unknown): boolean {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.expectedId === 'string' &&
-    typeof value.expectedNote === 'string' &&
-    SCORE_VERDICTS.includes(value.verdict as ScoreVerdict) &&
-    (value.timingOffsetSeconds === null ||
-      (typeof value.timingOffsetSeconds === 'number' &&
-        Number.isFinite(value.timingOffsetSeconds))) &&
-    (value.pitchCents === null ||
-      (typeof value.pitchCents === 'number' && Number.isFinite(value.pitchCents)))
-  )
 }
 
 function isStoredDailyPlans(value: unknown): value is StoredDailyPlans {

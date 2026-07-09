@@ -46,7 +46,6 @@ export type {
   PracticeProfile,
   SkillLevel,
 } from './profile'
-export { sessionsStore, upsertSession } from './sessions'
 export type {
   ExerciseScore,
   ExerciseScoreNote,
@@ -55,4 +54,4 @@ export type {
   PracticeSession,
   ScoreTolerancePreset,
   ScoreVerdict,
-} from './sessions'
+} from '../appData/session'

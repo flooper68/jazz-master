@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { defaultProfile, type PracticeProfile } from '../appData/profile'
+import type { PracticeSession } from '../appData/session'
 import type { Lesson } from '../content'
-import {
-  defaultProfile,
-  type PracticeProfile,
-  type PracticeSession,
-} from '../storage'
 import { generatePlan, toPlanDate } from './dailyPlan'
 
 const lessons: readonly Lesson[] = [

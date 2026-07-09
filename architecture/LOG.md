@@ -392,6 +392,16 @@ Added RES-012 and `processes/testing-strategy.md`, defining the repo's unit/comp
 
 Added RES-010 and `processes/development-practices.md`, grounding React 19/TypeScript/Vite/Tailwind/Bun conventions in cited sources plus RES-005. Code review now runs explicit Spec and Standards passes; CLAUDE.md routes implementation work to the new practices doc. No app code changed.
 
+## 2026-07-09 — session history moved to Clerk/Postgres (TASK-067)
+
+Practice sessions, exercise grades, machine score summaries, and per-note score
+details now persist through protected tRPC and normalized Postgres tables keyed
+by Clerk user ID. The runner upserts progress after each committed grade;
+History, Dashboard, and the current planner read session history through
+`sessions.list`; browser backup/import no longer carries session history. Gotcha:
+the Playwright smoke pack still targets the pre-Clerk local onboarding flow and
+needs a follow-up before it can verify signed-in practice flows end to end.
+
 ## 2026-07-06 — persistence layer shipped (TASK-008); EPIC-001 (foundation) complete
 
 `defineStore<T>` typed localStorage stores in `apps/web/src/storage/` — versioned `{ version, data }` envelope, migration hook, never-throw reads (corrupt/missing/version-ahead → default + warn). Convention set: no direct `localStorage` outside `src/storage/`. Review gotcha: after an `'x' in value` narrowing, strict TS rejects casting to an unrelated shape — narrow on each key (`'version' in value`) instead of `value as { version: unknown }`. Foundation epic is done; the guided-practice slice (TASK-011/016) and EPIC-013 platform track are unblocked.

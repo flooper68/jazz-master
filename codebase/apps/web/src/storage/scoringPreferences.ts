@@ -1,5 +1,5 @@
 import { defineStore } from './store'
-import type { ScoreTolerancePreset } from './sessions'
+import type { ScoreTolerancePreset } from '../appData/session'
 
 export const SCORE_TOLERANCE_PRESETS = ['lenient', 'standard', 'strict'] as const
 

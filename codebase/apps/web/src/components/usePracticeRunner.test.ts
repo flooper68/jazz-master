@@ -36,7 +36,12 @@ const lesson: Lesson = {
 }
 
 function start(): RunnerState {
-  return createRunnerState({ lesson, sessionId: 's-1', startedAt: 0 })
+  return createRunnerState({
+    lesson,
+    sessionId: 's-1',
+    startedAt: 0,
+    onSessionChange() {},
+  })
 }
 
 describe('runnerReducer', () => {

@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defaultProfile } from '../../appData/profile'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
-import {
-  getDailyPlan,
-  saveDailyPlan,
-  sessionsStore,
-} from '../../storage'
+import { getDailyPlan, saveDailyPlan } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
-import { resetTrpcTestData, seedTrpcTestProfile } from '../../test/trpcTestFetch'
+import {
+  resetTrpcTestData,
+  seedTrpcTestProfile,
+  seedTrpcTestSessions,
+} from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -156,9 +156,9 @@ describe('PracticePage', () => {
         },
       ],
     })
-    sessionsStore.set([
+    seedTrpcTestSessions([
       {
-        id: 'session-1',
+        id: crypto.randomUUID(),
         lessonId: 'scales-major-open',
         startedAt: `${date}T10:00:00.000Z`,
         durationSeconds: 60,

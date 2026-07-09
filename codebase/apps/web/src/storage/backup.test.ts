@@ -9,42 +9,9 @@ import {
   playAlongTemposStore,
   scoringPreferencesStore,
   serializeStorageBackup,
-  sessionsStore,
-  type PracticeSession,
 } from './index'
 
 const exportedAt = new Date('2026-07-08T10:00:00.000Z')
-
-const session: PracticeSession = {
-  id: 'session-1',
-  lessonId: 'major-scale-open',
-  startedAt: '2026-07-08T09:30:00.000Z',
-  durationSeconds: 180,
-  completed: true,
-  results: [
-    {
-      exerciseId: 'exercise-1',
-      grade: 'got-it',
-      score: {
-        score: 94,
-        tolerance: 'standard',
-        components: { pitch: 100, timing: 80, completeness: 100 },
-        perNote: [
-          {
-            expectedId: 'exercise-1-0',
-            expectedNote: 'C',
-            verdict: 'correct',
-            timingOffsetSeconds: 0.01,
-            pitchCents: 3,
-          },
-        ],
-        extras: 0,
-        analyzedAt: '2026-07-08T09:31:00.000Z',
-      },
-    },
-  ],
-  score: 94,
-}
 
 const plan: DailyPlan = {
   date: '2026-07-08',
@@ -69,8 +36,7 @@ afterEach(() => {
 })
 
 describe('storage backup', () => {
-  it('exports all typed local stores', () => {
-    sessionsStore.set([session])
+  it('exports remaining typed local stores without session history', () => {
     dailyPlansStore.set({ [plan.date]: plan })
     playAlongTemposStore.set({ 'exercise-1': 88 })
     notationPreferencesStore.set({ displayMode: 'tab' })
@@ -81,7 +47,6 @@ describe('storage backup', () => {
       version: 1,
       exportedAt: '2026-07-08T10:00:00.000Z',
       stores: {
-        sessions: { version: 1, data: [session] },
         dailyPlans: { version: 1, data: { [plan.date]: plan } },
         playAlongTempos: { version: 1, data: { 'exercise-1': 88 } },
         notationPreferences: { version: 1, data: { displayMode: 'tab' } },
@@ -91,14 +56,12 @@ describe('storage backup', () => {
   })
 
   it('imports a valid backup into every store', () => {
-    sessionsStore.set([])
     dailyPlansStore.set({})
 
     const backup = serializeStorageBackup(exportedAt)
     localStorage.clear()
 
     expect(importStorageBackupText(backup)).toEqual({ ok: true })
-    expect(sessionsStore.get()).toEqual([])
     expect(dailyPlansStore.get()).toEqual({})
     expect(playAlongTemposStore.get()).toEqual({})
     expect(notationPreferencesStore.get()).toEqual({ displayMode: 'both' })
@@ -106,37 +69,40 @@ describe('storage backup', () => {
   })
 
   it('rejects malformed backups without overwriting existing data', () => {
-    sessionsStore.set([session])
+    dailyPlansStore.set({ [plan.date]: plan })
 
     const invalid = JSON.stringify({
       ...createStorageBackup(exportedAt),
       stores: {
         ...createStorageBackup(exportedAt).stores,
-        sessions: { version: 1, data: [{ ...session, durationSeconds: -1 }] },
+        dailyPlans: {
+          version: 1,
+          data: { '2026-07-09': plan },
+        },
       },
     })
 
     expect(importStorageBackupText(invalid)).toEqual({
       ok: false,
-      error: 'Session history is invalid.',
+      error: 'Daily plans are invalid.',
     })
-    expect(sessionsStore.get()).toEqual([session])
+    expect(dailyPlansStore.get()).toEqual({ [plan.date]: plan })
   })
 
   it('rolls back when a backup cannot be fully written', () => {
     const originalSetItem = Storage.prototype.setItem
-    sessionsStore.set([session])
+    dailyPlansStore.set({ [plan.date]: plan })
 
-    sessionsStore.set([])
+    dailyPlansStore.set({})
     const backup = serializeStorageBackup(exportedAt)
 
-    sessionsStore.set([session])
+    dailyPlansStore.set({ [plan.date]: plan })
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
       this: Storage,
       key,
       value,
     ) {
-      if (key === 'jazz-master:sessions') {
+      if (key === 'jazz-master:daily-plans') {
         throw new DOMException('quota exceeded', 'QuotaExceededError')
       }
       return originalSetItem.call(this, key, value)
@@ -146,7 +112,7 @@ describe('storage backup', () => {
       ok: false,
       error: 'Backup could not be written.',
     })
-    expect(sessionsStore.get()).toEqual([session])
+    expect(dailyPlansStore.get()).toEqual({ [plan.date]: plan })
   })
 
   it('ignores legacy profile data in imported backups', () => {

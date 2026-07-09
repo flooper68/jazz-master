@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Lesson } from '../content'
-import type { PracticeSession } from '../storage/sessions'
+import type { PracticeSession } from '../appData/session'
 import {
   areaStatuses,
   completedLessonIdsOn,

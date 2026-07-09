@@ -1,12 +1,11 @@
 import { useEffect, useReducer } from 'react'
 import type { Lesson } from '../content'
 import {
-  upsertSession,
   type ExerciseScore,
   type ExerciseGrade,
   type ExerciseResult,
   type PracticeSession,
-} from '../storage/sessions'
+} from '../appData/session'
 
 /**
  * Session-flow state for the practice runner (TASK-013). The reducer is the
@@ -41,6 +40,7 @@ export interface RunnerInit {
   lesson: Lesson
   sessionId: string
   startedAt: number
+  onSessionChange: (session: PracticeSession) => void
 }
 
 export function createRunnerState({
@@ -108,7 +108,10 @@ export function runnerReducer(
   }
 }
 
-function toSessionRecord(state: RunnerState, now: number): PracticeSession {
+export function toSessionRecord(
+  state: RunnerState,
+  now: number,
+): PracticeSession {
   const scoredResults = state.results.filter(
     (result): result is ExerciseResult & { score: ExerciseScore } =>
       result.score !== undefined,
@@ -135,16 +138,17 @@ function toSessionRecord(state: RunnerState, now: number): PracticeSession {
 }
 
 export function usePracticeRunner(init: RunnerInit) {
+  const { onSessionChange } = init
   const [state, dispatch] = useReducer(runnerReducer, init, createRunnerState)
 
-  // Synchronize committed state to storage: every grade upserts the record,
+  // Synchronize committed state to the server: every grade upserts the record,
   // so abandoning the lesson or closing the tab never loses graded history.
   // An Effect (not the handler) so the persisted record can never diverge
   // from what React actually committed under rapid repeat dispatches.
   useEffect(() => {
     if (state.results.length === 0) return
-    upsertSession(toSessionRecord(state, Date.now()))
-  }, [state])
+    onSessionChange(toSessionRecord(state, Date.now()))
+  }, [onSessionChange, state])
 
   function beginExercise(at = Date.now()): void {
     dispatch({ type: 'begin-exercise', at })

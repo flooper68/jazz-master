@@ -1,0 +1,507 @@
+{
+  "id": "ce2bbff8-2a4e-469d-83ec-3376edc4ba2e",
+  "prevId": "02365f67-a3d5-4fc9-8ed2-96a26d46c64b",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.practice_profile_goal_areas": {
+      "name": "practice_profile_goal_areas",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "area": {
+          "name": "area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_profile_goal_areas_clerk_user_id_users_clerk_user_id_fk": {
+          "name": "practice_profile_goal_areas_clerk_user_id_users_clerk_user_id_fk",
+          "tableFrom": "practice_profile_goal_areas",
+          "tableTo": "users",
+          "columnsFrom": [
+            "clerk_user_id"
+          ],
+          "columnsTo": [
+            "clerk_user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "practice_profile_goal_areas_clerk_user_id_position_pk": {
+          "name": "practice_profile_goal_areas_clerk_user_id_position_pk",
+          "columns": [
+            "clerk_user_id",
+            "position"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.practice_profiles": {
+      "name": "practice_profiles",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scales_level": {
+          "name": "scales_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arpeggios_level": {
+          "name": "arpeggios_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chords_level": {
+          "name": "chords_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "standards_level": {
+          "name": "standards_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ears_level": {
+          "name": "ears_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minutes_per_day": {
+          "name": "minutes_per_day",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "onboarding_completed_at": {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_profiles_clerk_user_id_users_clerk_user_id_fk": {
+          "name": "practice_profiles_clerk_user_id_users_clerk_user_id_fk",
+          "tableFrom": "practice_profiles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "clerk_user_id"
+          ],
+          "columnsTo": [
+            "clerk_user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.practice_session_results": {
+      "name": "practice_session_results",
+      "schema": "",
+      "columns": {
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exercise_id": {
+          "name": "exercise_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade": {
+          "name": "grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tolerance": {
+          "name": "tolerance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pitch_score": {
+          "name": "pitch_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timing_score": {
+          "name": "timing_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completeness_score": {
+          "name": "completeness_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extras": {
+          "name": "extras",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "analyzed_at": {
+          "name": "analyzed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_session_results_session_id_practice_sessions_id_fk": {
+          "name": "practice_session_results_session_id_practice_sessions_id_fk",
+          "tableFrom": "practice_session_results",
+          "tableTo": "practice_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "practice_session_results_session_id_position_pk": {
+          "name": "practice_session_results_session_id_position_pk",
+          "columns": [
+            "session_id",
+            "position"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "practice_session_results_grade_check": {
+          "name": "practice_session_results_grade_check",
+          "value": "\"practice_session_results\".\"grade\" in ('got-it', 'shaky', 'missed')"
+        },
+        "practice_session_results_tolerance_check": {
+          "name": "practice_session_results_tolerance_check",
+          "value": "\"practice_session_results\".\"tolerance\" is null or \"practice_session_results\".\"tolerance\" in ('lenient', 'standard', 'strict')"
+        },
+        "practice_session_results_score_check": {
+          "name": "practice_session_results_score_check",
+          "value": "\"practice_session_results\".\"score\" is null or (\"practice_session_results\".\"score\" >= 0 and \"practice_session_results\".\"score\" <= 100)"
+        },
+        "practice_session_results_pitch_score_check": {
+          "name": "practice_session_results_pitch_score_check",
+          "value": "\"practice_session_results\".\"pitch_score\" is null or (\"practice_session_results\".\"pitch_score\" >= 0 and \"practice_session_results\".\"pitch_score\" <= 100)"
+        },
+        "practice_session_results_timing_score_check": {
+          "name": "practice_session_results_timing_score_check",
+          "value": "\"practice_session_results\".\"timing_score\" is null or (\"practice_session_results\".\"timing_score\" >= 0 and \"practice_session_results\".\"timing_score\" <= 100)"
+        },
+        "practice_session_results_completeness_score_check": {
+          "name": "practice_session_results_completeness_score_check",
+          "value": "\"practice_session_results\".\"completeness_score\" is null or (\"practice_session_results\".\"completeness_score\" >= 0 and \"practice_session_results\".\"completeness_score\" <= 100)"
+        },
+        "practice_session_results_extras_check": {
+          "name": "practice_session_results_extras_check",
+          "value": "\"practice_session_results\".\"extras\" is null or \"practice_session_results\".\"extras\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.practice_session_score_notes": {
+      "name": "practice_session_score_notes",
+      "schema": "",
+      "columns": {
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result_position": {
+          "name": "result_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note_position": {
+          "name": "note_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_id": {
+          "name": "expected_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_note": {
+          "name": "expected_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timing_offset_seconds": {
+          "name": "timing_offset_seconds",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pitch_cents": {
+          "name": "pitch_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_session_score_notes_session_id_result_position_practice_session_results_session_id_position_fk": {
+          "name": "practice_session_score_notes_session_id_result_position_practice_session_results_session_id_position_fk",
+          "tableFrom": "practice_session_score_notes",
+          "tableTo": "practice_session_results",
+          "columnsFrom": [
+            "session_id",
+            "result_position"
+          ],
+          "columnsTo": [
+            "session_id",
+            "position"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "practice_session_score_notes_session_id_result_position_note_position_pk": {
+          "name": "practice_session_score_notes_session_id_result_position_note_position_pk",
+          "columns": [
+            "session_id",
+            "result_position",
+            "note_position"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "practice_session_score_notes_verdict_check": {
+          "name": "practice_session_score_notes_verdict_check",
+          "value": "\"practice_session_score_notes\".\"verdict\" in ('correct', 'early', 'late', 'wrong-pitch', 'missed')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.practice_sessions": {
+      "name": "practice_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lesson_id": {
+          "name": "lesson_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_seconds": {
+          "name": "duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_sessions_clerk_user_id_users_clerk_user_id_fk": {
+          "name": "practice_sessions_clerk_user_id_users_clerk_user_id_fk",
+          "tableFrom": "practice_sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "clerk_user_id"
+          ],
+          "columnsTo": [
+            "clerk_user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "practice_sessions_duration_seconds_check": {
+          "name": "practice_sessions_duration_seconds_check",
+          "value": "\"practice_sessions\".\"duration_seconds\" >= 0"
+        },
+        "practice_sessions_score_check": {
+          "name": "practice_sessions_score_check",
+          "value": "\"practice_sessions\".\"score\" is null or (\"practice_sessions\".\"score\" >= 0 and \"practice_sessions\".\"score\" <= 100)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,15 +1,20 @@
-import { defineStore } from './store'
-
-/**
- * Practice session records (TASK-013) — the contract the EPIC-011 planner and
- * EPIC-012 history consume. One record per started lesson run; the runner
- * upserts the record after every grade, so an abandoned session survives as
- * `completed: false` with the grades earned so far.
- */
-
 export type ExerciseGrade = 'got-it' | 'shaky' | 'missed'
 export type ScoreVerdict = 'correct' | 'early' | 'late' | 'wrong-pitch' | 'missed'
 export type ScoreTolerancePreset = 'lenient' | 'standard' | 'strict'
+
+export const EXERCISE_GRADES: readonly ExerciseGrade[] = [
+  'got-it',
+  'shaky',
+  'missed',
+]
+
+export const SCORE_VERDICTS: readonly ScoreVerdict[] = [
+  'correct',
+  'early',
+  'late',
+  'wrong-pitch',
+  'missed',
+]
 
 export interface ExerciseScoreNote {
   expectedId: string
@@ -52,23 +57,4 @@ export interface PracticeSession {
   results: ExerciseResult[]
   /** Mean machine score for scored exercise results in this session. */
   score?: number
-}
-
-export const sessionsStore = defineStore<PracticeSession[]>({
-  name: 'sessions',
-  version: 1,
-  defaultValue: () => [],
-})
-
-/** Insert the session or replace the existing record with the same id. */
-export function upsertSession(session: PracticeSession): void {
-  sessionsStore.update((stored) => {
-    // The envelope check in defineStore doesn't validate T itself, so guard
-    // against tampered non-array data rather than throwing in a click handler.
-    const sessions = Array.isArray(stored) ? stored : []
-    const index = sessions.findIndex((existing) => existing.id === session.id)
-    return index === -1
-      ? [...sessions, session]
-      : sessions.with(index, session)
-  })
 }

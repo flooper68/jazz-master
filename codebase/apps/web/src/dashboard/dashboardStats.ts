@@ -1,6 +1,6 @@
 import type { Lesson, LessonArea } from '../content'
 import { toPlanDate } from '../planner'
-import type { ExerciseGrade, PracticeSession } from '../storage/sessions'
+import type { ExerciseGrade, PracticeSession } from '../appData/session'
 
 /** Same rule as the planner: these grades mark a lesson as needing attention. */
 const NEEDS_ATTENTION_GRADES: ReadonlySet<ExerciseGrade> = new Set([

@@ -1,5 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { PracticeSession } from '../../appData/session'
 import { AREA_LABELS } from '../../components/areaLabels'
 import { PracticeRunner } from '../../components/PracticeRunner'
 import { useViewFocus } from '../../components/useViewFocus'
@@ -7,6 +9,7 @@ import { LESSONS } from '../../content'
 import type { Lesson } from '../../content'
 import { completedLessonIdsOn } from '../../dashboard'
 import { useTodayPlan, type DailyPlan } from '../../planner'
+import { useTRPC } from '../trpc'
 
 // Authored order is curriculum order, so grouping preserves level progression.
 const areas = [...new Set(LESSONS.map((lesson) => lesson.area))]
@@ -33,9 +36,20 @@ function startRun(lesson: Lesson): ActiveRun {
 }
 
 export default function PracticePage() {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const { plan, sessions, refreshSessions } = useTodayPlan()
+  const { mutate: saveSession } = useMutation(
+    trpc.sessions.upsert.mutationOptions({
+      onSuccess() {
+        void queryClient.invalidateQueries({
+          queryKey: trpc.sessions.list.queryKey(),
+        })
+      },
+    }),
+  )
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(() => {
     const lesson = location.state.startLessonId
       ? lessonById.get(location.state.startLessonId)
@@ -51,6 +65,24 @@ export default function PracticePage() {
   // on list → runner the incoming PracticeRunner focuses its own heading.
   const listHeadingRef = useViewFocus<HTMLHeadingElement>(
     activeRun ? `run-${activeRun.sessionId}` : 'list',
+  )
+  const saveQueueRef = useRef(Promise.resolve())
+  const saveSessionProgress = useCallback(
+    (session: PracticeSession) => {
+      saveQueueRef.current = saveQueueRef.current
+        .catch(() => undefined)
+        .then(
+          () =>
+            new Promise<void>((resolve) => {
+              saveSession(session, {
+                onSettled() {
+                  resolve()
+                },
+              })
+            }),
+        )
+    },
+    [saveSession],
   )
 
   // Consume the handoff state so refresh/back doesn't restart the lesson.
@@ -84,6 +116,7 @@ export default function PracticePage() {
             lesson={activeRun.lesson}
             sessionId={activeRun.sessionId}
             startedAt={activeRun.startedAt}
+            onSessionChange={saveSessionProgress}
             onExit={exitRun}
           />
         </div>

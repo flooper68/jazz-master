@@ -7,6 +7,10 @@ import {
   createProfileRepository,
   type ProfileRepository,
 } from '../db/profiles'
+import {
+  createSessionRepository,
+  type SessionRepository,
+} from '../db/sessions'
 import { createUserRepository, type UserRepository } from '../db/users'
 import {
   createNoopStructuredLogger,
@@ -20,6 +24,7 @@ interface CreateContextOptions {
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
   profiles?: ProfileRepository | null
+  sessions?: SessionRepository | null
   users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
 }
@@ -42,6 +47,10 @@ function hasUsersOption(options: unknown): options is CreateContextOptions {
 
 function hasProfilesOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'profiles' in options
+}
+
+function hasSessionsOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'sessions' in options
 }
 
 function hasContextOptions(options: unknown): options is CreateContextOptions {
@@ -99,6 +108,9 @@ export function createContext(options?: unknown) {
   const profileRepository = hasProfilesOption(options)
     ? options.profiles
     : createProfileRepository({ hyperdrive })
+  const sessionRepository = hasSessionsOption(options)
+    ? options.sessions
+    : createSessionRepository({ hyperdrive })
 
   return {
     auth,
@@ -106,6 +118,7 @@ export function createContext(options?: unknown) {
     logger,
     requestMetadata,
     profiles: profileRepository,
+    sessions: sessionRepository,
     users: userRepository,
   }
 }
