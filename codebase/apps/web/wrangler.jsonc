@@ -5,5 +5,11 @@
 {
   "name": "jazz-master-web",
   "compatibility_date": "2026-04-15",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "550beedd38384ddcac7dc1c044eede5d"
+    }
+  ]
 }

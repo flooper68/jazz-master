@@ -1,14 +1,20 @@
 import {
   createDatabaseSmokeClient,
   type DatabaseSmokeClient,
+  type HyperdriveConnection,
 } from '../db/smoke'
 
 interface CreateContextOptions {
   dbSmoke?: DatabaseSmokeClient | null
+  hyperdrive?: HyperdriveConnection | null
 }
 
 function hasDbSmokeOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'dbSmoke' in options
+}
+
+function hasContextOptions(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null
 }
 
 // Request context for tRPC procedures. There is still no auth or session; the
@@ -17,7 +23,9 @@ function hasDbSmokeOption(options: unknown): options is CreateContextOptions {
 export function createContext(options?: unknown) {
   const dbSmoke = hasDbSmokeOption(options)
     ? options.dbSmoke
-    : createDatabaseSmokeClient()
+    : createDatabaseSmokeClient({
+        hyperdrive: hasContextOptions(options) ? options.hyperdrive : null,
+      })
 
   return { dbSmoke }
 }

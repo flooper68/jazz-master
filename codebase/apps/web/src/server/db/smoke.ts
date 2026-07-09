@@ -5,6 +5,15 @@ export interface DatabaseSmokeClient {
   check(): Promise<void>
 }
 
+export interface HyperdriveConnection {
+  connectionString?: string
+}
+
+interface DatabaseSmokeClientOptions {
+  databaseUrl?: string
+  hyperdrive?: HyperdriveConnection | null
+}
+
 function readDatabaseUrl(): string | undefined {
   if (typeof process === 'undefined') {
     return undefined
@@ -13,10 +22,25 @@ function readDatabaseUrl(): string | undefined {
   return process.env.DATABASE_URL
 }
 
-export function createDatabaseSmokeClient(
+export function resolveDatabaseSmokeConnectionString({
+  databaseUrl,
+  hyperdrive = null,
+}: DatabaseSmokeClientOptions): string | null {
+  const connectionString = (
+    hyperdrive?.connectionString ?? databaseUrl
+  )?.trim()
+
+  return connectionString || null
+}
+
+export function createDatabaseSmokeClient({
   databaseUrl = readDatabaseUrl(),
-): DatabaseSmokeClient | null {
-  const connectionString = databaseUrl?.trim()
+  hyperdrive = null,
+}: DatabaseSmokeClientOptions = {}): DatabaseSmokeClient | null {
+  const connectionString = resolveDatabaseSmokeConnectionString({
+    databaseUrl,
+    hyperdrive,
+  })
 
   if (!connectionString) {
     return null

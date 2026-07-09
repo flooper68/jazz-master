@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-064 Hyperdrive binding wired to dbSmoke
+
+Added the owner-provided Cloudflare Hyperdrive config id to `apps/web/wrangler.jsonc`
+as binding `HYPERDRIVE` and passed that runtime binding from the Astro tRPC
+endpoint into server context. The Drizzle smoke client now prefers
+`HYPERDRIVE.connectionString` and falls back to local `DATABASE_URL`, so the
+deployed `/trpc/dbSmoke` path can reach Railway through Hyperdrive while local
+checks still run without a database.
+
 ## 2026-07-09 — TASK-056 server DB smoke path
 
 Added the first app-side Drizzle runtime path: `src/server/db/smoke.ts` creates
