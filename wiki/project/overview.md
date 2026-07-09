@@ -1,12 +1,14 @@
 ---
 title: How the project works
-updated: 2026-07-06
+updated: 2026-07-09
 sources:
   - AGENTS.md
+  - framework/apss/README.md
   - architecture/decisions/ADR-003-knowledge-system.md
   - architecture/decisions/ADR-004-closed-loop-product-process.md
   - architecture/decisions/ADR-007-wiki-derived-knowledge-layer.md
   - architecture/decisions/ADR-008-grill-loop-primary-owner-interface.md
+  - architecture/decisions/ADR-013-adaptive-problem-solving-systems-framework.md
   - processes/dev-loop.md
   - processes/heartbeat.md
   - processes/status-report.md
@@ -23,6 +25,7 @@ Jazz Master is built by a solo owner plus AI agents running in loops. The repo i
 | Layer | Role | Who writes |
 |---|---|---|
 | `strategy/` | Vision (VIS-001) and current goals | Owner only — agents read, never edit |
+| `framework/` | Portable, domain-independent specifications; APSS is staged here before project migration | Agents with owner-shaped decisions |
 | `processes/` | Executable playbooks — the quality system itself | Agents propose, owner-shaped |
 | `work/` | Lifecycle-managed flow: epics, tasks, insights, issues, reviews | Agents freely (epics only when asked) |
 | `notes/` | Raw inputs — feedback, meetings, observations (ADR-004) | Anyone; processed, never implemented directly |
@@ -31,6 +34,19 @@ Jazz Master is built by a solo owner plus AI agents running in loops. The repo i
 | `wiki/` | Derived "how it works" synthesis — this layer (ADR-007) | Agents, per `processes/wiki-maintenance.md` |
 | `artifacts/` | Human-facing rendered outputs; markdown stays canonical | Agents via `processes/artifact-creation.md` |
 | `codebase/` | All executable code — Bun-workspaces monorepo | Agents via the dev loop |
+
+## Adaptive Problem-Solving Systems — staged, not migrated
+
+ADR-013 introduces a portable framework under `framework/apss/` for declaring
+hierarchical systems by problem, roles, strategy, artifact, consumer outcome,
+full execution/feedback loop, evidence streams, compiled knowledge, validation,
+and adaptation authority. The framework grew from NOTE-015's owner grill and is
+intended to generalize beyond software.
+
+The current project is **not yet organized into APSS system capsules**. The
+layered paths in the table above remain canonical. TASK-077 will map which
+current loops qualify as adaptive systems, identify incomplete feedback loops,
+and split the migration into safe increments before any canonical paths move.
 
 ## The rhythm
 

@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-09 — `project/overview` records the staged APSS framework from TASK-076/ADR-013 and makes explicit that Jazz Master's current layer-based paths remain canonical until TASK-077 maps and plans the migration.
 - 2026-07-09 — `product/overview` updated for TASK-069: notation, scoring, and per-exercise tempo preferences now sync through authenticated tRPC/Postgres; legacy local preferences are ignored.
 - 2026-07-09 — `product/overview` updated for TASK-068: daily planning is now server-computed from Clerk/Postgres profile and session history, with legacy local plan snapshots ignored.
 - 2026-07-09 — `product/overview` updated for TASK-075: signed-out `/` now has a full Jazz Master landing page, and auth pages share the public visual system around Clerk prebuilt UI.

@@ -90,4 +90,6 @@ The success metric and the kill criterion in one. The heartbeat flags it due; it
 
 Accumulate real misses here (RES-004 rec. 5): questions that were noise, triggers that fired wrong or too eagerly, write-backs that mangled a decision.
 
-- (none yet)
+- A detailed agenda can feel like a batch of questions before the owner has
+  context. Keep the agenda concise or internal, then ask exactly one contextual
+  question at a time (NOTE-015).

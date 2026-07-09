@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-076 APSS framework defined before migration
+
+Defined Adaptive Problem-Solving Systems as a portable framework for nested,
+artifact-producing systems with complete validation, evidence, knowledge, and
+adaptation loops. ADR-013 deliberately keeps Jazz Master's current layer-based
+operating paths canonical until TASK-077 maps the concrete systems and plans a
+safe migration.
+
 ## 2026-07-09 — TASK-069 preferences moved to Clerk/Postgres
 
 Moved notation display mode, scoring tolerance, and per-exercise play-along

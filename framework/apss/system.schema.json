@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:apss:system:0.1",
+  "title": "Adaptive Problem-Solving System declaration",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "apss_version",
+    "id",
+    "name",
+    "status",
+    "parent",
+    "problem",
+    "vision",
+    "goals",
+    "strategy",
+    "roles",
+    "inputs",
+    "artifact",
+    "planning",
+    "execution",
+    "validation",
+    "streams",
+    "uncertainty",
+    "learning",
+    "authority",
+    "relations"
+  ],
+  "properties": {
+    "apss_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": ["proposed", "active", "paused", "retired"]
+    },
+    "parent": {
+      "type": ["string", "null"]
+    },
+    "problem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "strategy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["owner", "operators", "consumers", "validators", "adaptation_approvers"],
+      "properties": {
+        "owner": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "operators": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "consumers": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "validators": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "adaptation_approvers": { "$ref": "#/$defs/nonEmptyStringArray" }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["primary", "medium", "consumers", "intended_outcome"],
+      "properties": {
+        "primary": { "type": "string", "minLength": 1 },
+        "medium": { "type": "string", "minLength": 1 },
+        "supporting": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "consumers": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "intended_outcome": { "type": "string", "minLength": 1 }
+      }
+    },
+    "planning": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["process", "plan", "log"],
+      "properties": {
+        "process": { "type": "string", "minLength": 1 },
+        "plan": { "type": "string", "minLength": 1 },
+        "log": { "type": "string", "minLength": 1 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["process", "invocation"],
+      "properties": {
+        "process": { "type": "string", "minLength": 1 },
+        "invocation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["artifact", "outcome"],
+      "properties": {
+        "artifact": { "type": "string", "minLength": 1 },
+        "outcome": { "type": "string", "minLength": 1 }
+      }
+    },
+    "streams": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/stream" }
+    },
+    "uncertainty": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["discussion", "research", "experimentation"],
+      "properties": {
+        "discussion": { "type": "string", "minLength": 1 },
+        "research": { "type": "string", "minLength": 1 },
+        "experimentation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "learning": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["compilation_process", "compiled_knowledge", "changelog", "adaptation_process"],
+      "properties": {
+        "compilation_process": { "type": "string", "minLength": 1 },
+        "compiled_knowledge": { "type": "string", "minLength": 1 },
+        "changelog": { "type": "string", "minLength": 1 },
+        "adaptation_process": { "type": "string", "minLength": 1 }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["execution", "adaptation"],
+      "properties": {
+        "execution": { "type": "string", "minLength": 1 },
+        "adaptation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "health": {
+      "type": ["object", "array", "string", "null"]
+    },
+    "relations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "purpose", "source", "access", "consumed_by"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "access": { "type": "string", "minLength": 1 },
+        "consumed_by": { "type": "string", "minLength": 1 },
+        "grill": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
