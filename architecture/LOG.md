@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-062 ADR-012 accepted
+
+ADR-012 now supersedes ADR-002 as the long-run persistence target: Clerk owns
+identity, `/app/*` will require sign-in, browser code talks to tRPC, server code
+owns Drizzle/Postgres access, and Postgres becomes the source of truth for
+long-run app data. Existing local browser data is intentionally discarded rather
+than migrated; typed localStorage stores remain only as migration state until
+TASK-063/TASK-065 through TASK-072 retire them slice by slice.
+
 ## 2026-07-09 — TASK-061 mock practice DB path
 
 Added the first committed Drizzle table, `mock_practice_rows`, plus a

@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-09 — `product/overview` updated for TASK-062/ADR-012: Clerk/Postgres is now the persistence target, with localStorage described as temporary migration state rather than the strategic destination.
 - 2026-07-09 — `product/overview` updated for TASK-061: server Postgres now has a mock practice-data write/read path, while real practice state remains local until ADR-012/TASK-063.
 - 2026-07-09 — `product/overview` updated for TASK-064: the deployed DB smoke path now uses the owner-provisioned Cloudflare Hyperdrive binding.
 - 2026-07-09 — `product/overview` updated for TASK-056: the server-side DB smoke path now proves the app can run a Drizzle `select 1` while product practice state remains local.

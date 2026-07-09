@@ -2,9 +2,8 @@
 id: TASK-063
 title: Add Clerk auth foundation
 epic: EPIC-013
-status: gated
+status: backlog
 depends_on: [TASK-062]
-gated_until: ADR-012 is accepted and owner-provided Clerk environment keys are available
 source: NOTE-013
 created: 2026-07-09
 ---
@@ -71,3 +70,11 @@ but should be removed once real Clerk/Postgres app-data paths exist.
   redirects to sign-in
 - Sign in and verify `/app/*` renders
 - Call a protected tRPC procedure unauthenticated in a test and verify rejection
+
+## Log
+
+### 2026-07-09 — ungated by TASK-062 (agent)
+
+ADR-012 is accepted and the owner provided the required local Clerk environment
+values during TASK-062. Status moved from `gated` to `backlog`; no env file is
+tracked.

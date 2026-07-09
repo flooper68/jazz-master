@@ -4,14 +4,23 @@ Living document — update it whenever the shape of the system changes. Decision
 
 ## System shape
 
-Jazz Master is a local-first practice app, still with no accounts: all product practice state lives in the browser (localStorage), and the current server database paths are infrastructure/mock-only. See ADR-002 and ADR-006.
+Jazz Master is in a persistence migration. The original local-first browser
+state model (ADR-002) remains the current implementation for product practice
+state, but ADR-012 now supersedes it as the target architecture: Clerk owns
+identity, `/app/*` will require sign-in, browser code talks to typed tRPC
+procedures, server code owns Drizzle/Postgres access, and Postgres becomes the
+source of truth for long-run app data. Existing local browser data will not be
+migrated. Until the TASK-063/TASK-065 through TASK-072 chain lands, real product
+data still lives in typed localStorage stores and current server database paths
+are infrastructure/mock-only.
 
 Since TASK-021 the app is hosted as a hybrid (ADR-006, accepted 2026-07-06 — EPIC-013): **Astro owns the shell** — the landing page at `/` and any future public/server routes in `apps/web/src/pages/` — and the **entire React practice app is one client-only SPA island under `/app/*`**, mounted by the server-rendered catch-all `src/pages/app/[...path].astro` with `client:only="react"` (no SSR of practice routes; deep links work because the catch-all answers any `/app/...` URL). Build targets Cloudflare Workers via `@astrojs/cloudflare` with `output: 'server'`; deployment itself is TASK-024. Inside the island, routing is TanStack Router (file-based, TASK-022). Since TASK-023 there is also a **typed tRPC API surface**: server procedures under `apps/web/src/server/trpc/` served by the Astro catch-all endpoint `src/pages/trpc/[trpc].ts` (tRPC fetch adapter), consumed in the island through `@trpc/tanstack-react-query` on one shared React Query `QueryClient` (`src/app/providers.tsx`) — health, database smoke, and mock practice-data DB scaffolding for now, no auth. Since TASK-028/TASK-064, local server-persistence development has a repo-owned Docker Compose Postgres service, `.env.example` connection convention, Drizzle ORM migration workflow, and a server-only `dbSmoke` tRPC procedure that can run `select 1` through Drizzle using the deployed `HYPERDRIVE` binding or local `DATABASE_URL`. Since TASK-061, a separate `mockPractice.record` tRPC mutation can write/read practice-shaped mock rows through the same server-only Drizzle/Postgres boundary. Product practice state remains local, and production database infrastructure remains owner-owned.
 
 ```mermaid
 flowchart TD
     astro["Astro shell — src/pages/*.astro: landing at /, catch-all app/[...path].astro, tRPC endpoint trpc/[trpc].ts"]
-    server["apps/web/src/server/trpc/ — appRouter: typed procedures (health, dbSmoke, mockPractice)"]
+    server["apps/web/src/server/trpc/ — appRouter: typed procedures (health, dbSmoke, mockPractice; auth-protected app data after ADR-012 migration)"]
+    clerk["Clerk — target identity provider; Clerk user ID scopes app data"]
     subgraph SPA island — client:only under /app/*
         shell[apps/web/src/app/AppShell.tsx — TanStack Router basepath=/app]
         pages[apps/web/src/app/pages/ — route-level modules]
@@ -20,11 +29,12 @@ flowchart TD
         audio[apps/web/src/audio/ — play-along + recording capture helpers]
         scoring[apps/web/src/scoring/ — pure take analysis + score matching]
         theory["@jazz-master/theory — pure domain core: notes, intervals, chords, fretboard math"]
-        storage[(apps/web/src/storage/ — typed stores over localStorage)]
+        storage[(apps/web/src/storage/ — temporary typed localStorage stores until migrated)]
     end
-    db[(apps/web/src/server/db/ — Drizzle clients + Postgres smoke/mock paths)]
+    db[(apps/web/src/server/db/ — Drizzle clients + Postgres smoke/mock paths; target app-data source of truth)]
     astro --> shell
     astro --> server
+    server -. authenticated user context after TASK-063 .-> clerk
     server -. server-only dbSmoke/mockPractice .-> db
     shell -. typed tRPC calls over /trpc .-> server
     shell --> pages
@@ -37,7 +47,7 @@ flowchart TD
     content --> theory
     audio --> theory
     scoring --> theory
-    pages --> storage
+    pages -. temporary product persistence before migration .-> storage
 ```
 
 ## Layers and rules
@@ -46,14 +56,14 @@ flowchart TD
 |---|---|---|
 | Domain core | `codebase/packages/theory/` | `@jazz-master/theory` — pure TypeScript, **zero runtime dependencies in its `package.json`** (no React, no DOM, no side effects — structurally enforced). Exhaustively unit-tested — enharmonic spelling correctness is non-negotiable. |
 | Astro shell | `codebase/apps/web/src/pages/` + `src/layouts/` | Astro's file router: public/server pages and API endpoints only (`index.astro`, `app/[...path].astro`, `trpc/[trpc].ts`). Never practice UI — that lives in the island. |
-| Server API | `codebase/apps/web/src/server/trpc/` | tRPC procedures (`init.ts`, `context.ts`, `router.ts`, `routers/`), Zod at every procedure boundary, served through the fetch adapter in `src/pages/trpc/[trpc].ts`. Runs in workerd — no React/DOM. Client consumes it only via `src/app/trpc.ts` (`AppRouter` imported as type only, so server code never enters the client bundle). Current procedures are `health`, the server-only database smoke check, and the mock practice-data write/read probe. |
-| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` + `codebase/apps/migration/drizzle/` | Server-only Drizzle schema, generated SQL migrations, a smoke client that prefers the deployed Cloudflare `HYPERDRIVE` binding and falls back to local `DATABASE_URL`, and a `mock_practice_rows` table/repository for practice-shaped mock data. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. Product practice state still uses local storage until ADR-012/TASK-063 deliberately moves a real server-owned feature to Postgres. |
+| Server API | `codebase/apps/web/src/server/trpc/` | tRPC procedures (`init.ts`, `context.ts`, `router.ts`, `routers/`), Zod at every procedure boundary, served through the fetch adapter in `src/pages/trpc/[trpc].ts`. Runs in workerd — no React/DOM. Client consumes it only via `src/app/trpc.ts` (`AppRouter` imported as type only, so server code never enters the client bundle). Current procedures are `health`, the server-only database smoke check, and the mock practice-data write/read probe. ADR-012 makes this the target authorization and app-data boundary once Clerk lands: browser code talks to tRPC, not Postgres or localStorage. |
+| Server database | `codebase/apps/web/src/server/db/` + `codebase/apps/web/drizzle.config.ts` + `codebase/apps/migration/drizzle/` | Server-only Drizzle schema, generated SQL migrations, a smoke client that prefers the deployed Cloudflare `HYPERDRIVE` binding and falls back to local `DATABASE_URL`, and a `mock_practice_rows` table/repository for practice-shaped mock data. `drizzle-orm`/`pg` stay out of React, components, and `packages/theory`; no runtime request path applies migrations. ADR-012 makes Postgres the target source of truth for long-run app data, scoped by Clerk user ID, while current product practice state remains local until each migration task removes its store. |
 | Components | `codebase/apps/web/src/components/` | Reusable, thin; music knowledge comes from `@jazz-master/theory`, never inlined. |
 | SPA pages | `codebase/apps/web/src/app/pages/` | One per practice module; own their route, compose components. `src/app/` is the island root (`AppShell.tsx`, `router.tsx`, `routes/`, generated `routeTree.gen.ts`). |
 | Content | `codebase/apps/web/src/content/` | Exercise/lesson types, resolver, validator, and hand-authored lesson data. Pure TS — references theory constructs, never hard-coded note lists; imports `@jazz-master/theory` only (no components, no React, no storage). |
 | Audio | `codebase/apps/web/src/audio/` | App-local browser-audio infrastructure. Pure timeline/scheduler/recording helpers are tested without Web Audio; `engine.ts` is the browser-only `smplr` seam that schedules FluidR3_GM guitar samples and synthesizes the play-along metronome click. The runner owns browser permission flows and imports playback lazily. |
 | Scoring | `codebase/apps/web/src/scoring/` | Pure app-local take analysis and scoring. `analyzeTake` turns recorded mono PCM into monophonic note events; `scoreTake` greedily matches events to expected note/onset targets with octave-agnostic pitch-class matching and lenient/standard/strict timing presets. Kept inside the web app rather than a package until there is a second consumer. |
-| Persistence | `codebase/apps/web/src/storage/` | Typed stores over localStorage via `defineStore` — **no direct `localStorage` access outside this directory**. The seam where a backend would replace the implementation (ADR-002). |
+| Persistence | `codebase/apps/web/src/storage/` now; `codebase/apps/web/src/appData/` target for shared contracts | Current typed stores over localStorage via `defineStore` remain as temporary migration state. **No direct `localStorage` access outside `src/storage/` while it exists.** ADR-012 supersedes localStorage as the target: each feature migration removes its store path, server code owns Drizzle/Postgres persistence, and client-safe app-data contracts move to `src/appData/` or equivalent before `src/storage/` is deleted. |
 
 Dependency direction: `app/pages → components → @jazz-master/theory` and `app/pages → content → @jazz-master/theory` (consumed as `workspace:*`). Nothing imports upward; `theory` imports nothing of ours and never imports Astro.
 
@@ -131,8 +141,11 @@ The mock practice-data path lives under
 `mock_practice_rows` table and reads the recent mock rows back through Drizzle,
 with Zod validating the tRPC input/output shape. It is deliberately not product
 persistence: profile, sessions, planner, scores, preferences, and backups remain
-owned by typed browser stores until ADR-012 chooses the server-owned persistence
-target and TASK-063 moves a real slice.
+owned by typed browser stores until the ADR-012 migration tasks move each slice
+to Clerk/Postgres. The target sequence is Clerk auth foundation, Clerk-keyed user
+anchor, profile/onboarding, sessions/grades/scores, server-computed daily plans,
+preferences, backup/import removal, localStorage layer removal, then regression.
+Existing local browser data is intentionally discarded rather than migrated.
 
 ## Deployment (TASK-024)
 
@@ -158,9 +171,17 @@ Two routers with a hard boundary at `/app`. Astro's file router owns everything 
 
 `codebase/packages/theory/src/` — `note.ts` (Note = letter + accidental, parse/format/pitch class), `interval.ts` (named-interval table; `transpose` moves the letter then derives the accidental, so spelling is correct by construction), `chord.ts` (formulas as interval stacks; `spellChord`, `parseChord`). Public API is the `index.ts` barrel only; parse functions return `null` on bad input, `spellChord` throws on a bad root string (programmer error). Names beyond double accidentals are unrepresentable — `noteName` throws.
 
-## Persistence (TASK-008)
+## Persistence (TASK-008, superseded as target by ADR-012)
 
 `apps/web/src/storage/` exposes `defineStore<T>({ name, version, defaultValue, migrate? })`, returning a typed `Store<T>` (`get`/`set`/`update`/`reset`). Values persist under `jazz-master:<name>` in a `{ version, data }` envelope. Reads never throw: missing keys, corrupt JSON, malformed envelopes, versions from the future, and failed migrations all fall back to `defaultValue()` with a `console.warn`. When the persisted version is older, `migrate(persisted, fromVersion)` upgrades the data and the result is written back. Current durable user-data stores are `profile`, `sessions`, `daily-plans`, `play-along-tempos` (per-exercise slow-practice BPM), `notation-preferences`, and `scoring-preferences` (lenient/standard/strict take-scoring tolerance). Session `durationSeconds` is accumulated active exercise time: the runner starts counting when playback/recording begins for an exercise and stops when that playthrough completes, so setup and grading prompt time are excluded. `PracticeSession.results[]` can now carry machine-score metadata per exercise: score, tolerance preset, pitch/timing/completeness components, per-note verdicts, and detected-extra count; session-level `score` is the mean of scored exercise results for history/dashboard summaries. RES-014/INS-023 add an important caveat: Safari/WebKit can evict script-writable storage after a period without user interaction. Since ISSUE-005, the Profile page exposes JSON backup export/import for all current typed stores, including score metadata/preferences. The import contract lives in `storage/backup.ts`: it rejects malformed, oversized, unsupported-version, or bad-date backups, then writes versioned envelopes transactionally and verifies durable bytes before reporting success. **Convention: no direct `localStorage` access outside `src/storage/`** — every feature defines a store, so a backend can later replace the wrapper (ADR-002). Extraction to `packages/storage` waits for a second consumer (ADR-005); React hooks over stores are deferred to first use.
+
+ADR-012 changes the destination. The typed stores above describe current
+migration state, not the long-run product architecture. The target is
+Clerk-authenticated tRPC over server-owned Drizzle/Postgres data, with existing
+local browser data discarded instead of migrated. Each migration task removes
+its feature's localStorage usage in the same slice; backup/import is removed
+after app data has moved; `src/storage/` is deleted after shared contracts move
+to `src/appData/` or equivalent.
 
 ## Content model (TASK-011)
 
@@ -213,9 +234,9 @@ the raw take audio remains transient and is never persisted. The chosen
 tolerance lives in the `scoring-preferences` store and is included in JSON
 backup/import.
 
-## Current state (2026-07-08)
+## Current state (2026-07-09)
 
-App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — to the `sessions` store (`apps/web/src/storage/sessions.ts`), upserted after every grade so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011): a local `PracticeProfile` plus `generatePlan` produce a persisted Today's plan with reasons, runner handoff, and completion ticks from session records. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Astro shell landed (TASK-021): Astro 7 serves a barebones landing at `/` and hosts the React app as a client-only island under `/app/*`; React pages moved to `src/app/pages/`; build targets Workers via `@astrojs/cloudflare` (deploy is TASK-024). TanStack Router migration done (TASK-022): react-router removed, file-based routes under `src/app/routes/` with type-safe navigation and the same URLs. tRPC scaffold done (TASK-023): typed `/trpc/health` end to end — `appRouter` under `src/server/trpc/` with Zod boundaries, Astro fetch-adapter endpoint, `@trpc/tanstack-react-query` client on one shared `QueryClient`, health chip rendered in the SPA; jsdom tests exercise the real wire path via `src/test/trpcTestFetch.ts` (fetchRequestHandler in-process). Workers deploy done (TASK-024, 2026-07-07): redesigned twice mid-task by owner grills (ADR-009 + amendment; NOTE-006/007) — deploy tooling, production posture (dev-only health chip, stack-stripped tRPC errors), the workerd preview path, and a binding-free worker all landed, and the app is live on the dev environment at https://jazz-master.premysl-ciompa.workers.dev via **Cloudflare Workers Builds** (check gate in the build command; every push to `main` deploys). Production is off the roadmap (TASK-036 abandoned 2026-07-07, NOTE-008); the dev URL is the product's home.
+App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. Persistence layer done (TASK-008): typed localStorage stores — this completes EPIC-001, but ADR-012 now makes those stores temporary migration state rather than the target architecture. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — to the `sessions` store (`apps/web/src/storage/sessions.ts`), upserted after every grade so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011): a local `PracticeProfile` plus `generatePlan` produce a persisted Today's plan with reasons, runner handoff, and completion ticks from session records. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Astro shell landed (TASK-021): Astro 7 serves a barebones landing at `/` and hosts the React app as a client-only island under `/app/*`; React pages moved to `src/app/pages/`; build targets Workers via `@astrojs/cloudflare` (deploy is TASK-024). TanStack Router migration done (TASK-022): react-router removed, file-based routes under `src/app/routes/` with type-safe navigation and the same URLs. tRPC scaffold done (TASK-023): typed `/trpc/health` end to end — `appRouter` under `src/server/trpc/` with Zod boundaries, Astro fetch-adapter endpoint, `@trpc/tanstack-react-query` client on one shared `QueryClient`, health chip rendered in the SPA; jsdom tests exercise the real wire path via `src/test/trpcTestFetch.ts` (fetchRequestHandler in-process). Workers deploy done (TASK-024, 2026-07-07): redesigned twice mid-task by owner grills (ADR-009 + amendment; NOTE-006/007) — deploy tooling, production posture (dev-only health chip, stack-stripped tRPC errors), the workerd preview path, and a binding-free worker all landed, and the app is live on the dev environment at https://jazz-master.premysl-ciompa.workers.dev via **Cloudflare Workers Builds** (check gate in the build command; every push to `main` deploys). Production is off the roadmap (TASK-036 abandoned 2026-07-07, NOTE-008); the dev URL is the product's home. ADR-012 is accepted: the remaining EPIC-013 chain moves `/app/*` behind Clerk and migrates profile, sessions/scores, daily planning, and preferences to Clerk/Postgres with no local-data migration bridge.
 
 EPIC-010 recording/scoring is in progress from a deliberately risk-accepted
 position: RES-014 returned staged-go for monophonic offline-after-take scoring,
