@@ -1,6 +1,6 @@
 ---
 id: TASK-062
-title: Write ADR-012 — server-owned app persistence target
+title: Write ADR-012 — Clerk and server-owned app persistence target
 epic: EPIC-013
 status: backlog
 depends_on: [TASK-061]
@@ -8,20 +8,23 @@ source: NOTE-013
 created: 2026-07-09
 ---
 
-# TASK-062 — Write ADR-012: server-owned app persistence target
+# TASK-062 — Write ADR-012: Clerk and server-owned app persistence target
 
 ## Goal
 
-An accepted ADR records the new persistence direction: long-run app data lives
-in Postgres through server APIs, and local browser persistence becomes a
-temporary migration bridge rather than the target architecture.
+An accepted ADR records the new persistence direction: Clerk owns identity,
+long-run app data lives in Postgres through server APIs, and local browser
+persistence is not part of the target architecture.
 
 ## Context
 
 ADR-002 currently says local-first, no backend, no accounts, and all state in
 localStorage. ADR-006 already superseded the "no backend" part by introducing
 Astro Workers and tRPC, but deliberately kept practice state local. NOTE-013
-changes the target: the owner wants no local persistence in the long run.
+changed the target: the owner wants no local persistence in the long run. Owner
+discussion on 2026-07-09 then chose Clerk as the identity provider, no
+local-data migration bridge, and retirement of localStorage during each feature
+migration.
 
 The ADR should not implement the migration. It should define the target, the
 sequencing, and the decisions still required before real user-owned records move
@@ -31,15 +34,19 @@ server-side.
 
 - [ ] `architecture/decisions/ADR-012-*.md` exists and follows existing ADR
       structure
-- [ ] ADR states what it supersedes from ADR-002 and what remains useful as
-      transitional/history
+- [ ] ADR states that it supersedes ADR-002's long-term local-first direction
+      while preserving ADR-002 as historical context
+- [ ] ADR states Clerk is the identity provider and Clerk user ID is the app's
+      user boundary
 - [ ] ADR defines the target persistence boundary: browser code talks to tRPC,
       server code owns Drizzle/Postgres access, and Postgres is the source of
       truth for long-run app data
-- [ ] ADR explicitly addresses the identity/account requirement before real
-      user-owned practice records move to the database
-- [ ] ADR defines a migration sequence from mock DB usage to first real app
-      data to full local-storage retirement
+- [ ] ADR states browser code does not access Postgres or localStorage for app
+      data
+- [ ] ADR defines the migration sequence: Clerk foundation -> user anchor ->
+      profile -> sessions/scores -> server-computed plans -> preferences ->
+      backup/import removal -> localStorage store removal -> regression pass
+- [ ] ADR explicitly says existing local browser data will not be migrated
 - [ ] `architecture/overview.md`, AGENTS.md, and relevant epic/task references
       stop describing local-first as the strategic destination
 - [ ] A strategy amendment proposal is included in the task log or linked note;
@@ -56,8 +63,11 @@ server-side.
 - Run `bun run --cwd codebase check` if any code/config changed; for a
   knowledge-only ADR/doc change, the normal gate still applies before commit
 
-## Open questions (deferred grill)
+## Owner decisions already made
 
-1. What is the first acceptable identity model for server-owned data: explicit
-   account login, owner-only single-user mode, or anonymous device identity as a
-   temporary bridge?
+- `/` stays public.
+- `/app/*` requires sign-in once the Clerk foundation lands.
+- Use a sign-in page redirect for signed-out app access.
+- Local development requires real Clerk environment keys; the owner will provide
+  them in `.env`.
+- Existing local browser data is discarded, not migrated.
