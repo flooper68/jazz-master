@@ -3,6 +3,7 @@ id: TASK-075
 title: Polish public landing and auth pages
 epic: EPIC-013
 status: backlog
+priority: blocker
 depends_on: [TASK-074]
 research: RES-021
 created: 2026-07-09
