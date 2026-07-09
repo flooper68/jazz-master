@@ -1,0 +1,47 @@
+---
+import PracticeBoardMock from './PracticeBoardMock.astro'
+---
+
+<section class="bg-stone-50">
+  <div
+    class="mx-auto grid max-w-6xl items-center gap-6 px-5 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-[0.95fr_1.05fr] md:py-12 lg:px-8"
+  >
+    <div>
+      <p class="text-sm font-bold uppercase text-teal-800">Focused jazz guitar reps</p>
+      <h1 class="mt-4 max-w-3xl font-display text-4xl font-bold leading-tight text-zinc-950 sm:text-5xl">
+        Build jazz guitar habits that survive the gig.
+      </h1>
+      <p class="mt-4 max-w-2xl text-lg leading-8 text-zinc-700">
+        Turn standards, ii-V-I movement, chord voicings, ear training, and
+        recorded takes into focused daily reps.
+      </p>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+        <a
+          href="/sign-up"
+          class="rounded-lg bg-teal-700 px-5 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+        >
+          Start practicing
+        </a>
+        <a
+          href="/sign-in"
+          class="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-center text-sm font-bold text-zinc-950 transition-colors hover:border-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+        >
+          Sign in
+        </a>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-2 text-sm font-semibold text-zinc-700">
+        <span class="rounded-full bg-white px-3 py-1 ring-1 ring-zinc-200">
+          Voicings
+        </span>
+        <span class="rounded-full bg-white px-3 py-1 ring-1 ring-zinc-200">
+          ii-V-I drills
+        </span>
+        <span class="rounded-full bg-white px-3 py-1 ring-1 ring-zinc-200">
+          Standards
+        </span>
+      </div>
+    </div>
+
+    <PracticeBoardMock />
+  </div>
+</section>

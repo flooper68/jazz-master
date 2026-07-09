@@ -1,0 +1,64 @@
+<div
+  class="max-h-48 w-full max-w-lg overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-left text-zinc-100 shadow-2xl shadow-zinc-950/20 sm:max-h-none"
+  aria-label="Jazz Master practice board preview"
+>
+  <div class="flex items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+    <div>
+      <p class="text-xs font-semibold uppercase text-amber-300">Today's chorus</p>
+      <p class="mt-1 font-display text-2xl font-bold">Autumn ii-V-I</p>
+    </div>
+    <div
+      class="rounded-lg bg-teal-500 px-3 py-2 text-center text-sm font-bold text-zinc-950"
+    >
+      86
+      <span class="block text-xs font-semibold">score</span>
+    </div>
+  </div>
+
+  <div class="mt-4 grid gap-3 sm:grid-cols-3">
+    {['Dm7', 'G7', 'Cmaj7'].map((chord, index) => (
+      <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+        <p class="text-sm font-semibold text-zinc-100">{chord}</p>
+        <p class="mt-1 text-xs text-zinc-400">
+          {index === 0 ? 'Guide tones' : index === 1 ? 'Resolve b7' : 'Land clean'}
+        </p>
+      </div>
+    ))}
+  </div>
+
+  <div class="mt-5 rounded-lg bg-stone-100 p-3 text-zinc-950">
+    <div class="mb-2 flex items-center justify-between text-xs font-semibold">
+      <span>Fretboard lane</span>
+      <span class="text-teal-800">5th position</span>
+    </div>
+    <div class="space-y-2">
+      {[1, 2, 3, 4].map((lane) => (
+        <div class="grid grid-cols-8 gap-1" aria-hidden="true">
+          {Array.from({ length: 8 }).map((_, fret) => (
+            <span
+              class:list={[
+                'h-2 rounded-full',
+                (lane + fret) % 5 === 0
+                  ? 'bg-teal-700'
+                  : (lane + fret) % 4 === 0
+                    ? 'bg-amber-500'
+                    : 'bg-zinc-300',
+              ]}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div class="mt-4 grid gap-3 sm:grid-cols-[1.2fr_0.8fr]">
+    <div class="rounded-lg border border-zinc-800 p-3">
+      <p class="text-xs font-semibold uppercase text-zinc-400">Ear prompt</p>
+      <p class="mt-2 text-sm font-medium">Sing the 3rd before you play it.</p>
+    </div>
+    <div class="rounded-lg border border-zinc-800 p-3">
+      <p class="text-xs font-semibold uppercase text-zinc-400">Tempo</p>
+      <p class="mt-2 text-sm font-medium">112 BPM loop</p>
+    </div>
+  </div>
+</div>

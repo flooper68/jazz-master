@@ -2,7 +2,7 @@
 id: TASK-075
 title: Polish public landing and auth pages
 epic: EPIC-013
-status: backlog
+status: done
 priority: blocker
 depends_on: [TASK-074]
 research: RES-021
@@ -90,25 +90,25 @@ Likely code paths:
 
 ## Acceptance criteria
 
-- [ ] `/` uses a shared public layout with a signed-out header, footer, and a
+- [x] `/` uses a shared public layout with a signed-out header, footer, and a
       full mock landing page based on the RES-021 section plan
-- [ ] The landing page primary message is jazz-practice specific and includes
+- [x] The landing page primary message is jazz-practice specific and includes
       calls to `/sign-up` and `/sign-in`
-- [ ] The first viewport includes a product-relevant visual surface, such as a
+- [x] The first viewport includes a product-relevant visual surface, such as a
       practice-board, fretboard, chord, notation, score, or daily-plan mock
-- [ ] Landing sections cover why the product exists, core practice modules, a
+- [x] Landing sections cover why the product exists, core practice modules, a
       daily practice loop, and a final CTA
-- [ ] `/sign-in` and `/sign-up` use the same public visual system as the
+- [x] `/sign-in` and `/sign-up` use the same public visual system as the
       landing page while preserving Clerk prebuilt Astro components and TASK-074
       redirects
-- [ ] The password reset path is visibly reachable from the signed-out auth
+- [x] The password reset path is visibly reachable from the signed-out auth
       experience and remains app-hosted; do not implement a custom Clerk reset
       flow in this task
-- [ ] Auth pages keep noindex behavior
-- [ ] No direct `localStorage` usage is introduced
-- [ ] Tests or focused verification cover the public routes rendering and the
+- [x] Auth pages keep noindex behavior
+- [x] No direct `localStorage` usage is introduced
+- [x] Tests or focused verification cover the public routes rendering and the
       existing auth redirect helper behavior remains intact
-- [ ] `bun run --cwd codebase check` passes
+- [x] `bun run --cwd codebase check` passes
 
 ## Verification
 
@@ -124,3 +124,53 @@ Likely code paths:
   does not bypass Clerk prebuilt MFA/session-task handling
 - In a signed-out browser, visit `/app/practice` and verify the TASK-074 return
   redirect still lands on app-hosted `/sign-in`
+
+## Log
+
+### 2026-07-09 - claimed (agent)
+
+Plan: build a shared Astro public shell/header/footer plus static landing
+sections under `src/components/public/`; replace the bare `/` page with the
+RES-021 landing mock and product-relevant practice-board visual; wrap existing
+Clerk prebuilt `/sign-in` and `/sign-up` pages in the same public visual system
+while preserving TASK-074 route props and noindex metadata; verify route
+rendering with browser checks, keep `appRouteAuth` tests green, and run
+`bun run --cwd codebase check`. Security/privacy checklist applies because this
+touches auth entry pages; no custom auth flow, new dependency, storage change,
+or direct `localStorage` use is planned.
+
+### 2026-07-09 - done
+
+Replaced the bare public `/` page with a shared Astro public shell, signed-out
+header/footer, static landing sections, and a compact responsive practice-board
+mock. `/sign-in` and `/sign-up` now share the same visual system, preserve the
+TASK-074 Clerk prebuilt component props, emit `noindex, nofollow`, and keep
+local auth cross-links. Added a sign-in reset note that points users into
+Clerk's own app-hosted reset flow on `/sign-in` without adding a custom reset
+route.
+
+Review: completed the degraded self-review checklist because no callable
+subagent tool was available in this session. Findings fixed before ship: the
+initial desktop/mobile hero did not leave enough next-section context, and the
+Clerk card overflowed mobile width by 14px; both were corrected and rechecked.
+Security/privacy checklist: no secrets, storage, dependencies, custom auth
+logic, user-input rendering, or direct `localStorage` usage introduced.
+Residual configuration note: the development Clerk widget title currently uses
+the configured Clerk application name (`Configurator-copilot`); no safe local
+prebuilt-component app-name override was found, so correcting that belongs in
+Clerk dashboard configuration rather than code.
+
+Verification: `bun run --cwd codebase test --
+apps/web/src/server/auth/appRouteAuth.test.ts` passed (18 tests). Browser
+preview checks used the built app with
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master
+bun run preview`: `/` at 1280x720 and 390x844 showed usable header links,
+correct `/sign-up` and `/sign-in` CTAs, product-relevant first-viewport practice
+mock, visible next-section context, and no horizontal overflow; `/sign-in` and
+`/sign-up` rendered Clerk widgets in the public shell with local cross-links and
+noindex; `/sign-in` mobile had no overflow after the auth-shell constraint;
+signed-out `/app/practice` redirected to
+`/sign-in?redirect_url=%2Fapp%2Fpractice`. `rg -n "localStorage"` over the
+touched public files found no matches. Final `bun run --cwd codebase check`
+passed (49 test files, 670 tests, build green). Existing jsdom canvas
+not-implemented messages and Wrangler log-file EPERM warnings were non-fatal.

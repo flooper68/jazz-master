@@ -1,22 +1,17 @@
 ---
 import { SignIn } from '@clerk/astro/components'
-import BaseLayout from '../layouts/BaseLayout.astro'
+import AuthPage from '../components/public/auth/AuthPage.astro'
+import PublicShell from '../components/public/PublicShell.astro'
 import { clerkAuthRoutes } from '../server/auth/clerkRoutes'
 ---
 
-<BaseLayout title="Sign in - Jazz Master">
-  <main
-    class="flex min-h-screen flex-col items-center justify-center gap-8 bg-zinc-950 px-6 py-12 text-zinc-100"
+<PublicShell title="Sign in - Jazz Master" noindex>
+  <AuthPage
+    eyebrow="Welcome back"
+    heading="Return to your practice room."
+    body="Sign in to keep your standards, daily reps, scores, and next useful repetitions connected."
+    resetNote="Need to reset your password? Start inside the Clerk sign-in form here; the recovery steps stay app-hosted on /sign-in."
   >
-    <div class="text-center">
-      <a
-        href="/"
-        class="font-display text-3xl font-bold tracking-tight text-zinc-100"
-      >
-        Jazz Master
-      </a>
-    </div>
-
     <SignIn
       routing="path"
       path={clerkAuthRoutes.signIn}
@@ -28,5 +23,5 @@ import { clerkAuthRoutes } from '../server/auth/clerkRoutes'
         },
       }}
     />
-  </main>
-</BaseLayout>
+  </AuthPage>
+</PublicShell>

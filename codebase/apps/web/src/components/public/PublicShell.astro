@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PublicFooter from './PublicFooter.astro'
+import PublicHeader from './PublicHeader.astro'
+
+interface Props {
+  title?: string
+  description?: string
+  noindex?: boolean
+}
+
+const { title, description, noindex = false } = Astro.props
+---
+
+<BaseLayout title={title} description={description} noindex={noindex}>
+  <div class="min-h-screen bg-stone-50 text-zinc-950">
+    <PublicHeader />
+    <slot />
+    <PublicFooter />
+  </div>
+</BaseLayout>

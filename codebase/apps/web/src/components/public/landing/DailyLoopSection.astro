@@ -1,0 +1,32 @@
+---
+const steps = [
+  ['1', 'Choose a focus', 'Pick the standard, voicing family, key center, or ear target that needs reps today.'],
+  ['2', 'Play a short rep', 'Use the runner, tempo controls, notation, fretboard context, and play-along loop.'],
+  ['3', 'Review and return', 'See score, timing, history, and the next useful repetition instead of guessing.'],
+]
+---
+
+<section id="daily-loop" class="border-y border-zinc-200 bg-zinc-950 text-zinc-100">
+  <div class="mx-auto max-w-6xl px-5 py-14 sm:px-6 lg:px-8">
+    <div class="max-w-3xl">
+      <p class="text-sm font-bold uppercase text-amber-300">Daily loop</p>
+      <h2 class="mt-3 font-display text-3xl font-bold sm:text-4xl">
+        One practice room for the rep, the recording, and the return visit.
+      </h2>
+    </div>
+
+    <div class="mt-8 grid gap-4 md:grid-cols-3">
+      {steps.map(([number, title, description]) => (
+        <article class="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-300 text-sm font-bold text-zinc-950"
+          >
+            {number}
+          </div>
+          <h3 class="mt-4 text-lg font-bold">{title}</h3>
+          <p class="mt-2 leading-7 text-zinc-300">{description}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

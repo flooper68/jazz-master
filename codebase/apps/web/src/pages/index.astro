@@ -1,20 +1,18 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
+import PublicShell from '../components/public/PublicShell.astro'
+import DailyLoopSection from '../components/public/landing/DailyLoopSection.astro'
+import FinalCtaSection from '../components/public/landing/FinalCtaSection.astro'
+import HeroSection from '../components/public/landing/HeroSection.astro'
+import ModulesSection from '../components/public/landing/ModulesSection.astro'
+import WhySection from '../components/public/landing/WhySection.astro'
 ---
 
-{/* Deliberately barebones per the ADR-006 grill (NOTE-005): name, one
-    sentence, one link into /app — nothing marketing-shaped in slice one. */}
-<BaseLayout>
-  <main
-    class="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100"
-  >
-    <h1 class="font-display text-4xl font-bold tracking-tight">Jazz Master</h1>
-    <p class="text-zinc-400">Practice jazz guitar, one chorus at a time.</p>
-    <a
-      href="/app"
-      class="rounded bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
-    >
-      Open the practice app
-    </a>
+<PublicShell>
+  <main>
+    <HeroSection />
+    <WhySection />
+    <ModulesSection />
+    <DailyLoopSection />
+    <FinalCtaSection />
   </main>
-</BaseLayout>
+</PublicShell>

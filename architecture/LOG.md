@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-075 public landing/auth polish
+
+Replaced the bare public `/` page with a full signed-out landing page using
+Astro public shell components, practice-specific copy, and a static
+practice-board mock. `/sign-in` and `/sign-up` now share that public visual
+system while preserving Clerk's prebuilt auth components, local auth links,
+`noindex`, and the `/app` fallback/return behavior from TASK-074.
+
 ## 2026-07-09 — TASK-074 app-hosted Clerk auth pages
 
 Added Astro-owned `/sign-in` and `/sign-up` pages using Clerk's prebuilt

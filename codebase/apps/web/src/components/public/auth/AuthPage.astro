@@ -1,0 +1,65 @@
+---
+interface Props {
+  eyebrow: string
+  heading: string
+  body: string
+  resetNote?: string
+}
+
+const { eyebrow, heading, body, resetNote } = Astro.props
+---
+
+<main class="bg-stone-50">
+  <div
+    class="mx-auto grid min-h-[calc(100vh-153px)] max-w-6xl items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-[0.9fr_1.1fr] lg:px-8"
+  >
+    <section class="max-w-xl">
+      <p class="text-sm font-bold uppercase text-teal-800">{eyebrow}</p>
+      <h1 class="mt-4 font-display text-4xl font-bold leading-tight text-zinc-950 sm:text-5xl">
+        {heading}
+      </h1>
+      <p class="mt-4 text-lg leading-8 text-zinc-700">{body}</p>
+      <div class="mt-8 rounded-lg border border-zinc-200 bg-white p-5">
+        <p class="text-sm font-bold uppercase text-amber-700">Practice loop</p>
+        <div class="mt-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <span class="h-2 w-14 rounded-full bg-teal-700"></span>
+            <span class="text-sm font-semibold text-zinc-800">Choose the rep</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="h-2 w-20 rounded-full bg-amber-500"></span>
+            <span class="text-sm font-semibold text-zinc-800">Play with time</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="h-2 w-16 rounded-full bg-rose-500"></span>
+            <span class="text-sm font-semibold text-zinc-800">Review the take</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="auth-form-shell flex min-w-0 justify-center overflow-hidden rounded-lg border border-zinc-200 bg-white px-0 py-6 shadow-xl shadow-zinc-950/5 sm:px-8"
+      aria-label="Authentication form"
+    >
+      <div class="w-full min-w-0">
+        <slot />
+        {
+          resetNote && (
+            <p class="mx-auto mt-4 max-w-md text-center text-sm leading-6 text-zinc-600">
+              {resetNote}
+            </p>
+          )
+        }
+      </div>
+    </section>
+  </div>
+</main>
+
+<style>
+  .auth-form-shell :global(.cl-rootBox),
+  .auth-form-shell :global(.cl-cardBox) {
+    max-width: 100%;
+    width: 100%;
+  }
+</style>
