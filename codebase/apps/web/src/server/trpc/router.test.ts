@@ -19,6 +19,47 @@ describe('appRouter.health', () => {
     expect(time).toBeLessThanOrEqual(Date.now())
     expect(result.time).toBe(new Date(result.time).toISOString())
   })
+
+  it('stays public when no authenticated Clerk user is present', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { userId: null },
+        dbSmoke: null,
+        mockPractice: null,
+      }),
+    )
+
+    await expect(caller.health()).resolves.toMatchObject({ status: 'ok' })
+  })
+})
+
+describe('appRouter.auth.me', () => {
+  it('rejects unauthenticated callers', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { userId: null },
+        dbSmoke: null,
+        mockPractice: null,
+      }),
+    )
+
+    await expect(caller.auth.me()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+  })
+
+  it('returns the authenticated Clerk user ID from context', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { userId: 'user_123' },
+        dbSmoke: null,
+        mockPractice: null,
+      }),
+    )
+
+    await expect(caller.auth.me()).resolves.toEqual({ userId: 'user_123' })
+  })
 })
 
 describe('appRouter.dbSmoke', () => {

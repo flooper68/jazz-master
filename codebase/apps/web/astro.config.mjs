@@ -1,6 +1,7 @@
 // @ts-check
 import cloudflare from '@astrojs/cloudflare'
 import react from '@astrojs/react'
+import clerk from '@clerk/astro'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig, sessionDrivers } from 'astro/config'
@@ -17,7 +18,7 @@ export default defineConfig({
   // Worker binding-free; it is per-isolate and non-persistent, so if sessions
   // are ever actually adopted, switch to sessionDrivers.cloudflareKVBinding().
   session: { driver: sessionDrivers.memory() },
-  integrations: [react()],
+  integrations: [clerk(), react()],
   vite: {
     plugins: [
       // TanStack Router codegen for the /app/* SPA island (TASK-022). Route

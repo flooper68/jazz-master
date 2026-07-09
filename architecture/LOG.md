@@ -4,6 +4,17 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-063 Clerk auth foundation
+
+Added `@clerk/astro` to the web app, installed Astro middleware that protects
+`/app/*` while keeping `/` public, and added a runtime env assertion for
+`PUBLIC_CLERK_PUBLISHABLE_KEY` plus `CLERK_SECRET_KEY` so local dev uses real
+Clerk keys rather than keyless mode. tRPC context now carries Clerk `userId`
+from Astro locals, `protectedProcedure` rejects unauthenticated calls, and
+`auth.me` is the protected foundation probe. The React shell renders Clerk's
+`UserButton`. `dbSmoke` remains public and temporary until real app-data
+procedures replace smoke-only DB verification.
+
 ## 2026-07-09 — TASK-062 ADR-012 accepted
 
 ADR-012 now supersedes ADR-002 as the long-run persistence target: Clerk owns

@@ -1,4 +1,5 @@
 import { router } from './init'
+import { auth } from './routers/auth'
 import { mockPractice } from './routers/mockPractice'
 import { dbSmoke, health } from './routers/system'
 
@@ -7,6 +8,7 @@ import { dbSmoke, health } from './routers/system'
 export const appRouter = router({
   health,
   dbSmoke,
+  auth,
   mockPractice,
 })
 

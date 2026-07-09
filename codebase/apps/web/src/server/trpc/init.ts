@@ -1,4 +1,4 @@
-import { initTRPC } from '@trpc/server'
+import { TRPCError, initTRPC } from '@trpc/server'
 import type { Context } from './context'
 
 // Strip stack traces from error responses outside dev (INS-021). tRPC's own
@@ -20,4 +20,21 @@ const t = initTRPC.context<Context>().create({
 
 export const router = t.router
 export const publicProcedure = t.procedure
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.auth.userId) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      auth: {
+        userId: ctx.auth.userId,
+      },
+    },
+  })
+})
 export const createCallerFactory = t.createCallerFactory

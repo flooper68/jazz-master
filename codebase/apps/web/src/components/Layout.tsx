@@ -1,3 +1,4 @@
+import { UserButton } from '@clerk/astro/react'
 import { Link, Outlet } from '@tanstack/react-router'
 import type { Ref } from 'react'
 
@@ -52,6 +53,9 @@ export function Layout({ mainRef }: LayoutProps) {
             ))}
           </ul>
         </nav>
+        <div className="mt-auto flex items-center justify-start border-t border-zinc-800 pt-4">
+          <UserButton />
+        </div>
       </aside>
       <main ref={mainRef} tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-10">
         <Outlet />
