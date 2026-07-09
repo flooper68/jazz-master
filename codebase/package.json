@@ -12,6 +12,8 @@
     "build": "bun run --filter './apps/*' build",
     "preview": "bun run --cwd apps/web preview",
     "deploy": "bun run --cwd apps/web deploy",
+    "db:generate": "bun run --cwd apps/web db:generate",
+    "db:migrate": "bun run --cwd apps/web db:migrate",
     "lint": "oxlint",
     "typecheck": "tsc -b",
     "test": "vitest run",

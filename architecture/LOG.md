@@ -4,6 +4,18 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-055 Drizzle migration foundation
+
+Added Drizzle ORM migration infrastructure for the web app: `drizzle-orm` and
+`pg` as app dependencies, `drizzle-kit` and `@types/pg` as dev dependencies,
+`apps/web/drizzle.config.ts` reading `DATABASE_URL`, an intentionally empty
+server-only schema entrypoint at `src/server/db/schema.ts`, and root/web
+`db:generate`/`db:migrate` scripts. Migration files will be generated into
+`apps/web/drizzle/` and committed when schema changes require them. Deploy-time
+migrations are a Cloudflare Workers Builds step using an owner-owned build-only
+`DATABASE_URL`; the Worker request path does not migrate, and practice state
+remains local.
+
 ## 2026-07-08 — TASK-028 local Postgres compose service
 
 Added a root Docker Compose PostgreSQL service for local server-persistence development: `postgres:18`, dev-only `jazz_master` credentials, localhost-only port binding, named volume mounted at `/var/lib/postgresql` for the Postgres 18 image layout, and `pg_isready` healthcheck. Documented `.env.example`, `psql` smoke checks, optional host-port override for local conflicts, and explicit reset via `docker compose down --volumes`; the app still does not require Docker or Postgres for dev/check.
