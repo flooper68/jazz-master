@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { MockPracticeRepository } from '../db/mockPractice'
+import { defaultProfile, type PracticeProfile } from '../../appData/profile'
+import type { ProfileRepository } from '../db/profiles'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
@@ -25,8 +26,7 @@ describe('appRouter.health', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users: null,
       }),
     )
@@ -40,8 +40,7 @@ describe('appRouter.auth.me', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users: null,
       }),
     )
@@ -57,8 +56,7 @@ describe('appRouter.auth.me', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users: {
           async ensureUser(clerkUserId: string) {
             calls += 1
@@ -83,8 +81,7 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users: null,
       }),
     )
@@ -111,8 +108,7 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users,
       }),
     )
@@ -161,8 +157,7 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users,
       }),
     )
@@ -192,8 +187,7 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        dbSmoke: null,
-        mockPractice: null,
+        profiles: null,
         users,
       }),
     )
@@ -206,165 +200,96 @@ describe('appRouter.users.ensure', () => {
   })
 })
 
-describe('appRouter.dbSmoke', () => {
-  it('reports unconfigured when no database connection is available', async () => {
-    const caller = createCaller(createContext({ dbSmoke: null }))
-    const before = Date.now()
+describe('appRouter.profile', () => {
+  it('reports unconfigured when no profile repository is available', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles: null,
+      }),
+    )
 
-    const result = await caller.dbSmoke()
-
-    expect(result.status).toBe('unconfigured')
-    const checkedAt = Date.parse(result.checkedAt)
-    expect(checkedAt).toBeGreaterThanOrEqual(before)
-    expect(checkedAt).toBeLessThanOrEqual(Date.now())
-    expect(result.checkedAt).toBe(new Date(result.checkedAt).toISOString())
+    await expect(caller.profile.get()).resolves.toEqual({
+      status: 'unconfigured',
+    })
   })
 
-  it('runs the injected smoke client', async () => {
+  it('returns null before onboarding has written a profile', async () => {
+    const profiles = createMemoryProfileRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+      }),
+    )
+
+    await expect(caller.profile.get()).resolves.toEqual({
+      status: 'ok',
+      profile: null,
+    })
+  })
+
+  it('writes and reads the authenticated profile through the repository', async () => {
+    const profiles = createMemoryProfileRepository()
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        profiles,
+      }),
+    )
+    const profile = {
+      ...defaultProfile('2026-07-09T10:00:00.000Z'),
+      levels: { scales: 2, arpeggios: 1, chords: 1, standards: 3, ears: 1 },
+      goalAreas: ['standards', 'scales'],
+      minutesPerDay: 45,
+    } satisfies PracticeProfile
+
+    await expect(caller.profile.save(profile)).resolves.toEqual({
+      status: 'ok',
+      profile,
+    })
+    await expect(caller.profile.get()).resolves.toEqual({
+      status: 'ok',
+      profile,
+    })
+  })
+
+  it('rejects unauthenticated profile reads before the repository is called', async () => {
     let calls = 0
     const caller = createCaller(
       createContext({
-        dbSmoke: {
-          async check() {
+        auth: { clerkUserId: null },
+        profiles: {
+          async getProfile() {
             calls += 1
+            return null
           },
-        },
+          async saveProfile(_clerkUserId, profile) {
+            calls += 1
+            return profile
+          },
+        } satisfies ProfileRepository,
       }),
     )
 
-    const result = await caller.dbSmoke()
-
-    expect(result.status).toBe('ok')
-    expect(calls).toBe(1)
-  })
-
-  it('returns a predictable error shape when the smoke query fails', async () => {
-    const caller = createCaller(
-      createContext({
-        dbSmoke: {
-          async check() {
-            throw new Error('postgres://secret@localhost/db')
-          },
-        },
-      }),
-    )
-
-    const result = await caller.dbSmoke()
-
-    expect(result).toMatchObject({
-      status: 'error',
-      message: 'Database smoke check failed',
+    await expect(caller.profile.get()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
     })
+    expect(calls).toBe(0)
   })
 })
 
-describe('appRouter.mockPractice.record', () => {
-  it('reports unconfigured when no mock practice repository is available', async () => {
-    const caller = createCaller(
-      createContext({
-        dbSmoke: null,
-        mockPractice: null,
-      }),
-    )
+function createMemoryProfileRepository(): ProfileRepository {
+  const profiles = new Map<string, PracticeProfile>()
 
-    const result = await caller.mockPractice.record({
-      exerciseSlug: 'autumn-leaves-arpeggios',
-      exerciseTitle: 'Autumn Leaves arpeggios',
-      minutes: 12,
-    })
-
-    expect(result).toEqual({ status: 'unconfigured' })
-  })
-
-  it('records mock practice data through the injected repository', async () => {
-    const createdAt = new Date('2026-07-09T09:00:00.000Z').toISOString()
-    const calls: unknown[] = []
-    const mockPractice = {
-      async record(input) {
-        calls.push(input)
-
-        return {
-          created: {
-            id: '11111111-1111-4111-8111-111111111111',
-            exerciseSlug: input.exerciseSlug,
-            exerciseTitle: input.exerciseTitle,
-            minutes: input.minutes,
-            focus: input.focus ?? null,
-            createdAt,
-          },
-          recent: [
-            {
-              id: '11111111-1111-4111-8111-111111111111',
-              exerciseSlug: input.exerciseSlug,
-              exerciseTitle: input.exerciseTitle,
-              minutes: input.minutes,
-              focus: input.focus ?? null,
-              createdAt,
-            },
-          ],
-        }
-      },
-    } satisfies MockPracticeRepository
-    const caller = createCaller(
-      createContext({
-        dbSmoke: null,
-        mockPractice,
-      }),
-    )
-
-    const result = await caller.mockPractice.record({
-      exerciseSlug: 'blue-bossa-ii-v-i',
-      exerciseTitle: '  Blue Bossa ii-V-I  ',
-      minutes: 20,
-      focus: '  time feel  ',
-    })
-
-    expect(calls).toEqual([
-      {
-        exerciseSlug: 'blue-bossa-ii-v-i',
-        exerciseTitle: 'Blue Bossa ii-V-I',
-        minutes: 20,
-        focus: 'time feel',
-      },
-    ])
-    expect(result).toMatchObject({
-      status: 'ok',
-      created: {
-        exerciseSlug: 'blue-bossa-ii-v-i',
-        exerciseTitle: 'Blue Bossa ii-V-I',
-        minutes: 20,
-        focus: 'time feel',
-      },
-      recent: [
-        {
-          exerciseSlug: 'blue-bossa-ii-v-i',
-          exerciseTitle: 'Blue Bossa ii-V-I',
-        },
-      ],
-    })
-  })
-
-  it('returns a predictable error shape when the repository write fails', async () => {
-    const caller = createCaller(
-      createContext({
-        dbSmoke: null,
-        mockPractice: {
-          async record() {
-            throw new Error('postgres://secret@localhost/db')
-          },
-        },
-      }),
-    )
-
-    const result = await caller.mockPractice.record({
-      exerciseSlug: 'rhythm-changes',
-      exerciseTitle: 'Rhythm Changes',
-      minutes: 16,
-    })
-
-    expect(result).toEqual({
-      status: 'error',
-      message: 'Mock practice database write failed',
-    })
-  })
-})
+  return {
+    async getProfile(clerkUserId) {
+      return profiles.get(clerkUserId) ?? null
+    },
+    async saveProfile(clerkUserId, profile) {
+      profiles.set(clerkUserId, profile)
+      return profile
+    },
+  }
+}

@@ -15,6 +15,13 @@
       "when": 1783599411670,
       "tag": "0001_dapper_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783606800000,
+      "tag": "0002_migrate_profile",
+      "breakpoints": true
     }
   ]
 }

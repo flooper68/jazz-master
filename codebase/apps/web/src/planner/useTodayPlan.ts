@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useProfile } from '../app/ProfileProvider'
+import type { PracticeProfile } from '../appData/profile'
 import { LESSONS } from '../content'
 import {
-  defaultProfile,
   getDailyPlan,
-  profileStore,
   saveDailyPlan,
   sessionsStore,
-  type PracticeProfile,
   type PracticeSession,
 } from '../storage'
 import { generatePlan, toPlanDate, type DailyPlan } from './dailyPlan'
@@ -28,16 +27,15 @@ export interface TodayPlan {
  */
 export function useTodayPlan(): TodayPlan {
   const [today] = useState(() => new Date())
-  const [profile] = useState(
-    () => profileStore.get() ?? defaultProfile(today.toISOString()),
-  )
+  const { profile } = useProfile()
+  const resolvedProfile = profile as PracticeProfile
   const [sessions, setSessions] = useState(() => sessionsStore.get())
   const [storedPlan, setStoredPlan] = useState<DailyPlan | null>(() =>
     getDailyPlan(toPlanDate(today)),
   )
   const plan = useMemo(
-    () => storedPlan ?? generatePlan(profile, sessions, LESSONS, today),
-    [profile, sessions, storedPlan, today],
+    () => storedPlan ?? generatePlan(resolvedProfile, sessions, LESSONS, today),
+    [resolvedProfile, sessions, storedPlan, today],
   )
 
   useEffect(() => {
@@ -48,5 +46,5 @@ export function useTodayPlan(): TodayPlan {
 
   const refreshSessions = () => setSessions(sessionsStore.get())
 
-  return { today, profile, sessions, plan, refreshSessions }
+  return { today, profile: resolvedProfile, sessions, plan, refreshSessions }
 }

@@ -5,27 +5,25 @@ import {
   MinutesFields,
 } from '../../components/ProfileFields'
 import {
-  defaultProfile,
   importStorageBackupText,
   MAX_STORAGE_BACKUP_BYTES,
-  profileStore,
   serializeStorageBackup,
-  type PracticeProfile,
 } from '../../storage'
+import type { PracticeProfile } from '../../appData/profile'
+import { useProfile } from '../ProfileProvider'
 
 /** Edit surface for the onboarding answers (TASK-016). */
 export default function ProfilePage() {
-  // The App gate guarantees a stored profile; the fallback is belt-and-braces
-  // for a cleared store in another tab.
-  const [profile, setProfile] = useState<PracticeProfile>(
-    () => profileStore.get() ?? defaultProfile(new Date().toISOString()),
-  )
+  const { profile: storedProfile, saveProfile, isSaving } = useProfile()
+  const [profile, setProfile] = useState<PracticeProfile>(storedProfile!)
   const [saved, setSaved] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('')
   const [backupStatus, setBackupStatus] = useState('')
 
   const edit = (changes: Partial<PracticeProfile>) => {
     setProfile({ ...profile, ...changes })
     setSaved(false)
+    setSaveStatus('')
   }
 
   const exportBackup = () => {
@@ -56,7 +54,6 @@ export default function ProfilePage() {
         setBackupStatus(result.error)
         return
       }
-      setProfile(profileStore.get() ?? defaultProfile(new Date().toISOString()))
       setSaved(false)
       setBackupStatus('Backup imported.')
     } catch {
@@ -101,16 +98,24 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => {
-            profileStore.set(profile)
-            setSaved(true)
+            void saveProfile(profile)
+              .then(() => {
+                setSaved(true)
+                setSaveStatus('')
+              })
+              .catch(() => {
+                setSaved(false)
+                setSaveStatus('Profile could not be saved.')
+              })
           }}
-          disabled={profile.goalAreas.length === 0}
+          disabled={isSaving || profile.goalAreas.length === 0}
           className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
         >
           Save
         </button>
         <p aria-live="polite" className="text-sm text-zinc-400">
           {saved ? 'Saved.' : ''}
+          {saveStatus}
           {profile.goalAreas.length === 0 ? 'Pick at least one goal area.' : ''}
         </p>
       </div>
@@ -118,8 +123,8 @@ export default function ProfilePage() {
         <h2 className="text-sm font-medium text-zinc-400">Data backup</h2>
         <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
           <p className="text-sm text-zinc-300">
-            Download a JSON backup of profile, plans, history, and practice
-            settings. Import replaces this browser's local data.
+            Download a JSON backup of plans, history, and practice settings.
+            Import replaces this browser's local data.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button

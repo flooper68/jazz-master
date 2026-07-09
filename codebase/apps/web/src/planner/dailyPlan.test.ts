@@ -97,7 +97,7 @@ describe('generatePlan', () => {
   it('weights goal areas first but rotates them by day', () => {
     const inputProfile = profile({
       goalAreas: ['scales', 'arpeggios'],
-      minutesPerDay: 12,
+      minutesPerDay: 20,
     })
 
     const today = generatePlan(
@@ -120,7 +120,7 @@ describe('generatePlan', () => {
     const inputProfile = profile({
       levels: { ...defaultProfile('').levels, scales: 2 },
       goalAreas: ['scales'],
-      minutesPerDay: 12,
+      minutesPerDay: 20,
     })
 
     expect(
@@ -141,7 +141,7 @@ describe('generatePlan', () => {
     const inputProfile = profile({
       levels: { ...defaultProfile('').levels, scales: 2 },
       goalAreas: ['scales'],
-      minutesPerDay: 12,
+      minutesPerDay: 20,
     })
     const plan = generatePlan(
       inputProfile,

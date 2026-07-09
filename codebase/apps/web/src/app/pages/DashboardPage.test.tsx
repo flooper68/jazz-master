@@ -1,20 +1,21 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defaultProfile } from '../../appData/profile'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
 import {
-  defaultProfile,
-  profileStore,
   saveDailyPlan,
   sessionsStore,
   type PracticeSession,
 } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
+import { resetTrpcTestData, seedTrpcTestProfile } from '../../test/trpcTestFetch'
 
 beforeEach(() => {
   localStorage.clear()
-  profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
+  resetTrpcTestData()
+  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
 // The dashboard's Start handoff navigates to the real /practice route, so the

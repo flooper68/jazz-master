@@ -1,22 +1,23 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defaultProfile } from '../../appData/profile'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
 import {
-  defaultProfile,
   getDailyPlan,
-  profileStore,
   saveDailyPlan,
   sessionsStore,
 } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
+import { resetTrpcTestData, seedTrpcTestProfile } from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
 
 beforeEach(() => {
   localStorage.clear()
-  profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
+  resetTrpcTestData()
+  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
 // The page uses router hooks (dashboard Start handoff), so it renders through

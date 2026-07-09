@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { defaultProfile, type PracticeProfile } from '../storage'
+import { defaultProfile, type PracticeProfile } from '../appData/profile'
 import { GoalAreaFields, LevelFields, MinutesFields } from './ProfileFields'
 import { useViewFocus } from './useViewFocus'
 
 interface OnboardingWizardProps {
   /** Receives the finished profile; the caller persists it. */
   onComplete: (profile: PracticeProfile) => void
+  isSaving?: boolean
 }
 
 const STEP_TITLES = [
@@ -19,7 +20,10 @@ const STEP_TITLES = [
  * so finishing — or skipping at any point — always yields a usable profile;
  * skip keeps whatever was already answered.
  */
-export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+export function OnboardingWizard({
+  isSaving = false,
+  onComplete,
+}: OnboardingWizardProps) {
   const [step, setStep] = useState(0)
   // createdAt is stamped on completion; the placeholder never persists.
   const [draft, setDraft] = useState(() => defaultProfile(''))
@@ -89,7 +93,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <button
             type="button"
             onClick={lastStep ? finish : () => setStep(step + 1)}
-            disabled={step === 1 && goalsEmpty}
+            disabled={isSaving || (step === 1 && goalsEmpty)}
             className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
           >
             {lastStep ? 'Start practicing' : 'Next'}
@@ -97,6 +101,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <button
             type="button"
             onClick={finish}
+            disabled={isSaving}
             className="ml-auto text-sm text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
           >
             Skip for now

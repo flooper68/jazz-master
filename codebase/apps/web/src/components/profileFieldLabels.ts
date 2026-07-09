@@ -1,4 +1,4 @@
-import type { PracticeArea } from '../storage'
+import type { PracticeArea } from '../appData/profile'
 
 export const AREA_LABELS: Record<PracticeArea, string> = {
   scales: 'Scales',

@@ -1,15 +1,15 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defaultProfile } from '../../appData/profile'
 import { LESSONS } from '../../content'
 import { toPlanDate } from '../../planner'
 import {
-  defaultProfile,
-  profileStore,
   sessionsStore,
   type PracticeSession,
 } from '../../storage'
 import { renderRoute } from '../../test/renderRoute'
+import { resetTrpcTestData, seedTrpcTestProfile } from '../../test/trpcTestFetch'
 
 const scalesLesson = LESSONS.find((lesson) => lesson.area === 'scales')!
 const arpeggiosLesson = LESSONS.find((lesson) => lesson.area === 'arpeggios')!
@@ -52,7 +52,8 @@ function sessionItem(accessibleTitle: string | RegExp): HTMLElement {
 beforeEach(() => {
   localStorage.clear()
   // The route renders behind the onboarding gate, so a profile must exist.
-  profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
+  resetTrpcTestData()
+  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
 describe('HistoryPage', () => {

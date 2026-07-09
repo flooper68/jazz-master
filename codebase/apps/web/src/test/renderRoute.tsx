@@ -1,5 +1,6 @@
 import { createMemoryHistory, RouterProvider } from '@tanstack/react-router'
-import { render } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import { expect } from 'vitest'
 import { AppProviders } from '../app/providers'
 import { createAppRouter } from '../app/router'
 import { trpcTestFetch } from './trpcTestFetch'
@@ -17,9 +18,13 @@ export async function renderRoute(path: string) {
     }),
   )
   await router.load()
-  return render(
+  const result = render(
     <AppProviders fetch={trpcTestFetch}>
       <RouterProvider router={router} />
     </AppProviders>,
   )
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument()
+  })
+  return result
 }

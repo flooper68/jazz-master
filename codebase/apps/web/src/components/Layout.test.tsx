@@ -1,11 +1,13 @@
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore } from '../storage'
+import { defaultProfile } from '../appData/profile'
 import { renderRoute } from '../test/renderRoute'
+import { resetTrpcTestData, seedTrpcTestProfile } from '../test/trpcTestFetch'
 
 beforeEach(() => {
   localStorage.clear()
-  profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
+  resetTrpcTestData()
+  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 })
 
 // Regression guard for ISSUE-001 (app shell overflowed horizontally at phone

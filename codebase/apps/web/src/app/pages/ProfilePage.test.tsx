@@ -1,23 +1,30 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore, serializeStorageBackup } from '../../storage'
-import ProfilePage from './ProfilePage'
+import { defaultProfile } from '../../appData/profile'
+import { serializeStorageBackup } from '../../storage'
+import { renderRoute } from '../../test/renderRoute'
+import {
+  getTrpcTestProfile,
+  resetTrpcTestData,
+  seedTrpcTestProfile,
+} from '../../test/trpcTestFetch'
 
 beforeEach(() => {
   localStorage.clear()
+  resetTrpcTestData()
 })
 
 describe('ProfilePage', () => {
-  it('shows the stored profile', () => {
-    profileStore.set({
+  it('shows the stored profile', async () => {
+    seedTrpcTestProfile({
       ...defaultProfile('2026-07-06T10:00:00.000Z'),
       levels: { scales: 2, arpeggios: 1, chords: 1, standards: 1, ears: 1 },
       minutesPerDay: 45,
     })
-    render(<ProfilePage />)
+    await renderRoute('/profile')
 
-    const scales = screen.getByRole('group', { name: 'Scales' })
+    const scales = await screen.findByRole('group', { name: 'Scales' })
     expect(
       within(scales).getByRole('radio', { name: 'Intermediate' }),
     ).toBeChecked()
@@ -27,10 +34,10 @@ describe('ProfilePage', () => {
 
   it('persists edits on save and confirms', async () => {
     const user = userEvent.setup()
-    profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
-    render(<ProfilePage />)
+    seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
+    await renderRoute('/profile')
 
-    const standards = screen.getByRole('group', { name: 'Standards' })
+    const standards = await screen.findByRole('group', { name: 'Standards' })
     await user.click(
       within(standards).getByRole('radio', { name: 'Advanced' }),
     )
@@ -38,8 +45,8 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('radio', { name: '30 min' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(screen.getByText('Saved.')).toBeInTheDocument()
-    const stored = profileStore.get()
+    expect(await screen.findByText('Saved.')).toBeInTheDocument()
+    const stored = getTrpcTestProfile()
     expect(stored?.levels.standards).toBe(3)
     expect(stored?.goalAreas).toEqual(['scales', 'arpeggios', 'ears'])
     expect(stored?.minutesPerDay).toBe(30)
@@ -49,33 +56,33 @@ describe('ProfilePage', () => {
 
   it('blocks saving an empty goal list', async () => {
     const user = userEvent.setup()
-    profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
-    render(<ProfilePage />)
+    seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
+    await renderRoute('/profile')
 
-    await user.click(screen.getByRole('checkbox', { name: /Scales/ }))
+    await user.click(await screen.findByRole('checkbox', { name: /Scales/ }))
     await user.click(screen.getByRole('checkbox', { name: /Arpeggios/ }))
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
     expect(screen.getByText('Pick at least one goal area.')).toBeInTheDocument()
-    expect(profileStore.get()?.goalAreas).toEqual(['scales', 'arpeggios'])
+    expect(getTrpcTestProfile()?.goalAreas).toEqual(['scales', 'arpeggios'])
   })
 
-  it('imports a backup and refreshes the visible profile', async () => {
+  it('imports a backup without replacing the server profile', async () => {
     const user = userEvent.setup()
-    profileStore.set({
+    seedTrpcTestProfile({
       ...defaultProfile('2026-07-06T10:00:00.000Z'),
       minutesPerDay: 45,
     })
     const backup = serializeStorageBackup(new Date('2026-07-08T10:00:00.000Z'))
 
-    profileStore.set({
+    seedTrpcTestProfile({
       ...defaultProfile('2026-07-07T10:00:00.000Z'),
       goalAreas: ['standards'],
       minutesPerDay: 10,
     })
-    render(<ProfilePage />)
+    await renderRoute('/profile')
 
-    expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked()
+    expect(await screen.findByRole('radio', { name: '10 min' })).toBeChecked()
     await user.upload(
       screen.getByLabelText('Import backup'),
       new File([backup], 'jazz-master-backup.json', {
@@ -84,7 +91,7 @@ describe('ProfilePage', () => {
     )
 
     expect(await screen.findByText('Backup imported.')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: '45 min' })).toBeChecked()
-    expect(profileStore.get()?.minutesPerDay).toBe(45)
+    expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked()
+    expect(getTrpcTestProfile()?.minutesPerDay).toBe(10)
   })
 })

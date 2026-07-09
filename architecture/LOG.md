@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-066 profile moved to Clerk/Postgres
+
+Moved practice profile and onboarding completion off localStorage and into
+protected Clerk-scoped tRPC procedures backed by normalized Postgres tables:
+`practice_profiles` for scalar profile fields and `practice_profile_goal_areas`
+for ordered goal priorities. `onboarding_completed_at` is product lifecycle
+time and stays distinct from DB row `created_at`. Removed the temporary
+`dbSmoke` and `mockPractice` tRPC/database scaffolding after the real profile
+path verified local Postgres access.
+
 ## 2026-07-09 — TASK-065 Clerk-keyed user anchor
 
 Added the minimal app-owned `users` table keyed directly by Clerk user ID, with

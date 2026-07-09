@@ -39,9 +39,13 @@ export {
   defaultProfile,
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,
-  profileStore,
 } from './profile'
-export type { PracticeArea, PracticeProfile, SkillLevel } from './profile'
+export type {
+  PracticeArea,
+  PracticeMinutesPerDay,
+  PracticeProfile,
+  SkillLevel,
+} from './profile'
 export { sessionsStore, upsertSession } from './sessions'
 export type {
   ExerciseScore,

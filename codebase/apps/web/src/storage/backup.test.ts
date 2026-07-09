@@ -3,12 +3,10 @@ import type { DailyPlan } from '../planner'
 import {
   createStorageBackup,
   dailyPlansStore,
-  defaultProfile,
   importStorageBackupText,
   MAX_STORAGE_BACKUP_BYTES,
   notationPreferencesStore,
   playAlongTemposStore,
-  profileStore,
   scoringPreferencesStore,
   serializeStorageBackup,
   sessionsStore,
@@ -72,7 +70,6 @@ afterEach(() => {
 
 describe('storage backup', () => {
   it('exports all typed local stores', () => {
-    profileStore.set(defaultProfile('2026-07-08T08:00:00.000Z'))
     sessionsStore.set([session])
     dailyPlansStore.set({ [plan.date]: plan })
     playAlongTemposStore.set({ 'exercise-1': 88 })
@@ -84,10 +81,6 @@ describe('storage backup', () => {
       version: 1,
       exportedAt: '2026-07-08T10:00:00.000Z',
       stores: {
-        profile: {
-          version: 1,
-          data: defaultProfile('2026-07-08T08:00:00.000Z'),
-        },
         sessions: { version: 1, data: [session] },
         dailyPlans: { version: 1, data: { [plan.date]: plan } },
         playAlongTempos: { version: 1, data: { 'exercise-1': 88 } },
@@ -98,7 +91,6 @@ describe('storage backup', () => {
   })
 
   it('imports a valid backup into every store', () => {
-    profileStore.set(defaultProfile('2026-07-07T08:00:00.000Z'))
     sessionsStore.set([])
     dailyPlansStore.set({})
 
@@ -106,7 +98,6 @@ describe('storage backup', () => {
     localStorage.clear()
 
     expect(importStorageBackupText(backup)).toEqual({ ok: true })
-    expect(profileStore.get()).toEqual(defaultProfile('2026-07-07T08:00:00.000Z'))
     expect(sessionsStore.get()).toEqual([])
     expect(dailyPlansStore.get()).toEqual({})
     expect(playAlongTemposStore.get()).toEqual({})
@@ -115,7 +106,6 @@ describe('storage backup', () => {
   })
 
   it('rejects malformed backups without overwriting existing data', () => {
-    profileStore.set(defaultProfile('2026-07-08T08:00:00.000Z'))
     sessionsStore.set([session])
 
     const invalid = JSON.stringify({
@@ -130,23 +120,16 @@ describe('storage backup', () => {
       ok: false,
       error: 'Session history is invalid.',
     })
-    expect(profileStore.get()).toEqual(defaultProfile('2026-07-08T08:00:00.000Z'))
     expect(sessionsStore.get()).toEqual([session])
   })
 
   it('rolls back when a backup cannot be fully written', () => {
     const originalSetItem = Storage.prototype.setItem
-    profileStore.set(defaultProfile('2026-07-08T08:00:00.000Z'))
     sessionsStore.set([session])
 
-    profileStore.set({
-      ...defaultProfile('2026-07-09T08:00:00.000Z'),
-      minutesPerDay: 45,
-    })
     sessionsStore.set([])
     const backup = serializeStorageBackup(exportedAt)
 
-    profileStore.set(defaultProfile('2026-07-08T08:00:00.000Z'))
     sessionsStore.set([session])
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
       this: Storage,
@@ -163,27 +146,19 @@ describe('storage backup', () => {
       ok: false,
       error: 'Backup could not be written.',
     })
-    expect(profileStore.get()).toEqual(defaultProfile('2026-07-08T08:00:00.000Z'))
     expect(sessionsStore.get()).toEqual([session])
   })
 
-  it('rejects backups with malformed dates', () => {
-    const profile = {
-      ...defaultProfile('2026-07-08T08:00:00.000Z'),
-      createdAt: 'not-a-date',
-    }
+  it('ignores legacy profile data in imported backups', () => {
     const invalid = JSON.stringify({
       ...createStorageBackup(exportedAt),
       stores: {
         ...createStorageBackup(exportedAt).stores,
-        profile: { version: 1, data: profile },
+        profile: { version: 1, data: { createdAt: 'not-a-date' } },
       },
     })
 
-    expect(importStorageBackupText(invalid)).toEqual({
-      ok: false,
-      error: 'Profile data is invalid.',
-    })
+    expect(importStorageBackupText(invalid)).toEqual({ ok: true })
   })
 
   it('rejects daily plans stored under the wrong date key', () => {

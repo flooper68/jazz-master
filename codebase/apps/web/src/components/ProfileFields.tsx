@@ -2,9 +2,10 @@ import {
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,
   type PracticeArea,
+  type PracticeMinutesPerDay,
   type PracticeProfile,
   type SkillLevel,
-} from '../storage'
+} from '../appData/profile'
 import { AREA_LABELS } from './profileFieldLabels'
 
 /**
@@ -102,8 +103,8 @@ export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
 }
 
 interface MinutesFieldsProps {
-  minutesPerDay: number
-  onChange: (minutesPerDay: number) => void
+  minutesPerDay: PracticeMinutesPerDay
+  onChange: (minutesPerDay: PracticeMinutesPerDay) => void
 }
 
 export function MinutesFields({ minutesPerDay, onChange }: MinutesFieldsProps) {

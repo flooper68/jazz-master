@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import type { PracticeProfile } from '../storage'
+import type { PracticeProfile } from '../appData/profile'
 import { OnboardingWizard } from './OnboardingWizard'
 
 function renderWizard() {

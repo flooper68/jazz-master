@@ -1,9 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore } from './profile'
-
-beforeEach(() => {
-  localStorage.clear()
-})
+import { describe, expect, it } from 'vitest'
+import { defaultProfile } from './profile'
 
 describe('defaultProfile', () => {
   it('documents the skip defaults: beginner everywhere, lesson-pack goals, 20 min', () => {
@@ -21,20 +17,5 @@ describe('defaultProfile', () => {
     expect(first).not.toBe(second)
     expect(first.levels).not.toBe(second.levels)
     expect(first.goalAreas).not.toBe(second.goalAreas)
-  })
-})
-
-describe('profileStore', () => {
-  it('yields null before onboarding has ever run', () => {
-    expect(profileStore.get()).toBeNull()
-  })
-
-  it('round-trips a stored profile', () => {
-    const profile = {
-      ...defaultProfile('2026-07-06T10:00:00.000Z'),
-      minutesPerDay: 45,
-    }
-    profileStore.set(profile)
-    expect(profileStore.get()).toEqual(profile)
   })
 })

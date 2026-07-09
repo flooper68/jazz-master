@@ -1,15 +1,21 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile, profileStore } from '../storage'
+import { defaultProfile } from '../appData/profile'
 import { renderRoute } from '../test/renderRoute'
+import {
+  getTrpcTestProfile,
+  resetTrpcTestData,
+  seedTrpcTestProfile,
+} from '../test/trpcTestFetch'
 
 beforeEach(() => {
   localStorage.clear()
+  resetTrpcTestData()
 })
 
 function seedProfile() {
-  profileStore.set(defaultProfile('2026-07-06T10:00:00.000Z'))
+  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
 }
 
 describe('app router', () => {
@@ -98,7 +104,7 @@ describe('app router', () => {
     await renderRoute('/practice')
 
     expect(
-      screen.getByRole('heading', { name: 'How comfortable are you?' }),
+      await screen.findByRole('heading', { name: 'How comfortable are you?' }),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { level: 1, name: 'Practice' }),
@@ -114,14 +120,12 @@ describe('app router', () => {
 
     await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
-    expect(profileStore.get()).toMatchObject({
+    expect(await screen.findByRole('heading', { level: 1, name: 'Practice' })).toBeInTheDocument()
+    expect(getTrpcTestProfile()).toMatchObject({
       levels: { scales: 1, arpeggios: 1, chords: 1, standards: 1, ears: 1 },
       goalAreas: ['scales', 'arpeggios'],
       minutesPerDay: 20,
     })
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Practice' }),
-    ).toBeInTheDocument()
   })
 
   it('moves focus into the app main region when onboarding gives way to the app', async () => {
@@ -130,7 +134,7 @@ describe('app router', () => {
 
     await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
-    expect(screen.getByRole('main')).toHaveFocus()
+    expect(await screen.findByRole('main')).toHaveFocus()
   })
 
   it('persists a completed profile and enters the requested route', async () => {
@@ -145,14 +149,12 @@ describe('app router', () => {
     await user.click(screen.getByRole('radio', { name: '30 min' }))
     await user.click(screen.getByRole('button', { name: 'Start practicing' }))
 
-    expect(profileStore.get()).toMatchObject({
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(getTrpcTestProfile()).toMatchObject({
       levels: { scales: 2 },
       goalAreas: ['scales', 'arpeggios', 'chords'],
       minutesPerDay: 30,
     })
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Dashboard' }),
-    ).toBeInTheDocument()
   })
 
   it('does not show onboarding for a returning user with a profile', async () => {

@@ -1,0 +1,194 @@
+{
+  "id": "b8d8c43e-1893-41d5-813d-9a07e5fd5c7c",
+  "prevId": "0fe37128-f612-4556-aeee-d68159c78f2d",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.practice_profile_goal_areas": {
+      "name": "practice_profile_goal_areas",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "area": {
+          "name": "area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_profile_goal_areas_clerk_user_id_users_clerk_user_id_fk": {
+          "name": "practice_profile_goal_areas_clerk_user_id_users_clerk_user_id_fk",
+          "tableFrom": "practice_profile_goal_areas",
+          "tableTo": "users",
+          "columnsFrom": [
+            "clerk_user_id"
+          ],
+          "columnsTo": [
+            "clerk_user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "practice_profile_goal_areas_clerk_user_id_position_pk": {
+          "name": "practice_profile_goal_areas_clerk_user_id_position_pk",
+          "columns": [
+            "clerk_user_id",
+            "position"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.practice_profiles": {
+      "name": "practice_profiles",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scales_level": {
+          "name": "scales_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arpeggios_level": {
+          "name": "arpeggios_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chords_level": {
+          "name": "chords_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "standards_level": {
+          "name": "standards_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ears_level": {
+          "name": "ears_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minutes_per_day": {
+          "name": "minutes_per_day",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "onboarding_completed_at": {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_profiles_clerk_user_id_users_clerk_user_id_fk": {
+          "name": "practice_profiles_clerk_user_id_users_clerk_user_id_fk",
+          "tableFrom": "practice_profiles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "clerk_user_id"
+          ],
+          "columnsTo": [
+            "clerk_user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

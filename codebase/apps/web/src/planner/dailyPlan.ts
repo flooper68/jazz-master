@@ -1,6 +1,6 @@
 import type { Lesson, LessonArea } from '../content'
-import { defaultProfile } from '../storage/profile'
-import type { PracticeArea, PracticeProfile } from '../storage/profile'
+import { defaultProfile } from '../appData/profile'
+import type { PracticeArea, PracticeProfile } from '../appData/profile'
 import type { ExerciseGrade, PracticeSession } from '../storage/sessions'
 
 const DAY_MS = 24 * 60 * 60 * 1000

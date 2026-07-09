@@ -12,14 +12,6 @@ import {
   type StoredPlayAlongTempos,
 } from './playAlongTempos'
 import {
-  MINUTES_PER_DAY_OPTIONS,
-  PRACTICE_AREAS,
-  profileStore,
-  type PracticeArea,
-  type PracticeProfile,
-  type SkillLevel,
-} from './profile'
-import {
   sessionsStore,
   type ExerciseScore,
   type ExerciseGrade,
@@ -70,7 +62,6 @@ export interface StorageBackup {
   version: typeof STORAGE_BACKUP_VERSION
   exportedAt: string
   stores: {
-    profile: StoreBackup<PracticeProfile | null>
     sessions: StoreBackup<PracticeSession[]>
     dailyPlans: StoreBackup<StoredDailyPlans>
     playAlongTempos: StoreBackup<StoredPlayAlongTempos>
@@ -89,7 +80,6 @@ export function createStorageBackup(exportedAt = new Date()): StorageBackup {
     version: STORAGE_BACKUP_VERSION,
     exportedAt: exportedAt.toISOString(),
     stores: {
-      profile: { version: 1, data: profileStore.get() },
       sessions: { version: 1, data: sessionsStore.get() },
       dailyPlans: { version: 1, data: dailyPlansStore.get() },
       playAlongTempos: { version: 1, data: playAlongTemposStore.get() },
@@ -135,7 +125,6 @@ export function importStorageBackupText(
 
 function persistBackupStores(backup: StorageBackup): boolean {
   const entries: PersistedEntry[] = [
-    toPersistedEntry('profile', backup.stores.profile),
     toPersistedEntry('sessions', backup.stores.sessions),
     toPersistedEntry('daily-plans', backup.stores.dailyPlans),
     toPersistedEntry('play-along-tempos', backup.stores.playAlongTempos),
@@ -205,10 +194,6 @@ function parseStorageBackup(
     return { ok: false, error: 'Backup stores are missing.' }
   }
 
-  const profile = parseStoreBackup(
-    value.stores.profile,
-    isPracticeProfileOrNull,
-  )
   const sessions = parseStoreBackup(value.stores.sessions, isPracticeSessions)
   const dailyPlans = parseStoreBackup(value.stores.dailyPlans, isStoredDailyPlans)
   const playAlongTempos = parseStoreBackup(
@@ -228,7 +213,6 @@ function parseStorageBackup(
         }
       : parseStoreBackup(value.stores.scoringPreferences, isScoringPreferences)
 
-  if (!profile.ok) return { ok: false, error: 'Profile data is invalid.' }
   if (!sessions.ok) return { ok: false, error: 'Session history is invalid.' }
   if (!dailyPlans.ok) return { ok: false, error: 'Daily plans are invalid.' }
   if (!playAlongTempos.ok) {
@@ -248,7 +232,6 @@ function parseStorageBackup(
       version: STORAGE_BACKUP_VERSION,
       exportedAt: value.exportedAt,
       stores: {
-        profile: toStoreBackup(profile),
         sessions: toStoreBackup(sessions),
         dailyPlans: toStoreBackup(dailyPlans),
         playAlongTempos: toStoreBackup(playAlongTempos),
@@ -275,40 +258,6 @@ function toStoreBackup<T>(parsed: { version: 1; data: T }): StoreBackup<T> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isPracticeProfileOrNull(
-  value: unknown,
-): value is PracticeProfile | null {
-  if (value === null) return true
-  if (!isRecord(value)) return false
-  return (
-    isSkillLevelRecord(value.levels) &&
-    Array.isArray(value.goalAreas) &&
-    value.goalAreas.length > 0 &&
-    value.goalAreas.every(isPracticeArea) &&
-    typeof value.minutesPerDay === 'number' &&
-    MINUTES_PER_DAY_OPTIONS.includes(
-      value.minutesPerDay as (typeof MINUTES_PER_DAY_OPTIONS)[number],
-    ) &&
-    isIsoDateTimeString(value.createdAt)
-  )
-}
-
-function isSkillLevelRecord(value: unknown): value is Record<PracticeArea, SkillLevel> {
-  if (!isRecord(value)) return false
-  return PRACTICE_AREAS.every((area) => isSkillLevel(value[area]))
-}
-
-function isPracticeArea(value: unknown): value is PracticeArea {
-  return (
-    typeof value === 'string' &&
-    PRACTICE_AREAS.includes(value as PracticeArea)
-  )
-}
-
-function isSkillLevel(value: unknown): value is SkillLevel {
-  return value === 1 || value === 2 || value === 3
 }
 
 function isPracticeSessions(value: unknown): value is PracticeSession[] {
