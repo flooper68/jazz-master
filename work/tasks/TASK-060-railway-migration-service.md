@@ -99,3 +99,15 @@ variable, and no required dashboard start-command override. Review: independent
 subagent spawning is blocked by the current tool policy unless the user
 explicitly asks for delegation, so the code-review and security/privacy
 checklists were completed as a degraded self-review.
+
+### 2026-07-09 — Railway runtime dependency fix
+
+Railway container logs then showed the Dockerized migration service starting but
+`drizzle-kit migrate` exiting with "Please install latest version of
+drizzle-orm". The isolated migration package only installed its own
+`package.json`, so it could not rely on the web app's `drizzle-orm` dependency.
+Added `drizzle-orm` as a direct migration-service runtime dependency.
+Verification: rebuilt the migration Docker image, confirmed the previous missing
+dependency message was gone, then ran the image against local Postgres on the
+documented alternate port 55432; `drizzle-kit migrate` exited 0 with
+"migrations applied successfully".

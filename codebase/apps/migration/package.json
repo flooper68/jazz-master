@@ -10,6 +10,7 @@
     "migrate": "drizzle-kit migrate --config drizzle.config.ts"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "drizzle-kit": "^0.31.10",
     "pg": "^8.22.0"
   },
