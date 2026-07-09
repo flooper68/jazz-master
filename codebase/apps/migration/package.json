@@ -1,0 +1,19 @@
+{
+  "name": "@jazz-master/migration",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun run migrate",
+    "build": "tsc -b",
+    "migrate": "drizzle-kit migrate --config drizzle.config.ts"
+  },
+  "dependencies": {
+    "drizzle-kit": "^0.31.10",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "typescript": "~6.0.2"
+  }
+}

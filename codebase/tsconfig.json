@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/theory" },
+    { "path": "./apps/migration" },
     { "path": "./apps/web" },
     { "path": "./tsconfig.node.json" }
   ]

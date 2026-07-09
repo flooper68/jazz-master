@@ -10,6 +10,18 @@
         "vitest": "^4.1.9",
       },
     },
+    "apps/migration": {
+      "name": "@jazz-master/migration",
+      "version": "0.0.0",
+      "dependencies": {
+        "drizzle-kit": "^0.31.10",
+        "pg": "^8.22.0",
+      },
+      "devDependencies": {
+        "@types/node": "^24.13.2",
+        "typescript": "~6.0.2",
+      },
+    },
     "apps/web": {
       "name": "@jazz-master/web",
       "version": "0.0.0",
@@ -324,6 +336,8 @@
     "@img/sharp-win32-ia32": ["@img/sharp-win32-ia32@0.35.3", "", { "os": "win32", "cpu": "ia32" }, "sha512-r53mXsBN6lFUDiST764SvgwUdHAqM4rPAiDzAmf4fLoB6X/rkfyTrLCg6+g17wJJiCmB3JYgHuUldCWUIRFSXw=="],
 
     "@img/sharp-win32-x64": ["@img/sharp-win32-x64@0.35.3", "", { "os": "win32", "cpu": "x64" }, "sha512-D4y1vNeZrIIJCN+uHaWVtH86B+aCrdMYYjicy9pXHvbGZeGYLLSd3wdVuC37FxVXlU1ARsk84eKWfWMXGYEqvA=="],
+
+    "@jazz-master/migration": ["@jazz-master/migration@workspace:apps/migration"],
 
     "@jazz-master/theory": ["@jazz-master/theory@workspace:packages/theory"],
 

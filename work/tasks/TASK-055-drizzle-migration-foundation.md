@@ -13,8 +13,9 @@ created: 2026-07-08
 ## Goal
 
 The web app has a server-only Drizzle schema and migration workflow that can run
-against local Postgres during development and against the owner-provided dev
-deployment database during Cloudflare Workers Builds.
+against local Postgres during development and against the owner-provided
+deployment database. Supersession: TASK-060 moved deployment migration execution
+from Cloudflare Workers Builds to a dedicated Railway migration service.
 
 ## Context
 
@@ -23,12 +24,21 @@ migrations, and build-step migrations. Runtime database access remains
 server-only: React code and `packages/theory` must not import Drizzle, `pg`, or
 database clients.
 
-Deployment contract:
+Original deployment contract, superseded by TASK-060:
 
 - Local development runs migrations with the local `DATABASE_URL` from
   TASK-028.
 - Cloudflare Workers Builds runs `db:migrate` before `check`/deploy using a
   build-only `DATABASE_URL` secret supplied by the owner.
+- The Worker request path does not apply migrations.
+
+Current deployment contract:
+
+- Local development still runs migrations with the local `DATABASE_URL`.
+- Railway runs deployment migrations through `apps/migration` with a
+  service-scoped `DATABASE_URL`.
+- Cloudflare Workers Builds does not run migrations and does not receive
+  `DATABASE_URL`.
 - The Worker request path does not apply migrations.
 
 ## Acceptance criteria
@@ -91,3 +101,10 @@ host port 55432 because 5432 was occupied; `db:migrate` exited 0 after rerun
 outside the sandbox so it could reach localhost; Docker was stopped; server-only
 import search returned no matches; `bun run --cwd codebase check` passed with
 Docker stopped, 46 test files and 632 tests.
+
+### 2026-07-09 — superseded by TASK-060
+
+The TASK-055 Cloudflare build-step migration contract was intentionally replaced:
+deployment migrations now run from the Railway `apps/migration` service with
+Railway-owned `DATABASE_URL`; Cloudflare Workers Builds only installs, checks,
+builds, and deploys the Worker.

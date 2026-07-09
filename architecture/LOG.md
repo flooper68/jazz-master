@@ -4,6 +4,15 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-060 Railway migration service
+
+Deployment migrations moved out of Cloudflare Workers Builds and into a
+dedicated `apps/migration` Bun workspace intended to run as a Railway service.
+Root `db:migrate` now routes through that app, Cloudflare's build command is back
+to install + `bun run check`, and the deployment `DATABASE_URL` belongs only on
+the Railway migration service. Worker request paths still do not migrate, and
+runtime DB access remains future work.
+
 ## 2026-07-09 — TASK-055 Drizzle migration foundation
 
 Added Drizzle ORM migration infrastructure for the web app: `drizzle-orm` and

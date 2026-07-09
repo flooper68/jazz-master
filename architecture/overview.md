@@ -86,10 +86,12 @@ down` preserves local data; `docker compose down --volumes` is the documented
 intentional reset. `.env.example` documents the local `DATABASE_URL` convention
 and the default host port.
 
-Drizzle lives in the web workspace as migration infrastructure only:
-`apps/web/drizzle.config.ts` reads `DATABASE_URL`, uses PostgreSQL, points at
-`apps/web/src/server/db/schema.ts`, and writes generated migrations to
-`apps/web/drizzle/`. Run migrations from the repo root with:
+Drizzle schema generation lives in the web workspace as migration infrastructure
+only: `apps/web/drizzle.config.ts` reads `DATABASE_URL`, uses PostgreSQL, points
+at `apps/web/src/server/db/schema.ts`, and writes generated migrations to
+`apps/web/drizzle/`. Applying migrations is owned by the dedicated
+`apps/migration` workspace app, whose config points at that same schema and
+committed migration directory. Run migrations from the repo root with:
 
 ```sh
 DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master bun run --cwd codebase db:migrate
@@ -100,12 +102,20 @@ schema changes require them. `drizzle-kit push` is not the default workflow.
 `bun run --cwd codebase dev` and `bun run --cwd codebase check` must still work
 with Docker stopped and without `DATABASE_URL`.
 
+Deployment migrations run from a Railway service, not from the Cloudflare build.
+Configure the Railway service against the shared Bun monorepo with root
+directory `codebase`, start command `bun run --cwd apps/migration start`, and a
+service-scoped `DATABASE_URL` variable containing the deployment Postgres
+connection string. The migration process exits after applying committed Drizzle
+migrations; Railway's default `On Failure` restart policy is acceptable, and
+`Never` is also fine for an intentional one-shot migration service.
+
 ## Deployment (TASK-024)
 
 Target is **Cloudflare Workers** (not Pages — RES-002; ADR-006). `apps/web/wrangler.jsonc` is the user config (`nodejs_compat`, pinned `compatibility_date`); at build time the adapter emits the resolved Worker config to `dist/server/wrangler.json` (entry `entry.mjs`, static assets from `dist/client`) and a `.wrangler/deploy/config.json` redirect points wrangler at it, so no `main`/`assets` live in the user config.
 
 - **Credential boundary (ADR-009, amended NOTE-007):** agents never hold deploy credentials — no `wrangler login` on development machines, ever, and **no deploy token exists anywhere** (not in repo secrets, not on disk). The credential is implicit in the Cloudflare↔GitHub connection the owner authorizes in the Cloudflare dashboard.
-- **Dev deploys (Cloudflare Workers Builds):** the repo is connected to the `jazz-master-web` worker in the Cloudflare dashboard; every push to `main` triggers a build — root directory `codebase/apps/web`, build command `cd ../.. && bun install --frozen-lockfile && bun run db:migrate && bun run check` (migrations first, then the full gate blocks a red deploy — owner decision, NOTE-007), deploy command `bunx wrangler deploy`. The deployed worker **is the dev environment**; build status appears in the Cloudflare dashboard and as a GitHub commit status. The build needs an owner-provided build-only `DATABASE_URL` secret; the Worker request path never runs migrations and agents do not provision or hold production database credentials.
+- **Dev deploys (Cloudflare Workers Builds):** the repo is connected to the `jazz-master-web` worker in the Cloudflare dashboard; every push to `main` triggers a build — root directory `codebase/apps/web`, build command `cd ../.. && bun install --frozen-lockfile && bun run check`, deploy command `bunx wrangler deploy`. The deployed worker **is the dev environment**; build status appears in the Cloudflare dashboard and as a GitHub commit status. Cloudflare does not need `DATABASE_URL`; Railway owns deployment migrations through `apps/migration`. The Worker request path never runs migrations and agents do not provision or hold production database credentials.
 - **Production:** does not exist, and standing one up is off the roadmap (TASK-036 abandoned by owner decision 2026-07-07, NOTE-008) — the dev worker URL is the product's home for the foreseeable future. If production ever matters, a fresh task starts from TASK-036's preserved open questions; ADR-009's owner-only-deploy decision stands regardless.
 - **Local Workers-runtime preview:** `bun run build && bun run preview` — with the Cloudflare adapter, `astro preview` serves the built worker in workerd, so Workers-specific breakage is catchable before pushing. (`bun run deploy` exists but fails locally for lack of credentials — correct behavior under ADR-009.)
 - **Live dev URL:** https://jazz-master.premysl-ciompa.workers.dev (first green Workers Builds deploy 2026-07-07; verified: `/` SSR, `/trpc/health` typed JSON, `/app/*` deep-link reloads, full onboarding→lesson→history flow, zero console errors).

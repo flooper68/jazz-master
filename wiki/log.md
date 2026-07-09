@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-09 — `product/overview` updated for TASK-060: deployment migrations now run from the Railway `apps/migration` service, keeping `DATABASE_URL` out of Cloudflare Workers Builds.
 - 2026-07-09 — `product/overview` updated for TASK-055: server-side Postgres work now has Drizzle migration infrastructure while product practice state remains local.
 - 2026-07-08 — `product/overview` updated for TASK-043: runner recording now feeds local take analysis, score UI, score-only session persistence, scoring tolerance preferences, and history score display.
 - 2026-07-08 — `project/lifecycle-of-a-change` and `product/overview` updated for NOTE-012: task completion gates now require automated or agent-runnable verification; human-only browser/device coverage moves to QA/product review, so TASK-041 is done.
