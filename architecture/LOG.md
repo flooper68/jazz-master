@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-077 Jazz Master APSS map proposed before migration
+
+Mapped the current operating model as a proposed `jazz-master` root with eight
+proposed child systems, exhaustive process ownership, three derived views, and
+an explicit incomplete-loop/deferred-grill register. TASK-079 through TASK-084
+form an owner-acceptance-gated migration chain; no canonical layer moved and no
+system became active in this task.
+
 ## 2026-07-09 — TASK-078 APSS extracted to a public repository
 
 Moved the APSS specification out of Jazz Master into the public

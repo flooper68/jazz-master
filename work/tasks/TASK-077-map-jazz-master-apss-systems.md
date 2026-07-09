@@ -1,7 +1,7 @@
 ---
 id: TASK-077
 title: Map Jazz Master as Adaptive Problem-Solving Systems
-status: backlog
+status: done
 depends_on: [TASK-076, TASK-078]
 source: NOTE-015
 created: 2026-07-09
@@ -66,23 +66,23 @@ not permission to restructure the repository during this task.
 
 ## Acceptance criteria
 
-- [ ] Every proposed Jazz Master system has a stable ID, one owner/parent, a
+- [x] Every proposed Jazz Master system has a stable ID, one owner/parent, a
       problem, roles, strategy, artifact, consumer outcome, both validation
       dimensions, streams, durable plan/log, compilation, and adaptation.
-- [ ] Cross-system relationships and shared evidence sources are explicit.
-- [ ] Missing outcome validation, dev-loop learning, testing-system learning,
+- [x] Cross-system relationships and shared evidence sources are explicit.
+- [x] Missing outcome validation, dev-loop learning, testing-system learning,
       or other incomplete loops are recorded as gaps rather than invented as
       active systems.
-- [ ] Hierarchy, artifact-flow, and learning views are produced from the draft
+- [x] Hierarchy, artifact-flow, and learning views are produced from the draft
       declarations in `systems/jazz-master/MAP.md`.
-- [ ] Every current `processes/*.md` file is assigned to exactly one proposed
+- [x] Every current `processes/*.md` file is assigned to exactly one proposed
       system owner without moving the process file.
-- [ ] Load-bearing assumptions are owner-grilled one question at a time or
+- [x] Load-bearing assumptions are owner-grilled one question at a time or
       recorded as deferred questions and provisional map gaps.
-- [ ] The migration is split into safe, independently reviewable tasks that
+- [x] The migration is split into safe, independently reviewable tasks that
       keep the current dev loop usable throughout; all are gated on owner map
       acceptance and carry explicit dependency sequencing.
-- [ ] `bun run --cwd codebase check` passes.
+- [x] `bun run --cwd codebase check` passes.
 
 ## Verification
 
@@ -102,3 +102,36 @@ not permission to restructure the repository during this task.
    Confirm this task moved no current canonical operating material and left
    every declaration `status: proposed`.
 5. Run the independent review process and `bun run --cwd codebase check`.
+
+## Log
+
+### 2026-07-09 — claimed (agent)
+
+Plan: inventory the current operating loops and APSS specification; draft proposed root/child capsules and a declaration-derived map; assign every current process exactly once; record provisional boundaries and deferred owner questions rather than inventing loops; create gated, explicitly sequenced migration tasks with exact compatibility steps; validate schema and APSS semantics, run an independent review, and pass `bun run --cwd codebase check` before shipping.
+
+### 2026-07-09 — done
+
+Proposed one `jazz-master` root and eight child systems (direction, portfolio,
+delivery, quality, product learning, governance, research, and knowledge), all
+`status: proposed` and all referencing current canonical paths. MAP.md contains
+manual declaration-derived hierarchy, exhaustive artifact/relationship, and
+system-specific learning projections; assigns all 19 current process files
+exactly once; and records 21 incomplete-loop/provisional-boundary gaps with
+mirrored deferred grill questions.
+
+Created TASK-079 through TASK-084 as a strict, owner-map-acceptance-gated
+migration chain with exact old/new paths, compatibility links, capsule-local
+PLAN/LOG creation, root-shared handling for heterogeneous historical work/notes,
+and per-system pilot evidence before activation. No canonical material moved,
+AGENTS.md's current path map did not change, and strategy/ was untouched.
+
+Independent review initially found a circular activation gate, missing mirrored
+questions, weak plan/log semantics, non-faithful views, incomplete compatibility
+enumeration, and silent ownership of mixed registries. All were fixed; final
+re-review was clean. Schema/semantic validation passed for nine declarations:
+one unique acyclic root tree, resolved relations and 26 operational references,
+exact-once ownership of 19 processes, and gated TASK-079–084 sequencing.
+`git diff --check` passed. Final `bun run --cwd codebase check` passed: 46 test
+files, 683 tests, typecheck/lint and both builds green. Existing jsdom canvas
+messages and the sandbox-only Wrangler log-file EPERM warning remained
+non-fatal; the command exited 0.

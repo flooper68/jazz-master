@@ -214,9 +214,13 @@ hierarchical systems that produce and validate artifacts, preserve evidence,
 compile knowledge, and adapt their own operation. TASK-076 initially defined it
 inside Jazz Master; TASK-078 extracted it so other projects can use and evolve
 it independently. This link does not claim that the current repository is
-already organized as APSS system capsules. TASK-077 owns the mapping and
-migration plan; current `strategy/`, `processes/`, `work/`, and `wiki/` paths
-remain canonical until that work ships.
+already organized as active APSS system capsules. TASK-077 adds a proposed root
+plus eight proposed child declarations under `systems/jazz-master/`, a derived
+three-view map, explicit gap register, exact process ownership, and gated
+TASK-079 through TASK-084 migration sequence. Current `strategy/`, `processes/`,
+`architecture/`, `work/`, `notes/`, `research/`, `wiki/`, and `artifacts/` paths
+remain canonical until the owner accepts that map and the later tasks migrate
+them.
 
 ## Routing
 
