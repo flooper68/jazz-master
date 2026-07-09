@@ -34,6 +34,7 @@ collision; numbering resumes at `RES-002`.
 | RES-018 | Railway declarative service configuration | Direct owner research question; no immediate follow-up |
 | RES-019 | Cloudflare options for running deployment database migrations | Direct owner research question; no immediate follow-up |
 | RES-020 | App-hosted Clerk sign-in and sign-up pages for Astro | TASK-074 |
+| RES-021 | Vertical Casting Hub public auth and landing patterns for Jazz Master | TASK-075 |
 
 ## File format
 
