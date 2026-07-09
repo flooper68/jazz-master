@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 
 export const authMeOutput = z.object({
-  userId: z.string().min(1),
+  clerkUserId: z.string().min(1),
 })
 
 export const auth = router({
@@ -10,6 +10,6 @@ export const auth = router({
     .input(z.void())
     .output(authMeOutput)
     .query(({ ctx }) => ({
-      userId: ctx.auth.userId,
+      clerkUserId: ctx.auth.clerkUserId,
     })),
 })

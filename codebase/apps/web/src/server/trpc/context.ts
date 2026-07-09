@@ -7,16 +7,18 @@ import {
   createMockPracticeRepository,
   type MockPracticeRepository,
 } from '../db/mockPractice'
+import { createUserRepository, type UserRepository } from '../db/users'
 
 interface CreateContextOptions {
   auth?: AuthContext | null
   dbSmoke?: DatabaseSmokeClient | null
   mockPractice?: MockPracticeRepository | null
+  users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
 }
 
 export interface AuthContext {
-  userId: string | null
+  clerkUserId: string | null
 }
 
 type AstroLocalsWithAuth = {
@@ -35,6 +37,10 @@ function hasMockPracticeOption(
   )
 }
 
+function hasUsersOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'users' in options
+}
+
 function hasContextOptions(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null
 }
@@ -49,7 +55,7 @@ export function createAuthContextFromLocals(locals: unknown): AuthContext {
     typeof maybeLocals?.auth === 'function' ? maybeLocals.auth() : null
 
   return {
-    userId: authObject?.userId ?? null,
+    clerkUserId: authObject?.userId ?? null,
   }
 }
 
@@ -59,8 +65,8 @@ export function createAuthContextFromLocals(locals: unknown): AuthContext {
 // DATABASE_URL or Hyperdrive binding is configured.
 export function createContext(options?: unknown) {
   const auth = hasAuthOption(options)
-    ? (options.auth ?? { userId: null })
-    : { userId: null }
+    ? (options.auth ?? { clerkUserId: null })
+    : { clerkUserId: null }
   const hyperdrive = hasContextOptions(options) ? options.hyperdrive : null
   const dbSmoke = hasDbSmokeOption(options)
     ? options.dbSmoke
@@ -70,8 +76,11 @@ export function createContext(options?: unknown) {
   const mockPractice = hasMockPracticeOption(options)
     ? options.mockPractice
     : createMockPracticeRepository({ hyperdrive })
+  const userRepository = hasUsersOption(options)
+    ? options.users
+    : createUserRepository({ hyperdrive })
 
-  return { auth, dbSmoke, mockPractice }
+  return { auth, dbSmoke, mockPractice, users: userRepository }
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>

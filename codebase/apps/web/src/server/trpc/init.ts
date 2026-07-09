@@ -21,7 +21,7 @@ const t = initTRPC.context<Context>().create({
 export const router = t.router
 export const publicProcedure = t.procedure
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.auth.userId) {
+  if (!ctx.auth.clerkUserId) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'Authentication required',
@@ -32,7 +32,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     ctx: {
       ...ctx,
       auth: {
-        userId: ctx.auth.userId,
+        clerkUserId: ctx.auth.clerkUserId,
       },
     },
   })

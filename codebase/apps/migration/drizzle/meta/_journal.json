@@ -8,6 +8,13 @@
       "when": 1783590029911,
       "tag": "0000_green_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783599411670,
+      "tag": "0001_dapper_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

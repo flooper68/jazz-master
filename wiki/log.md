@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-09 — `product/overview` updated for TASK-065: the server now has a Clerk-keyed `users` anchor and protected `users.ensure` path for future app-data tables.
 - 2026-07-09 — `product/overview` updated for TASK-063: Clerk now protects `/app/*`, the app shell has an account control, and protected tRPC procedures receive Clerk user IDs.
 - 2026-07-09 — `product/overview` updated for TASK-062/ADR-012: Clerk/Postgres is now the persistence target, with localStorage described as temporary migration state rather than the strategic destination.
 - 2026-07-09 — `product/overview` updated for TASK-061: server Postgres now has a mock practice-data write/read path, while real practice state remains local until ADR-012/TASK-063.

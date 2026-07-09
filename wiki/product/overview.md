@@ -26,6 +26,7 @@ sources:
   - work/tasks/TASK-061-db-backed-mock-app-data-flow.md
   - work/tasks/TASK-062-adr-server-owned-persistence.md
   - work/tasks/TASK-063-clerk-auth-foundation.md
+  - work/tasks/TASK-065-user-database-anchor.md
   - research/RES-017-local-postgres-drizzle.md
 ---
 
@@ -51,17 +52,17 @@ Each pillar maps to an epic (VIS-001): foundation (EPIC-001), chord voicings (00
 ## How it works under the hood
 
 The app is in a persistence migration. Current product-facing data still runs
-through browser-local typed stores: there is not yet a signed-in account, and
+through browser-local typed stores: although Clerk now protects `/app/*`,
 profile, sessions, planner snapshots, score metadata, and preferences still use
 `apps/web/src/storage/` (details: architecture/overview.md). Since ISSUE-005,
 `/app/profile` includes JSON backup export/import for those typed stores so
 current local data has a user-owned recovery path for Safari/WebKit eviction,
 storage clearing, or browser moves. ADR-012 changes the destination: Clerk owns
-identity, `/app/*` requires sign-in, browser code talks to typed tRPC
-procedures, server code owns Drizzle/Postgres access, and Postgres will become
-the source of truth for long-run app data. Existing local browser data is
-intentionally discarded rather than migrated, and localStorage remains only as
-temporary state until the migration tasks retire it feature by feature.
+identity, browser code talks to typed tRPC procedures, server code owns
+Drizzle/Postgres access, and Postgres will become the source of truth for
+long-run app data. Existing local browser data is intentionally discarded rather
+than migrated, and localStorage remains only as temporary state until the
+migration tasks retire it feature by feature.
 
 Domain logic — notes, intervals, chord spelling, scales, arpeggios, fretboard
 positions, with enharmonics correct by construction — lives in the pure
@@ -75,17 +76,19 @@ whole React practice app as a client-only SPA island under `/app/*` — so every
 product route above now carries the `/app` prefix (`/app/practice`,
 `/app/history`, …). The build targets Cloudflare Workers; Clerk middleware
 protects `/app/*` and the app shell exposes Clerk's account control. A typed
-tRPC API surface now exists (TASK-023/TASK-064 — scaffolding only:
-`/trpc/health`, server-only `/trpc/dbSmoke`, a mock-only
-`mockPractice.record` write/read path, and protected procedure support via
-Clerk `userId` in context; no real product practice feature uses the server
-yet). Since TASK-055/TASK-061, server-side Postgres work has Drizzle migration
-infrastructure: local development uses the repo-owned Compose database,
-generated migrations live in the dedicated Railway migration app, deployment
-migrations run from that `apps/migration` service with Railway-owned
-`DATABASE_URL`, the deployed app request path can run a Drizzle `select 1`
-through the owner-provisioned Cloudflare `HYPERDRIVE` binding, and mock
-practice-shaped rows can be written/read through a server-only repository.
+tRPC API surface now exists (TASK-023/TASK-064 — scaffolding and migration
+foundation: `/trpc/health`, server-only `/trpc/dbSmoke`, a mock-only
+`mockPractice.record` write/read path, protected procedure support via
+`auth.clerkUserId`, and `users.ensure` for the DB-backed app-user anchor; no
+real product practice feature uses the server yet). Since TASK-055/TASK-065,
+server-side Postgres work has Drizzle migration infrastructure: local
+development uses the repo-owned Compose database, generated migrations live in
+the dedicated Railway migration app, deployment migrations run from that
+`apps/migration` service with Railway-owned `DATABASE_URL`, the deployed app
+request path can run a Drizzle `select 1` through the owner-provisioned
+Cloudflare `HYPERDRIVE` binding, mock practice-shaped rows can be written/read
+through a server-only repository, and a minimal `users` table keyed directly by
+Clerk user ID now gives future app-data tables their user-scoping anchor.
 Cloudflare Workers Builds does not receive database credentials, and the Worker
 request path does not run migrations. Deployment is CI-only per ADR-009 —
 Cloudflare Workers Builds auto-deploys the dev environment at
@@ -97,4 +100,4 @@ owner decision 2026-07-07, NOTE-008).
 
 ## Built today vs pending (as of 2026-07-09)
 
-Done: app shell with routing and sidebar, the theory core, fretboard and chord-diagram components, and the original typed localStorage persistence layer — EPIC-001 (foundation) is complete, while ADR-012 now makes that persistence layer temporary migration state. EPIC-008 (curriculum & lessons) is complete: the exercise/lesson content model (TASK-011), the first lesson pack (TASK-012 — 10 scales/arpeggios lessons across 3 levels), and the guided practice runner (TASK-013) — from the Practice page a user starts a lesson, is guided exercise by exercise (fretboard positions, countdown, got-it/shaky/missed self-grades), and the session — completed or abandoned — persists as a `PracticeSession` record in the `sessions` store until TASK-067 moves it to Clerk/Postgres. EPIC-011 (adaptive planner) is complete: first-run onboarding or skip writes a local `PracticeProfile`, `/profile` edits it, and `/practice` shows a persisted Today's plan generated from profile, lesson metadata, session history, and date; this is slated for the TASK-066/TASK-068 server migration. EPIC-012 (dashboard & history) is complete: the practice-history page (TASK-018) makes every persisted session findable at `/history` — grouped by day newest-first, filterable by area and time range, with grade tallies, incomplete markers, session-level machine scores, and drill-down to per-exercise self-grades/scores — and the dashboard v1 (TASK-019) replaces the `/` stub with the product's front door: today's plan with reasons and a one-click Start into the runner, current streak, minutes-this-week against the profile budget, and per-area status with needs-attention callouts (trend-over-time visuals wait for broader score history). EPIC-009 (notation & tabs) is complete as of 2026-07-07: every lesson-pack scale/arpeggio exercise renders an aligned staff + TAB pair below the fretboard in the runner (TASK-037 component, TASK-038 integration), VexFlow lazy-loads only when a notation exercise appears, and the bundle trim (TASK-039) cut that lazy chunk from 692 to 389 KB gzip via the single-music-font `vexflow/bravura` entry. TASK-048 added the post-epic readability layer: larger default score scaling, reserved score space, keyboard-scrollable overflow, staff/TAB/both controls, a persisted notation display preference, focus mode, and a smoke assertion that real SVG score content rendered. EPIC-014 (play-along) is complete: the runner lazy-loads sampled guitar playback only when Play is pressed, loops the exercise with click/count-in, lets the player slow the tempo up to the authored target BPM, and remembers that tempo per exercise. EPIC-010's monophonic v1 loop is implemented through TASK-043: the runner can request mic access, show a level meter, count in, record, replay, locally analyze the stopped take, show per-note score feedback, persist score metadata, and discard raw audio. NOTE-012 moved human-only desktop/mobile browser mic coverage to QA/product review rather than task completion gates; real-guitar plausibility remains something QA/dogfooding must watch. Everything user-facing beyond that — moving drills and chord close-enough scoring — remains pending: the other practice modules are stub pages. The guided-practice vertical slice (onboard → plan → practice → history → dashboard) is finished, and the notation/audio-scoring de-risking research (strategy/goals.md goal 4) is done as of 2026-07-07: notation rendering is decided and shipped (VexFlow 5, ADR-010/RES-013) and recording/scoring is staged-go (RES-014). The EPIC-013 platform migration's first-slice target is live: the app runs on Cloudflare Workers at https://jazz-master.premysl-ciompa.workers.dev, auto-deployed on every push to `main` (TASK-024 done 2026-07-07); local Postgres, Drizzle migration infrastructure, the Railway migration service, the Hyperdrive-backed server-side DB smoke path, and the mock practice-data DB write/read path are in place. ADR-012 is accepted and the Clerk auth foundation has landed; the remaining platform work is the Clerk/Postgres app-data migration chain.
+Done: app shell with routing and sidebar, the theory core, fretboard and chord-diagram components, and the original typed localStorage persistence layer — EPIC-001 (foundation) is complete, while ADR-012 now makes that persistence layer temporary migration state. EPIC-008 (curriculum & lessons) is complete: the exercise/lesson content model (TASK-011), the first lesson pack (TASK-012 — 10 scales/arpeggios lessons across 3 levels), and the guided practice runner (TASK-013) — from the Practice page a user starts a lesson, is guided exercise by exercise (fretboard positions, countdown, got-it/shaky/missed self-grades), and the session — completed or abandoned — persists as a `PracticeSession` record in the `sessions` store until TASK-067 moves it to Clerk/Postgres. EPIC-011 (adaptive planner) is complete: first-run onboarding or skip writes a local `PracticeProfile`, `/profile` edits it, and `/practice` shows a persisted Today's plan generated from profile, lesson metadata, session history, and date; this is slated for the TASK-066/TASK-068 server migration. EPIC-012 (dashboard & history) is complete: the practice-history page (TASK-018) makes every persisted session findable at `/history` — grouped by day newest-first, filterable by area and time range, with grade tallies, incomplete markers, session-level machine scores, and drill-down to per-exercise self-grades/scores — and the dashboard v1 (TASK-019) replaces the `/` stub with the product's front door: today's plan with reasons and a one-click Start into the runner, current streak, minutes-this-week against the profile budget, and per-area status with needs-attention callouts (trend-over-time visuals wait for broader score history). EPIC-009 (notation & tabs) is complete as of 2026-07-07: every lesson-pack scale/arpeggio exercise renders an aligned staff + TAB pair below the fretboard in the runner (TASK-037 component, TASK-038 integration), VexFlow lazy-loads only when a notation exercise appears, and the bundle trim (TASK-039) cut that lazy chunk from 692 to 389 KB gzip via the single-music-font `vexflow/bravura` entry. TASK-048 added the post-epic readability layer: larger default score scaling, reserved score space, keyboard-scrollable overflow, staff/TAB/both controls, a persisted notation display preference, focus mode, and a smoke assertion that real SVG score content rendered. EPIC-014 (play-along) is complete: the runner lazy-loads sampled guitar playback only when Play is pressed, loops the exercise with click/count-in, lets the player slow the tempo up to the authored target BPM, and remembers that tempo per exercise. EPIC-010's monophonic v1 loop is implemented through TASK-043: the runner can request mic access, show a level meter, count in, record, replay, locally analyze the stopped take, show per-note score feedback, persist score metadata, and discard raw audio. NOTE-012 moved human-only desktop/mobile browser mic coverage to QA/product review rather than task completion gates; real-guitar plausibility remains something QA/dogfooding must watch. Everything user-facing beyond that — moving drills and chord close-enough scoring — remains pending: the other practice modules are stub pages. The guided-practice vertical slice (onboard → plan → practice → history → dashboard) is finished, and the notation/audio-scoring de-risking research (strategy/goals.md goal 4) is done as of 2026-07-07: notation rendering is decided and shipped (VexFlow 5, ADR-010/RES-013) and recording/scoring is staged-go (RES-014). The EPIC-013 platform migration's first-slice target is live: the app runs on Cloudflare Workers at https://jazz-master.premysl-ciompa.workers.dev, auto-deployed on every push to `main` (TASK-024 done 2026-07-07); local Postgres, Drizzle migration infrastructure, the Railway migration service, the Hyperdrive-backed server-side DB smoke path, the mock practice-data DB write/read path, Clerk auth, and the Clerk-keyed user anchor are in place. ADR-012 is accepted; the remaining platform work is the Clerk/Postgres app-data migration chain: profile/onboarding, sessions/scores, daily planning, preferences, backup/import removal, localStorage removal, and regression.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MockPracticeRepository } from '../db/mockPractice'
+import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
 import { appRouter } from './router'
@@ -23,9 +24,10 @@ describe('appRouter.health', () => {
   it('stays public when no authenticated Clerk user is present', async () => {
     const caller = createCaller(
       createContext({
-        auth: { userId: null },
+        auth: { clerkUserId: null },
         dbSmoke: null,
         mockPractice: null,
+        users: null,
       }),
     )
 
@@ -37,9 +39,10 @@ describe('appRouter.auth.me', () => {
   it('rejects unauthenticated callers', async () => {
     const caller = createCaller(
       createContext({
-        auth: { userId: null },
+        auth: { clerkUserId: null },
         dbSmoke: null,
         mockPractice: null,
+        users: null,
       }),
     )
 
@@ -50,15 +53,156 @@ describe('appRouter.auth.me', () => {
   })
 
   it('returns the authenticated Clerk user ID from context', async () => {
+    let calls = 0
     const caller = createCaller(
       createContext({
-        auth: { userId: 'user_123' },
+        auth: { clerkUserId: 'user_123' },
         dbSmoke: null,
         mockPractice: null,
+        users: {
+          async ensureUser(clerkUserId: string) {
+            calls += 1
+
+            return {
+              clerkUserId,
+              createdAt: '2026-07-09T10:00:00.000Z',
+              updatedAt: '2026-07-09T10:00:00.000Z',
+            }
+          },
+        },
       }),
     )
 
-    await expect(caller.auth.me()).resolves.toEqual({ userId: 'user_123' })
+    await expect(caller.auth.me()).resolves.toEqual({ clerkUserId: 'user_123' })
+    expect(calls).toBe(0)
+  })
+})
+
+describe('appRouter.users.ensure', () => {
+  it('reports unconfigured when no user repository is available', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        dbSmoke: null,
+        mockPractice: null,
+        users: null,
+      }),
+    )
+
+    await expect(caller.users.ensure()).resolves.toEqual({
+      status: 'unconfigured',
+    })
+  })
+
+  it('creates a Clerk-keyed user row on first authenticated access', async () => {
+    const createdAt = '2026-07-09T10:00:00.000Z'
+    const calls: string[] = []
+    const users = {
+      async ensureUser(clerkUserId: string) {
+        calls.push(clerkUserId)
+
+        return {
+          clerkUserId,
+          createdAt,
+          updatedAt: createdAt,
+        }
+      },
+    } satisfies UserRepository
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        dbSmoke: null,
+        mockPractice: null,
+        users,
+      }),
+    )
+
+    await expect(caller.users.ensure()).resolves.toEqual({
+      status: 'ok',
+      user: {
+        clerkUserId: 'user_123',
+        createdAt,
+        updatedAt: createdAt,
+      },
+    })
+    expect(calls).toEqual(['user_123'])
+  })
+
+  it('reuses the same Clerk-keyed user row on repeat authenticated access', async () => {
+    const createdAt = '2026-07-09T10:00:00.000Z'
+    const calls: string[] = []
+    let createdRows = 0
+    const storedUsers = new Map<
+      string,
+      {
+        clerkUserId: string
+        createdAt: string
+        updatedAt: string
+      }
+    >()
+    const users = {
+      async ensureUser(clerkUserId: string) {
+        calls.push(clerkUserId)
+        const existing = storedUsers.get(clerkUserId)
+
+        if (existing) return existing
+
+        createdRows += 1
+        const created = {
+          clerkUserId,
+          createdAt,
+          updatedAt: createdAt,
+        }
+        storedUsers.set(clerkUserId, created)
+
+        return created
+      },
+    } satisfies UserRepository
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        dbSmoke: null,
+        mockPractice: null,
+        users,
+      }),
+    )
+
+    const first = await caller.users.ensure()
+    const second = await caller.users.ensure()
+
+    expect(first).toEqual(second)
+    expect(calls).toEqual(['user_123', 'user_123'])
+    expect(createdRows).toBe(1)
+    expect(storedUsers.size).toBe(1)
+  })
+
+  it('rejects unauthenticated access before user rows can be read or created', async () => {
+    let calls = 0
+    const users = {
+      async ensureUser(clerkUserId: string) {
+        calls += 1
+
+        return {
+          clerkUserId,
+          createdAt: '2026-07-09T10:00:00.000Z',
+          updatedAt: '2026-07-09T10:00:00.000Z',
+        }
+      },
+    } satisfies UserRepository
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: null },
+        dbSmoke: null,
+        mockPractice: null,
+        users,
+      }),
+    )
+
+    await expect(caller.users.ensure()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+    expect(calls).toBe(0)
   })
 })
 

@@ -4,12 +4,20 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-09 — TASK-065 Clerk-keyed user anchor
+
+Added the minimal app-owned `users` table keyed directly by Clerk user ID, with
+only `created_at` and `updated_at` metadata. Server code now has
+`ensureUser(clerkUserId)`, and protected tRPC exposes a `users.ensure` path that
+creates or reuses the row only for authenticated callers. `auth.me` remains
+auth-only, and Clerk-owned email/name/profile data stays out of Postgres.
+
 ## 2026-07-09 — TASK-063 Clerk auth foundation
 
 Added `@clerk/astro` to the web app, installed Astro middleware that protects
 `/app/*` while keeping `/` public, and added a runtime env assertion for
 `PUBLIC_CLERK_PUBLISHABLE_KEY` plus `CLERK_SECRET_KEY` so local dev uses real
-Clerk keys rather than keyless mode. tRPC context now carries Clerk `userId`
+Clerk keys rather than keyless mode. tRPC context now carries Clerk identity
 from Astro locals, `protectedProcedure` rejects unauthenticated calls, and
 `auth.me` is the protected foundation probe. The React shell renders Clerk's
 `UserButton`. `dbSmoke` remains public and temporary until real app-data
