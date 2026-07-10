@@ -1,4 +1,10 @@
-import { expect, gradeThroughLesson, skipOnboarding, test } from './fixtures'
+import {
+  completeOnboarding,
+  expect,
+  gradeThroughLesson,
+  skipOnboarding,
+  test,
+} from './fixtures'
 
 // Each test gets a fresh test-auth user, so every /app visit starts at the
 // first-run onboarding gate without needing real Clerk credentials.
@@ -43,7 +49,7 @@ test('happy path: onboard, run a planned lesson, see it in history and on the da
   page,
 }) => {
   await page.goto('/app/practice')
-  await skipOnboarding(page)
+  await completeOnboarding(page)
   await expect(
     page.getByRole('heading', { name: 'Practice', level: 1 }),
   ).toBeVisible()
@@ -140,7 +146,7 @@ test('starting a lesson from the lesson list focuses the runner heading', async 
   await expect(runnerHeading).toBeFocused()
 })
 
-test('persistence: profile, plan, and session records survive a reload mid-flow', async ({
+test('persistence: profile, preferences, plan, and sessions survive browser storage clearing', async ({
   page,
 }) => {
   await page.goto('/app/practice')
@@ -154,12 +160,52 @@ test('persistence: profile, plan, and session records survive a reload mid-flow'
   )
   await startPlanned.click()
 
+  const beginButton = page.getByRole('button', { name: /^Begin / })
+  const exerciseTitle = (await beginButton.getAttribute('aria-label'))!.replace(
+    'Begin ',
+    '',
+  )
+
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.url().includes('preferences.setNotationDisplayMode'),
+    ),
+    page
+      .getByRole('button', {
+        name: `Show staff notation for ${exerciseTitle}`,
+      })
+      .click(),
+  ])
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.url().includes('preferences.setScoringTolerance'),
+    ),
+    page.getByLabel('Scoring tolerance').selectOption('strict'),
+  ])
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.url().includes('preferences.setPlayAlongTempo'),
+    ),
+    page
+      .getByRole('slider', { name: `Tempo for ${exerciseTitle}` })
+      .fill('72'),
+  ])
+
   // One graded exercise is enough — the runner upserts the session per grade.
-  await page.getByRole('button', { name: /^Begin / }).click()
+  await beginButton.click()
   await page.getByRole('button', { name: /^End playthrough and grade / }).click()
   const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
   await expect(gradeDialog).toBeVisible()
-  await gradeDialog.getByRole('button', { name: 'Got it' }).click()
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.url().includes('sessions.upsert'),
+    ),
+    gradeDialog.getByRole('button', { name: 'Got it' }).click(),
+  ])
+  await page.evaluate(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+  })
   await page.reload()
 
   // Profile persisted: the onboarding gate stays open.
@@ -173,8 +219,27 @@ test('persistence: profile, plan, and session records survive a reload mid-flow'
     page.getByRole('button', { name: `Start planned lesson ${lessonTitle}` }),
   ).toBeVisible()
 
+  // Account-scoped preferences return after all browser storage is cleared.
+  await page.getByRole('button', { name: `Start ${lessonTitle}` }).click()
+  await expect(
+    page.getByRole('button', {
+      name: `Show staff notation for ${exerciseTitle}`,
+    }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByLabel('Scoring tolerance')).toHaveValue('strict')
+  await expect(
+    page.getByRole('slider', { name: `Tempo for ${exerciseTitle}` }),
+  ).toHaveValue('72')
+
   // Session record persisted, marked incomplete (the run was abandoned mid-flow).
   await page.goto('/app/history')
   await expect(page.getByRole('heading', { name: lessonTitle })).toBeVisible()
   await expect(page.getByText('Incomplete')).toBeVisible()
+
+  await page.goto('/app/profile')
+  await expect(page.getByRole('heading', { name: 'Data sync' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Export backup' }),
+  ).toHaveCount(0)
+  await expect(page.getByLabel('Import backup')).toHaveCount(0)
 })

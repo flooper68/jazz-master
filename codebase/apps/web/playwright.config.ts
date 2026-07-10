@@ -14,11 +14,13 @@ export default defineConfig({
     baseURL: 'http://localhost:4321',
     trace: 'retain-on-failure',
   },
+  // responsive.spec.ts overrides this project to 375x812 and asserts the
+  // document width on every core route.
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'bun run dev',
+    command: 'bun run dev -- --port 4321',
     url: 'http://localhost:4321',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     stdout: 'ignore',
     // Astro 7 daemonizes `astro dev` when it detects an agentic environment,
     // making the launcher exit — which Playwright treats as a dead webServer.

@@ -12,7 +12,7 @@
   },
   "upload_source_maps": true,
   "vars": {
-    "PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_cG9wdWxhci1tb3VzZS04Ni5jbGVyay5hY2NvdW50cy5kZXYk"
+    "PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_b3JnYW5pYy1vc3RyaWNoLTM0LmNsZXJrLmFjY291bnRzLmRldiQ"
   },
   "hyperdrive": [
     {

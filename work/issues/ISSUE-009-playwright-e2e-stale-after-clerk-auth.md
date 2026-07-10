@@ -1,7 +1,7 @@
 ---
 id: ISSUE-009
 title: Playwright e2e smoke suite still expects pre-Clerk flows
-status: open
+status: fixed
 severity: major
 created: 2026-07-09
 source: TASK-067 verification
@@ -37,3 +37,14 @@ Found while verifying TASK-067. This is major because the git workflow asks
 agents to run the e2e pack before pushes that touch practice, routing, or
 storage, but the suite no longer represents the current Clerk-protected app
 after the auth and landing changes.
+
+## Log
+
+### 2026-07-10 — fixed by TASK-072
+
+TASK-068 had already added the explicit development-only Clerk-shaped test-auth
+header, updated landing expectations, and restored the signed-in smoke flows,
+but this issue's lifecycle status was not updated. TASK-072 reran and expanded
+the suite against local Postgres: all six Chromium tests passed, including full
+onboarding, completed and abandoned sessions, dashboard/history, preferences,
+and clear-storage recovery. Production rejects the test-auth seam.

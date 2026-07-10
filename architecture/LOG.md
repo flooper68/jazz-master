@@ -4,6 +4,25 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-10 — ISSUE-010 nested Clerk auth routes fixed
+
+Real password sign-in exposed that Clerk's path routing advances through nested
+states such as `/sign-in/factor-one`, while Astro served only the exact entry
+pages. Shared auth views plus `/sign-in/*` and `/sign-up/*` rest routes now keep
+password, verification, recovery, MFA, and session-task states app-hosted; the
+browser pack guards both nested route families.
+
+## 2026-07-10 — TASK-072 Clerk/Postgres migration regression passed
+
+Compiled the living regression pack and passed the complete migration checks
+against local Postgres: a real Clerk session for the dedicated test account,
+auth routing, onboarding, completed and abandoned sessions, history/dashboard,
+preference recovery after browser storage clearing, and normalized
+machine-score persistence. Playwright owns its server instead of reusing an
+arbitrary local process, and the 375×812 overflow scenario remains part of the
+pack. EPIC-013 and ADR-012's migration arc are complete; ISSUE-009's
+already-landed Clerk-aware e2e harness is confirmed fixed.
+
 ## 2026-07-10 — TASK-071 generic browser persistence removed
 
 Deleted the obsolete typed local persistence wrapper and compatibility exports

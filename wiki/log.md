@@ -2,6 +2,8 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-10 — `product/overview` updated for ISSUE-010: nested Clerk factor, verification, recovery, MFA, and session-task paths now resolve through app-hosted Astro rest routes.
+- 2026-07-10 — `product/overview` updated for TASK-072: the Clerk/Postgres migration and EPIC-013 are complete after the final browser/Postgres regression passed with a real dedicated-account Clerk handoff.
 - 2026-07-10 — `product/overview` updated for TASK-071: shared app-data contracts live in `src/appData/`, and the obsolete generic browser-persistence layer is gone.
 - 2026-07-10 — `product/overview` updated for TASK-070: local JSON backup/import is removed, leaving only the generic localStorage compatibility layer for TASK-071.
 - 2026-07-09 — `project/overview` records TASK-077's proposed Jazz Master APSS hierarchy, derived map, explicit incomplete-loop gaps, and owner-gated TASK-079–084 migration sequence; current layer paths remain canonical.

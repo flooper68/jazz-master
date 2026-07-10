@@ -82,6 +82,14 @@ export async function skipOnboarding(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Skip for now' }).click()
 }
 
+/** Complete all first-run steps while keeping the default levels and goals. */
+export async function completeOnboarding(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('30 min').check()
+  await page.getByRole('button', { name: 'Start practicing' }).click()
+}
+
 /**
  * Grade every exercise "Got it" until the summary appears. The cap only guards
  * against an infinite loop if the runner stops advancing.

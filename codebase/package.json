@@ -14,6 +14,7 @@
     "deploy": "bun run --cwd apps/web deploy",
     "db:generate": "bun run --cwd apps/web db:generate",
     "db:migrate": "bun run --cwd apps/migration migrate",
+    "regression:db": "bun apps/web/src/server/db/regression.ts",
     "lint": "oxlint",
     "typecheck": "tsc -b",
     "test": "vitest run",
