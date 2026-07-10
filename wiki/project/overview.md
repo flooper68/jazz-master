@@ -44,14 +44,15 @@ knowledge, validation, and adaptation authority. TASK-076 grew the framework
 from NOTE-015's owner grill; TASK-078 extracted it from Jazz Master so it can
 generalize and evolve independently.
 
-The current project is **not yet organized into active APSS system capsules**.
+The current project is **not organized into active APSS system capsules**.
 TASK-077 proposes a `jazz-master` root with direction, portfolio, delivery,
 quality, product-learning, governance, research, and knowledge children under
 `systems/jazz-master/`. `systems/jazz-master/MAP.md` derives hierarchy,
 artifact-flow, and learning views from those declarations, assigns all current
 processes exactly once, and records incomplete outcome, dev-loop, testing, and
-other learning loops. The layered paths in the table above remain canonical;
-TASK-079 through TASK-084 are gated on owner acceptance before any migration.
+other learning loops. The owner retired TASK-079 through TASK-084 on 2026-07-10
+before fresh MVP grooming. The map remains design history, no capsule was
+activated, and the layered paths in the table above remain canonical.
 
 ## The rhythm
 

@@ -222,11 +222,11 @@ inside Jazz Master; TASK-078 extracted it so other projects can use and evolve
 it independently. This link does not claim that the current repository is
 already organized as active APSS system capsules. TASK-077 adds a proposed root
 plus eight proposed child declarations under `systems/jazz-master/`, a derived
-three-view map, explicit gap register, exact process ownership, and gated
-TASK-079 through TASK-084 migration sequence. Current `strategy/`, `processes/`,
-`architecture/`, `work/`, `notes/`, `research/`, `wiki/`, and `artifacts/` paths
-remain canonical until the owner accepts that map and the later tasks migrate
-them.
+three-view map, explicit gap register, exact process ownership, and a migration
+design. The owner retired TASK-079 through TASK-084 on 2026-07-10 before fresh
+MVP grooming; no capsule was activated and no canonical material moved. Current
+`strategy/`, `processes/`, `architecture/`, `work/`, `notes/`, `research/`,
+`wiki/`, and `artifacts/` paths remain canonical.
 
 ## Routing
 
@@ -309,8 +309,9 @@ tolerance is a Clerk-scoped Postgres preference loaded and saved through tRPC.
 
 App shell done (TASK-001): routing + sidebar nav + stub pages. Theory core done (TASK-002, TASK-009, TASK-010): notes, intervals, chord spelling/parsing, scales/modes/arpeggios, fretboard positions, 12-key test coverage. Fretboard (TASK-003) and chord diagrams (TASK-004) done. Monorepo restructure done (TASK-027, per ADR-005): code lives under `codebase/` as `apps/web` + `packages/theory`. The original TASK-008 typed browser stores completed EPIC-001 and were later fully retired by ADR-012/TASK-071. Exercise/lesson content model done (TASK-011): `apps/web/src/content/` opens EPIC-008. First lesson pack done (TASK-012): 10 scales/arpeggios lessons across 3 levels in `apps/web/src/content/lessons.ts`, listed on the Practice page. Guided practice runner done (TASK-013, completing EPIC-008): the Practice page runs lessons exercise by exercise (resolved fretboard positions, countdown, got-it/shaky/missed self-grades) and persists `PracticeSession` records — the contract EPIC-011/012 consume — through protected `sessions.upsert`, so abandoned runs keep their history. Adaptive planner done (TASK-016/017, completing EPIC-011; migrated in TASK-068): a Clerk/Postgres-backed `PracticeProfile` plus Postgres-backed session history feed protected `planner.today`, which computes Today's plan with reasons, runner handoff, and completion/progress state without browser plan snapshots. Practice history done (TASK-018, opening EPIC-012): `/history` lists persisted sessions grouped by local day with area/time-range filters and per-exercise drill-down; pure grouping/filtering logic lives in `apps/web/src/history/` (same plain-function tier as `planner/`). Dashboard v1 done (TASK-019, completing EPIC-012): `/` is the product's front door — today's plan with a Start handoff into the runner, streak, minutes-this-week against the profile budget, and per-area needs-attention callouts from a pure `apps/web/src/dashboard/` derivation module. ADR-006 (Astro/Workers/tRPC/Hyperdrive target platform) is **accepted** (owner grill 2026-07-06, NOTE-005; TASK-020 done). Astro shell landed (TASK-021): Astro 7 serves a barebones landing at `/` and hosts the React app as a client-only island under `/app/*`; React pages moved to `src/app/pages/`; build targets Workers via `@astrojs/cloudflare` (deploy is TASK-024). TanStack Router migration done (TASK-022): react-router removed, file-based routes under `src/app/routes/` with type-safe navigation and the same URLs. tRPC scaffold done (TASK-023): typed `/trpc/health` end to end — `appRouter` under `src/server/trpc/` with Zod boundaries, Astro fetch-adapter endpoint, `@trpc/tanstack-react-query` client on one shared `QueryClient`, health chip rendered in the SPA; jsdom tests exercise the real wire path via `src/test/trpcTestFetch.ts` (fetchRequestHandler in-process). Workers deploy done (TASK-024, 2026-07-07): redesigned twice mid-task by owner grills (ADR-009 + amendment; NOTE-006/007) — deploy tooling, production posture (dev-only health chip, stack-stripped tRPC errors), the workerd preview path, and a binding-free worker all landed, and the app is live on the dev environment at https://jazz-master.premysl-ciompa.workers.dev via **Cloudflare Workers Builds** (check gate in the build command; every push to `main` deploys). Production is off the roadmap (TASK-036 abandoned 2026-07-07, NOTE-008); the dev URL is the product's home. ADR-012 is accepted and implemented; TASK-063 through TASK-072 completed the Clerk/Postgres migration, removed browser persistence, and passed the end-to-end regression. EPIC-013 is done.
 
-EPIC-010 recording/scoring is in progress from a deliberately risk-accepted
-position: RES-014 returned staged-go for monophonic offline-after-take scoring,
+EPIC-010's shipped monophonic recording/scoring capability remains present, but
+the epic and its unbuilt TASK-044 chord extension were abandoned on 2026-07-10
+before fresh MVP grooming. RES-014 returned staged-go for monophonic offline-after-take scoring,
 but the owner abandoned TASK-040's real-guitar spike on 2026-07-08 (NOTE-010).
 TASK-041's capture implementation is present in the runner and covered by
 component/unit tests; NOTE-012 moved human-only browser/device verification out
@@ -318,5 +319,5 @@ of task completion gates and into QA/product review. TASK-042 added the pure
 `apps/web/src/scoring/` module: synthesized mono fixtures prove perfect, late,
 wrong, missed, extra, empty, and octave-shifted takes across multiple keys.
 TASK-043 now wires capture to scoring, score UI, typed score persistence, history
-summary display, and tolerance preferences. Real-signal quality issues should be
-handled in follow-up QA rather than treated as a current blocker.
+summary display, and tolerance preferences. Real-signal quality issues remain
+feedback evidence rather than an active roadmap commitment.

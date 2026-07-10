@@ -42,7 +42,7 @@ Provenance is kept with `source:` for notes/insights/issues/reviews and `researc
 
 | Type | Flow |
 |---|---|
-| epic | `backlog → in-progress → done` |
+| epic | `backlog → in-progress → done`; `abandoned` is terminal and carries `abandoned_reason:` (owner call to retire the epic without claiming its Done-when outcome) |
 | task | `proposed → backlog → in-progress → done`; `gated` waits on a structured `gated_until:` trigger; `blocked` carries `blocked_reason:`; `abandoned` is terminal and carries `abandoned_reason:` (owner call to drop the work entirely) |
 | insight | `new → accepted \| deferred \| rejected` (accepted records `outcome:` task ids; deferred records `revisit_when:`; rejected records why) |
 | issue | `open → confirmed → in-progress → fixed \| wontfix` |

@@ -136,8 +136,9 @@ authority consistency.
 - **JM-GAP-05 — direction versus coordination ownership is provisional.**
   `processes/prioritization.md` mixes strategic value and sequencing mechanics.
 - **JM-GAP-21 — planning records are not capsule-local.** Portfolio uses the
-  shared heartbeat plan and shared task logs until TASK-079 creates its
-  accepted PLAN/LOG contract.
+  shared heartbeat plan and shared task logs. The retired TASK-079 migration
+  would have created a capsule-local PLAN/LOG contract, but no replacement is
+  currently planned.
 
 ## Open questions (deferred grill)
 

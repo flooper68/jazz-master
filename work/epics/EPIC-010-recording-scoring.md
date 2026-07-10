@@ -2,7 +2,8 @@
 id: EPIC-010
 title: Recording & scoring — record a take, get a score
 vision: VIS-001
-status: backlog
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire remaining recording/scoring roadmap work before fresh MVP grooming from asynchronous owner feedback
 created: 2026-07-05
 ---
 
@@ -48,8 +49,10 @@ A user records a monophonic scale exercise and gets a credible score with per-no
 
 ## Current status
 
-Paused by owner direction on 2026-07-09 so current focus can stay on EPIC-013's
-server-owned persistence path. Feasibility research landed (RES-014): **staged-go** — monophonic
+Abandoned by owner direction on 2026-07-10 as part of retiring the current
+roadmap before fresh MVP grooming. The shipped monophonic recording/scoring
+capability remains product history and usable functionality; the unbuilt chord
+matching extension is no longer planned. Feasibility research landed (RES-014): **staged-go** — monophonic
 single-note-line scoring with offline-after-the-take analysis is credible in the
 browser (MPM/YIN pitch detection, spectral-flux onsets, metronome count-in
 instead of a backing track, score-only persistence); real-time note-by-note
@@ -59,10 +62,14 @@ accepts that risk. Capture flow (TASK-041), the pure scoring engine (TASK-042),
 and runner score UI/persistence (TASK-043) are done: a recorded take can be
 decoded, scored, explained per note, and persisted as score metadata without
 storing audio. Real-guitar/browser-device plausibility remains QA/product-review
-coverage rather than a task gate. A chroma-based chord "close enough" check
-remains gated behind validated monophonic scoring.
+coverage rather than a task gate. The chroma-based chord "close enough" check
+was retired with TASK-044.
 
 ## Last reviewed
+
+2026-07-10 — Owner retired all non-terminal epics and tasks before gathering
+asynchronous feedback and grooming a fresh MVP backlog. Completed recording and
+scoring work remains shipped; the epic does not claim its Done-when outcome.
 
 2026-07-09 — Owner paused this epic while EPIC-013 remains the focus. TASK-044
 stays gated, so no recording/scoring work is dependency-ready.

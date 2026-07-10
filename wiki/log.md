@@ -2,6 +2,7 @@
 
 Append-only, newest at the top. One line per change: date — what changed and why, with the driving item.
 
+- 2026-07-10 — `product/overview` and `project/overview` record NOTE-017's owner-directed retirement of every non-terminal epic/task; the APSS migration is shelved and fresh MVP grooming waits for asynchronous owner feedback.
 - 2026-07-10 — `product/overview` updated for ISSUE-010: nested Clerk factor, verification, recovery, MFA, and session-task paths now resolve through app-hosted Astro rest routes.
 - 2026-07-10 — `product/overview` updated for TASK-072: the Clerk/Postgres migration and EPIC-013 are complete after the final browser/Postgres regression passed with a real dedicated-account Clerk handoff.
 - 2026-07-10 — `product/overview` updated for TASK-071: shared app-data contracts live in `src/appData/`, and the obsolete generic browser-persistence layer is gone.

@@ -2,8 +2,8 @@
 id: TASK-044
 title: Chord "close enough" check via chroma template matching
 epic: EPIC-010
-status: gated
-gated_until: monophonic scoring (TASK-043) is shipped and validated by owner dogfooding, and the polyphonic-model landscape is re-checked against RES-014
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire all non-terminal tasks before fresh MVP grooming from asynchronous owner feedback
 depends_on: [TASK-043]
 source: TASK-015
 research: RES-014
@@ -57,3 +57,8 @@ Owner paused EPIC-010 so the project can focus on EPIC-013's server-owned
 persistence work. This task remains `gated` and should not be picked until the
 epic is resumed, monophonic scoring has been dogfooded, and the polyphonic model
 landscape is re-checked against RES-014.
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before gathering asynchronous feedback and
+grooming a fresh MVP backlog. No chord-matching implementation shipped.

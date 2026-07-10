@@ -4,6 +4,14 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-07-10 — Current roadmap retired before fresh MVP grooming
+
+Owner direction retired EPIC-002 through EPIC-006, EPIC-010, TASK-044, and the
+TASK-079 through TASK-084 Jazz Master APSS migration chain. Completed product
+capabilities and historical evidence remain intact; no APSS capsule was
+activated and current operating paths remain canonical. Fresh MVP definition
+and work creation wait for asynchronous owner feedback (NOTE-017).
+
 ## 2026-07-10 — ISSUE-010 nested Clerk auth routes fixed
 
 Real password sign-in exposed that Clerk's path routing advances through nested

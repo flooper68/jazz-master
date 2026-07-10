@@ -145,7 +145,8 @@ second parent; each child still belongs only to `jazz-master`.
   proposal gives governance canonical decisions/rules and knowledge derived
   synthesis, while both currently use knowledge maintenance.
 - **JM-GAP-21 — planning records are not capsule-local.** Governance uses the
-  shared task registry until TASK-079 creates its accepted PLAN/LOG contract.
+  shared task registry. The retired TASK-079 migration would have created a
+  capsule-local PLAN/LOG contract, but no replacement is currently planned.
 
 ## Open questions (deferred grill)
 

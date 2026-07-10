@@ -2,7 +2,8 @@
 id: EPIC-005
 title: Repertoire — standards tracker and study aids
 vision: VIS-001
-status: backlog
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the current roadmap before fresh MVP grooming from asynchronous owner feedback
 created: 2026-07-05
 ---
 
@@ -35,3 +36,9 @@ Help guitarists build and maintain a book of jazz standards: track which tunes t
 ## Done when
 
 A user maintains a 20-tune book, sees "Autumn Leaves is rusty — review comping," and can jump straight into a drill on its changes.
+
+## Current status
+
+Abandoned by owner direction on 2026-07-10. This unstarted roadmap proposal is
+not part of the active MVP queue; future feedback may produce a newly framed
+epic or tasks without reviving this record automatically.

@@ -2,7 +2,8 @@
 id: EPIC-006
 title: Ear training — hear the changes
 vision: VIS-001
-status: backlog
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the current roadmap before fresh MVP grooming from asynchronous owner feedback
 created: 2026-07-05
 ---
 
@@ -31,3 +32,9 @@ Train the ears jazz demands: recognize chord qualities, intervals, and common pr
 ## Done when
 
 A user can run a 5-minute chord-quality quiz, and their accuracy per quality is tracked over time.
+
+## Current status
+
+Abandoned by owner direction on 2026-07-10. This unstarted roadmap proposal is
+not part of the active MVP queue; future feedback may produce a newly framed
+epic or tasks without reviving this record automatically.

@@ -1,9 +1,9 @@
 ---
 id: TASK-082
 title: Migrate APSS compiled knowledge and artifacts
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-081]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md and the governance-versus-knowledge boundary recorded there.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -45,3 +45,9 @@ compatibility path; render/open any artifact whose reference changes; run the
 APSS validator/generator twice, independent review, and
 `bun run --cwd codebase check`.
 
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. Wiki and
+artifact paths remain unchanged.

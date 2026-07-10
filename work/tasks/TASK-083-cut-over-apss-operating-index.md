@@ -1,9 +1,9 @@
 ---
 id: TASK-083
 title: Cut over the APSS operating index
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-082]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md and all prior migration tasks are verified with compatibility paths intact.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -50,3 +50,9 @@ check/ship commands using only root AGENTS.md. Run all old/new link checks,
 knowledge-index lint, the APSS validator/generator twice, independent review,
 and `bun run --cwd codebase check`.
 
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. AGENTS.md and
+the current layer-based operating index remain canonical.

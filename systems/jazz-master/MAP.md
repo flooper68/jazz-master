@@ -1,7 +1,7 @@
 # Jazz Master APSS map
 
-Status: **proposed and provisional**. This map is derived from the nine
-`SYSTEM.md` declarations below. The current canonical paths in `strategy/`,
+Status: **proposed design; migration retired 2026-07-10**. This map is derived
+from the nine `SYSTEM.md` declarations below. The current canonical paths in `strategy/`,
 `processes/`, `architecture/`, `work/`, `notes/`, `research/`, `wiki/`, and
 `artifacts/` have not moved. On conflict, a declaration controls this proposed
 map and the current canonical file controls present-day operation.
@@ -273,10 +273,10 @@ at a time.
 | JM-GAP-20 | knowledge | No retrieval/re-derivation/stale-context outcome evidence | Which lightweight retrieval or stale-context signal proves compiled knowledge helps? |
 | JM-GAP-21 | root; all children | Capsule-local PLAN/LOG pairs are absent: six children use shared `work/tasks/` for both, while direction/portfolio use specialized shared plans plus shared task logs | Should shared plans/logs remain supported, or must every child adopt capsule-local records before activation; should heterogeneous historical `work/` and `notes/` remain root-shared? |
 
-## Migration sequence — gated, no work activated
+## Migration sequence — retired, no work activated
 
-Every follow-up remains `status: gated` until the owner explicitly accepts this
-map. The dependency chain keeps the current dev loop usable after every step:
+The owner retired every follow-up on 2026-07-10 before fresh MVP grooming. The
+sequence remains below as design history; it is not an active or gated roadmap:
 
 1. `TASK-079` — move process playbooks to their owning capsules with old-path
    compatibility links, create capsule-local PLAN/LOG records, and add
@@ -292,8 +292,8 @@ map. The dependency chain keeps the current dev loop usable after every step:
    only conforming systems; remove compatibility links only after link and
    cold-start verification.
 
-Until those tasks pass their gates, `AGENTS.md` and all current path indexes
-remain authoritative and every declaration remains `status: proposed`.
+`AGENTS.md` and all current path indexes remain authoritative. Every declaration
+remains `status: proposed`; none was activated.
 
 ## Conformance review checklist
 

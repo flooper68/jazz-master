@@ -1,9 +1,9 @@
 ---
 id: TASK-081
 title: Migrate APSS work and evidence streams
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-080]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md and its allocation of flow-item, note, review, and research ownership.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -54,3 +54,10 @@ Count files before/after each directory move; compare IDs and frontmatter;
 resolve every compatibility link; run heartbeat/knowledge-maintenance index
 checks without writing new work; run the APSS validator/generator twice,
 independent review, and `bun run --cwd codebase check`.
+
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. Work, notes,
+and research remain at their current canonical paths.

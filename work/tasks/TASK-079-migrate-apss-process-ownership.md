@@ -1,9 +1,9 @@
 ---
 id: TASK-079
 title: Migrate APSS process ownership with compatibility links
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-077]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md and resolves its deferred boundary questions.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -95,3 +95,10 @@ Compare `find processes -maxdepth 1 -type l` with the 19-row table; resolve and
 read every link. Run the knowledge-maintenance process-index lint through the
 old paths, complete an independent review, and run
 `bun run --cwd codebase check`.
+
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. The proposed
+APSS map remains historical design evidence; no canonical files moved.

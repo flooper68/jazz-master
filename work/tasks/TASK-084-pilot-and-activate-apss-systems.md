@@ -1,9 +1,9 @@
 ---
 id: TASK-084
 title: Pilot and activate conforming APSS systems
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-083]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md and TASK-083 has completed with all migrated capsules and compatibility links operational.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -100,3 +100,11 @@ next run that used it. Run APSS schema/semantic validation and regenerate MAP;
 search and resolve every current link; run the context-free cold-start agent
 test; independently review; run `bun run --cwd codebase check`; and verify clean,
 pushed git state.
+
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. No proposed
+Jazz Master APSS system was activated and no compatibility link was created or
+removed.

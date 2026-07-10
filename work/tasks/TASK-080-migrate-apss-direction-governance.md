@@ -1,9 +1,9 @@
 ---
 id: TASK-080
 title: Migrate APSS direction and governance records
-status: gated
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the proposed Jazz Master APSS migration before fresh MVP grooming
 depends_on: [TASK-079]
-gated_until: Owner explicitly accepts systems/jazz-master/MAP.md, resolves its direction/governance questions, and explicitly authorizes the exact strategy/ moves below.
 source: TASK-077
 created: 2026-07-09
 ---
@@ -55,3 +55,10 @@ Resolve every old and new path, search for broken `strategy/` and
 `architecture/` references, run the APSS validator/generator twice, perform a
 cold-start read following `AGENTS.md`, complete independent review, and run
 `bun run --cwd codebase check`.
+
+## Log
+
+### 2026-07-10 — abandoned
+
+Owner retired all non-terminal tasks before fresh MVP grooming. No strategy or
+architecture paths moved.

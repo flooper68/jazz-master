@@ -135,8 +135,9 @@ decisions and owner authority are recorded.
   proposal gives direction the value choice and portfolio coordination the
   sequencing choice, but current prioritization blends both.
 - **JM-GAP-21 — planning records are not capsule-local.** Direction uses the
-  shared strategy goal plan and shared task logs until TASK-079 creates its
-  accepted PLAN/LOG contract.
+  shared strategy goal plan and shared task logs. The retired TASK-079 migration
+  would have created a capsule-local PLAN/LOG contract, but no replacement is
+  currently planned.
 
 ## Open questions (deferred grill)
 

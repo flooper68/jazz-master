@@ -138,8 +138,9 @@ synthesizes them. Research remains the source for new external evidence.
   use of knowledge maintenance can obscure whether a change is an authority
   decision or derived synthesis.
 - **JM-GAP-21 — planning records are not capsule-local.** Knowledge stewardship
-  uses the shared task registry until TASK-079 creates its accepted PLAN/LOG
-  contract.
+  uses the shared task registry. The retired TASK-079 migration would have
+  created a capsule-local PLAN/LOG contract, but no replacement is currently
+  planned.
 
 ## Open questions (deferred grill)
 

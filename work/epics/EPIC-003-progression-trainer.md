@@ -2,7 +2,8 @@
 id: EPIC-003
 title: Progression trainer — ii–V–I in all twelve keys
 vision: VIS-001
-status: backlog
+status: abandoned
+abandoned_reason: owner decision 2026-07-10 — retire the current roadmap before fresh MVP grooming from asynchronous owner feedback
 created: 2026-07-05
 ---
 
@@ -31,3 +32,9 @@ Drill the progressions jazz is made of — ii–V–I (major and minor), turnaro
 ## Done when
 
 A user can select "ii–V–I major, cycle of fourths, drop 2 on strings 1–4" and be walked through all twelve keys with correct chords and playable grips.
+
+## Current status
+
+Abandoned by owner direction on 2026-07-10. This unstarted roadmap proposal is
+not part of the active MVP queue; future feedback may produce a newly framed
+epic or tasks without reviving this record automatically.

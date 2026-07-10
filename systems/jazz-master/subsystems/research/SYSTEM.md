@@ -144,7 +144,8 @@ their questions.
   volume may not justify a separate system rather than a shared capability; the
   map proposes independence because the corpus and stale-when loop are durable.
 - **JM-GAP-21 — planning records are not capsule-local.** Research uses the
-  shared task registry until TASK-079 creates its accepted PLAN/LOG contract.
+  shared task registry. The retired TASK-079 migration would have created a
+  capsule-local PLAN/LOG contract, but no replacement is currently planned.
 
 ## Open questions (deferred grill)
 

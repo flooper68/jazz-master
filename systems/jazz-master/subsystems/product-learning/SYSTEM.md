@@ -140,8 +140,8 @@ feeds direction and portfolio but does not approve their decisions.
   disproven assumptions do not trigger a compiled change to interview,
   dogfood, instrumentation, or experiment protocols.
 - **JM-GAP-21 — planning records are not capsule-local.** Product learning uses
-  the shared task registry until TASK-079 creates its accepted PLAN/LOG
-  contract.
+  the shared task registry. The retired TASK-079 migration would have created
+  a capsule-local PLAN/LOG contract, but no replacement is currently planned.
 
 ## Open questions (deferred grill)
 

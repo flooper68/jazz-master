@@ -138,7 +138,8 @@ reviews; product learning supplies field evidence; governance audits adherence.
   root child to preserve independence from delivery, although the same owner
   ultimately approves both.
 - **JM-GAP-21 — planning records are not capsule-local.** Quality uses the
-  shared task registry until TASK-079 creates its accepted PLAN/LOG contract.
+  shared task registry. The retired TASK-079 migration would have created a
+  capsule-local PLAN/LOG contract, but no replacement is currently planned.
 
 ## Open questions (deferred grill)
 
