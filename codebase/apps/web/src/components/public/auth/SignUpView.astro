@@ -1,0 +1,26 @@
+---
+import { SignUp } from '@clerk/astro/components'
+import { clerkAuthRoutes } from '../../../server/auth/clerkRoutes'
+import PublicShell from '../PublicShell.astro'
+import AuthPage from './AuthPage.astro'
+---
+
+<PublicShell title="Sign up - Jazz Master" noindex>
+  <AuthPage
+    eyebrow="Start practicing"
+    heading="Make today's rep easy to return to."
+    body="Create an account so Jazz Master can carry your focus, history, and practice loop across sessions."
+  >
+    <SignUp
+      routing="path"
+      path={clerkAuthRoutes.signUp}
+      signInUrl={clerkAuthRoutes.signIn}
+      fallbackRedirectUrl={clerkAuthRoutes.appFallback}
+      appearance={{
+        variables: {
+          colorPrimary: '#18181b',
+        },
+      }}
+    />
+  </AuthPage>
+</PublicShell>

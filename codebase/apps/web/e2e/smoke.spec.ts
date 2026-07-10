@@ -19,6 +19,26 @@ test('landing page renders and links to app-hosted auth', async ({ page }) => {
   ).toHaveAttribute('href', '/sign-in')
 })
 
+test('Clerk nested auth states stay on app-hosted routes', async ({ page }) => {
+  await page.goto('/sign-in/factor-one')
+  await expect(
+    page.getByRole('heading', {
+      name: 'Return to your practice room.',
+      level: 1,
+    }),
+  ).toBeVisible()
+  await expect(page.getByText('404: Not found')).toHaveCount(0)
+
+  await page.goto('/sign-up/verify-email-address')
+  await expect(
+    page.getByRole('heading', {
+      name: "Make today's rep easy to return to.",
+      level: 1,
+    }),
+  ).toBeVisible()
+  await expect(page.getByText('404: Not found')).toHaveCount(0)
+})
+
 test('happy path: onboard, run a planned lesson, see it in history and on the dashboard', async ({
   page,
 }) => {

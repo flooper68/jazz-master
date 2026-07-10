@@ -65,7 +65,7 @@ polished Astro-owned public surface: `/` explains the jazz-practice loop with
 practice-board-style visuals and CTAs, while `/sign-in` and `/sign-up` reuse the
 same public shell around Clerk's prebuilt widgets. Clerk protects `/app/*`, and
 signed-out app entry lands on Jazz Master's own `/sign-in` page, with `/sign-up`
-as the local account-creation counterpart. Those Astro pages render Clerk's
+as the local account-creation counterpart. Exact and rest-parameter Astro routes render Clerk's
 prebuilt auth UI, so password recovery, MFA/2FA, and required session tasks
 remain Clerk configured rather than custom app code. Profile/onboarding data,
 sessions, grades, and score metadata now use protected tRPC plus normalized
