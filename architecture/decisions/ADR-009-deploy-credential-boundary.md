@@ -26,9 +26,23 @@ TASK-024 prepared the Workers deploy with the RES-002 design: manual, owner-trig
 
 The first mechanism (GitHub Actions workflow + `CLOUDFLARE_API_TOKEN` repo secret) shipped and verified its gate on a real runner, then the owner redirected before any secret was created: **use Cloudflare Workers Builds** — the repo is connected to the worker in the Cloudflare dashboard, and Cloudflare's own build platform runs `bun run check` (owner kept the full gate in the build command, question (a) in NOTE-007) and deploys on every push to `main`. This strengthens the invariant: **no deploy token exists anywhere** — not in GitHub secrets, not on disk — the credential is implicit in the Cloudflare↔GitHub connection the owner authorizes in Cloudflare's UI. The GitHub Actions workflow was removed. Consequence shift: deploy status now lives in the Cloudflare dashboard (View build in Workers & Pages) plus the GitHub commit status Cloudflare posts, rather than in the repo's Actions tab.
 
+## Amendment (2026-08-02 — ISSUE-011): point 1 no longer holds in practice
+
+Debugging ISSUE-011 (deployed site returning 500 for every browser request), the owner ran `wrangler login` on the development machine after being shown this ADR's conflicting text, then directed the agent to upload the corrected Clerk secret. **Point 1 of the Decision — "No local wrangler credentials, ever" — is now false in reality.** A near-account-wide Cloudflare OAuth token sits at `~/Library/Preferences/.wrangler/config/default.toml`, readable by every agent process on this machine; observed scopes include `workers_scripts (write)`, `d1 (write)`, `pages (write)`, `email_routing (write)`, and `connectivity (admin)` — precisely the blast radius NOTE-006 refused.
+
+What it bought: `wrangler tail jazz-master` produced the decisive log line (the `jwk-kid-mismatch` stack) that HTTP probing could only infer, and `wrangler secret put` applied the fix in one step instead of a dashboard round-trip. The diagnosis itself did not require it — the mismatched instance ID was recoverable from `x-clerk-auth-*` response headers with no credential at all.
+
+This amendment records the state, not a considered replacement decision. The ADR's rationale is untouched and still reads as accepted; either the token is revoked and point 1 restored, or the decision is rewritten to say what agents may hold and why. Until one of those happens, this document contradicts the machine it governs.
+
+Deferred-grill questions for the owner:
+
+1. **Revoke or keep?** If keeping, is the standing capability "read-only observability" (`Workers Tail: Read` + `Workers Scripts: Read` via a scoped API token) or full write? The incident needed write exactly once, for a fix the dashboard could also have applied.
+2. **Does "agents must not have access to production" survive?** Read access to live request logs is access to production data, not just to deploy machinery. If the invariant is now narrower, it needs restating — the current wording is absolute.
+3. **What re-establishes the boundary after an incident?** There is no step anywhere that revokes a credential once granted. If the answer to (1) is "keep for now", that is a standing grant by default rather than by decision.
+
 ## Consequences
 
-- Nothing on the development machine can deploy; `bun run deploy` (kept for reference and possible TASK-036 reuse) fails locally for lack of credentials, which is correct behavior, not a gap.
+- Nothing on the development machine can deploy; `bun run deploy` (kept for reference and possible TASK-036 reuse) fails locally for lack of credentials, which is correct behavior, not a gap. **Superseded in practice by the 2026-08-02 amendment.**
 - The deploy path depends on the Cloudflare↔GitHub connection the owner manages; a broken build surfaces in the Cloudflare dashboard and as a failed GitHub commit status, and only the owner can touch the connection.
 - Every push to `main` becomes a dev deploy: `bun run check` in the Workers Builds build command is the last automated gate before code is publicly reachable on the dev URL. The e2e smoke suite (TASK-035) will strengthen exactly this edge.
 - The Astro adapter's auto-enabled KV sessions were eliminated (`sessionDrivers.memory()`) so the build deploys a binding-free worker and provisions nothing.
