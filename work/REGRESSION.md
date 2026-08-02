@@ -52,11 +52,14 @@ This tests data durability rather than Clerk session persistence.
 | SCORE-01 | P1 | Scores/normalized details | TASK-041 through TASK-043, TASK-067 | Local Postgres; migrations applied | Run `DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:55432/jazz_master bun run --cwd codebase regression:db` | Score `92`, component/tolerance metadata, and ordered per-note detail round-trip through fresh repository connections; another incomplete session remains incomplete | Command output and repository error; never raw audio |
 | PROFILE-02 | P1 | Data-retirement UI | TASK-070, TASK-071 | Authenticated profile exists | Open `/app/profile`; inspect the data section; search product source for `localStorage` and `defineStore` | Data sync copy is visible; export/import controls are absent; both source searches have no product persistence matches | Visible stale control/copy and matching source path |
 | RESPONSIVE-01 | P1 | Mobile shell | ISSUE-001, TASK-035 | Test-auth app available at 375×812 | Open landing, onboarding, dashboard, practice, history, and profile | No page has horizontal overflow | Route, viewport, screenshot, scroll/client widths |
-| DEPLOY-01 | P0 | Deployed Clerk key pair | ISSUE-011, TASK-085 | Deploy reachable at `https://jazz-master.premysl-ciompa.workers.dev` | `curl -s <base>/trpc/clerkKeys`; then `curl -s -o /dev/null -w '%{http_code}\n' -L -H 'Accept: text/html' -H 'Sec-Fetch-Dest: document' <base>/` | `"status":"ok"` and `200`. A `mismatch` means the deployed secret and the committed publishable key are on different Clerk instances | Both response bodies/status codes, `x-clerk-auth-reason` header, `wrangler tail jazz-master` output |
+| DEPLOY-01 | P0 | Deployed Clerk key pair | ISSUE-011, TASK-085 | Deploy reachable at `https://jazz-master.premysl-ciompa.workers.dev` | `curl -s <base>/trpc/clerkKeys`; then `JAR=$(mktemp); curl -s -o /dev/null -w '%{http_code} %{num_redirects}\n' -L -c "$JAR" -b "$JAR" -H 'Accept: text/html' -H 'Sec-Fetch-Dest: document' <base>/` | `"status":"ok"` and `200` after ~3 redirects. A `mismatch` means the deployed secret and the committed publishable key are on different Clerk instances | Both response bodies/status codes, `x-clerk-auth-reason` header, `wrangler tail jazz-master` output |
 
-The browser headers in DEPLOY-01 are load-bearing: without them Clerk skips the
-handshake and a plain `curl` returns 200 against a site that is 500ing for every
-real visitor. That is how ISSUE-011 survived ISSUE-008's probe style.
+Both halves of the DEPLOY-01 curl are load-bearing. Without the browser headers
+Clerk skips the handshake and a plain `curl` returns 200 against a site that is
+500ing for every real visitor — that is how ISSUE-011 survived ISSUE-008's probe
+style. Without the cookie jar the handshake can never complete, so even a
+healthy deploy redirects until curl gives up; a redirect loop here means the
+probe was run wrong, not that the site is down.
 
 ## Run matrix
 

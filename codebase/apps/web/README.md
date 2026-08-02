@@ -65,14 +65,17 @@ after any deploy that changed Clerk keys:
 # 1. The key-pair check, executed inside the Worker.
 curl -s https://jazz-master.premysl-ciompa.workers.dev/trpc/clerkKeys
 
-# 2. A browser-shaped landing-page request. Without these headers Clerk skips
-#    the handshake entirely and the probe passes against a broken site.
-curl -s -o /dev/null -w '%{http_code}\n' -L \
+# 2. A browser-shaped landing-page request. Both parts matter: without the
+#    headers Clerk skips the handshake and the probe passes against a broken
+#    site; without the cookie jar the handshake can never complete and even a
+#    healthy site redirects forever.
+JAR=$(mktemp)
+curl -s -o /dev/null -w '%{http_code} %{num_redirects}\n' -L -c "$JAR" -b "$JAR" \
   -H 'Accept: text/html' -H 'Sec-Fetch-Dest: document' \
   https://jazz-master.premysl-ciompa.workers.dev/
 ```
 
-Expect `"status":"ok"` and `200`. A `"status":"mismatch"` means the deployed
+Expect `"status":"ok"` and `200` after ~3 redirects. A `"status":"mismatch"` means the deployed
 secret belongs to a different Clerk app than the committed publishable key; fix
 it by uploading the secret key from the Clerk app whose Frontend API host
 matches the decoded publishable key.

@@ -135,3 +135,18 @@ Deviations:
   gitignored and Workers Builds has no `.env`, so nothing leaks to git or to
   the deployed Worker, but a local `bun run deploy` would upload a bundle with
   the secret baked in.
+
+### 2026-08-02 — follow-up fix (agent)
+
+Ran DEPLOY-01 against the deployed build (version `3078d176`, 10:07:01Z) and
+the first half passed — `/trpc/clerkKeys` → `{"status":"ok"}` — but the second
+half returned a redirect loop. The site was fine; the command as documented was
+wrong. Clerk's dev-instance handshake sets cookies the client must send back,
+so a cookieless `curl -L` re-enters the handshake forever. The same probe with
+a cookie jar returns `200` after 3 redirects.
+
+Corrected the command in README and REGRESSION.md to use `-c/-b` and recorded
+that a loop there means the probe was run wrong, not that the deploy is broken.
+Worth noting the near-miss: the earlier manual verification in this session
+happened to use a cookie jar, so the defect only surfaced when the documented
+form was executed literally.
