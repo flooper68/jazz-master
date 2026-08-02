@@ -7,8 +7,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Local secrets. `.env`/`.dev.vars` are also what `astro build` and the
+# Cloudflare adapter read, which is why local values live in `.env.development`
+# instead — see codebase/apps/web/README.md (TASK-086).
 .env
+.env.*
+!.env*.example
 .dev.vars
+.dev.vars.*
 node_modules
 dist
 dist-ssr

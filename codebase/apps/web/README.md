@@ -6,11 +6,11 @@ The Astro app uses `@clerk/astro` middleware for authentication. `/` is public;
 `/app/*` requires a signed-in Clerk user, and protected tRPC procedures read the
 Clerk user ID from Astro locals.
 
-The web app reads the gitignored `codebase/apps/web/.env` during Astro
-dev/preview. Copy `.env.example` and fill the local values. If a Clerk setup
-provides a framework-specific `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, map its value
-to Clerk Astro's `PUBLIC_CLERK_PUBLISHABLE_KEY`; Jazz Master does not read the
-Next.js variable name.
+Local values live in the gitignored `codebase/apps/web/.env.development`. Copy
+`.env.development.example` and fill it in. If a Clerk setup provides a
+framework-specific `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, map its value to Clerk
+Astro's `PUBLIC_CLERK_PUBLISHABLE_KEY`; Jazz Master does not read the Next.js
+variable name.
 
 ```sh
 PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -22,6 +22,37 @@ CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/app
 CLERK_TEST_USER_EMAIL=premysl.ciompa+test@gmail.com
 CLERK_TEST_USER_PASSWORD=test
 ```
+
+### Why `.env.development`, and never `.env`
+
+Astro loads `.env` in *every* mode, including the production build, and
+`@clerk/astro` reads `import.meta.env[name]` dynamically — which forces Vite to
+inline the whole env object, secret included, as a literal in
+`dist/server/virtual_astro_middleware.mjs`. The Cloudflare adapter compounds it
+by resolving `.env`/`.dev.vars` through wrangler and re-emitting them as
+`dist/server/.dev.vars`. Either way a local build ends up holding a plaintext
+`CLERK_SECRET_KEY` (INS-023, TASK-086).
+
+`.env.development` is loaded only in dev mode, so the production build has
+nothing to inline. **Do not create `.env` or `.dev.vars` in this package** — both
+are read at build time and put the secret straight back into `dist/`.
+`scripts/assertCleanBuildOutput.ts` runs after every `astro build` and fails
+the build if it finds a secret-shaped literal or a `.dev.vars` in the output;
+that check is the backstop, not the fix.
+
+Consequence for the Workers-runtime preview: `astro preview` and `wrangler dev`
+serve the built worker and read `.env`/`.dev.vars`, which no longer carry the
+secret. Pass it through the process environment instead:
+
+```sh
+set -a && . ./.env.development && set +a
+CLOUDFLARE_INCLUDE_PROCESS_ENV=true \
+CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master \
+  bun run preview
+```
+
+`astro dev` needs only the Hyperdrive variable (or a running local Postgres);
+without it the dev runtime exits before becoming ready.
 
 When either value is missing, public routes still respond, but `/app/*` returns
 a controlled 503 because sign-in cannot be initialized. Clerk keyless
@@ -43,8 +74,8 @@ CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/app
 
 `PUBLIC_CLERK_PUBLISHABLE_KEY` is also committed in `wrangler.jsonc` as a
 public Worker var; `CLERK_SECRET_KEY` must remain a Worker secret and must not be
-committed. Local Wrangler runs load the same runtime values from the gitignored
-`codebase/apps/web/.dev.vars`. The deployed Worker secret is owner-managed in
+committed. Local Wrangler runs take it from the process environment as shown
+above, not from a `.dev.vars`. The deployed Worker secret is owner-managed in
 Cloudflare; agents do not run `wrangler login` or commit it (ADR-009, and its
 2026-08-02 amendment recording where that no longer holds).
 
@@ -96,7 +127,7 @@ profile, sessions, scores, and preferences may be reset or overwritten by
 tests, and it must never be used as a production user.
 
 The intentionally public test credential is `test`, committed as
-`CLERK_TEST_USER_PASSWORD` in `.env.example`; `CLERK_TEST_USER_EMAIL` carries
+`CLERK_TEST_USER_PASSWORD` in `.env.development.example`; `CLERK_TEST_USER_EMAIL` carries
 the documented email. This owner-approved exception is safe only while the
 account remains disposable, contains no private data, and has no elevated
 privileges. Rotate or remove the credential before changing any of those

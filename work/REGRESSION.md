@@ -13,8 +13,9 @@ server-backed recovery after browser storage is cleared.
 
 1. Start the repo-owned Postgres service and apply migrations. Port `55432` is
    the documented fallback when `5432` is occupied.
-2. Keep real Clerk keys in `codebase/apps/web/.env`; never copy them into this
-   pack or test output.
+2. Keep real Clerk keys in `codebase/apps/web/.env.development`; never copy them
+   into this pack or test output, and never into `.env` or `.dev.vars` — those
+   two are read at build time and end up inlined in `dist/` (TASK-086).
 3. Run the automated gate and e2e pack:
 
 ```sh
@@ -30,7 +31,7 @@ fresh Clerk-shaped user ID per test. Production rejects that seam. For a real
 Clerk session, start `bun run --cwd codebase dev` with the same local
 Hyperdrive connection and use the dedicated
 `premysl.ciompa+test@gmail.com` account. Its intentionally public, test-only
-credential is documented in `codebase/apps/web/.env.example` and README; never
+credential is documented in `codebase/apps/web/.env.development.example` and README; never
 reuse it for a privileged or data-bearing account. Clerk currently rejects the
 literal `test` password as compromised, so real identity checks use an emailed
 OTP or a short-lived Backend API sign-in token until the owner changes the

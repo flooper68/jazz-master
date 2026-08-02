@@ -4,6 +4,33 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-08-02 — local builds were baking CLERK_SECRET_KEY into dist/ (TASK-086)
+
+`astro build` with a local `.env` present wrote the plaintext secret into
+`dist/server/virtual_astro_middleware.mjs` and emitted `dist/server/.dev.vars`.
+Two independent mechanisms, both upstream: Astro loads `.env` in *every* mode
+and `@clerk/astro` reads `import.meta.env[name]` dynamically, which forces Vite
+to inline the whole env object; separately `@astrojs/cloudflare`'s
+`loadWranglerEnv` resolves `.env`/`.dev.vars` through wrangler into
+`process.env` at `astro:config:done`, and `@cloudflare/vite-plugin` re-emits
+them for preview. Neither is configurable, and no edit to Jazz Master source
+removes the literal — our own `import.meta.env` use compiles to an empty
+overlay.
+
+Fix: local values moved to `.env.development`, which Astro loads only in dev
+mode, so the production build has nothing to inline. Measured, not assumed —
+two earlier candidate fixes failed under test: moving secrets to `.dev.vars`
+leaked identically (wrangler loads it unconditionally), and
+`CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false` removed only the emitted
+`.dev.vars`, not the inlined literal. `scripts/assertCleanBuildOutput.ts`
+now fails the build on any secret-shaped literal or `.dev.vars` under `dist/`.
+The `deploy` script was deleted: since ADR-009's 2026-08-02 amendment a local
+`wrangler deploy` would actually succeed, and would have published the
+hardcoded secret. Gotcha for anyone verifying locally: `astro dev` exits
+"before becoming ready" with no useful error when
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` is unset and no
+local Postgres is up.
+
 ## 2026-08-02 — Clerk key drift took the deployed site down for three weeks (ISSUE-011)
 
 The committed publishable key moved to a new Clerk instance in TASK-072 while

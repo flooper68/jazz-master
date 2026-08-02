@@ -42,7 +42,7 @@ Deferred-grill questions for the owner:
 
 ## Consequences
 
-- Nothing on the development machine can deploy; `bun run deploy` (kept for reference and possible TASK-036 reuse) fails locally for lack of credentials, which is correct behavior, not a gap. **Superseded in practice by the 2026-08-02 amendment.**
+- Nothing on the development machine can deploy; `bun run deploy` (kept for reference and possible TASK-036 reuse) fails locally for lack of credentials, which is correct behavior, not a gap. **Superseded in practice by the 2026-08-02 amendment**, and the script itself was deleted by TASK-086: with a working local token the script no longer fails safely, and a locally built bundle can contain an inlined `CLERK_SECRET_KEY` (INS-023), so publishing from this machine would have hardcoded the secret into the Worker's source. Deploys are Workers Builds only.
 - The deploy path depends on the Cloudflare↔GitHub connection the owner manages; a broken build surfaces in the Cloudflare dashboard and as a failed GitHub commit status, and only the owner can touch the connection.
 - Every push to `main` becomes a dev deploy: `bun run check` in the Workers Builds build command is the last automated gate before code is publicly reachable on the dev URL. The e2e smoke suite (TASK-035) will strengthen exactly this edge.
 - The Astro adapter's auto-enabled KV sessions were eliminated (`sessionDrivers.memory()`) so the build deploys a binding-free worker and provisions nothing.

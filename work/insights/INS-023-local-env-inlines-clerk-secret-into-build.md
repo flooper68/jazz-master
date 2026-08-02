@@ -1,7 +1,8 @@
 ---
 id: INS-023
 title: A local .env bakes CLERK_SECRET_KEY into the built server bundle
-status: new
+status: accepted
+outcome: [TASK-086]
 created: 2026-08-02
 source: TASK-085
 ---
@@ -34,3 +35,16 @@ Affected user/workflow: any agent or owner session that builds locally after
 restoring `.env`; the risk lands on the Clerk instance, not on end users.
 Evidence: `grep -rl` over a clean `HEAD` build during TASK-085 verification.
 Validation need: direct task candidate.
+
+## Triage — 2026-08-02 (owner-directed)
+
+Accepted into TASK-086. Re-verifying against a current `dist/` corrected three
+things recorded above: the inlined literal sits inside `@clerk/astro`'s own
+bundled code (Jazz Master's `import.meta.env` use compiles to an empty overlay,
+so no source edit here removes it); `dist/server/.dev.vars` is a byte-for-byte
+copy of `.env`, so `CLERK_TEST_USER_PASSWORD` leaks too; and the additional
+`dist/server/chunks/telemetry_*.mjs` hit is a false positive from Clerk's
+`startsWith("sk_test_")` check. The "should not happen" framing of
+`bun run deploy` no longer holds either — ADR-009's 2026-08-02 amendment records
+a working wrangler token on this machine, so that script would now publish the
+baked-in secret rather than fail.

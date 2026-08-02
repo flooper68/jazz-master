@@ -5,9 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "tsc -b && astro build",
+    "build": "tsc -b && astro build && bun scripts/assertCleanBuildOutput.ts",
     "preview": "astro preview",
-    "deploy": "bun run build && wrangler deploy",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
     "test": "vitest run",
