@@ -30,3 +30,8 @@ the shared `check` gate, which is beyond a mechanical routing migration.
 has been observed and today's priority is the runner/notation practice loop.
 Fold this into the next route-file or check-gate task rather than expanding the
 queue now.
+
+2026-08-02 (TASK-086) - The "no current route drift" premise no longer holds:
+the committed file and the codegen output now differ in ordering, so every
+build dirties the tree. Filed as ISSUE-012, which carries the reproduction.
+This insight still owns the guard half of the fix.
