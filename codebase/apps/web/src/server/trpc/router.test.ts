@@ -116,6 +116,104 @@ describe('appRouter.dbSmoke', () => {
   })
 })
 
+describe('appRouter.clerkKeys', () => {
+  function collectingLogger(events: Array<Record<string, unknown>>) {
+    return {
+      emit(_level, event) {
+        events.push(event)
+      },
+    } satisfies StructuredLogger
+  }
+
+  it('reports unconfigured when the runtime exposes no Clerk key pair', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const caller = createCaller(
+      createContext({
+        clerkKeys: null,
+        logger: collectingLogger(events),
+        requestMetadata: { requestId: 'req_test' },
+      }),
+    )
+
+    await expect(caller.clerkKeys()).resolves.toMatchObject({
+      status: 'unconfigured',
+    })
+    expect(events).toEqual([
+      {
+        event: 'clerk.keys.completed',
+        procedure: 'clerkKeys',
+        route: '/trpc/clerkKeys',
+        requestId: 'req_test',
+        outcome: 'unconfigured',
+        status: 200,
+        errorKind: 'unconfigured_runtime',
+      },
+    ])
+  })
+
+  it('reports ok when both keys resolve to the same Clerk instance', async () => {
+    const caller = createCaller(
+      createContext({
+        clerkKeys: { check: async () => 'ok' as const },
+      }),
+    )
+
+    await expect(caller.clerkKeys()).resolves.toMatchObject({ status: 'ok' })
+  })
+
+  // The ISSUE-011 condition: this is what the deployed probe must surface.
+  it('reports a mismatch and logs it when the keys resolve to different instances', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const caller = createCaller(
+      createContext({
+        clerkKeys: { check: async () => 'mismatch' as const },
+        logger: collectingLogger(events),
+        requestMetadata: { requestId: 'req_test' },
+      }),
+    )
+
+    await expect(caller.clerkKeys()).resolves.toMatchObject({
+      status: 'mismatch',
+      message:
+        'Clerk publishable and secret keys resolve to different instances',
+    })
+    expect(events[0]).toMatchObject({
+      event: 'clerk.keys.completed',
+      outcome: 'error',
+      status: 503,
+      errorKind: 'instance_mismatch',
+    })
+  })
+
+  it('reports a sanitized error and logs it when the check itself fails', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const caller = createCaller(
+      createContext({
+        clerkKeys: {
+          check: async () => {
+            throw new Error('JWKS request failed with status 401')
+          },
+        },
+        logger: collectingLogger(events),
+        requestMetadata: { requestId: 'req_test' },
+      }),
+    )
+
+    const result = await caller.clerkKeys()
+
+    expect(result).toMatchObject({
+      status: 'error',
+      message: 'Clerk key pair check failed',
+    })
+    expect(JSON.stringify(result)).not.toContain('401')
+    expect(events[0]).toMatchObject({
+      outcome: 'error',
+      status: 503,
+      errorKind: 'check_failed',
+    })
+  })
+})
+
 describe('appRouter.auth.me', () => {
   it('rejects unauthenticated callers', async () => {
     const caller = createCaller(

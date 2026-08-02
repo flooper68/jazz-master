@@ -28,6 +28,16 @@ export function getMissingClerkRuntimeEnv(
   return requiredClerkEnvVars.filter((name) => !readEnvValue(sources, name))
 }
 
+export function readClerkRuntimeKeys(sources: ClerkRuntimeEnvSources): {
+  publishableKey: string | undefined
+  secretKey: string | undefined
+} {
+  return {
+    publishableKey: readEnvValue(sources, 'PUBLIC_CLERK_PUBLISHABLE_KEY'),
+    secretKey: readEnvValue(sources, 'CLERK_SECRET_KEY'),
+  }
+}
+
 export function hasClerkRuntimeEnv(sources: ClerkRuntimeEnvSources) {
   return getMissingClerkRuntimeEnv(sources).length === 0
 }

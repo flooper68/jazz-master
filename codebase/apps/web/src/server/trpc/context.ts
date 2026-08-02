@@ -1,3 +1,4 @@
+import type { ClerkKeyPairClient } from '../auth/clerkKeyPair'
 import type { HyperdriveConnection } from '../db/connection'
 import {
   createDatabaseSmokeClient,
@@ -24,6 +25,7 @@ import {
 
 interface CreateContextOptions {
   auth?: AuthContext | null
+  clerkKeys?: ClerkKeyPairClient | null
   dbSmoke?: DatabaseSmokeClient | null
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
@@ -44,6 +46,12 @@ type AstroLocalsWithAuth = {
 
 function hasDbSmokeOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'dbSmoke' in options
+}
+
+function hasClerkKeysOption(options: unknown): options is CreateContextOptions {
+  return (
+    typeof options === 'object' && options !== null && 'clerkKeys' in options
+  )
 }
 
 function hasUsersOption(options: unknown): options is CreateContextOptions {
@@ -107,6 +115,10 @@ export function createContext(options?: unknown) {
   const dbSmoke = hasDbSmokeOption(options)
     ? options.dbSmoke
     : createDatabaseSmokeClient({ hyperdrive })
+  // Unlike the database handles there is no safe default here: the Clerk keys
+  // live in the Worker runtime env, which only the request entry point can
+  // read. Absent means the check reports `unconfigured`.
+  const clerkKeys = hasClerkKeysOption(options) ? (options.clerkKeys ?? null) : null
   const logger = hasLoggerOption(options)
     ? (options.logger ?? createNoopStructuredLogger())
     : createNoopStructuredLogger()
@@ -128,6 +140,7 @@ export function createContext(options?: unknown) {
 
   return {
     auth,
+    clerkKeys,
     dbSmoke,
     logger,
     requestMetadata,

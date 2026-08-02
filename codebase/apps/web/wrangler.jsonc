@@ -3,7 +3,11 @@
 // executes inside workerd (even in dev) and needs the Node globals.
 // TASK-024 extends this for the actual deployment.
 {
-  "name": "jazz-master-web",
+  // Must match the deployed Worker that Cloudflare Workers Builds publishes to
+  // and that serves jazz-master.premysl-ciompa.workers.dev. It read
+  // "jazz-master-web" until ISSUE-011, so every repo-local wrangler command
+  // targeted a Worker that does not exist.
+  "name": "jazz-master",
   "compatibility_date": "2026-04-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {

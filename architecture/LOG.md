@@ -4,6 +4,24 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-08-02 — Clerk key drift took the deployed site down for three weeks (ISSUE-011)
+
+The committed publishable key moved to a new Clerk instance in TASK-072 while
+the out-of-band `CLERK_SECRET_KEY` Worker secret stayed on the old one. Clerk
+verifies the handshake JWT against the JWKS reached by the *secret* key, and
+`@clerk/backend` rethrows that failure for development instances instead of
+degrading to signed-out — so every browser request, landing page included,
+returned a bare 500. Plain `curl` returned 200 throughout, because Clerk only
+runs the handshake for document-shaped requests; that is why ISSUE-008's probe
+style missed it and why it sat broken from 2026-07-10 to 2026-08-02.
+
+Two gotchas worth keeping: the deployed Worker is named `jazz-master`, not the
+`jazz-master-web` that `wrangler.jsonc` declared, so repo-local wrangler
+commands had been targeting a non-existent Worker; and a Clerk secret key does
+not encode its instance, so the key pair can only be compared by asking Clerk
+for the signing keys each key reaches. TASK-085 added `/trpc/clerkKeys` for
+exactly that and made DEPLOY-01 a P0 regression scenario.
+
 ## 2026-07-10 — Current roadmap retired before fresh MVP grooming
 
 Owner direction retired EPIC-002 through EPIC-006, EPIC-010, TASK-044, and the

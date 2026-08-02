@@ -99,6 +99,25 @@ export function logDatabaseSmoke(
   })
 }
 
+export function logClerkKeyCheck(
+  logger: StructuredLogger,
+  metadata: RequestLogMetadata | null,
+  event: {
+    outcome: LogOutcome
+    status: number
+    errorKind?: 'unconfigured_runtime' | 'instance_mismatch' | 'check_failed'
+    error?: unknown
+  },
+): void {
+  logger.emit(event.outcome === 'ok' ? 'info' : 'error', {
+    event: 'clerk.keys.completed',
+    procedure: 'clerkKeys',
+    route: '/trpc/clerkKeys',
+    ...metadata,
+    ...event,
+  })
+}
+
 export function statusFromTrpcError(error: TRPCError | undefined): number {
   return error ? getHTTPStatusCodeFromError(error) : 200
 }

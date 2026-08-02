@@ -45,7 +45,45 @@ CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/app
 public Worker var; `CLERK_SECRET_KEY` must remain a Worker secret and must not be
 committed. Local Wrangler runs load the same runtime values from the gitignored
 `codebase/apps/web/.dev.vars`. The deployed Worker secret is owner-managed in
-Cloudflare; agents do not run `wrangler login` or commit it (ADR-009).
+Cloudflare; agents do not run `wrangler login` or commit it (ADR-009, and its
+2026-08-02 amendment recording where that no longer holds).
+
+### The two keys must belong to the same Clerk instance
+
+Because the publishable key is committed and the secret key is set out-of-band,
+they can drift onto different Clerk instances. When they do, Clerk's handshake
+verification fails and `@clerk/backend` rethrows it — for development instances
+it does not degrade to signed-out — so **every browser request returns a bare
+500, including the public landing page** (ISSUE-011).
+
+Nothing else in the app calls the Clerk Backend API, so plain `curl` probes,
+`/trpc/health`, `/trpc/dbSmoke`, and the `/app` → `/sign-in` redirect all keep
+returning 200 while auth is completely broken. Two checks catch it — run both
+after any deploy that changed Clerk keys:
+
+```sh
+# 1. The key-pair check, executed inside the Worker.
+curl -s https://jazz-master.premysl-ciompa.workers.dev/trpc/clerkKeys
+
+# 2. A browser-shaped landing-page request. Without these headers Clerk skips
+#    the handshake entirely and the probe passes against a broken site.
+curl -s -o /dev/null -w '%{http_code}\n' -L \
+  -H 'Accept: text/html' -H 'Sec-Fetch-Dest: document' \
+  https://jazz-master.premysl-ciompa.workers.dev/
+```
+
+Expect `"status":"ok"` and `200`. A `"status":"mismatch"` means the deployed
+secret belongs to a different Clerk app than the committed publishable key; fix
+it by uploading the secret key from the Clerk app whose Frontend API host
+matches the decoded publishable key.
+
+### Worker name
+
+The deployed Worker is `jazz-master` (serving
+`jazz-master.premysl-ciompa.workers.dev`), and `wrangler.jsonc` must keep that
+name. It read `jazz-master-web` until ISSUE-011, so repo-local wrangler commands
+silently targeted a Worker that does not exist and a bare `wrangler deploy`
+would have created a second one at a different URL.
 
 ## Dedicated Clerk test account
 

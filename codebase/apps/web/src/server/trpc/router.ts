@@ -4,7 +4,7 @@ import { planner } from './routers/planner'
 import { preferences } from './routers/preferences'
 import { profile } from './routers/profile'
 import { sessions } from './routers/sessions'
-import { dbSmoke, health } from './routers/system'
+import { clerkKeys, dbSmoke, health } from './routers/system'
 import { users } from './routers/users'
 
 // `health` mounts at the root (not under a `system.` prefix) so the endpoint
@@ -12,6 +12,7 @@ import { users } from './routers/users'
 export const appRouter = router({
   health,
   dbSmoke,
+  clerkKeys,
   auth,
   planner,
   preferences,
