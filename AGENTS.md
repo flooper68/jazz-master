@@ -50,11 +50,11 @@ Read a page with `read_wiki_file` (`jazz-master/<path>`), or browse
 | Engineering log | `records/engineering-log.md` |
 | Manual browser regression pack | `processes/regression-pack.md` |
 
-The repo itself keeps only this file, the code, and two frozen layers:
-`strategy/` (owner-only vision and goals — **read-only for agents**, propose
-changes to the owner instead) and the pre-migration corpus (`processes/`,
-`work/`, `notes/`, `research/`, `wiki/`, `architecture/`), frozen at ADR-014
-as history — never edit it, and never treat it as current process.
+The repo itself keeps only this file, the code, and `strategy/` (owner-only
+vision and goals — **read-only for agents**, propose changes to the owner
+instead). The pre-migration corpus (`processes/`, `work/`, `notes/`,
+`research/`, `wiki/`, `architecture/`, `systems/`, `artifacts/`) was removed
+after the ADR-014 migration and lives in git history.
 
 ## Code
 
