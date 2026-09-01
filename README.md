@@ -53,11 +53,8 @@ and documentation live in the project wiki.
 | Where | What |
 |---|---|
 | `codebase/` | The code — Bun workspaces: `apps/web` (the app) · `packages/theory` (pure domain core) |
-| `strategy/` | Vision and goals — why we build (owner-maintained) |
 | `AGENTS.md` | Contributor/agent index — start here (`CLAUDE.md` is a symlink to it) |
 
-The pre-migration knowledge system (`processes/`, `work/`, `notes/`,
-`research/`, `wiki/`, `architecture/`, and friends) is preserved in git
-history up to commit `d898dd5`.
-
-Start with the vision: [`strategy/VIS-001-jazz-master.md`](strategy/VIS-001-jazz-master.md).
+The pre-migration knowledge system (`processes/`, `work/`, `strategy/`, and
+friends) is preserved in git history. The vision lives in the chaos-house
+project's `problem` and `strategy` declarations.

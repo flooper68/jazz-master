@@ -10,10 +10,10 @@ link.
 
 ## How work runs here (chaos-house)
 
-Since 2026-09-01 (ADR-014) the operating model lives in **chaos-house**, the
-owner's self-hosted APS orchestrator, as the project **`jazz-master`**
-(task key `JM`). The project is declared by five wiki pages — `problem`,
-`strategy`, `verification`, `process`, `current-state` — and in one breath:
+The operating model lives in **chaos-house**, the owner's self-hosted APS
+orchestrator, as the project **`jazz-master`** (task key `JM`, ADR-014). The
+project is declared by five wiki pages — `problem`, `strategy`,
+`verification`, `process`, `current-state` — and in one breath:
 
 - **Tasks** (`JM-n`) are bounded units of work on the board — the only things
   a development session implements.
@@ -24,7 +24,8 @@ owner's self-hosted APS orchestrator, as the project **`jazz-master`**
   pinned — it carries the conventions and checks for that kind of work, which
   is why this file does not repeat them. All session types are manual for now.
 - Durable knowledge lives in the **project wiki**; the timeline holds the
-  operational history.
+  operational history. Direction — the `problem`/`strategy` declarations —
+  changes only with the owner in session.
 
 **An interactive session with the owner:** read
 `processes/interactive-sessions.md` in the project wiki before doing real
@@ -41,7 +42,8 @@ Read a page with `read_wiki_file` (`jazz-master/<path>`), or browse
 
 | What | Where |
 |---|---|
-| How each kind of work runs — one page per session type | `processes/` (index in `process.html`) |
+| Vision, direction, and how work runs | the five project declarations |
+| One page per session type | `processes/` (index in `process.html`) |
 | Dev conventions, testing, git, review gates | `processes/development-practices.md`, `testing-strategy.md`, `git-workflow.md`, `code-review.md` |
 | Architecture — the living map | `docs/architecture.md` |
 | Decision records (ADR numbering continues here) | `docs/decisions/` |
@@ -50,11 +52,9 @@ Read a page with `read_wiki_file` (`jazz-master/<path>`), or browse
 | Engineering log | `records/engineering-log.md` |
 | Manual browser regression pack | `processes/regression-pack.md` |
 
-The repo itself keeps only this file, the code, and `strategy/` (owner-only
-vision and goals — **read-only for agents**, propose changes to the owner
-instead). The pre-migration corpus (`processes/`, `work/`, `notes/`,
-`research/`, `wiki/`, `architecture/`, `systems/`, `artifacts/`) was removed
-after the ADR-014 migration and lives in git history.
+The repo itself keeps only this file, a `README.md` that says how to run the
+app, and the code. The pre-migration knowledge system is preserved in git
+history (up to `d898dd5`).
 
 ## Code
 
