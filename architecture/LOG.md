@@ -4,6 +4,16 @@ Chronological, append-only. One short entry per notable event: migrations, dead 
 
 ---
 
+## 2026-09-01 — operating model migrated into chaos-house (ADR-014)
+
+The whole operating layer moved to the chaos-house project `jazz-master`
+(key `JM`): processes became session-type wiki pages, the 22 open
+insights/issues became stream records, ADRs/research/wiki/log/regression pack
+were ported to the project wiki, and `AGENTS.md` was rewritten as a thin
+index pointing there. The repo keeps code, `strategy/`, and the frozen
+pre-migration corpus. **This file is frozen** — the log continues at
+`records/engineering-log.md` in the project wiki.
+
 ## 2026-08-02 — local builds were baking CLERK_SECRET_KEY into dist/ (TASK-086)
 
 `astro build` with a local `.env` present wrote the plaintext secret into
