@@ -58,7 +58,7 @@ test('happy path: pick a lesson, play it through, and the session is stored', as
   await expect(heading).toBeVisible()
   await expect(heading).toBeFocused()
   await expect(
-    page.getByRole('img', { name: /on the fretboard, frets 0 to 4$/ }),
+    page.getByRole('img', { name: /^C major — open position tab, \d+ notes$/ }),
   ).toBeVisible()
 
   await gradeThroughLesson(page)
@@ -78,7 +78,7 @@ test('happy path: pick a lesson, play it through, and the session is stored', as
   )
 })
 
-test('Begin starts the timer and the click; Next opens grading', async ({ page }) => {
+test('Play starts the timer and the click; Next opens grading', async ({ page }) => {
   await page.goto('/app/lessons/scales-major-open')
 
   await expect(page.getByText('2:00')).toBeVisible()
@@ -86,9 +86,16 @@ test('Begin starts the timer and the click; Next opens grading', async ({ page }
   await expect(page.getByText('2:00')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Click' })).toBeChecked()
 
-  await page.getByRole('button', { name: /^Begin / }).click()
+  await page.getByRole('button', { name: /^Play / }).click()
   await expect(page.getByText(/1:5\d/)).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
+  // The cursor is on the tab and moves with the clock.
+  const cursor = page.locator('[data-current]')
+  await expect(cursor).toHaveCount(1)
+  const noteAtFirstLook = (await cursor.getAttribute('data-note'))!
+  await expect(cursor).not.toHaveAttribute('data-note', noteAtFirstLook, {
+    timeout: 3_000,
+  })
 
   await page.getByRole('button', { name: /^Next: finish / }).click()
   const grade = page.getByRole('group', { name: /^Grade / })

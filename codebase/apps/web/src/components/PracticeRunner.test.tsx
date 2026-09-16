@@ -17,18 +17,23 @@ const lesson: Lesson = {
     {
       id: 'fx-1',
       title: 'C major — open position',
-      material: { kind: 'scale', root: 'C', scale: 'ionian' },
-      window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
+      notes: [
+        { string: 5, fret: 3, beats: 1 },
+        { string: 4, fret: 0, beats: 1 },
+        { string: 4, fret: 2, beats: 1 },
+      ],
     },
     {
       id: 'fx-2',
       title: 'G7 arpeggio — open position',
-      material: { kind: 'arpeggio', root: 'G', quality: '7' },
-      window: { min: 0, max: 4 },
-      tempoBpm: 90,
+      tempoBpm: 120,
       duration: { kind: 'repetitions', count: 2 },
+      notes: [
+        { string: 6, fret: 3, beats: 1 },
+        { string: 5, fret: 2, beats: 1 },
+      ],
     },
   ],
 }
@@ -56,6 +61,8 @@ function fakeClick() {
   return { track, calls }
 }
 
+const clock = { ms: 0 }
+
 function renderRunner({
   onSessionChange = vi.fn(),
   onExit = vi.fn(),
@@ -73,13 +80,31 @@ function renderRunner({
       onSessionChange={onSessionChange}
       onExit={onExit}
       createClick={() => click.track}
+      now={() => clock.ms}
     />,
   )
   return { ...view, onSessionChange, onExit, click }
 }
 
 async function begin(user: ReturnType<typeof userEvent.setup>, title: string) {
-  await user.click(screen.getByRole('button', { name: `Begin ${title}` }))
+  await user.click(screen.getByRole('button', { name: `Play ${title}` }))
+}
+
+/** The runner's cursor polls on animation frames; jsdom needs a nudge. */
+async function advanceClock(ms: number) {
+  clock.ms += ms
+  await act(async () => {
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  })
+}
+
+function currentNote(): string | null {
+  return (
+    document
+      .querySelector('[data-current]')
+      ?.getAttribute('data-note') ?? null
+  )
 }
 
 async function finishAndGrade(
@@ -94,13 +119,14 @@ async function finishAndGrade(
 
 describe('PracticeRunner', () => {
   beforeEach(() => {
+    clock.ms = 0
     vi.spyOn(Date, 'now').mockReturnValue(1_000)
   })
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('shows the first exercise on the fretboard with its tempo and time', () => {
+  it('shows the first exercise as a tab with its tempo and time', () => {
     renderRunner()
     expect(
       screen.getByRole('heading', { level: 1, name: 'Fixture lesson' }),
@@ -112,10 +138,9 @@ describe('PracticeRunner', () => {
     expect(screen.getByText('60 BPM')).toBeInTheDocument()
     expect(screen.getByText('1:00')).toBeInTheDocument()
     expect(
-      screen.getByRole('img', {
-        name: 'C major — open position on the fretboard, frets 0 to 4',
-      }),
+      screen.getByRole('img', { name: 'C major — open position tab, 3 notes' }),
     ).toBeInTheDocument()
+    expect(currentNote()).toBeNull()
     expect(screen.queryByRole('group', { name: /^Grade / })).toBeNull()
   })
 
@@ -206,22 +231,45 @@ describe('PracticeRunner', () => {
     expect(click.calls).toEqual([])
   })
 
-  it('counts repetitions and grades when the target is reached', async () => {
+  it('moves the cursor through the tab on the clock and loops', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+
+    await begin(user, 'C major — open position')
+    expect(currentNote()).toBe('0')
+    expect(
+      screen.getByRole('img', { name: 'C major — open position tab, 3 notes, on note 1' }),
+    ).toBeInTheDocument()
+
+    await advanceClock(1_000)
+    expect(currentNote()).toBe('1')
+    await advanceClock(1_000)
+    expect(currentNote()).toBe('2')
+    await advanceClock(1_000)
+    expect(currentNote()).toBe('0')
+    expect(
+      screen.getByRole('img', { name: 'C major — open position tab, 3 notes, on note 1' }),
+    ).toBeInTheDocument()
+  })
+
+  it('counts passes and grades when the target is reached', async () => {
     const user = userEvent.setup()
     renderRunner()
     await begin(user, 'C major — open position')
     await finishAndGrade(user, 'C major — open position', 'Got it')
 
     expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
-    expect(screen.getByText('0 of 2 repetitions')).toBeInTheDocument()
+    expect(screen.getByText('0 of 2 passes')).toBeInTheDocument()
     await begin(user, 'G7 arpeggio — open position')
-    await user.click(screen.getByRole('button', { name: 'Count rep' }))
-    expect(screen.getByText('1 of 2 repetitions')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Count rep' }))
+    // 120 BPM, two beats per pass: one pass per second.
+    await advanceClock(1_100)
+    expect(screen.getByText('1 of 2 passes')).toBeInTheDocument()
+    await advanceClock(1_000)
 
     expect(
       screen.getByRole('group', { name: 'Grade G7 arpeggio — open position' }),
     ).toBeInTheDocument()
+    expect(currentNote()).toBeNull()
   })
 
   it('persists every grade and finishes with the summary', async () => {

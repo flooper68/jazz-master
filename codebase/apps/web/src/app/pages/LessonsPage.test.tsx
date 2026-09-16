@@ -12,9 +12,6 @@ describe('LessonsPage', () => {
   it('lists every lesson under its area with a link into the player', async () => {
     await renderRoute('/')
     expect(screen.getByRole('heading', { name: 'Scales' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Arpeggios' }),
-    ).toBeInTheDocument()
     for (const lesson of LESSONS) {
       expect(
         screen.getByRole('link', { name: `Start ${lesson.title}` }),
@@ -22,18 +19,12 @@ describe('LessonsPage', () => {
     }
   })
 
-  it('shows level, duration, exercise count, and prerequisites per lesson', async () => {
+  it('shows level, duration, and exercise count per lesson', async () => {
     await renderRoute('/')
-    const dorianItem = screen
-      .getByText('Dorian — the ii-chord scale')
-      .closest('li')
-    expect(dorianItem).not.toBeNull()
-    const item = within(dorianItem as HTMLElement)
-    expect(item.getByText('Level 2 · ~12 min')).toBeInTheDocument()
-    expect(
-      item.getByText(
-        '4 exercises · after: Major scale I — open position, Major scale II — middle position, adding flat keys',
-      ),
-    ).toBeInTheDocument()
+    const item = within(
+      screen.getByText('Major scale I — open position').closest('li') as HTMLElement,
+    )
+    expect(item.getByText('Level 1 · ~6 min')).toBeInTheDocument()
+    expect(item.getByText('3 exercises')).toBeInTheDocument()
   })
 })

@@ -1,17 +1,21 @@
-import { noteName } from '@jazz-master/theory'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ExerciseGrade, PracticeSession } from '../appData/session'
 import { createClickTrack, type ClickTrack } from '../audio/click'
-import { resolveExercise, type Exercise, type Lesson } from '../content'
-import { Fretboard, type FretboardHighlight } from './Fretboard'
+import {
+  beatsElapsed,
+  playheadAt,
+  type Exercise,
+  type Lesson,
+} from '../content'
+import { Tab } from './Tab'
 import { toSessionRecord, usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
 
 /**
- * The lesson player: one exercise at a time — what to play on the fretboard,
- * a click at the exercise tempo, a timer or rep counter, and a self-grade —
- * then the lesson summary. Session flow lives in usePracticeRunner; this
- * component only renders it.
+ * The lesson player: one exercise at a time — its tab, a click at the
+ * exercise tempo with a cursor moving through the tab on the same clock, a
+ * timer or pass counter, and a self-grade — then the lesson summary. Session
+ * flow lives in usePracticeRunner; this component only renders it.
  */
 
 const GRADE_LABELS: Record<ExerciseGrade, string> = {
@@ -37,6 +41,8 @@ interface PracticeRunnerProps {
   onExit: () => void
   /** Test seam: the browser's Web Audio click, swapped for a fake in jsdom. */
   createClick?: () => ClickTrack
+  /** Test seam: the playhead clock, ms. Defaults to performance.now. */
+  now?: () => number
 }
 
 interface ClickControl {
@@ -51,6 +57,7 @@ export function PracticeRunner({
   onSessionChange,
   onExit,
   createClick = createClickTrack,
+  now = () => performance.now(),
 }: PracticeRunnerProps) {
   const { state, beginExercise, completeExercise, grade } = usePracticeRunner({
     lesson,
@@ -159,12 +166,13 @@ export function PracticeRunner({
       <p className="mt-1 text-sm text-muted">
         Exercise {state.exerciseIndex + 1} of {lesson.exercises.length}
       </p>
-      {/* Keyed so per-exercise state (timer, reps) resets on advance. */}
+      {/* Keyed so per-exercise state (timer, cursor) resets on advance. */}
       <ExercisePanel
         key={exercise.id}
         exercise={exercise}
         isFirst={state.exerciseIndex === 0}
         click={click}
+        now={now}
         clickOn={clickOn}
         onClickOnChange={setClickOn}
         onBegin={beginExercise}
@@ -181,6 +189,7 @@ function ExercisePanel({
   exercise,
   isFirst,
   click,
+  now,
   clickOn,
   onClickOnChange,
   onBegin,
@@ -190,6 +199,7 @@ function ExercisePanel({
   exercise: Exercise
   isFirst: boolean
   click: ClickControl
+  now: () => number
   clickOn: boolean
   onClickOnChange: (on: boolean) => void
   onBegin: () => void
@@ -198,7 +208,9 @@ function ExercisePanel({
 }) {
   const [status, setStatus] = useState<PanelStatus>('ready')
   const [clickError, setClickError] = useState<string | null>(null)
-  const [repsDone, setRepsDone] = useState(0)
+  // The cursor: which note is sounding and how many passes are complete.
+  const [playhead, setPlayhead] = useState<{ noteIndex: number; pass: number } | null>(null)
+  const playStartedAtRef = useRef<number | null>(null)
   // Grading entered by the player's own action (Next, last rep) moves focus
   // to the grades; a timer expiry only announces, so focus is not stolen.
   const [focusGrades, setFocusGrades] = useState(false)
@@ -209,22 +221,39 @@ function ExercisePanel({
     focusOnMount: !isFirst,
   })
 
-  const highlights = useMemo<FretboardHighlight[]>(() => {
-    const { notes, positions } = resolveExercise(exercise)
-    const rootName = noteName(notes[0])
-    return positions.map((position) => {
-      const label = noteName(position.note)
-      return {
-        string: position.string,
-        fret: position.fret,
-        label,
-        role: label === rootName ? 'root' : 'other',
-      }
-    })
-  }, [exercise])
 
   // Silence the click whenever this exercise leaves the screen.
   useEffect(() => () => click.stop(), [click])
+
+  // The cursor follows the wall clock from the moment Play was pressed — the
+  // same instant the click started — and only re-renders when the note
+  // changes. Reaching the pass count for a repetitions exercise ends it.
+  const passTarget =
+    exercise.duration.kind === 'repetitions' ? exercise.duration.count : null
+  useEffect(() => {
+    if (status !== 'playing') return
+    let frame = 0
+    const tick = () => {
+      const startedAt = playStartedAtRef.current
+      if (startedAt !== null) {
+        const beats = beatsElapsed((now() - startedAt) / 1000, exercise.tempoBpm)
+        const next = playheadAt(exercise.notes, beats)
+        setPlayhead((current) =>
+          current?.noteIndex === next?.noteIndex && current?.pass === next?.pass
+            ? current
+            : next,
+        )
+      }
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [status, exercise, now])
+  const passesDone = playhead?.pass ?? 0
+  const passesComplete = passTarget !== null && passesDone >= passTarget
+  useEffect(() => {
+    if (passesComplete) completeRef.current(false)
+  }, [passesComplete])
 
   useEffect(() => {
     if (status === 'grading' && focusGrades) firstGradeRef.current?.focus()
@@ -241,6 +270,8 @@ function ExercisePanel({
 
   function begin(): void {
     onBegin()
+    playStartedAtRef.current = now()
+    setPlayhead(playheadAt(exercise.notes, 0))
     setStatus('playing')
     if (clickOn) startClick()
   }
@@ -252,6 +283,8 @@ function ExercisePanel({
     setFocusGrades(byPlayer)
     setStatus('grading')
   }
+  const completeRef = useRef(complete)
+  completeRef.current = complete
 
   function toggleClick(): void {
     const next = !clickOn
@@ -259,13 +292,6 @@ function ExercisePanel({
     if (status !== 'playing') return
     if (next) startClick()
     else click.stop()
-  }
-
-  function countRep(): void {
-    if (exercise.duration.kind !== 'repetitions') return
-    const next = repsDone + 1
-    setRepsDone(next)
-    if (next >= exercise.duration.count) complete(true)
   }
 
   return (
@@ -289,15 +315,17 @@ function ExercisePanel({
           />
         ) : (
           <span aria-live="polite">
-            {repsDone} of {exercise.duration.count} repetitions
+            {passesDone} of {exercise.duration.count} passes
           </span>
         )}
       </p>
-      <div className="mt-3">
-        <Fretboard
-          highlights={highlights}
-          fretRange={exercise.window}
-          aria-label={`${exercise.title} on the fretboard, frets ${exercise.window.min} to ${exercise.window.max}`}
+      <div className="mt-3 overflow-x-auto rounded-lg border border-line bg-panel-2 p-3">
+        <Tab
+          notes={exercise.notes}
+          currentIndex={status === 'playing' ? (playhead?.noteIndex ?? null) : null}
+          aria-label={`${exercise.title} tab, ${exercise.notes.length} notes${
+            status === 'playing' && playhead ? `, on note ${playhead.noteIndex + 1}` : ''
+          }`}
         />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -305,32 +333,21 @@ function ExercisePanel({
           <button
             type="button"
             onClick={begin}
-            aria-label={`Begin ${exercise.title}`}
+            aria-label={`Play ${exercise.title}`}
             className={BUTTON_PRIMARY}
           >
-            Begin
+            Play
           </button>
         )}
         {status === 'playing' && (
-          <>
-            {exercise.duration.kind === 'repetitions' && (
-              <button
-                type="button"
-                onClick={countRep}
-                className={BUTTON_SECONDARY}
-              >
-                Count rep
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => complete(true)}
-              aria-label={`Next: finish ${exercise.title}`}
-              className={BUTTON_PRIMARY}
-            >
-              Next
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => complete(true)}
+            aria-label={`Next: finish ${exercise.title}`}
+            className={BUTTON_PRIMARY}
+          >
+            Next
+          </button>
         )}
         {status !== 'grading' && (
           <label className="flex items-center gap-2 text-sm text-fg-2">

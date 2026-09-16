@@ -1,5 +1,5 @@
-import { CHORD_QUALITIES, parseNote, SCALE_TYPES } from '@jazz-master/theory'
-import type { Exercise, Lesson } from './types'
+import { STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
+import type { Exercise, Lesson, TabNote } from './types'
 
 /** One thing wrong with a lesson set; an empty result means valid. */
 export interface LessonProblem {
@@ -8,28 +8,24 @@ export interface LessonProblem {
   message: string
 }
 
+function noteProblem(note: TabNote, index: number): string | null {
+  if (!STRING_NUMBERS.includes(note.string as GuitarString)) {
+    return `note ${index}: string must be 1–6, got ${note.string}`
+  }
+  if (!Number.isInteger(note.fret) || note.fret < 0) {
+    return `note ${index}: fret must be a non-negative integer, got ${note.fret}`
+  }
+  if (!(note.beats > 0)) {
+    return `note ${index}: beats must be positive, got ${note.beats}`
+  }
+  return null
+}
+
 function exerciseProblems(lesson: Lesson, exercise: Exercise): LessonProblem[] {
   const problems: LessonProblem[] = []
   const problem = (message: string) =>
     problems.push({ lessonId: lesson.id, exerciseId: exercise.id, message })
 
-  const { material } = exercise
-  if (!parseNote(material.root)) {
-    problem(`unparseable root "${material.root}"`)
-  }
-  if (material.kind === 'scale' && !SCALE_TYPES.includes(material.scale)) {
-    problem(`unknown scale type "${material.scale}"`)
-  }
-  if (
-    material.kind === 'arpeggio' &&
-    !CHORD_QUALITIES.includes(material.quality)
-  ) {
-    problem(`unknown chord quality "${material.quality}"`)
-  }
-  const { min, max } = exercise.window
-  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max) {
-    problem(`invalid fret window ${min}–${max}`)
-  }
   if (!(exercise.tempoBpm > 0)) {
     problem(`tempo must be positive, got ${exercise.tempoBpm}`)
   }
@@ -40,6 +36,13 @@ function exerciseProblems(lesson: Lesson, exercise: Exercise): LessonProblem[] {
   if (!(amount > 0)) {
     problem(`duration must be positive, got ${amount}`)
   }
+  if (exercise.notes.length === 0) {
+    problem('exercise has no notes')
+  }
+  exercise.notes.forEach((note, index) => {
+    const message = noteProblem(note, index)
+    if (message) problem(message)
+  })
   return problems
 }
 
@@ -112,9 +115,9 @@ function cycleProblems(lessons: readonly Lesson[]): LessonProblem[] {
 }
 
 /**
- * Validate a whole lesson set: per-exercise theory references and sanity,
- * per-lesson metadata, and the cross-lesson prerequisite graph (unknown ids,
- * cycles). Returns every problem found; empty means the set is consistent.
+ * Validate a whole lesson set: per-note sanity, per-exercise and per-lesson
+ * metadata, and the cross-lesson prerequisite graph (unknown ids, cycles).
+ * Returns every problem found; empty means the set is consistent.
  */
 export function validateLessons(
   lessons: readonly Lesson[],

@@ -6,10 +6,12 @@ function exercise(overrides: Partial<Exercise> = {}): Exercise {
   return {
     id: 'ex-1',
     title: 'C major, open position',
-    material: { kind: 'scale', root: 'C', scale: 'ionian' },
-    window: { min: 0, max: 4 },
     tempoBpm: 80,
     duration: { kind: 'minutes', minutes: 5 },
+    notes: [
+      { string: 5, fret: 3, beats: 0.5 },
+      { string: 4, fret: 0, beats: 0.5 },
+    ],
     ...overrides,
   }
 }
@@ -37,52 +39,34 @@ describe('validateLessons', () => {
     expect(validateLessons(lessons)).toEqual([])
   })
 
-  it('flags an unparseable exercise root', () => {
-    const broken = lesson({
-      exercises: [
-        exercise({
-          material: { kind: 'scale', root: 'X#' as never, scale: 'ionian' },
-        }),
-      ],
-    })
-    expect(validateLessons([broken])).toEqual([
-      {
-        lessonId: 'lesson-1',
-        exerciseId: 'ex-1',
-        message: 'unparseable root "X#"',
-      },
+  it('flags a note off the neck or with no length', () => {
+    const problems = validateLessons([
+      lesson({
+        exercises: [
+          exercise({
+            notes: [
+              { string: 7 as never, fret: 0, beats: 0.5 },
+              { string: 5, fret: -1, beats: 0.5 },
+              { string: 5, fret: 2.5, beats: 0.5 },
+              { string: 5, fret: 3, beats: 0 },
+            ],
+          }),
+        ],
+      }),
     ])
+    const messages = problems.map((problem) => problem.message)
+    expect(messages).toEqual([
+      'note 0: string must be 1–6, got 7',
+      'note 1: fret must be a non-negative integer, got -1',
+      'note 2: fret must be a non-negative integer, got 2.5',
+      'note 3: beats must be positive, got 0',
+    ])
+    expect(problems[0]).toMatchObject({ lessonId: 'lesson-1', exerciseId: 'ex-1' })
   })
 
-  it('flags an unknown scale type and chord quality', () => {
-    const broken = lesson({
-      exercises: [
-        exercise({
-          id: 'ex-scale',
-          material: { kind: 'scale', root: 'C', scale: 'superLocrian' as never },
-        }),
-        exercise({
-          id: 'ex-arp',
-          material: { kind: 'arpeggio', root: 'C', quality: 'maj9' as never },
-        }),
-      ],
-    })
-    const messages = validateLessons([broken]).map((p) => p.message)
-    expect(messages).toContain('unknown scale type "superLocrian"')
-    expect(messages).toContain('unknown chord quality "maj9"')
-  })
-
-  it('flags an invalid fret window', () => {
-    const broken = lesson({
-      exercises: [exercise({ window: { min: 5, max: 2 } })],
-    })
-    expect(validateLessons([broken])).toEqual([
-      {
-        lessonId: 'lesson-1',
-        exerciseId: 'ex-1',
-        message: 'invalid fret window 5–2',
-      },
-    ])
+  it('flags an exercise with no notes', () => {
+    const problems = validateLessons([lesson({ exercises: [exercise({ notes: [] })] })])
+    expect(problems.map((problem) => problem.message)).toEqual(['exercise has no notes'])
   })
 
   it('flags non-positive tempo and duration', () => {

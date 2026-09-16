@@ -17,18 +17,16 @@ const lesson: Lesson = {
     {
       id: 'fx-1',
       title: 'C major — open position',
-      material: { kind: 'scale', root: 'C', scale: 'ionian' },
-      window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
+      notes: [{ string: 5, fret: 3, beats: 1 }],
     },
     {
       id: 'fx-2',
       title: 'G7 arpeggio — open position',
-      material: { kind: 'arpeggio', root: 'G', quality: '7' },
-      window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'repetitions', count: 8 },
+      notes: [{ string: 6, fret: 3, beats: 1 }],
     },
   ],
 }

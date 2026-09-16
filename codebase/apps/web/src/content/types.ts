@@ -1,41 +1,33 @@
-import type {
-  ChordQuality,
-  FretRange,
-  Letter,
-  ScaleType,
-} from '@jazz-master/theory'
+import type { GuitarString } from '@jazz-master/theory'
 
 /**
- * A note name as authored in content: natural, single flat, or single sharp.
- * Narrower than what parseNote accepts (no double accidentals) — curriculum
- * roots never need them, and the literal type catches typos at compile time.
+ * A lesson is a series of notes, written as tablature. The player renders the
+ * tab and moves a cursor through it on the click's clock; nothing is resolved
+ * from theory at play time. Theory helpers (scale/arpeggio generators) are
+ * authoring tools that emit these notes — see `authoring.ts`.
  */
-export type NoteName = Letter | `${Letter}b` | `${Letter}#`
 
-/**
- * What an exercise asks the player to play — a reference into the theory
- * core, never a hard-coded note list. Only the kinds TASK-012/013 consume
- * exist; chord-voicing and standards material arrives with its first task.
- */
-export type ExerciseMaterial =
-  | { kind: 'scale'; root: NoteName; scale: ScaleType }
-  | { kind: 'arpeggio'; root: NoteName; quality: ChordQuality }
+/** One note of a tab: where to play it and how long it lasts, in beats. */
+export interface TabNote {
+  string: GuitarString
+  fret: number
+  /** Length in beats at the exercise tempo (0.5 = an eighth in 4/4). */
+  beats: number
+}
 
-/** How long to stay on an exercise: clocked or counted. */
+/** How long to stay on an exercise: clocked, or a number of passes through the tab. */
 export type ExerciseDuration =
   | { kind: 'minutes'; minutes: number }
   | { kind: 'repetitions'; count: number }
 
-/** One playable unit: material + where on the neck + tempo + how long. The player renders it on the fretboard. */
+/** One playable unit: a tab, a tempo, and how long to loop it. */
 export interface Exercise {
   /** Unique across the whole curriculum — session records key on it. */
   id: string
   title: string
-  material: ExerciseMaterial
-  /** Fret window the material is played in (the position, per positions.ts). */
-  window: FretRange
   tempoBpm: number
   duration: ExerciseDuration
+  notes: readonly TabNote[]
 }
 
 export type LessonArea = 'scales' | 'arpeggios' | 'chords' | 'standards'

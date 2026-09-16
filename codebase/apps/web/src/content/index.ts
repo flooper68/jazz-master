@@ -1,11 +1,17 @@
 export { LESSONS } from './lessons'
-export { resolveExercise, type ResolvedExercise } from './resolve'
+export { scaleTab } from './authoring'
+export {
+  beatsElapsed,
+  noteStarts,
+  passBeats,
+  playheadAt,
+  type Playhead,
+} from './timeline'
 export { validateLessons, type LessonProblem } from './validate'
 export type {
   Exercise,
   ExerciseDuration,
-  ExerciseMaterial,
   Lesson,
   LessonArea,
-  NoteName,
+  TabNote,
 } from './types'

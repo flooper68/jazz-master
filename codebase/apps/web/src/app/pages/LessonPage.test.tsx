@@ -25,7 +25,7 @@ afterEach(() => {
 })
 
 async function gradeCurrentExercise(user: User, grade: string): Promise<void> {
-  await user.click(screen.getByRole('button', { name: /^Begin / }))
+  await user.click(screen.getByRole('button', { name: /^Play / }))
   await user.click(screen.getByRole('button', { name: /^Next: finish / }))
   const group = screen.getByRole('group', { name: /^Grade / })
   await user.click(within(group).getByRole('button', { name: grade }))
@@ -86,7 +86,7 @@ describe('LessonPage', () => {
     expect(getTrpcTestSessions()[0].results).toHaveLength(2)
   })
 
-  it('starts a fresh run when navigating from one lesson to another', async () => {
+  it('starts a fresh run when leaving and reopening a lesson', async () => {
     const user = userEvent.setup()
     await renderRoute(`/lessons/${lesson.id}`)
     await gradeCurrentExercise(user, 'Got it')
@@ -94,25 +94,21 @@ describe('LessonPage', () => {
       expect(getTrpcTestSessions()).toHaveLength(1)
     })
 
-    const other = LESSONS[1]
-    await user.click(screen.getByRole('link', { name: 'woodshed' }))
+    await user.click(screen.getByRole('button', { name: 'End lesson' }))
     await user.click(
-      await screen.findByRole('link', { name: `Start ${other.title}` }),
+      await screen.findByRole('link', { name: `Start ${lesson.title}` }),
     )
     expect(
-      await screen.findByRole('heading', { level: 1, name: other.title }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(`Exercise 1 of ${other.exercises.length}`),
+      await screen.findByText(`Exercise 1 of ${lesson.exercises.length}`),
     ).toBeInTheDocument()
 
     await gradeCurrentExercise(user, 'Shaky')
     await waitFor(() => {
       expect(getTrpcTestSessions()).toHaveLength(2)
     })
-    const stored = getTrpcTestSessions().find((s) => s.lessonId === other.id)
-    expect(stored?.results).toEqual([
-      { exerciseId: other.exercises[0].id, grade: 'shaky' },
+    expect(getTrpcTestSessions().map((s) => s.results[0].grade).sort()).toEqual([
+      'got-it',
+      'shaky',
     ])
   })
 

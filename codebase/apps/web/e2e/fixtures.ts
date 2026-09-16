@@ -77,7 +77,7 @@ export type { Page }
 
 /** Begin, finish, and grade the current exercise "Got it". */
 export async function gradeCurrentExercise(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /^Begin / }).click()
+  await page.getByRole('button', { name: /^Play / }).click()
   await page.getByRole('button', { name: /^Next: finish / }).click()
   const grade = page.getByRole('group', { name: /^Grade / })
   await expect(grade).toBeVisible()
@@ -93,7 +93,7 @@ export async function gradeThroughLesson(page: Page): Promise<void> {
   for (let i = 0; i < 20; i++) {
     // Wait until the player settles into one of its two states before acting.
     await expect(
-      summaryHeading.or(page.getByRole('button', { name: /^Begin / })).first(),
+      summaryHeading.or(page.getByRole('button', { name: /^Play / })).first(),
     ).toBeVisible()
     if (await summaryHeading.isVisible()) break
     await gradeCurrentExercise(page)

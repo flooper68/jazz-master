@@ -11,5 +11,4 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 export const Default: Story = {}
-export const Arpeggios: Story = { args: { path: `/lessons/${LESSONS.find((lesson) => lesson.area === 'arpeggios')!.id}` } }
 export const SaveError: Story = { args: { scenario: 'error' } }
