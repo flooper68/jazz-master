@@ -45,7 +45,7 @@ describe('Score', () => {
     expect(frets).toEqual(['3', '0', '2', '0', '2'])
     expect(container.querySelectorAll('[data-staff-note]')).toHaveLength(5)
     // Two bars of 4/4: bar numbers 1 and 2 on the rail.
-    const rail = [...container.querySelectorAll('svg > text')].map((t) => t.textContent)
+    const rail = [...container.querySelectorAll('[data-system] > text')].map((t) => t.textContent)
     expect(rail).toEqual(['1', '2'])
     // Tab numbers and note heads line up.
     const tabX = [...container.querySelectorAll('[data-note] text')].map((t) => Number(t.getAttribute('x')))
@@ -112,5 +112,31 @@ describe('Score', () => {
     ref.current!.moveCursor(1, false)
     const noteX = Number(container.querySelector('[data-note="1"] text')?.getAttribute('x'))
     expect(container.querySelector('[data-cursor]')?.getAttribute('transform')).toBe(`translate(${noteX} 0)`)
+  })
+
+  it('wraps into lines that fit the width, each with its own rail, and puts the cursor on its line', () => {
+    const { container, ref, onSeek } = renderScore({ availableWidth: 420, view: 'tab' })
+    const systems = container.querySelectorAll('[data-system]')
+    expect(systems).toHaveLength(2)
+    expect(systems[0].querySelector('[data-note="4"]')).toBeNull()
+    expect(systems[1].querySelector('[data-note="4"]')).not.toBeNull()
+    const rails = [...container.querySelectorAll('[data-system] > text')].map((t) => t.textContent)
+    expect(rails).toEqual(['1', '2'])
+    // Every line is as wide as the canvas allows.
+    const svg = container.querySelector('svg')!
+    expect(Number(svg.getAttribute('width'))).toBeLessThanOrEqual(420)
+
+    ref.current!.moveCursor(4, false)
+    const transform = container.querySelector('[data-cursor]')?.getAttribute('transform') ?? ''
+    const [, x, y] = transform.match(/translate\(([\d.]+) ([\d.]+)\)/)!.map(Number)
+    expect(y).toBeGreaterThan(0)
+    expect(x).toBe(Number(systems[1].querySelector('[data-note="4"] text')?.getAttribute('x')))
+
+    // Pressing on the second line's staff seeks into the second bar.
+    const secondSurface = systems[1].querySelector('[data-seek-surface]')!
+    secondSurface.setPointerCapture = () => {}
+    secondSurface.hasPointerCapture = () => false
+    fireEvent.pointerDown(secondSurface, { clientX: x, clientY: y + 30, button: 0 })
+    expect(onSeek).toHaveBeenLastCalledWith(4)
   })
 })

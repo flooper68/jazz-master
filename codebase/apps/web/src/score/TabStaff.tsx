@@ -1,7 +1,7 @@
 import { STRING_NUMBERS } from '@jazz-master/theory'
 import type { TabNote } from '../content'
 import { Flag } from './glyphs'
-import type { ScoreLayout } from './layout'
+import type { ScoreLayout, SystemLayout } from './layout'
 import { STRING_GAP } from './metrics'
 import { beamGroups, noteGlyph } from './rhythm'
 
@@ -18,17 +18,23 @@ const BEAM_THICKNESS = 3
 interface TabStaffProps {
   notes: readonly TabNote[]
   layout: ScoreLayout
+  /** The line (system) this staff draws. */
+  system: SystemLayout
   /** y of the high E string. */
   top: number
   currentIndex: number | null
 }
 
-export function TabStaff({ notes, layout, top, currentIndex }: TabStaffProps) {
+export function TabStaff({ notes, layout, system, top, currentIndex }: TabStaffProps) {
   const stringY = (string: number) => top + (string - 1) * STRING_GAP
   const bottom = stringY(6)
   const stemTop = bottom + STEM_TOP
   const glyphs = notes.map((note) => noteGlyph(note.beats))
-  const groups = beamGroups(notes.map((note) => note.beats), layout.starts, layout.beatsPerBar)
+  const inSystem = new Set(system.noteIndices)
+  // Beam groups never cross a bar line, so none straddles a line break.
+  const groups = beamGroups(notes.map((note) => note.beats), layout.starts, layout.beatsPerBar).filter(
+    (group) => inSystem.has(group[0]),
+  )
   const grouped = new Set(groups.flat())
 
   return (
@@ -49,14 +55,15 @@ export function TabStaff({ notes, layout, top, currentIndex }: TabStaffProps) {
         <line
           key={string}
           x1={0}
-          x2={layout.endX}
+          x2={system.endX}
           y1={stringY(string)}
           y2={stringY(string)}
           className="stroke-line-strong"
           strokeWidth={string >= 5 ? 1.2 : 0.9}
         />
       ))}
-      {notes.map((note, index) => {
+      {system.noteIndices.map((index) => {
+        const note = notes[index]
         const x = layout.noteX[index]
         const y = stringY(note.string)
         const current = index === currentIndex

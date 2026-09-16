@@ -228,7 +228,7 @@ export function ExercisePlayer({
 
   return (
     <section
-      className="mt-5 rounded-2xl border border-line bg-panel shadow-[0_1px_0_var(--c-line)]"
+      className="mt-4 flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel shadow-[0_1px_0_var(--c-line)]"
       onKeyDown={onKeyDown}
       aria-label={`${exercise.title} player`}
     >
@@ -248,8 +248,7 @@ export function ExercisePlayer({
 
       {/* The scene: the score is the canvas, everything else floats over it. */}
       <div
-        className="relative mx-2 mb-2 overflow-hidden rounded-xl border border-line bg-panel-2/70"
-        style={{ height: 'clamp(440px, 62vh, 680px)' }}
+        className="relative mx-2 mb-2 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70"
         data-stage
       >
         <Score

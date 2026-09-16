@@ -98,7 +98,7 @@ export function PracticeRunner({
 
   const exercise = lesson.exercises[state.exerciseIndex]
   return (
-    <section className="max-w-5xl">
+    <section className="flex min-h-full flex-col">
       <div className="flex items-baseline justify-between gap-4">
         <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
           {lesson.title}

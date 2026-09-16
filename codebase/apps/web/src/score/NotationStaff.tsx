@@ -1,7 +1,7 @@
 import type { KeySignature } from '@jazz-master/theory'
 import type { TabNote } from '../content'
 import { Accidental, Flag, HEAD_RX, NoteHeadGlyph, TrebleClef } from './glyphs'
-import type { ScoreLayout } from './layout'
+import type { ScoreLayout, SystemLayout } from './layout'
 import { HALF_GAP, LINE_GAP } from './metrics'
 import {
   BOTTOM_LINE_STEP,
@@ -24,18 +24,24 @@ const BEAM_THICKNESS = 3.6
 interface NotationStaffProps {
   notes: readonly TabNote[]
   layout: ScoreLayout
+  /** The line (system) this staff draws. */
+  system: SystemLayout
   keySig: KeySignature | null
   /** y of the top staff line. */
   top: number
   currentIndex: number | null
 }
 
-export function NotationStaff({ notes, layout, keySig, top, currentIndex }: NotationStaffProps) {
+export function NotationStaff({ notes, layout, system, keySig, top, currentIndex }: NotationStaffProps) {
   const bottomY = top + 4 * LINE_GAP
   const yOfStep = (step: number) => bottomY - (step - BOTTOM_LINE_STEP) * HALF_GAP
   const staff = staffNotes(notes, layout.starts, layout.beatsPerBar, keySig)
   const glyphs = notes.map((note) => noteGlyph(note.beats))
-  const groups = beamGroups(notes.map((note) => note.beats), layout.starts, layout.beatsPerBar)
+  const inSystem = new Set(system.noteIndices)
+  // Beam groups never cross a bar line, so none straddles a line break.
+  const groups = beamGroups(notes.map((note) => note.beats), layout.starts, layout.beatsPerBar).filter(
+    (group) => inSystem.has(group[0]),
+  )
   const grouped = new Map<number, number>()
   groups.forEach((group, groupIndex) => group.forEach((index) => grouped.set(index, groupIndex)))
 
@@ -70,7 +76,7 @@ export function NotationStaff({ notes, layout, keySig, top, currentIndex }: Nota
         <line
           key={line}
           x1={0}
-          x2={layout.endX}
+          x2={system.endX}
           y1={top + line * LINE_GAP}
           y2={top + line * LINE_GAP}
           className="stroke-line-strong"
@@ -81,27 +87,31 @@ export function NotationStaff({ notes, layout, keySig, top, currentIndex }: Nota
       {sigGlyphs.map((glyph, i) => (
         <Accidental key={i} kind={glyph.accidental} x={34 + i * 8} y={yOfStep(glyph.step)} />
       ))}
-      <text
-        x={timeSigX}
-        y={top + 2 * LINE_GAP - 1.5}
-        textAnchor="middle"
-        fontSize={17}
-        fontWeight={700}
-        className="fill-fg font-display"
-      >
-        {layout.beatsPerBar}
-      </text>
-      <text
-        x={timeSigX}
-        y={top + 4 * LINE_GAP - 1.5}
-        textAnchor="middle"
-        fontSize={17}
-        fontWeight={700}
-        className="fill-fg font-display"
-      >
-        4
-      </text>
-      {notes.map((_, index) => {
+      {system.index === 0 && (
+        <>
+          <text
+            x={timeSigX}
+            y={top + 2 * LINE_GAP - 1.5}
+            textAnchor="middle"
+            fontSize={17}
+            fontWeight={700}
+            className="fill-fg font-display"
+          >
+            {layout.beatsPerBar}
+          </text>
+          <text
+            x={timeSigX}
+            y={top + 4 * LINE_GAP - 1.5}
+            textAnchor="middle"
+            fontSize={17}
+            fontWeight={700}
+            className="fill-fg font-display"
+          >
+            4
+          </text>
+        </>
+      )}
+      {system.noteIndices.map((index) => {
         const glyph = glyphs[index]
         const x = layout.noteX[index]
         const y = headY(index)
