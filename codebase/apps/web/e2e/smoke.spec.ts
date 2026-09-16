@@ -58,7 +58,7 @@ test('happy path: pick a lesson, play it through, and the session is stored', as
   await expect(heading).toBeVisible()
   await expect(heading).toBeFocused()
   await expect(
-    page.getByRole('img', { name: /^C major — open position tab, \d+ notes$/ }),
+    page.getByRole('img', { name: /^C major — open position score, \d+ notes$/ }),
   ).toBeVisible()
 
   await playThroughLesson(page)
@@ -87,12 +87,12 @@ test('Play starts the timer, the click, and the cursor; Next advances', async ({
   await page.getByRole('button', { name: /^Play / }).click()
   await expect(page.getByText(/1:5\d/)).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
-  // The cursor is on the tab and moves with the clock.
-  const cursor = page.locator('[data-current]')
+  // The cursor is on the tab and moves with the clock (after the count-in).
+  const cursor = page.locator('[data-note][data-current]')
   await expect(cursor).toHaveCount(1)
   const noteAtFirstLook = (await cursor.getAttribute('data-note'))!
   await expect(cursor).not.toHaveAttribute('data-note', noteAtFirstLook, {
-    timeout: 3_000,
+    timeout: 8_000,
   })
 
   await page.getByRole('button', { name: /^Next: finish / }).click()

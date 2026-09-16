@@ -1,4 +1,4 @@
-import { STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
+import { keySignature, STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
 import type { Exercise, Lesson, TabNote } from './types'
 
 /** One thing wrong with a lesson set; an empty result means valid. */
@@ -38,6 +38,15 @@ function exerciseProblems(lesson: Lesson, exercise: Exercise): LessonProblem[] {
   }
   if (exercise.notes.length === 0) {
     problem('exercise has no notes')
+  }
+  if (exercise.key !== undefined && keySignature(exercise.key) === null) {
+    problem(`key must be a major key with a signature, got "${exercise.key}"`)
+  }
+  if (
+    exercise.beatsPerBar !== undefined &&
+    (!Number.isInteger(exercise.beatsPerBar) || exercise.beatsPerBar < 1)
+  ) {
+    problem(`beats per bar must be a positive integer, got ${exercise.beatsPerBar}`)
   }
   exercise.notes.forEach((note, index) => {
     const message = noteProblem(note, index)

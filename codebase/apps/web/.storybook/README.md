@@ -29,8 +29,8 @@ complete deployed bundle locally at `http://localhost:4322/_storybook/`.
   sign-up. The player includes a save-error state.
 - **Primitives:** actual shared buttons, cards, badges, selects, radios and
   checkboxes, including disabled/checked variants.
-- **Components:** fretboard and the practice runner (the lesson player).
-  Layout is exercised by every page story.
+- **Components:** fretboard, the score (tab, notation, cursor and loop) and the
+  practice runner (the lesson player). Layout is exercised by every page story.
 - **Public:** actual Astro header, footer, landing sections and practice board.
 - Docs and controls come from typed CSF stories. Use the viewport toolbar for
   mobile (390 × 844) and desktop (1280 × 800); the accessibility panel runs axe.

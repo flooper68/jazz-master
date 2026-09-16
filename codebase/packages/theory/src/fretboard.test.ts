@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  midiAt,
   noteAt,
   positionsOf,
   STANDARD_TUNING,
@@ -117,5 +118,14 @@ describe('positionsOf', () => {
 
   it('rejects a fractional pitch class', () => {
     expect(() => positionsOf(1.5)).toThrow()
+  })
+})
+
+describe('midiAt', () => {
+  it('numbers standard tuning from low E and adds a semitone per fret', () => {
+    expect(midiAt(6, 0)).toBe(40)
+    expect(midiAt(5, 3)).toBe(48)
+    expect(midiAt(1, 12)).toBe(76)
+    expect(() => midiAt(1, -1)).toThrow('Invalid fret: -1')
   })
 })

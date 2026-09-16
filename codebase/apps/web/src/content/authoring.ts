@@ -1,9 +1,9 @@
 import {
+  midiAt,
   parseNote,
   scalePositions,
   STANDARD_TUNING,
   type FretRange,
-  type GuitarString,
   type ScaleType,
 } from '@jazz-master/theory'
 import type { TabNote } from './types'
@@ -13,20 +13,6 @@ import type { TabNote } from './types'
  * tabs (see lessons.ts); these functions are how those tabs were produced and
  * how new ones get made, never something the player calls.
  */
-
-// Open-string MIDI numbers in standard tuning, string 6 (low E) to 1.
-const OPEN_MIDI: Record<GuitarString, number> = {
-  6: 40,
-  5: 45,
-  4: 50,
-  3: 55,
-  2: 59,
-  1: 64,
-}
-
-function midi(string: GuitarString, fret: number): number {
-  return OPEN_MIDI[string] + fret
-}
 
 /**
  * A scale played up through a fret window and back down, one note per eighth.
@@ -43,7 +29,7 @@ export function scaleTab(
   if (!parsedRoot) throw new Error(`Unparseable root "${root}"`)
   const up = scalePositions({ root: parsedRoot, type: scale }, window, STANDARD_TUNING)
     .map(({ string, fret }) => ({ string, fret, beats }))
-    .sort((a, b) => midi(a.string, a.fret) - midi(b.string, b.fret))
+    .sort((a, b) => midiAt(a.string, a.fret) - midiAt(b.string, b.fret))
   const down = up.slice(0, -1).reverse()
   return [...up, ...down]
 }

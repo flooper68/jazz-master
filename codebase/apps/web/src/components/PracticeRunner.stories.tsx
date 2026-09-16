@@ -10,3 +10,4 @@ const meta = { title: 'Components/PracticeRunner', component: PracticeRunner,
 export default meta
 type Story = StoryObj<typeof meta>
 export const ScaleLesson: Story = {}
+export const LinesLesson: Story = { args: { lesson: LESSONS[1] } }

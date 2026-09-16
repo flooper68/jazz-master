@@ -4,23 +4,29 @@ import { passBeats } from './timeline'
 import { validateLessons } from './validate'
 
 const allExercises = LESSONS.flatMap((lesson) => lesson.exercises)
+const scaleExercises = LESSONS[0].exercises
 
 describe('LESSONS', () => {
   it('is a valid lesson set', () => {
     expect(validateLessons(LESSONS)).toEqual([])
   })
 
-  it('is the major scale in the open position, one lesson, three keys', () => {
-    expect(LESSONS.map((lesson) => lesson.id)).toEqual(['scales-major-open'])
-    expect(allExercises.map((exercise) => exercise.title)).toEqual([
+  it('opens with the major scale in three keys, then ii–V–I lines in F', () => {
+    expect(LESSONS.map((lesson) => lesson.id)).toEqual([
+      'scales-major-open',
+      'lines-ii-v-i-f',
+    ])
+    expect(scaleExercises.map((exercise) => exercise.title)).toEqual([
       'C major — open position',
       'G major — open position',
       'F major — open position',
     ])
+    expect(scaleExercises.map((exercise) => exercise.key)).toEqual(['C', 'G', 'F'])
+    expect(LESSONS[1].prerequisites).toEqual(['scales-major-open'])
   })
 
-  it('writes every exercise as a tab inside the open position, up and back down', () => {
-    for (const exercise of allExercises) {
+  it('writes every scale exercise as a tab inside the open position, up and back down', () => {
+    for (const exercise of scaleExercises) {
       expect(exercise.notes.length).toBeGreaterThan(8)
       for (const note of exercise.notes) {
         expect(note.fret).toBeGreaterThanOrEqual(0)
@@ -32,6 +38,13 @@ describe('LESSONS', () => {
       const top = (frets.length - 1) / 2
       expect(Number.isInteger(top)).toBe(true)
       expect(frets.slice(0, top)).toEqual(frets.slice(top + 1).reverse())
+    }
+  })
+
+  it('writes the ii–V–I exercises in whole bars of 4/4', () => {
+    for (const exercise of LESSONS[1].exercises) {
+      expect(passBeats(exercise.notes) % 4).toBe(0)
+      expect(exercise.key).toBe('F')
     }
   })
 

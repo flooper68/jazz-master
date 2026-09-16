@@ -18,6 +18,7 @@ export const LESSONS: readonly Lesson[] = [
       {
         id: 'scales-major-open-c',
         title: 'C major — open position',
+        key: 'C',
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -61,6 +62,7 @@ export const LESSONS: readonly Lesson[] = [
       {
         id: 'scales-major-open-g',
         title: 'G major — open position',
+        key: 'G',
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -104,6 +106,7 @@ export const LESSONS: readonly Lesson[] = [
       {
         id: 'scales-major-open-f',
         title: 'F major — open position',
+        key: 'F',
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -144,5 +147,86 @@ export const LESSONS: readonly Lesson[] = [
       },
     ],
   },
+  {
+    id: 'lines-ii-v-i-f',
+    title: 'ii–V–I lines I — F major',
+    area: 'standards',
+    level: 2,
+    prerequisites: ['scales-major-open'],
+    estimatedMinutes: 8,
+    exercises: [
+      {
+        id: 'lines-ii-v-i-f-arpeggios',
+        title: 'Gm7 – C7 – Fmaj7 — arpeggios up and down',
+        key: 'F',
+        tempoBpm: 80,
+        duration: { kind: 'repetitions', count: 4 },
+        notes: [
+          // Gm9 up and down, one bar of eighths.
+          { string: 4, fret: 5, beats: 0.5 },
+          { string: 3, fret: 3, beats: 0.5 },
+          { string: 2, fret: 3, beats: 0.5 },
+          { string: 1, fret: 1, beats: 0.5 },
+          { string: 1, fret: 5, beats: 0.5 },
+          { string: 1, fret: 1, beats: 0.5 },
+          { string: 2, fret: 3, beats: 0.5 },
+          { string: 3, fret: 3, beats: 0.5 },
+          // C9 up and down.
+          { string: 3, fret: 5, beats: 0.5 },
+          { string: 2, fret: 5, beats: 0.5 },
+          { string: 1, fret: 3, beats: 0.5 },
+          { string: 1, fret: 6, beats: 0.5 },
+          { string: 1, fret: 10, beats: 0.5 },
+          { string: 1, fret: 6, beats: 0.5 },
+          { string: 1, fret: 3, beats: 0.5 },
+          { string: 2, fret: 5, beats: 0.5 },
+          // Fmaj9 up and down.
+          { string: 4, fret: 3, beats: 0.5 },
+          { string: 3, fret: 2, beats: 0.5 },
+          { string: 3, fret: 5, beats: 0.5 },
+          { string: 2, fret: 5, beats: 0.5 },
+          { string: 1, fret: 3, beats: 0.5 },
+          { string: 2, fret: 5, beats: 0.5 },
+          { string: 3, fret: 5, beats: 0.5 },
+          { string: 3, fret: 2, beats: 0.5 },
+          // Land on the root.
+          { string: 4, fret: 3, beats: 4 },
+        ],
+      },
+      {
+        id: 'lines-ii-v-i-f-line',
+        title: 'Gm7 – C7 – Fmaj7 — a bebop line',
+        key: 'F',
+        tempoBpm: 90,
+        duration: { kind: 'repetitions', count: 4 },
+        notes: [
+          // Gm7: up the arpeggio from the 5th, down the scale.
+          { string: 3, fret: 7, beats: 0.5 },
+          { string: 2, fret: 6, beats: 0.5 },
+          { string: 1, fret: 5, beats: 0.5 },
+          { string: 1, fret: 8, beats: 0.5 },
+          { string: 1, fret: 6, beats: 0.5 },
+          { string: 1, fret: 5, beats: 0.5 },
+          { string: 2, fret: 8, beats: 0.5 },
+          { string: 2, fret: 6, beats: 0.5 },
+          // C7: 3–5–b7–root, then the b13 approaching the 3rd of F.
+          { string: 2, fret: 5, beats: 0.5 },
+          { string: 2, fret: 8, beats: 0.5 },
+          { string: 1, fret: 6, beats: 0.5 },
+          { string: 1, fret: 8, beats: 0.5 },
+          { string: 1, fret: 6, beats: 1 },
+          { string: 1, fret: 4, beats: 1 },
+          // Fmaj7: resolve to the 3rd, walk down to the 5th.
+          { string: 1, fret: 5, beats: 1 },
+          { string: 2, fret: 6, beats: 0.5 },
+          { string: 2, fret: 5, beats: 0.5 },
+          { string: 3, fret: 5, beats: 2 },
+          // Fmaj7: close on the root.
+          { string: 2, fret: 8, beats: 1 },
+          { string: 1, fret: 5, beats: 1 },
+          { string: 2, fret: 6, beats: 2 },
+        ],
+      },
+    ],
+  },
 ]
-

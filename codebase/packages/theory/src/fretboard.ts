@@ -17,6 +17,26 @@ export const STANDARD_TUNING: Tuning = {
   6: parseNote('E')!,
 }
 
+/** MIDI number of each open string in standard tuning (E2 = 40 … E4 = 64). */
+export const STANDARD_TUNING_MIDI: Record<GuitarString, number> = {
+  6: 40,
+  5: 45,
+  4: 50,
+  3: 55,
+  2: 59,
+  1: 64,
+}
+
+/** The MIDI number sounding at a position: a fret is a semitone above the open string. */
+export function midiAt(
+  string: GuitarString,
+  fret: number,
+  openStrings: Record<GuitarString, number> = STANDARD_TUNING_MIDI,
+): number {
+  assertValidFret(fret)
+  return openStrings[string] + fret
+}
+
 export interface FretboardPosition {
   string: GuitarString
   fret: number

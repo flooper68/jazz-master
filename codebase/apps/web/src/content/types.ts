@@ -28,7 +28,16 @@ export interface Exercise {
   tempoBpm: number
   duration: ExerciseDuration
   notes: readonly TabNote[]
+  /**
+   * Major key the notation is spelled in (`F`, `Bb`, `F#`), which also sets
+   * the key signature. Omitted: C major, sharps for anything chromatic.
+   */
+  key?: string
+  /** Beats per bar; 4 unless the exercise says otherwise. */
+  beatsPerBar?: number
 }
+
+export const DEFAULT_BEATS_PER_BAR = 4
 
 export type LessonArea = 'scales' | 'arpeggios' | 'chords' | 'standards'
 
