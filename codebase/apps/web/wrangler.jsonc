@@ -21,7 +21,10 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "550beedd38384ddcac7dc1c044eede5d"
+      "id": "550beedd38384ddcac7dc1c044eede5d",
+      // Local runtime initialization also runs during Astro prerendering.
+      // Override with CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE.
+      "localConnectionString": "postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master"
     }
   ]
 }

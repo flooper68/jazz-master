@@ -20,7 +20,9 @@
     "test:watch": "vitest",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build",
     "check:e2e": "bun run --cwd apps/web e2e",
-    "work:status": "bun scripts/work-status.js"
+    "work:status": "bun scripts/work-status.js",
+    "storybook": "bun scripts/storybook-dev.js",
+    "storybook:build": "bun run --cwd apps/web storybook:build"
   },
   "devDependencies": {
     "oxlint": "^1.71.0",

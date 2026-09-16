@@ -42,3 +42,9 @@ dist-ssr
 # Playwright e2e output (TASK-035)
 test-results/
 playwright-report/
+
+# Generated Storybook catalog (rebuilt before Astro)
+codebase/apps/web/public/_storybook/
+
+# Playwright CLI browser artifacts
+.playwright-cli/

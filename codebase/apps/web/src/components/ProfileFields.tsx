@@ -1,3 +1,4 @@
+import { Checkbox, Radio } from './ui/Primitives'
 import {
   MINUTES_PER_DAY_OPTIONS,
   PRACTICE_AREAS,
@@ -40,12 +41,10 @@ export function LevelFields({ levels, onChange }: LevelFieldsProps) {
                 key={level}
                 className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
               >
-                <input
-                  type="radio"
+                <Radio
                   name={`level-${area}`}
                   checked={levels[area] === level}
                   onChange={() => onChange({ ...levels, [area]: level })}
-                  className="accent-amber-500"
                 />
                 {LEVEL_LABELS[level]}
               </label>
@@ -78,8 +77,7 @@ export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
               key={area}
               className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={checked}
                 onChange={() =>
                   onChange(
@@ -88,7 +86,6 @@ export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
                       : [...goalAreas, area],
                   )
                 }
-                className="accent-amber-500"
               />
               {AREA_LABELS[area]}
               {checked && (
@@ -119,12 +116,10 @@ export function MinutesFields({ minutesPerDay, onChange }: MinutesFieldsProps) {
             key={minutes}
             className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
           >
-            <input
-              type="radio"
+            <Radio
               name="minutes-per-day"
               checked={minutesPerDay === minutes}
               onChange={() => onChange(minutes)}
-              className="accent-amber-500"
             />
             {minutes} min
           </label>

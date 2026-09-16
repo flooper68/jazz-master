@@ -37,7 +37,18 @@ DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:5432/jazz_master
 
 If another local service already owns port 5432, set `JAZZ_MASTER_POSTGRES_PORT`
 before running Compose and use the same port in `DATABASE_URL`/`psql`, for
-example `55432`.
+example `55432`. The web runtime uses Hyperdrive's local connection, which takes
+precedence over `DATABASE_URL`. For an alternate port/database also set
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` to that connection
+string. `wrangler.jsonc` defaults this local-only binding to the Compose database
+on port 5432; migrations still use `DATABASE_URL`.
+
+## Storybook
+
+`bun run --cwd codebase storybook` starts the UI catalog on port 6006 and its
+companion Astro preview server on 4321. The normal app build/deployment includes
+it at `/_storybook/`. See [the Storybook guide](codebase/apps/web/.storybook/README.md)
+for component/page coverage, isolated fixtures, controls and mobile previews.
 
 ## Stack
 

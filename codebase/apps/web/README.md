@@ -51,8 +51,10 @@ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://jazz_maste
   bun run preview
 ```
 
-`astro dev` needs only the Hyperdrive variable (or a running local Postgres);
-without it the dev runtime exits before becoming ready.
+`astro dev` initializes Hyperdrive with the local-only connection in
+`wrangler.jsonc` by default. Set the Hyperdrive variable to override its port or
+database. Postgres must be running for real application data calls; static
+Storybook previews and builds do not query it.
 
 When either value is missing, public routes still respond, but `/app/*` returns
 a controlled 503 because sign-in cannot be initialized. Clerk keyless

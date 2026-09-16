@@ -27,6 +27,10 @@ type LocalsWithAuth = App.Locals & {
 }
 
 export const onRequest: MiddlewareHandler = (context, next) => {
+  if (context.url.pathname.startsWith('/_storybook/previews/')) {
+    return renderStaticPreview(next)
+  }
+
   const runtimeEnv = {
     cloudflareEnv: env,
     metaEnv: import.meta.env,
@@ -59,4 +63,15 @@ export const onRequest: MiddlewareHandler = (context, next) => {
   }
 
   return clerkAuthMiddleware(context, next)
+}
+
+async function renderStaticPreview(next: () => Promise<Response>): Promise<Response> {
+  // These are generated, inert UI fixtures. Astro integrations inject page
+  // scripts (including Clerk) globally; exclude those from catalog documents.
+  const response = await next()
+  if (!response.headers.get('content-type')?.includes('text/html')) return response
+  const html = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+  const headers = new Headers(response.headers)
+  headers.delete('content-length')
+  return new Response(html, { status: response.status, headers })
 }

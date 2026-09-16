@@ -1,3 +1,4 @@
+import { Button, Card } from '../../components/ui/Primitives'
 import { useState } from 'react'
 import {
   GoalAreaFields,
@@ -28,33 +29,33 @@ export default function ProfilePage() {
       </p>
       <section className="mt-8">
         <h2 className="text-sm font-medium text-zinc-400">Comfort level</h2>
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+        <Card className="mt-3">
           <LevelFields
             levels={profile.levels}
             onChange={(levels) => edit({ levels })}
           />
-        </div>
+        </Card>
       </section>
       <section className="mt-6">
         <h2 className="text-sm font-medium text-zinc-400">Goals</h2>
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+        <Card className="mt-3">
           <GoalAreaFields
             goalAreas={profile.goalAreas}
             onChange={(goalAreas) => edit({ goalAreas })}
           />
-        </div>
+        </Card>
       </section>
       <section className="mt-6">
         <h2 className="text-sm font-medium text-zinc-400">Time budget</h2>
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+        <Card className="mt-3">
           <MinutesFields
             minutesPerDay={profile.minutesPerDay}
             onChange={(minutesPerDay) => edit({ minutesPerDay })}
           />
-        </div>
+        </Card>
       </section>
       <div className="mt-8 flex items-center gap-4">
-        <button
+        <Button
           type="button"
           onClick={() => {
             void saveProfile(profile)
@@ -68,10 +69,9 @@ export default function ProfilePage() {
               })
           }}
           disabled={isSaving || profile.goalAreas.length === 0}
-          className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
         >
           Save
-        </button>
+        </Button>
         <p aria-live="polite" className="text-sm text-zinc-400">
           {saved ? 'Saved.' : ''}
           {saveStatus}
@@ -80,12 +80,12 @@ export default function ProfilePage() {
       </div>
       <section className="mt-10">
         <h2 className="text-sm font-medium text-zinc-400">Data sync</h2>
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+        <Card className="mt-3">
           <p className="text-sm text-zinc-300">
             Your profile, practice history, plans, and settings sync to your
             signed-in account, so they are available wherever you sign in.
           </p>
-        </div>
+        </Card>
       </section>
     </div>
   )

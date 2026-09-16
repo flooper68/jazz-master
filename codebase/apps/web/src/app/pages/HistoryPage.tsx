@@ -1,3 +1,4 @@
+import { Badge, Select } from '../../components/ui/Primitives'
 import { useId, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -37,9 +38,6 @@ const exerciseTitleById = new Map(
     lesson.exercises.map((exercise) => [exercise.id, exercise.title] as const),
   ),
 )
-
-const selectClasses =
-  'rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
 
 const EMPTY_SESSIONS: readonly PracticeSession[] = []
 
@@ -103,12 +101,11 @@ export default function HistoryPage() {
           <div className="mt-6 flex max-w-2xl flex-wrap gap-4">
             <label className="flex items-center gap-2 text-sm text-zinc-400">
               Area
-              <select
+              <Select
                 value={area}
                 onChange={(event) =>
                   setArea(event.target.value as LessonArea | 'all')
                 }
-                className={selectClasses}
               >
                 <option value="all">All areas</option>
                 {filterAreas.map((filterArea) => (
@@ -116,23 +113,22 @@ export default function HistoryPage() {
                     {AREA_LABELS[filterArea]}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex items-center gap-2 text-sm text-zinc-400">
               Period
-              <select
+              <Select
                 value={range}
                 onChange={(event) =>
                   setRange(event.target.value as TimeRange)
                 }
-                className={selectClasses}
               >
                 {RANGE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
           {dayGroups.length === 0 ? (
@@ -190,9 +186,7 @@ function SessionRow({ session }: { session: PracticeSession }) {
             </span>
           </span>
           {!session.completed && (
-            <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-amber-400">
-              Incomplete
-            </span>
+            <Badge>Incomplete</Badge>
           )}
           {session.score !== undefined && <span>Score {session.score}</span>}
         </span>
