@@ -1,17 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { defaultProfile, type PracticeProfile } from '../../appData/profile'
-import {
-  clampPlayAlongTempo,
-  defaultPracticePreferences,
-  type NotationDisplayMode,
-  type PracticePreferences,
-} from '../../appData/preferences'
 import type { PracticeSession } from '../../appData/session'
-import { LESSONS } from '../../content'
-import { generatePlan } from '../../planner/dailyPlan'
 import type { StructuredLogger } from '../observability/logger'
-import type { ProfileRepository } from '../db/profiles'
-import type { PreferenceRepository } from '../db/preferences'
 import {
   SessionOwnerMismatchError,
   type SessionRepository,
@@ -41,7 +30,6 @@ describe('appRouter.health', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        profiles: null,
         users: null,
       }),
     )
@@ -219,7 +207,6 @@ describe('appRouter.auth.me', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        profiles: null,
         users: null,
       }),
     )
@@ -235,7 +222,6 @@ describe('appRouter.auth.me', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        profiles: null,
         users: {
           async ensureUser(clerkUserId: string) {
             calls += 1
@@ -260,7 +246,6 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        profiles: null,
         users: null,
       }),
     )
@@ -287,7 +272,6 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        profiles: null,
         users,
       }),
     )
@@ -336,7 +320,6 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
-        profiles: null,
         users,
       }),
     )
@@ -366,92 +349,11 @@ describe('appRouter.users.ensure', () => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: null },
-        profiles: null,
         users,
       }),
     )
 
     await expect(caller.users.ensure()).rejects.toMatchObject({
-      code: 'UNAUTHORIZED',
-      message: 'Authentication required',
-    })
-    expect(calls).toBe(0)
-  })
-})
-
-describe('appRouter.profile', () => {
-  it('reports unconfigured when no profile repository is available', async () => {
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles: null,
-      }),
-    )
-
-    await expect(caller.profile.get()).resolves.toEqual({
-      status: 'unconfigured',
-    })
-  })
-
-  it('returns null before onboarding has written a profile', async () => {
-    const profiles = createMemoryProfileRepository()
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-      }),
-    )
-
-    await expect(caller.profile.get()).resolves.toEqual({
-      status: 'ok',
-      profile: null,
-    })
-  })
-
-  it('writes and reads the authenticated profile through the repository', async () => {
-    const profiles = createMemoryProfileRepository()
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-      }),
-    )
-    const profile = {
-      ...defaultProfile('2026-07-09T10:00:00.000Z'),
-      levels: { scales: 2, arpeggios: 1, chords: 1, standards: 3, ears: 1 },
-      goalAreas: ['standards', 'scales'],
-      minutesPerDay: 45,
-    } satisfies PracticeProfile
-
-    await expect(caller.profile.save(profile)).resolves.toEqual({
-      status: 'ok',
-      profile,
-    })
-    await expect(caller.profile.get()).resolves.toEqual({
-      status: 'ok',
-      profile,
-    })
-  })
-
-  it('rejects unauthenticated profile reads before the repository is called', async () => {
-    let calls = 0
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: null },
-        profiles: {
-          async getProfile() {
-            calls += 1
-            return null
-          },
-          async saveProfile(_clerkUserId, profile) {
-            calls += 1
-            return profile
-          },
-        } satisfies ProfileRepository,
-      }),
-    )
-
-    await expect(caller.profile.get()).rejects.toMatchObject({
       code: 'UNAUTHORIZED',
       message: 'Authentication required',
     })
@@ -503,7 +405,7 @@ describe('appRouter.sessions', () => {
     })
   })
 
-  it('preserves ordered grades, score summary, and normalized note details', async () => {
+  it('preserves the order of graded exercises', async () => {
     const sessions = createMemorySessionRepository()
     const caller = createCaller(
       createContext({
@@ -512,29 +414,10 @@ describe('appRouter.sessions', () => {
       }),
     )
     const session = sessionRecord({
-      score: 92,
       results: [
-        {
-          exerciseId: 'exercise-1',
-          grade: 'got-it',
-          score: {
-            score: 92,
-            tolerance: 'standard',
-            components: { pitch: 100, timing: 83, completeness: 100 },
-            perNote: [
-              {
-                expectedId: 'exercise-1-0',
-                expectedNote: 'C',
-                verdict: 'correct',
-                timingOffsetSeconds: 0.01,
-                pitchCents: 2,
-              },
-            ],
-            extras: 0,
-            analyzedAt: '2026-07-09T10:01:00.000Z',
-          },
-        },
+        { exerciseId: 'exercise-1', grade: 'got-it' },
         { exerciseId: 'exercise-2', grade: 'shaky' },
+        { exerciseId: 'exercise-3', grade: 'missed' },
       ],
     })
 
@@ -596,326 +479,6 @@ describe('appRouter.sessions', () => {
   })
 })
 
-describe('appRouter.preferences', () => {
-  it('returns current defaults before the user has saved preferences', async () => {
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        preferences: createMemoryPreferenceRepository(),
-      }),
-    )
-
-    await expect(caller.preferences.get()).resolves.toEqual({
-      status: 'ok',
-      preferences: defaultPracticePreferences(),
-    })
-  })
-
-  it('writes and reads every preference for only the authenticated user', async () => {
-    const preferences = createMemoryPreferenceRepository()
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        preferences,
-      }),
-    )
-    const otherCaller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_456' },
-        preferences,
-      }),
-    )
-
-    await expect(
-      caller.preferences.setNotationDisplayMode({ mode: 'tab' }),
-    ).resolves.toEqual({ status: 'ok' })
-    await expect(
-      caller.preferences.setScoringTolerance({ tolerance: 'strict' }),
-    ).resolves.toEqual({ status: 'ok' })
-    await expect(
-      caller.preferences.setPlayAlongTempo({
-        exerciseId: 'exercise-1',
-        tempoBpm: 72,
-      }),
-    ).resolves.toEqual({ status: 'ok' })
-
-    await expect(caller.preferences.get()).resolves.toEqual({
-      status: 'ok',
-      preferences: {
-        notationDisplayMode: 'tab',
-        scoringTolerance: 'strict',
-        playAlongTempos: { 'exercise-1': 72 },
-      },
-    })
-    await expect(otherCaller.preferences.get()).resolves.toEqual({
-      status: 'ok',
-      preferences: defaultPracticePreferences(),
-    })
-  })
-
-  it('clamps finite tempo writes to the supported range', async () => {
-    const preferences = createMemoryPreferenceRepository()
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        preferences,
-      }),
-    )
-
-    await caller.preferences.setPlayAlongTempo({
-      exerciseId: 'slow',
-      tempoBpm: 12,
-    })
-    await caller.preferences.setPlayAlongTempo({
-      exerciseId: 'fast',
-      tempoBpm: 240,
-    })
-
-    await expect(caller.preferences.get()).resolves.toEqual({
-      status: 'ok',
-      preferences: expect.objectContaining({
-        playAlongTempos: { slow: 40, fast: 200 },
-      }),
-    })
-  })
-
-  it('rejects invalid modes, tolerances, exercise IDs, and non-finite tempos', async () => {
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        preferences: createMemoryPreferenceRepository(),
-      }),
-    )
-
-    await expect(
-      caller.preferences.setNotationDisplayMode({ mode: 'score' as never }),
-    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
-    await expect(
-      caller.preferences.setScoringTolerance({
-        tolerance: 'punitive' as never,
-      }),
-    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
-    await expect(
-      caller.preferences.setPlayAlongTempo({ exerciseId: '', tempoBpm: 72 }),
-    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
-    await expect(
-      caller.preferences.setPlayAlongTempo({
-        exerciseId: 'exercise-1',
-        tempoBpm: Number.NaN,
-      }),
-    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
-  })
-
-  it('rejects unauthenticated reads and writes before the repository is called', async () => {
-    let calls = 0
-    const preferences = createMemoryPreferenceRepository(() => {
-      calls += 1
-    })
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: null },
-        preferences,
-      }),
-    )
-
-    await expect(caller.preferences.get()).rejects.toMatchObject({
-      code: 'UNAUTHORIZED',
-    })
-    await expect(
-      caller.preferences.setNotationDisplayMode({ mode: 'staff' }),
-    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
-    expect(calls).toBe(0)
-  })
-})
-
-describe('appRouter.planner.today', () => {
-  it('computes a baseline plan from the authenticated profile and curriculum', async () => {
-    const profiles = createMemoryProfileRepository()
-    const sessions = createMemorySessionRepository()
-    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-        sessions,
-      }),
-    )
-
-    await profiles.saveProfile('user_123', profile)
-
-    const result = await caller.planner.today({ date: '2026-07-09' })
-
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.profile).toEqual(profile)
-    expect(result.sessions).toEqual([])
-    expect(result.plan).toEqual(
-      generatePlan(profile, [], LESSONS, planDate('2026-07-09')),
-    )
-    expect(result.plan.items.length).toBeGreaterThan(0)
-  })
-
-  it('uses session history when deciding lesson progress and attention', async () => {
-    const profiles = createMemoryProfileRepository()
-    const sessions = createMemorySessionRepository()
-    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-        sessions,
-      }),
-    )
-    const missed = sessionRecord({
-      lessonId: 'scales-major-open',
-      completed: true,
-      results: [{ exerciseId: 'scales-major-open-c', grade: 'missed' }],
-    })
-
-    await profiles.saveProfile('user_123', profile)
-    await sessions.upsertSession('user_123', missed)
-
-    const result = await caller.planner.today({ date: '2026-07-09' })
-
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.sessions).toEqual([missed])
-    expect(result.plan.items).toContainEqual(
-      expect.objectContaining({
-        lessonId: 'scales-major-open',
-        reason: expect.stringContaining('was missed'),
-      }),
-    )
-  })
-
-  it('reports missing-profile before generating a plan', async () => {
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles: createMemoryProfileRepository(),
-        sessions: createMemorySessionRepository(),
-      }),
-    )
-
-    await expect(
-      caller.planner.today({ date: '2026-07-09' }),
-    ).resolves.toEqual({
-      status: 'missing-profile',
-    })
-  })
-
-  it('uses the caller local date instead of server wall-clock time', async () => {
-    const profiles = createMemoryProfileRepository()
-    const sessions = createMemorySessionRepository()
-    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-        sessions,
-      }),
-    )
-
-    await profiles.saveProfile('user_123', profile)
-
-    const result = await caller.planner.today({ date: '2030-02-03' })
-
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.plan.date).toBe('2030-02-03')
-    expect(result.plan).toEqual(
-      generatePlan(profile, [], LESSONS, planDate('2030-02-03')),
-    )
-  })
-
-  it('returns the same server-computed plan on repeated reads with unchanged data', async () => {
-    const profiles = createMemoryProfileRepository()
-    const sessions = createMemorySessionRepository()
-    const profile = defaultProfile('2026-07-09T10:00:00.000Z')
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles,
-        sessions,
-      }),
-    )
-
-    await profiles.saveProfile('user_123', profile)
-
-    const first = await caller.planner.today({ date: '2026-07-09' })
-    const second = await caller.planner.today({ date: '2026-07-09' })
-
-    expect(first).toEqual(second)
-  })
-
-  it('reports unconfigured when a required repository is unavailable', async () => {
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: 'user_123' },
-        profiles: createMemoryProfileRepository(),
-        sessions: null,
-      }),
-    )
-
-    await expect(
-      caller.planner.today({ date: '2026-07-09' }),
-    ).resolves.toEqual({
-      status: 'unconfigured',
-    })
-  })
-
-  it('rejects unauthenticated planner reads before repositories are called', async () => {
-    let calls = 0
-    const caller = createCaller(
-      createContext({
-        auth: { clerkUserId: null },
-        profiles: {
-          async getProfile() {
-            calls += 1
-            return null
-          },
-          async saveProfile(_clerkUserId, profile) {
-            calls += 1
-            return profile
-          },
-        } satisfies ProfileRepository,
-        sessions: {
-          async listSessions() {
-            calls += 1
-            return []
-          },
-          async upsertSession(_clerkUserId, session) {
-            calls += 1
-            return session
-          },
-        } satisfies SessionRepository,
-      }),
-    )
-
-    await expect(
-      caller.planner.today({ date: '2026-07-09' }),
-    ).rejects.toMatchObject({
-      code: 'UNAUTHORIZED',
-      message: 'Authentication required',
-    })
-    expect(calls).toBe(0)
-  })
-})
-
-function createMemoryProfileRepository(): ProfileRepository {
-  const profiles = new Map<string, PracticeProfile>()
-
-  return {
-    async getProfile(clerkUserId) {
-      return profiles.get(clerkUserId) ?? null
-    },
-    async saveProfile(clerkUserId, profile) {
-      profiles.set(clerkUserId, profile)
-      return profile
-    },
-  }
-}
-
 function createMemorySessionRepository(): SessionRepository {
   const sessions = new Map<
     string,
@@ -946,54 +509,6 @@ function createMemorySessionRepository(): SessionRepository {
   }
 }
 
-function createMemoryPreferenceRepository(
-  onCall: () => void = () => undefined,
-): PreferenceRepository {
-  const preferencesByUser = new Map<string, PracticePreferences>()
-  const get = (clerkUserId: string) => {
-    const stored = preferencesByUser.get(clerkUserId)
-    return stored
-      ? { ...stored, playAlongTempos: { ...stored.playAlongTempos } }
-      : defaultPracticePreferences()
-  }
-  const save = (clerkUserId: string, preferences: PracticePreferences) => {
-    preferencesByUser.set(clerkUserId, {
-      ...preferences,
-      playAlongTempos: { ...preferences.playAlongTempos },
-    })
-  }
-
-  return {
-    async getPreferences(clerkUserId) {
-      onCall()
-      return get(clerkUserId)
-    },
-    async setNotationDisplayMode(clerkUserId, mode: NotationDisplayMode) {
-      onCall()
-      save(clerkUserId, { ...get(clerkUserId), notationDisplayMode: mode })
-      return mode
-    },
-    async setScoringTolerance(clerkUserId, tolerance) {
-      onCall()
-      save(clerkUserId, { ...get(clerkUserId), scoringTolerance: tolerance })
-      return tolerance
-    },
-    async setPlayAlongTempo(clerkUserId, exerciseId, tempoBpm) {
-      onCall()
-      const clamped = clampPlayAlongTempo(tempoBpm)
-      const current = get(clerkUserId)
-      save(clerkUserId, {
-        ...current,
-        playAlongTempos: {
-          ...current.playAlongTempos,
-          [exerciseId]: clamped,
-        },
-      })
-      return clamped
-    },
-  }
-}
-
 function sessionRecord(
   overrides: Partial<PracticeSession> = {},
 ): PracticeSession {
@@ -1008,25 +523,9 @@ function sessionRecord(
   }
 }
 
-function planDate(date: string): Date {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Date(year, month - 1, day, 12)
-}
-
 function cloneSession(session: PracticeSession): PracticeSession {
   return {
     ...session,
-    results: session.results.map((result) => ({
-      ...result,
-      ...(result.score
-        ? {
-            score: {
-              ...result.score,
-              components: { ...result.score.components },
-              perNote: result.score.perNote.map((note) => ({ ...note })),
-            },
-          }
-        : {}),
-    })),
+    results: session.results.map((result) => ({ ...result })),
   }
 }

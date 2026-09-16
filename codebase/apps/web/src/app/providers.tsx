@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { useState, type ReactNode } from 'react'
 import type { AppRouter } from '../server/trpc/router'
-import { ProfileProvider } from './ProfileProvider'
 import { TRPCProvider } from './trpc'
 
 interface AppProvidersProps {
@@ -26,7 +25,7 @@ export function AppProviders({ children, fetch }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <ProfileProvider>{children}</ProfileProvider>
+        {children}
       </TRPCProvider>
     </QueryClientProvider>
   )

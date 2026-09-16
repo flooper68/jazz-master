@@ -1,138 +1,10 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  defaultPracticePreferences,
-  type NotationDisplayMode,
-  type PracticePreferences,
-} from '../appData/preferences'
 import type { PracticeSession } from '../appData/session'
-import { resolveExercise, type Lesson } from '../content'
-import type { ExpectedNote, TolerancePreset } from '../scoring'
+import type { ClickTrack } from '../audio/click'
+import type { Lesson } from '../content'
 import { PracticeRunner } from './PracticeRunner'
-
-type User = ReturnType<typeof userEvent.setup>
-
-const audioMock = vi.hoisted(() => {
-  const engine = {
-    playResolvedExercise: vi.fn(),
-    setTempoBpm: vi.fn(),
-    setVolumes: vi.fn(),
-    stop: vi.fn(),
-    dispose: vi.fn(),
-  }
-  return {
-    engine,
-    createPlayAlongEngine: vi.fn(() => engine),
-    moduleLoaded: vi.fn(),
-  }
-})
-
-vi.mock('../audio', () => {
-  audioMock.moduleLoaded()
-  return { createPlayAlongEngine: audioMock.createPlayAlongEngine }
-})
-
-const scoringMock = vi.hoisted(() => ({
-  analyzeTake: vi.fn(),
-  scoreTake: vi.fn(),
-}))
-
-vi.mock('../scoring', () => scoringMock)
-
-let mediaRecorderInstances: MockMediaRecorder[] = []
-const trackStopMock = vi.fn()
-const getUserMediaMock = vi.fn()
-const createObjectUrlMock = vi.fn()
-const revokeObjectUrlMock = vi.fn()
-const audioContextConstructedMock = vi.fn()
-let mediaRecorderStartError: Error | null = null
-const saveNotationDisplayModeMock = vi.fn()
-const saveScoringToleranceMock = vi.fn()
-const savePlayAlongTempoMock = vi.fn()
-
-class MockMediaRecorder {
-  static isTypeSupported = vi.fn((mimeType: string) =>
-    ['audio/webm;codecs=opus', 'audio/mp4'].includes(mimeType),
-  )
-
-  state: RecordingState = 'inactive'
-  readonly mimeType: string
-  ondataavailable: ((event: BlobEvent) => void) | null = null
-  onstop: (() => void) | null = null
-  onerror: (() => void) | null = null
-
-  constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
-    this.mimeType = options?.mimeType ?? ''
-    mediaRecorderInstances.push(this)
-  }
-
-  start(): void {
-    if (mediaRecorderStartError) throw mediaRecorderStartError
-    this.state = 'recording'
-  }
-
-  stop(): void {
-    if (this.state !== 'recording') return
-    this.state = 'inactive'
-    const data = new Blob(['take'], {
-      type: this.mimeType || 'audio/webm',
-    })
-    this.ondataavailable?.({ data } as BlobEvent)
-    this.onstop?.()
-  }
-}
-
-class MockAudioContext {
-  currentTime = 0
-  sampleRate = 48_000
-  state: AudioContextState = 'running'
-  destination = {}
-
-  constructor() {
-    audioContextConstructedMock()
-  }
-
-  resume = vi.fn().mockResolvedValue(undefined)
-  close = vi.fn().mockResolvedValue(undefined)
-  createMediaStreamSource = vi.fn(() => ({
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-  }))
-  createAnalyser = vi.fn(() => ({
-    fftSize: 512,
-    getByteTimeDomainData: (data: Uint8Array) => data.fill(160),
-    disconnect: vi.fn(),
-  }))
-  createOscillator = vi.fn(() => ({
-    type: 'sine',
-    frequency: { setValueAtTime: vi.fn() },
-    connect: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-  }))
-  createGain = vi.fn(() => ({
-    gain: {
-      setValueAtTime: vi.fn(),
-      exponentialRampToValueAtTime: vi.fn(),
-    },
-    connect: vi.fn(),
-  }))
-  decodeAudioData = vi.fn().mockResolvedValue({
-    numberOfChannels: 1,
-    length: 4,
-    sampleRate: 48_000,
-    getChannelData: () => new Float32Array([0, 0.5, 0, -0.5]),
-  })
-}
 
 const lesson: Lesson = {
   id: 'fixture-lesson',
@@ -149,1051 +21,275 @@ const lesson: Lesson = {
       window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
-      display: ['fretboard', 'notation'],
     },
     {
       id: 'fx-2',
       title: 'G7 arpeggio — open position',
       material: { kind: 'arpeggio', root: 'G', quality: '7' },
       window: { min: 0, max: 4 },
-      tempoBpm: 60,
-      duration: { kind: 'repetitions', count: 8 },
-      display: ['fretboard'],
+      tempoBpm: 90,
+      duration: { kind: 'repetitions', count: 2 },
     },
   ],
 }
 
-function renderRunner(
-  onExit = vi.fn(),
-  runnerLesson = lesson,
-  onSessionChange: (session: PracticeSession) => void = vi.fn(),
-  initialPreferences: PracticePreferences = defaultPracticePreferences(),
-) {
-  render(
-    <RunnerHarness
-      lesson={runnerLesson}
-      sessionId="session-1"
-      startedAt={Date.now()}
-      onSessionChange={onSessionChange}
-      onExit={onExit}
-      initialPreferences={initialPreferences}
-    />,
-  )
-  return onExit
+function fakeClick() {
+  const calls: string[] = []
+  let playing = false
+  const track: ClickTrack = {
+    start(tempoBpm) {
+      calls.push(`start ${tempoBpm}`)
+      playing = true
+    },
+    stop() {
+      calls.push('stop')
+      playing = false
+    },
+    get playing() {
+      return playing
+    },
+    dispose() {
+      calls.push('dispose')
+      playing = false
+    },
+  }
+  return { track, calls }
 }
 
-function RunnerHarness({
-  initialPreferences,
-  ...runnerProps
-}: Omit<ComponentProps<typeof PracticeRunner>,
-  | 'preferences'
-  | 'onNotationDisplayModeChange'
-  | 'onScoringToleranceChange'
-  | 'onPlayAlongTempoChange'
-> & {
-  initialPreferences: PracticePreferences
-}) {
-  const [preferences, setPreferences] = useState(initialPreferences)
-
-  return (
+function renderRunner({
+  onSessionChange = vi.fn(),
+  onExit = vi.fn(),
+  click = fakeClick(),
+}: {
+  onSessionChange?: (session: PracticeSession) => void
+  onExit?: () => void
+  click?: ReturnType<typeof fakeClick>
+} = {}) {
+  const view = render(
     <PracticeRunner
-      {...runnerProps}
-      preferences={preferences}
-      onNotationDisplayModeChange={(mode: NotationDisplayMode) => {
-        saveNotationDisplayModeMock(mode)
-        setPreferences((current) => ({
-          ...current,
-          notationDisplayMode: mode,
-        }))
-      }}
-      onScoringToleranceChange={(tolerance) => {
-        saveScoringToleranceMock(tolerance)
-        setPreferences((current) => ({
-          ...current,
-          scoringTolerance: tolerance,
-        }))
-      }}
-      onPlayAlongTempoChange={(exerciseId, tempoBpm) => {
-        savePlayAlongTempoMock(exerciseId, tempoBpm)
-        setPreferences((current) => ({
-          ...current,
-          playAlongTempos: {
-            ...current.playAlongTempos,
-            [exerciseId]: tempoBpm,
-          },
-        }))
-      }}
-    />
+      lesson={lesson}
+      sessionId="session-1"
+      startedAt={1_000}
+      onSessionChange={onSessionChange}
+      onExit={onExit}
+      createClick={() => click.track}
+    />,
   )
+  return { ...view, onSessionChange, onExit, click }
+}
+
+async function begin(user: ReturnType<typeof userEvent.setup>, title: string) {
+  await user.click(screen.getByRole('button', { name: `Begin ${title}` }))
 }
 
 async function finishAndGrade(
-  user: User,
-  exerciseTitle: string,
-  grade: 'Got it' | 'Shaky' | 'Missed' = 'Got it',
-): Promise<void> {
-  await user.click(
-    screen.getByRole('button', {
-      name: `Play play-along for ${exerciseTitle}`,
-    }),
-  )
-  const next = screen.getByRole('button', {
-    name: `End playthrough and grade ${exerciseTitle}`,
-  })
-  await waitFor(() => expect(next).toBeEnabled())
-  await user.click(next)
-  const dialog = screen.getByRole('dialog', { name: `Grade ${exerciseTitle}` })
-  await user.click(within(dialog).getByRole('button', { name: grade }))
+  user: ReturnType<typeof userEvent.setup>,
+  title: string,
+  grade: string,
+) {
+  await user.click(screen.getByRole('button', { name: `Next: finish ${title}` }))
+  const group = screen.getByRole('group', { name: `Grade ${title}` })
+  await user.click(within(group).getByRole('button', { name: grade }))
 }
-
-async function completeExercise(user: User, exerciseTitle: string): Promise<void> {
-  await user.click(
-    screen.getByRole('button', {
-      name: `Play play-along for ${exerciseTitle}`,
-    }),
-  )
-  const next = screen.getByRole('button', {
-    name: `End playthrough and grade ${exerciseTitle}`,
-  })
-  await waitFor(() => expect(next).toBeEnabled())
-  await user.click(next)
-}
-
-beforeEach(() => {
-  vi.useRealTimers()
-  audioMock.moduleLoaded.mockClear()
-  audioMock.createPlayAlongEngine.mockClear()
-  audioMock.engine.playResolvedExercise.mockReset()
-  audioMock.engine.playResolvedExercise.mockResolvedValue(undefined)
-  audioMock.engine.setTempoBpm.mockClear()
-  audioMock.engine.setVolumes.mockClear()
-  audioMock.engine.stop.mockClear()
-  audioMock.engine.dispose.mockClear()
-  mediaRecorderInstances = []
-  mediaRecorderStartError = null
-  audioContextConstructedMock.mockClear()
-  trackStopMock.mockClear()
-  getUserMediaMock.mockReset()
-  getUserMediaMock.mockResolvedValue({
-    getTracks: () => [{ stop: trackStopMock }],
-  } as unknown as MediaStream)
-  createObjectUrlMock.mockReset()
-  createObjectUrlMock.mockReturnValue('blob:recorded-take')
-  revokeObjectUrlMock.mockClear()
-  MockMediaRecorder.isTypeSupported.mockClear()
-  scoringMock.analyzeTake.mockReset()
-  scoringMock.analyzeTake.mockReturnValue([
-    {
-      onsetSeconds: 0,
-      durationSeconds: 0.4,
-      frequencyHz: 261.63,
-      midi: 60,
-      pitchClass: 0,
-      centsFromNearestSemitone: 4,
-      clarity: 0.95,
-    },
-  ])
-  saveNotationDisplayModeMock.mockClear()
-  saveScoringToleranceMock.mockClear()
-  savePlayAlongTempoMock.mockClear()
-  scoringMock.scoreTake.mockReset()
-  scoringMock.scoreTake.mockImplementation(
-    (_events: unknown, expected: ExpectedNote[], tolerance: TolerancePreset) => ({
-      score: 92,
-      components: { pitch: 100, timing: 83, completeness: 100 },
-      perNote: expected.slice(0, 3).map((note, index) => ({
-        expected: note,
-        event: {
-          onsetSeconds: note.onsetSeconds + (index === 1 ? 0.12 : 0),
-          durationSeconds: 0.4,
-          frequencyHz: 261.63,
-          midi: 60,
-          pitchClass: 0,
-          centsFromNearestSemitone: 4,
-          clarity: 0.95,
-        },
-        verdict: index === 1 ? 'late' : 'correct',
-        timingOffsetSeconds: index === 1 ? 0.12 : 0,
-        pitchClassMatched: true,
-        pitchCents: 4,
-        timingCredit: index === 1 ? 0.5 : 1,
-        pitchCredit: 1,
-      })),
-      extras: [],
-      tolerance,
-    }),
-  )
-  Object.defineProperty(navigator, 'mediaDevices', {
-    configurable: true,
-    value: { getUserMedia: getUserMediaMock },
-  })
-  Object.defineProperty(window, 'AudioContext', {
-    configurable: true,
-    value: MockAudioContext,
-  })
-  Object.defineProperty(window, 'MediaRecorder', {
-    configurable: true,
-    value: MockMediaRecorder,
-  })
-  Object.defineProperty(window, 'requestAnimationFrame', {
-    configurable: true,
-    writable: true,
-    value: vi.fn(() => 1),
-  })
-  Object.defineProperty(window, 'cancelAnimationFrame', {
-    configurable: true,
-    writable: true,
-    value: vi.fn(),
-  })
-  Object.defineProperty(URL, 'createObjectURL', {
-    configurable: true,
-    value: createObjectUrlMock,
-  })
-  Object.defineProperty(URL, 'revokeObjectURL', {
-    configurable: true,
-    value: revokeObjectUrlMock,
-  })
-})
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 describe('PracticeRunner', () => {
-  it('renders the exercise on the fretboard at its resolved positions', () => {
-    renderRunner()
-    const svg = screen.getByRole('img', {
-      name: 'C major — open position on the fretboard, frets 0 to 4',
-    })
-    const expected = resolveExercise(lesson.exercises[0]).positions
-    expect(svg.querySelectorAll('g[data-string]')).toHaveLength(expected.length)
-    // The root C of the C major scale sits on string 5 fret 3 in this window.
-    const root = svg.querySelector('g[data-string="5"][data-fret="3"]')
-    expect(root).toHaveAttribute('data-role', 'root')
-    expect(root!.querySelector('text')).toHaveTextContent('C')
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000)
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it('shows notation for an exercise with the hint and none for one without', async () => {
-    const user = userEvent.setup()
+  it('shows the first exercise on the fretboard with its tempo and time', () => {
     renderRunner()
-
-    // fx-1 opts in: the score container appears with its summary label.
     expect(
-      screen.getByRole('img', {
-        name: 'C major — open position — staff and tablature',
-      }),
-    ).toBeInTheDocument()
-
-    // fx-2 has no 'notation' hint: only the fretboard image remains.
-    await finishAndGrade(user, 'C major — open position', 'Got it')
-    expect(
-      screen.queryByRole('img', { name: /staff and tablature/ }),
-    ).toBeNull()
-  })
-
-  it('switches and persists the notation display mode', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Show staff notation for C major — open position',
-      }),
-    )
-
-    expect(saveNotationDisplayModeMock).toHaveBeenLastCalledWith('staff')
-    expect(
-      screen.getByRole('img', {
-        name: 'C major — open position — staff notation',
-      }),
-    ).toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Show tablature for C major — open position',
-      }),
-    )
-
-    expect(saveNotationDisplayModeMock).toHaveBeenLastCalledWith('tab')
-    expect(
-      screen.getByRole('img', {
-        name: 'C major — open position — tablature',
-      }),
-    ).toBeInTheDocument()
-  })
-
-  it('uses server-provided preferences when an exercise opens', () => {
-    renderRunner(vi.fn(), lesson, vi.fn(), {
-      notationDisplayMode: 'tab',
-      scoringTolerance: 'strict',
-      playAlongTempos: { 'fx-1': 72 },
-    })
-
-    expect(
-      screen.getByRole('img', {
-        name: 'C major — open position — tablature',
-      }),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText('Scoring tolerance')).toHaveValue('strict')
-    expect(
-      screen.getByRole('slider', {
-        name: 'Tempo for C major — open position',
-      }),
-    ).toHaveValue('72')
-  })
-
-  it('makes the score viewport keyboard focusable', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    const viewport = screen.getByLabelText('C major — open position score viewport')
-    await user.click(viewport)
-    expect(viewport).toHaveFocus()
-  })
-
-  it('opens score focus mode with display controls and exits on Escape', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    const openFocusButton = screen.getByRole('button', {
-      name: 'Open focus mode for C major — open position score',
-    })
-    await user.click(openFocusButton)
-
-    const dialog = screen.getByRole('dialog', {
-      name: 'C major — open position score focus mode',
-    })
-    expect(
-      within(dialog).getByRole('img', {
-        name: 'C major — open position focus — staff and tablature',
-      }),
-    ).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Exit focus' })).toHaveFocus()
-
-    within(dialog)
-      .getByRole('button', {
-        name: 'Show staff and tablature for C major — open position',
-      })
-      .focus()
-    await user.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(
-      within(dialog).getByLabelText('C major — open position focus score viewport'),
+      screen.getByRole('heading', { level: 1, name: 'Fixture lesson' }),
     ).toHaveFocus()
-
-    await user.click(
-      within(dialog).getByRole('button', {
-        name: 'Show staff notation for C major — open position',
-      }),
-    )
-    expect(
-      within(dialog).getByRole('img', {
-        name: 'C major — open position focus — staff notation',
-      }),
-    ).toBeInTheDocument()
-
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).toBeNull()
-    expect(openFocusButton).toHaveFocus()
-  })
-
-  it('does not expose grade choices before the playthrough ends', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Open focus mode for C major — open position score',
-      }),
-    )
-    const focusDialog = screen.getByRole('dialog', {
-      name: 'C major — open position score focus mode',
-    })
-    expect(
-      within(focusDialog).queryByRole('button', { name: 'Got it' }),
-    ).toBeNull()
-
-    await user.keyboard('{Escape}')
-    await completeExercise(user, 'C major — open position')
-
-    const gradeDialog = screen.getByRole('dialog', {
-      name: 'Grade C major — open position',
-    })
-    expect(
-      within(gradeDialog).getByRole('button', { name: 'Got it' }),
-    ).toHaveFocus()
-
-    await user.click(
-      within(gradeDialog).getByRole('button', { name: 'Got it' }),
-    )
-
-    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
-  })
-
-  it('lazy-loads play-along audio on first play and starts with defaults', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    expect(audioMock.moduleLoaded).not.toHaveBeenCalled()
-    expect(audioMock.createPlayAlongEngine).not.toHaveBeenCalled()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
-    })
-    expect(audioMock.createPlayAlongEngine).toHaveBeenCalledTimes(1)
-    expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith({
-      positions: resolveExercise(lesson.exercises[0]).positions,
-      tempoBpm: 60,
-      loop: true,
-      click: true,
-      countInBeats: 4,
-      guitarVolume: 0.8,
-      clickVolume: 0.8,
-    })
-    expect(
-      screen.getByRole('button', {
-        name: 'Stop play-along for C major — open position',
-      }),
-    ).toBeInTheDocument()
-  })
-
-  it('starts minute countdowns only after playback starts and prompts on expiry', async () => {
-    vi.useFakeTimers()
-    renderRunner()
-
-    expect(screen.getByText('1:00')).toBeInTheDocument()
-    act(() => vi.advanceTimersByTime(5_000))
-    expect(screen.getByText('1:00')).toBeInTheDocument()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Begin C major — open position' }),
-    )
-    expect(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    ).toBeEnabled()
-
-    act(() => vi.advanceTimersByTime(1_000))
-    expect(screen.getByText('0:59')).toBeInTheDocument()
-
-    act(() => vi.advanceTimersByTime(59_000))
-    expect(
-      screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-    ).toBeInTheDocument()
-  })
-
-  it('shows loading and error states for failed playback', async () => {
-    const user = userEvent.setup()
-    let rejectStart!: (error: Error) => void
-    audioMock.engine.playResolvedExercise.mockReturnValueOnce(
-      new Promise((_, reject) => {
-        rejectStart = reject
-      }),
-    )
-    renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-    expect(
-      screen.getByRole('button', {
-        name: 'Loading play-along for C major — open position',
-      }),
-    ).toBeDisabled()
-
-    rejectStart(new Error('Audio unavailable'))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Audio unavailable',
-    )
-  })
-
-  it('persists a slower tempo and uses it for playback', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    fireEvent.change(
-      screen.getByRole('slider', {
-        name: 'Tempo for C major — open position',
-      }),
-      { target: { value: '48' } },
-    )
-
-    expect(savePlayAlongTempoMock).toHaveBeenLastCalledWith('fx-1', 48)
-    expect(screen.getAllByText('48 BPM').length).toBeGreaterThan(0)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
-        expect.objectContaining({ tempoBpm: 48 }),
-      )
-    })
-  })
-
-  it('persists and restores a tempo above the authored exercise tempo', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    const tempoSlider = screen.getByRole('slider', {
-      name: 'Tempo for C major — open position',
-    })
-    expect(tempoSlider).toHaveAttribute('max', '200')
-
-    fireEvent.change(tempoSlider, { target: { value: '200' } })
-
-    expect(savePlayAlongTempoMock).toHaveBeenLastCalledWith('fx-1', 200)
-    expect(screen.getAllByText('200 BPM').length).toBeGreaterThan(0)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
-        expect.objectContaining({ tempoBpm: 200 }),
-      )
-    })
-  })
-
-  it('updates active playback tempo when the slider changes', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
-    })
-
-    fireEvent.change(
-      screen.getByRole('slider', {
-        name: 'Tempo for C major — open position',
-      }),
-      { target: { value: '52' } },
-    )
-
-    expect(audioMock.engine.setTempoBpm).toHaveBeenCalledWith(52)
-  })
-
-  it('exposes guitar and click volume controls and updates active playback', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    expect(screen.getByRole('slider', { name: 'Guitar volume' })).toHaveValue(
-      '80',
-    )
-    expect(screen.getByRole('slider', { name: 'Click volume' })).toHaveValue('80')
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
-        expect.objectContaining({
-          guitarVolume: 0.8,
-          clickVolume: 0.8,
-        }),
-      )
-    })
-
-    fireEvent.change(screen.getByRole('slider', { name: 'Guitar volume' }), {
-      target: { value: '35' },
-    })
-    fireEvent.change(screen.getByRole('slider', { name: 'Click volume' }), {
-      target: { value: '20' },
-    })
-
-    expect(audioMock.engine.setVolumes).toHaveBeenCalledWith({ guitar: 0.35 })
-    expect(audioMock.engine.setVolumes).toHaveBeenCalledWith({ click: 0.2 })
-  })
-
-  it('passes loop and click state to playback', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await user.click(screen.getByRole('checkbox', { name: 'Loop' }))
-    await user.click(
-      screen.getByRole('checkbox', { name: 'Click + count-in' }),
-    )
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledWith(
-        expect.objectContaining({
-          loop: false,
-          click: false,
-          countInBeats: 0,
-        }),
-      )
-    })
-  })
-
-  it('records a take after a metronome count-in and replays it in-session', async () => {
-    const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    const fastLesson: Lesson = {
-      ...lesson,
-      exercises: [
-        { ...lesson.exercises[0], tempoBpm: 200 },
-        lesson.exercises[1],
-      ],
-    }
-    renderRunner(vi.fn(), fastLesson, onSessionChange)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-
-    expect(getUserMediaMock).toHaveBeenCalledWith({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-      },
-    })
-    expect(audioContextConstructedMock).toHaveBeenCalled()
-    expect(
-      audioContextConstructedMock.mock.invocationCallOrder[0],
-    ).toBeLessThan(getUserMediaMock.mock.invocationCallOrder[0])
-    expect(await screen.findByText('Count-in beat 1 of 4')).toBeInTheDocument()
-    expect(screen.getByRole('meter', { name: 'Input level' })).toHaveAttribute(
-      'aria-valuenow',
-      '25',
-    )
-
-    expect(
-      await screen.findByRole(
-        'button',
-        { name: 'Stop recording C major — open position' },
-        { timeout: 2_500 },
-      ),
-    ).toBeInTheDocument()
-    expect(mediaRecorderInstances).toHaveLength(1)
-    expect(mediaRecorderInstances[0].state).toBe('recording')
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Stop recording C major — open position',
-      }),
-    )
-
-    expect(await screen.findByLabelText('Recorded take replay')).toHaveAttribute(
-      'src',
-      'blob:recorded-take',
-    )
-    expect(screen.getByText(/Take captured/)).toBeInTheDocument()
-    expect(trackStopMock).toHaveBeenCalled()
-    expect(onSessionChange).not.toHaveBeenCalled()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    )
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-      ).getByRole('button', { name: 'Got it' }),
-    )
-
-    expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
-    expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:recorded-take')
-  })
-
-  it('scores a recorded take and persists the score with the graded session', async () => {
-    const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    const fastLesson: Lesson = {
-      ...lesson,
-      exercises: [
-        { ...lesson.exercises[0], tempoBpm: 200 },
-        lesson.exercises[1],
-      ],
-    }
-    renderRunner(vi.fn(), fastLesson, onSessionChange)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-    await user.click(
-      await screen.findByRole(
-        'button',
-        { name: 'Stop recording C major — open position' },
-        { timeout: 2_500 },
-      ),
-    )
-
-    expect(await screen.findByText('Machine score')).toBeInTheDocument()
-    expect(screen.getByText('92')).toBeInTheDocument()
-    expect(screen.getAllByText('On time')).toHaveLength(2)
-    expect(screen.getByText('Late')).toBeInTheDocument()
-    expect(scoringMock.scoreTake).toHaveBeenCalledWith(
-      expect.any(Array),
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'fx-1-0', note: 'E', onsetSeconds: 0 }),
-      ]),
-      'standard',
-    )
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    )
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-      ).getByRole('button', { name: 'Got it' }),
-    )
-
-    await waitFor(() => {
-      expect(onSessionChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          id: 'session-1',
-          score: 92,
-          results: [
-            {
-              exerciseId: 'fx-1',
-              grade: 'got-it',
-              score: {
-                score: 92,
-                tolerance: 'standard',
-                components: { pitch: 100, timing: 83, completeness: 100 },
-                perNote: expect.arrayContaining([
-                  expect.objectContaining({
-                    expectedId: 'fx-1-0',
-                    expectedNote: 'E',
-                    verdict: 'correct',
-                  }),
-                ]),
-                extras: 0,
-                analyzedAt: expect.any(String),
-              },
-            },
-          ],
-        }),
-      )
-    })
-  })
-
-  it('persists the selected scoring tolerance preference', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await user.selectOptions(
-      screen.getByLabelText('Scoring tolerance'),
-      'strict',
-    )
-
-    expect(saveScoringToleranceMock).toHaveBeenLastCalledWith('strict')
-  })
-
-  it('does not persist a punitive score when the take is unclear', async () => {
-    const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    scoringMock.analyzeTake.mockReturnValueOnce([])
-    const fastLesson: Lesson = {
-      ...lesson,
-      exercises: [
-        { ...lesson.exercises[0], tempoBpm: 200 },
-        lesson.exercises[1],
-      ],
-    }
-    renderRunner(vi.fn(), fastLesson, onSessionChange)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-    await user.click(
-      await screen.findByRole(
-        'button',
-        { name: 'Stop recording C major — open position' },
-        { timeout: 2_500 },
-      ),
-    )
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      "We couldn't hear enough clear notes",
-    )
-    expect(scoringMock.scoreTake).not.toHaveBeenCalled()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    )
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-      ).getByRole('button', { name: 'Shaky' }),
-    )
-
-    await waitFor(() => {
-      expect(onSessionChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          id: 'session-1',
-          results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
-        }),
-      )
-    })
-    const saved = onSessionChange.mock.lastCall?.[0]
-    expect(saved?.score).toBeUndefined()
-    expect(saved?.results[0].score).toBeUndefined()
-  })
-
-  it('stops active recording capture when Next opens grading', async () => {
-    const user = userEvent.setup()
-    const fastLesson: Lesson = {
-      ...lesson,
-      exercises: [
-        { ...lesson.exercises[0], tempoBpm: 200 },
-        lesson.exercises[1],
-      ],
-    }
-    renderRunner(vi.fn(), fastLesson)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-    expect(
-      await screen.findByRole(
-        'button',
-        { name: 'Stop recording C major — open position' },
-        { timeout: 2_500 },
-      ),
-    ).toBeInTheDocument()
-    expect(mediaRecorderInstances[0].state).toBe('recording')
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    )
-
-    expect(mediaRecorderInstances[0].state).toBe('inactive')
-    expect(trackStopMock).toHaveBeenCalled()
-    expect(screen.queryByLabelText('Recorded take replay')).toBeNull()
-    expect(
-      screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-    ).toBeInTheDocument()
-  })
-
-  it('recovers when MediaRecorder cannot start after count-in', async () => {
-    const user = userEvent.setup()
-    mediaRecorderStartError = new Error('Recorder refused to start')
-    const fastLesson: Lesson = {
-      ...lesson,
-      exercises: [
-        { ...lesson.exercises[0], tempoBpm: 200 },
-        lesson.exercises[1],
-      ],
-    }
-    renderRunner(vi.fn(), fastLesson)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-
-    expect(
-      await screen.findByRole('alert', undefined, { timeout: 2_500 }),
-    ).toHaveTextContent('Recorder refused to start')
-    expect(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    ).toBeEnabled()
-    expect(trackStopMock).toHaveBeenCalled()
-  })
-
-  it('shows a recoverable microphone denial state', async () => {
-    const user = userEvent.setup()
-    getUserMediaMock.mockRejectedValueOnce(
-      new DOMException('denied', 'NotAllowedError'),
-    )
-    renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    )
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Microphone access was blocked',
-    )
-    expect(
-      screen.getByRole('button', {
-        name: 'Record take for C major — open position',
-      }),
-    ).toBeEnabled()
-  })
-
-  it('stops playback when advancing or ending a lesson', async () => {
-    const user = userEvent.setup()
-    const onExit = renderRunner()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for C major — open position',
-      }),
-    )
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(1)
-    })
-    await user.click(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    )
-
-    expect(audioMock.engine.stop).toHaveBeenCalled()
-    await user.click(
-      within(
-        screen.getByRole('dialog', { name: 'Grade C major — open position' }),
-      ).getByRole('button', { name: 'Got it' }),
-    )
-    expect(audioMock.engine.dispose).toHaveBeenCalledTimes(1)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Play play-along for G7 arpeggio — open position',
-      }),
-    )
-    await waitFor(() => {
-      expect(audioMock.engine.playResolvedExercise).toHaveBeenCalledTimes(2)
-    })
-    await user.click(screen.getByRole('button', { name: 'End lesson' }))
-
-    expect(onExit).toHaveBeenCalledTimes(1)
-    expect(audioMock.engine.dispose).toHaveBeenCalledTimes(2)
-  })
-
-  it('runs the happy path: grade both exercises, see the summary, persist a completed session', async () => {
-    const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
-
     expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
-    expect(screen.getByText('C major — open position')).toBeInTheDocument()
-    expect(screen.getAllByText('60 BPM').length).toBeGreaterThan(0)
-    expect(screen.getByText('1:00')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull()
     expect(
-      screen.getByRole('button', {
-        name: 'End playthrough and grade C major — open position',
-      }),
-    ).toBeDisabled()
-
-    await finishAndGrade(user, 'C major — open position', 'Got it')
-    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
-    expect(screen.getByText('G7 arpeggio — open position')).toBeInTheDocument()
-    expect(screen.getByText('8 repetitions')).toBeInTheDocument()
-
-    await finishAndGrade(user, 'G7 arpeggio — open position', 'Shaky')
-    expect(
-      screen.getByRole('heading', { name: 'Lesson complete — Fixture lesson' }),
+      screen.getByRole('heading', { level: 2, name: 'C major — open position' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Got it')).toBeInTheDocument()
-    expect(screen.getByText('Shaky')).toBeInTheDocument()
+    expect(screen.getByText('60 BPM')).toBeInTheDocument()
+    expect(screen.getByText('1:00')).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', {
+        name: 'C major — open position on the fretboard, frets 0 to 4',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: /^Grade / })).toBeNull()
+  })
 
-    await waitFor(() => {
-      expect(onSessionChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          id: 'session-1',
-          lessonId: 'fixture-lesson',
-          completed: true,
-          results: [
-            { exerciseId: 'fx-1', grade: 'got-it' },
-            { exerciseId: 'fx-2', grade: 'shaky' },
-          ],
-        }),
-      )
+  it('starts the click at the exercise tempo on Begin and stops it on Next', async () => {
+    const user = userEvent.setup()
+    const { click } = renderRunner()
+
+    await begin(user, 'C major — open position')
+    expect(click.calls).toEqual(['start 60'])
+
+    await user.click(
+      screen.getByRole('button', { name: 'Next: finish C major — open position' }),
+    )
+    expect(click.calls).toEqual(['start 60', 'stop'])
+    expect(
+      within(
+        screen.getByRole('group', { name: 'Grade C major — open position' }),
+      ).getByRole('button', { name: 'Got it' }),
+    ).toHaveFocus()
+  })
+
+  it('lets the player silence and resume the click mid-exercise', async () => {
+    const user = userEvent.setup()
+    const { click } = renderRunner()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Click' }))
+    await begin(user, 'C major — open position')
+    expect(click.calls).toEqual([])
+
+    await user.click(screen.getByRole('checkbox', { name: 'Click' }))
+    expect(click.calls).toEqual(['start 60'])
+  })
+
+  it('reports a click that cannot start without breaking the exercise', async () => {
+    const user = userEvent.setup()
+    const click = fakeClick()
+    click.track.start = () => {
+      throw new Error('no audio')
+    }
+    renderRunner({ click })
+
+    await begin(user, 'C major — open position')
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The click is unavailable in this browser.',
+    )
+    expect(
+      screen.getByRole('button', { name: 'Next: finish C major — open position' }),
+    ).toBeInTheDocument()
+  })
+
+  it('counts the timer down only while the exercise is active and grades at zero', async () => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderRunner()
+
+    act(() => vi.advanceTimersByTime(3_000))
+    expect(screen.getByText('1:00')).toBeInTheDocument()
+
+    await begin(user, 'C major — open position')
+    act(() => vi.advanceTimersByTime(2_000))
+    expect(screen.getByText('0:58')).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(58_000))
+    expect(screen.getByText('Time — grade yourself')).toBeInTheDocument()
+    expect(
+      screen.getByRole('group', { name: 'Grade C major — open position' }),
+    ).toBeInTheDocument()
+    // A timer expiry announces; it does not steal focus.
+    expect(screen.getByRole('button', { name: 'Got it' })).not.toHaveFocus()
+    vi.useRealTimers()
+  })
+
+  it('moves focus to the next exercise heading on advance and keeps the click preference', async () => {
+    const user = userEvent.setup()
+    const { click } = renderRunner()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Click' }))
+    await begin(user, 'C major — open position')
+    await finishAndGrade(user, 'C major — open position', 'Got it')
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'G7 arpeggio — open position' }),
+    ).toHaveFocus()
+    expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
+    await begin(user, 'G7 arpeggio — open position')
+    expect(click.calls).toEqual([])
+  })
+
+  it('counts repetitions and grades when the target is reached', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    await begin(user, 'C major — open position')
+    await finishAndGrade(user, 'C major — open position', 'Got it')
+
+    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+    expect(screen.getByText('0 of 2 repetitions')).toBeInTheDocument()
+    await begin(user, 'G7 arpeggio — open position')
+    await user.click(screen.getByRole('button', { name: 'Count rep' }))
+    expect(screen.getByText('1 of 2 repetitions')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Count rep' }))
+
+    expect(
+      screen.getByRole('group', { name: 'Grade G7 arpeggio — open position' }),
+    ).toBeInTheDocument()
+  })
+
+  it('persists every grade and finishes with the summary', async () => {
+    const user = userEvent.setup()
+    const { onSessionChange, onExit, click } = renderRunner()
+
+    await begin(user, 'C major — open position')
+    vi.spyOn(Date, 'now').mockReturnValue(31_000)
+    await finishAndGrade(user, 'C major — open position', 'Shaky')
+    expect(onSessionChange).toHaveBeenLastCalledWith({
+      id: 'session-1',
+      lessonId: 'fixture-lesson',
+      startedAt: new Date(1_000).toISOString(),
+      durationSeconds: 30,
+      completed: false,
+      results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
     })
+
+    await begin(user, 'G7 arpeggio — open position')
+    await finishAndGrade(user, 'G7 arpeggio — open position', 'Got it')
+
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Lesson complete — Fixture lesson',
+      }),
+    ).toHaveFocus()
+    expect(screen.getByText('Shaky')).toBeInTheDocument()
+    expect(screen.getByText('Got it')).toBeInTheDocument()
+    expect(onSessionChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        completed: true,
+        results: [
+          { exerciseId: 'fx-1', grade: 'shaky' },
+          { exerciseId: 'fx-2', grade: 'got-it' },
+        ],
+      }),
+    )
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(onExit).toHaveBeenCalledTimes(1)
+    expect(click.calls).toContain('stop')
   })
 
-  it('persists a partial session marked incomplete when abandoned mid-lesson', async () => {
+  it('saves an abandoned run as incomplete when the lesson is ended early', async () => {
     const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
+    const { onSessionChange, onExit } = renderRunner()
 
+    await begin(user, 'C major — open position')
     await finishAndGrade(user, 'C major — open position', 'Missed')
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
 
     expect(onExit).toHaveBeenCalledTimes(1)
-    await waitFor(() => {
-      expect(onSessionChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          id: 'session-1',
-          lessonId: 'fixture-lesson',
-          completed: false,
-          results: [{ exerciseId: 'fx-1', grade: 'missed' }],
-        }),
-      )
-    })
+    expect(onSessionChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        completed: false,
+        results: [{ exerciseId: 'fx-1', grade: 'missed' }],
+      }),
+    )
   })
 
-  it('persists nothing until an exercise is graded', async () => {
+  it('disposes the click track when the player unmounts', async () => {
     const user = userEvent.setup()
-    const onSessionChange = vi.fn()
-    const onExit = renderRunner(vi.fn(), lesson, onSessionChange)
-    await user.click(screen.getByRole('button', { name: 'End lesson' }))
-    expect(onExit).toHaveBeenCalledTimes(1)
-    expect(onSessionChange).not.toHaveBeenCalled()
-  })
-
-  it('moves focus to the lesson heading when the runner appears', () => {
-    renderRunner()
-    expect(
-      screen.getByRole('heading', { name: 'Fixture lesson' }),
-    ).toHaveFocus()
-  })
-
-  it('moves focus to the summary heading when the last grade swaps in the summary', async () => {
-    const user = userEvent.setup()
-    renderRunner()
-
-    await finishAndGrade(user, 'C major — open position', 'Got it')
-
-    await finishAndGrade(user, 'G7 arpeggio — open position', 'Shaky')
-    expect(
-      screen.getByRole('heading', { name: 'Lesson complete — Fixture lesson' }),
-    ).toHaveFocus()
+    const { unmount, click } = renderRunner()
+    await begin(user, 'C major — open position')
+    expect(click.track.playing).toBe(true)
+    unmount()
+    expect(click.calls.at(-1)).toBe('dispose')
+    expect(click.track.playing).toBe(false)
   })
 })

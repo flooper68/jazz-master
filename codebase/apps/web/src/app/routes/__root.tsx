@@ -1,62 +1,14 @@
 import { createRootRoute } from '@tanstack/react-router'
 import { Layout } from '../../components/Layout'
-import { OnboardingWizard } from '../../components/OnboardingWizard'
-import { useViewFocus } from '../../components/useViewFocus'
 import { HealthFooter } from '../HealthFooter'
+import ErrorPage from '../pages/ErrorPage'
 import NotFoundPage from '../pages/NotFoundPage'
-import { useProfile } from '../ProfileProvider'
 
-// First-run gate (TASK-016): no stored profile means onboarding has never
-// run, so every path shows the wizard until one is persisted.
 // oxlint-disable-next-line react/only-export-components -- TanStack root route files colocate the component with the Route export
 function RootComponent() {
-  const { profile, status, saveProfile, isSaving } = useProfile()
-  // ISSUE-002: completing onboarding swaps the wizard for the app shell within
-  // the same route; move focus into the app's main landmark so keyboard and
-  // screen-reader users land on the page content, not document.body.
-  const mainRef = useViewFocus<HTMLElement>(
-    profile === null ? 'onboarding' : 'app',
-  )
-
-  if (status === 'pending') {
-    return (
-      <>
-        <main className="flex min-h-screen items-center justify-center bg-canvas px-4 text-fg-2">
-          <p>Loading profile...</p>
-        </main>
-        <HealthFooter />
-      </>
-    )
-  }
-
-  if (status === 'error') {
-    return (
-      <>
-        <main className="flex min-h-screen items-center justify-center bg-canvas px-4 text-fg-2">
-          <p>Profile could not be loaded.</p>
-        </main>
-        <HealthFooter />
-      </>
-    )
-  }
-
-  if (profile === null) {
-    return (
-      <>
-        <OnboardingWizard
-          isSaving={isSaving}
-          onComplete={(completed) => {
-            void saveProfile(completed)
-          }}
-        />
-        <HealthFooter />
-      </>
-    )
-  }
-
   return (
     <>
-      <Layout mainRef={mainRef} />
+      <Layout />
       <HealthFooter />
     </>
   )
@@ -65,4 +17,5 @@ function RootComponent() {
 export const Route = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFoundPage,
+  errorComponent: ErrorPage,
 })

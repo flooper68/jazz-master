@@ -26,10 +26,7 @@ export type ExerciseDuration =
   | { kind: 'minutes'; minutes: number }
   | { kind: 'repetitions'; count: number }
 
-/** Display hint for the practice runner; 'notation' is staff + TAB (EPIC-009). */
-export type ExerciseDisplay = 'fretboard' | 'chordDiagram' | 'notation'
-
-/** One playable unit: material + where on the neck + tempo + how long. */
+/** One playable unit: material + where on the neck + tempo + how long. The player renders it on the fretboard. */
 export interface Exercise {
   /** Unique across the whole curriculum — session records key on it. */
   id: string
@@ -39,17 +36,16 @@ export interface Exercise {
   window: FretRange
   tempoBpm: number
   duration: ExerciseDuration
-  display: readonly ExerciseDisplay[]
 }
 
 export type LessonArea = 'scales' | 'arpeggios' | 'chords' | 'standards'
 
-/** An ordered run of exercises plus the metadata the planner needs. */
+/** An ordered run of exercises plus the metadata the list (and later the planner) reads. */
 export interface Lesson {
   id: string
   title: string
   area: LessonArea
-  /** Difficulty tier, 1 = beginner; the planner matches it to the profile. */
+  /** Difficulty tier, 1 = beginner. */
   level: number
   /** Lesson ids to complete first. */
   prerequisites: readonly string[]

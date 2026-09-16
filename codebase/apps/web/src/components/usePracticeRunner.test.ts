@@ -21,7 +21,6 @@ const lesson: Lesson = {
       window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
-      display: ['fretboard'],
     },
     {
       id: 'fx-2',
@@ -30,7 +29,6 @@ const lesson: Lesson = {
       window: { min: 0, max: 4 },
       tempoBpm: 60,
       duration: { kind: 'repetitions', count: 8 },
-      display: ['fretboard'],
     },
   ],
 }

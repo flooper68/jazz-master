@@ -1,13 +1,12 @@
 import {
-  completeOnboarding,
   expect,
+  gradeCurrentExercise,
   gradeThroughLesson,
-  skipOnboarding,
+  listStoredSessions,
   test,
 } from './fixtures'
 
-// Each test gets a fresh test-auth user, so every /app visit starts at the
-// first-run onboarding gate without needing real Clerk credentials.
+const FIRST_LESSON = 'Major scale I — open position'
 
 test('landing page renders and links to app-hosted auth', async ({ page }) => {
   await page.goto('/')
@@ -45,201 +44,79 @@ test('Clerk nested auth states stay on app-hosted routes', async ({ page }) => {
   await expect(page.getByText('404: Not found')).toHaveCount(0)
 })
 
-test('happy path: onboard, run a planned lesson, see it in history and on the dashboard', async ({
+test('happy path: pick a lesson, play it through, and the session is stored', async ({
   page,
 }) => {
-  await page.goto('/app/practice')
-  await completeOnboarding(page)
+  await page.goto('/app')
   await expect(
-    page.getByRole('heading', { name: 'Practice', level: 1 }),
+    page.getByRole('heading', { name: 'Lessons', level: 1 }),
   ).toBeVisible()
 
-  // Start the first item of today's plan and remember which lesson it is.
-  const startPlanned = page
-    .getByRole('button', { name: /^Start planned lesson / })
-    .first()
-  const lessonTitle = (await startPlanned.getAttribute('aria-label'))!.replace(
-    'Start planned lesson ',
-    '',
-  )
-  await startPlanned.click()
-  const runnerHeading = page.getByRole('heading', {
-    name: lessonTitle,
-    level: 2,
-  })
-  await expect(runnerHeading).toBeVisible()
-  await expect(runnerHeading).toBeFocused()
-  const notationScore = page.getByRole('img', {
-    name: /staff and tablature/i,
-  }).first()
-  await expect(notationScore).toBeVisible()
-  await expect
-    .poll(
-      async () => notationScore.locator('svg text').count(),
-      { message: 'notation score glyphs rendered' },
-    )
-    .toBeGreaterThan(0)
+  await page.getByRole('link', { name: `Start ${FIRST_LESSON}` }).click()
+  await expect(page).toHaveURL(/\/app\/lessons\/scales-major-open$/)
+  const heading = page.getByRole('heading', { name: FIRST_LESSON, level: 1 })
+  await expect(heading).toBeVisible()
+  await expect(heading).toBeFocused()
+  await expect(
+    page.getByRole('img', { name: /on the fretboard, frets 0 to 4$/ }),
+  ).toBeVisible()
 
   await gradeThroughLesson(page)
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(
-    page.getByRole('button', { name: 'Start Major scale I — open position' }),
+    page.getByRole('heading', { name: 'Lessons', level: 1 }),
   ).toBeVisible()
 
-  // The completed session shows up in history, not marked incomplete.
-  await page.goto('/app/history')
-  await expect(page.getByRole('heading', { name: lessonTitle })).toBeVisible()
-  await expect(page.getByText('Incomplete')).not.toBeVisible()
-
-  // And the dashboard reflects it: streak started, area progress updated.
-  await page.goto('/app')
-  await expect(page.getByText('1 day', { exact: true })).toBeVisible()
-  await expect(page.getByText('1 of 5 lessons completed')).toBeVisible()
+  const sessions = await listStoredSessions(page)
+  expect(sessions).toHaveLength(1)
+  expect(sessions[0]).toMatchObject({
+    lessonId: 'scales-major-open',
+    completed: true,
+  })
+  expect(sessions[0].results.map((result) => result.grade)).toEqual(
+    Array(sessions[0].results.length).fill('got-it'),
+  )
 })
 
-test('runner Play starts timing before Next opens grading', async ({ page }) => {
-  await page.goto('/app/practice')
-  await skipOnboarding(page)
-  await page
-    .getByRole('button', { name: 'Start Major scale I — open position' })
-    .click()
+test('Begin starts the timer and the click; Next opens grading', async ({ page }) => {
+  await page.goto('/app/lessons/scales-major-open')
 
   await expect(page.getByText('2:00')).toBeVisible()
   await page.waitForTimeout(1_500)
   await expect(page.getByText('2:00')).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Click' })).toBeChecked()
 
-  await page.getByRole('button', { name: /^Play play-along for / }).click()
-  await expect(
-    page.getByRole('button', { name: /^Stop play-along for / }),
-  ).toBeVisible({ timeout: 30_000 })
-  await expect(
-    page.getByRole('button', { name: /^End playthrough and grade / }),
-  ).toBeEnabled()
-  await expect(page.getByText(/1:\d\d/)).toBeVisible()
+  await page.getByRole('button', { name: /^Begin / }).click()
+  await expect(page.getByText(/1:5\d/)).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
 
-  await page.getByRole('button', { name: /^End playthrough and grade / }).click()
-  const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
-  await expect(gradeDialog).toBeVisible()
-  await expect(gradeDialog.getByRole('button', { name: 'Got it' })).toBeFocused()
+  await page.getByRole('button', { name: /^Next: finish / }).click()
+  const grade = page.getByRole('group', { name: /^Grade / })
+  await expect(grade).toBeVisible()
+  await expect(grade.getByRole('button', { name: 'Got it' })).toBeFocused()
 })
 
-test('starting a lesson from the lesson list focuses the runner heading', async ({
+test('an abandoned run is stored incomplete and survives a reload', async ({
   page,
 }) => {
-  await page.goto('/app/practice')
-  await skipOnboarding(page)
-  const startLesson = page.getByRole('button', {
-    name: 'Start Major scale I — open position',
-  })
-  const lessonTitle = (await startLesson.getAttribute('aria-label'))!.replace(
-    'Start ',
-    '',
-  )
+  await page.goto('/app/lessons/scales-major-open')
 
-  await startLesson.click()
-
-  const runnerHeading = page.getByRole('heading', {
-    name: lessonTitle,
-    level: 2,
-  })
-  await expect(runnerHeading).toBeVisible()
-  await expect(runnerHeading).toBeFocused()
-})
-
-test('persistence: profile, preferences, plan, and sessions survive browser storage clearing', async ({
-  page,
-}) => {
-  await page.goto('/app/practice')
-  await skipOnboarding(page)
-  const startPlanned = page
-    .getByRole('button', { name: /^Start planned lesson / })
-    .first()
-  const lessonTitle = (await startPlanned.getAttribute('aria-label'))!.replace(
-    'Start planned lesson ',
-    '',
-  )
-  await startPlanned.click()
-
-  const beginButton = page.getByRole('button', { name: /^Begin / })
-  const exerciseTitle = (await beginButton.getAttribute('aria-label'))!.replace(
-    'Begin ',
-    '',
-  )
-
-  await Promise.all([
-    page.waitForResponse((response) =>
-      response.url().includes('preferences.setNotationDisplayMode'),
-    ),
-    page
-      .getByRole('button', {
-        name: `Show staff notation for ${exerciseTitle}`,
-      })
-      .click(),
-  ])
-  await Promise.all([
-    page.waitForResponse((response) =>
-      response.url().includes('preferences.setScoringTolerance'),
-    ),
-    page.getByLabel('Scoring tolerance').selectOption('strict'),
-  ])
-  await Promise.all([
-    page.waitForResponse((response) =>
-      response.url().includes('preferences.setPlayAlongTempo'),
-    ),
-    page
-      .getByRole('slider', { name: `Tempo for ${exerciseTitle}` })
-      .fill('72'),
-  ])
-
-  // One graded exercise is enough — the runner upserts the session per grade.
-  await beginButton.click()
-  await page.getByRole('button', { name: /^End playthrough and grade / }).click()
-  const gradeDialog = page.getByRole('dialog', { name: /^Grade / })
-  await expect(gradeDialog).toBeVisible()
   await Promise.all([
     page.waitForResponse((response) =>
       response.url().includes('sessions.upsert'),
     ),
-    gradeDialog.getByRole('button', { name: 'Got it' }).click(),
+    gradeCurrentExercise(page),
   ])
-  await page.evaluate(() => {
-    localStorage.clear()
-    sessionStorage.clear()
-  })
+  await expect(page.getByText('Exercise 2 of 3')).toBeVisible()
+
   await page.reload()
+  await expect(page.getByText('Exercise 1 of 3')).toBeVisible()
 
-  // Profile persisted: the onboarding gate stays open.
-  await expect(page.getByRole('button', { name: 'Skip for now' })).not.toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'Practice', level: 1 }),
-  ).toBeVisible()
-
-  // Plan persisted: same first item as before the reload.
-  await expect(
-    page.getByRole('button', { name: `Start planned lesson ${lessonTitle}` }),
-  ).toBeVisible()
-
-  // Account-scoped preferences return after all browser storage is cleared.
-  await page.getByRole('button', { name: `Start ${lessonTitle}` }).click()
-  await expect(
-    page.getByRole('button', {
-      name: `Show staff notation for ${exerciseTitle}`,
-    }),
-  ).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByLabel('Scoring tolerance')).toHaveValue('strict')
-  await expect(
-    page.getByRole('slider', { name: `Tempo for ${exerciseTitle}` }),
-  ).toHaveValue('72')
-
-  // Session record persisted, marked incomplete (the run was abandoned mid-flow).
-  await page.goto('/app/history')
-  await expect(page.getByRole('heading', { name: lessonTitle })).toBeVisible()
-  await expect(page.getByText('Incomplete')).toBeVisible()
-
-  await page.goto('/app/profile')
-  await expect(page.getByRole('heading', { name: 'Data sync' })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: 'Export backup' }),
-  ).toHaveCount(0)
-  await expect(page.getByLabel('Import backup')).toHaveCount(0)
+  const sessions = await listStoredSessions(page)
+  expect(sessions).toHaveLength(1)
+  expect(sessions[0]).toMatchObject({
+    lessonId: 'scales-major-open',
+    completed: false,
+    results: [{ exerciseId: 'scales-major-open-c', grade: 'got-it' }],
+  })
 })

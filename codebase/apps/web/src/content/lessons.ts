@@ -40,7 +40,6 @@ function scaleExercise(
     window: POSITIONS[position].window,
     tempoBpm,
     duration: { kind: 'minutes', minutes },
-    display: ['fretboard', 'notation'],
   }
 }
 
@@ -59,7 +58,6 @@ function arpeggioExercise(
     window: POSITIONS[position].window,
     tempoBpm,
     duration: { kind: 'minutes', minutes },
-    display: ['fretboard', 'notation'],
   }
 }
 

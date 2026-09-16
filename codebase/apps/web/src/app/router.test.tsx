@@ -1,79 +1,37 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultProfile } from '../appData/profile'
+import { LESSONS } from '../content'
 import { renderRoute } from '../test/renderRoute'
-import {
-  getTrpcTestProfile,
-  resetTrpcTestData,
-  seedTrpcTestProfile,
-} from '../test/trpcTestFetch'
+import { resetTrpcTestData } from '../test/trpcTestFetch'
 
 beforeEach(() => {
   resetTrpcTestData()
 })
 
-function seedProfile() {
-  seedTrpcTestProfile(defaultProfile('2026-07-06T10:00:00.000Z'))
-}
-
 describe('app router', () => {
-  it.each([
-    ['/', 'Dashboard'],
-    ['/practice', 'Practice'],
-    ['/history', 'History'],
-    ['/profile', 'Profile'],
-  ])('renders the %s page heading', async (path, heading) => {
-    seedProfile()
-    await renderRoute(path)
+  it('renders the lesson list at the app root', async () => {
+    await renderRoute('/')
     expect(
-      screen.getByRole('heading', { level: 1, name: heading }),
+      screen.getByRole('heading', { level: 1, name: 'Lessons' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the player for a lesson URL', async () => {
+    await renderRoute(`/lessons/${LESSONS[0].id}`)
+    expect(
+      screen.getByRole('heading', { level: 1, name: LESSONS[0].title }),
     ).toBeInTheDocument()
   })
 
   it('shows the app title in the persistent layout', async () => {
-    seedProfile()
-    await renderRoute('/practice')
+    await renderRoute('/')
     expect(screen.getByText('woodshed')).toBeInTheDocument()
   })
 
-  it('shows only the usable current surfaces in primary navigation', async () => {
-    seedProfile()
-    await renderRoute('/practice')
-    const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(
-      within(nav).getAllByRole('link').map((link) => link.textContent),
-    ).toEqual(['Dashboard', 'Practice', 'History', 'Profile'])
-    expect(
-      within(nav).queryByRole('link', { name: 'Voicings' }),
-    ).not.toBeInTheDocument()
-    expect(
-      within(nav).queryByRole('link', { name: 'Progressions' }),
-    ).not.toBeInTheDocument()
-    expect(
-      within(nav).queryByRole('link', { name: 'Repertoire' }),
-    ).not.toBeInTheDocument()
-    expect(
-      within(nav).queryByRole('link', { name: 'Ear Training' }),
-    ).not.toBeInTheDocument()
-  })
-
-  it('marks only the current page link as active', async () => {
-    seedProfile()
-    await renderRoute('/practice')
-    const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(nav).toContainElement(
-      screen.getByRole('link', { name: 'Practice', current: 'page' }),
-    )
-    expect(
-      screen.queryByRole('link', { name: 'Dashboard', current: 'page' }),
-    ).not.toBeInTheDocument()
-  })
-
-  it.each(['/voicings', '/progressions', '/repertoire', '/ear-training'])(
-    'renders not found for hidden unfinished route %s',
+  it.each(['/practice', '/history', '/profile', '/lessons/no-such-lesson', '/no-such-page'])(
+    'renders not found for %s',
     async (path) => {
-      seedProfile()
       await renderRoute(path)
       expect(
         screen.getByRole('heading', { level: 1, name: 'Page not found' }),
@@ -81,90 +39,28 @@ describe('app router', () => {
     },
   )
 
-  it('renders a not-found page for unknown paths', async () => {
-    seedProfile()
-    await renderRoute('/no-such-page')
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Page not found' }),
-    ).toBeInTheDocument()
-  })
-
-  it('navigates when a nav link is clicked', async () => {
-    const user = userEvent.setup()
-    seedProfile()
-    await renderRoute('/')
-    await user.click(screen.getByRole('link', { name: 'History' }))
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'History' }),
-    ).toBeInTheDocument()
-  })
-
-  it('shows onboarding on first visit before any route', async () => {
-    await renderRoute('/practice')
-
-    expect(
-      await screen.findByRole('heading', { name: 'How comfortable are you?' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('heading', { level: 1, name: 'Practice' }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('navigation', { name: 'Main' }),
-    ).not.toBeInTheDocument()
-  })
-
-  it('persists a skipped profile and enters the requested route', async () => {
-    const user = userEvent.setup()
-    await renderRoute('/practice')
-
-    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'Practice' })).toBeInTheDocument()
-    expect(getTrpcTestProfile()).toMatchObject({
-      levels: { scales: 1, arpeggios: 1, chords: 1, standards: 1, ears: 1 },
-      goalAreas: ['scales', 'arpeggios'],
-      minutesPerDay: 20,
-    })
-  })
-
-  it('moves focus into the app main region when onboarding gives way to the app', async () => {
-    const user = userEvent.setup()
-    await renderRoute('/practice')
-
-    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
-
-    expect(await screen.findByRole('main')).toHaveFocus()
-  })
-
-  it('persists a completed profile and enters the requested route', async () => {
+  it('navigates from the list into a lesson and back', async () => {
     const user = userEvent.setup()
     await renderRoute('/')
+    const lesson = LESSONS[0]
+    const start = screen.getByRole('link', { name: `Start ${lesson.title}` })
+    expect(start).toHaveAttribute('href', `/app/lessons/${lesson.id}`)
 
-    const scales = screen.getByRole('group', { name: 'Scales' })
-    await user.click(within(scales).getByRole('radio', { name: 'Intermediate' }))
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await user.click(screen.getByRole('checkbox', { name: /Chords/ }))
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await user.click(screen.getByRole('radio', { name: '30 min' }))
-    await user.click(screen.getByRole('button', { name: 'Start practicing' }))
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
-    expect(getTrpcTestProfile()).toMatchObject({
-      levels: { scales: 2 },
-      goalAreas: ['scales', 'arpeggios', 'chords'],
-      minutesPerDay: 30,
+    await user.click(start)
+    const heading = await screen.findByRole('heading', {
+      level: 1,
+      name: lesson.title,
     })
-  })
+    expect(heading).toHaveFocus()
 
-  it('does not show onboarding for a returning user with a profile', async () => {
-    seedProfile()
-    await renderRoute('/practice')
-
+    await user.click(screen.getByRole('button', { name: 'End lesson' }))
     expect(
-      screen.queryByRole('heading', { name: 'How comfortable are you?' }),
-    ).not.toBeInTheDocument()
+      await screen.findByRole('heading', { level: 1, name: 'Lessons' }),
+    ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Practice' }),
+      within(screen.getByRole('main')).getByRole('link', {
+        name: `Start ${lesson.title}`,
+      }),
     ).toBeInTheDocument()
   })
 })

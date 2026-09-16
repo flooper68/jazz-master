@@ -11,7 +11,6 @@ function exercise(overrides: Partial<Exercise> = {}): Exercise {
     window: { min: 1, max: 5 },
     tempoBpm: 80,
     duration: { kind: 'minutes', minutes: 5 },
-    display: ['fretboard'],
     ...overrides,
   }
 }

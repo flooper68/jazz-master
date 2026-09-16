@@ -125,7 +125,7 @@ would have created a second one at a different URL.
 
 `premysl.ciompa+test@gmail.com` is the dedicated Jazz Master Clerk user for
 manual regression and any real-Clerk automated scenario. It is test data: its
-profile, sessions, scores, and preferences may be reset or overwritten by
+practice sessions may be reset or overwritten by
 tests, and it must never be used as a production user.
 
 The intentionally public test credential is `test`, committed as

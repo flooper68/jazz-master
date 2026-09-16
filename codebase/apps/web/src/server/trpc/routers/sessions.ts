@@ -4,35 +4,10 @@ import { SessionOwnerMismatchError } from '../../db/sessions'
 import { protectedProcedure, router } from '../init'
 
 const exerciseGrade = z.enum(['got-it', 'shaky', 'missed'])
-const scoreVerdict = z.enum(['correct', 'early', 'late', 'wrong-pitch', 'missed'])
-const scoreTolerance = z.enum(['lenient', 'standard', 'strict'])
-const percentScore = z.number().finite().min(0).max(100)
-
-const exerciseScoreNoteSchema = z.object({
-  expectedId: z.string().min(1),
-  expectedNote: z.string().min(1),
-  verdict: scoreVerdict,
-  timingOffsetSeconds: z.number().finite().nullable(),
-  pitchCents: z.number().int().nullable(),
-})
-
-const exerciseScoreSchema = z.object({
-  score: percentScore,
-  tolerance: scoreTolerance,
-  components: z.object({
-    pitch: percentScore,
-    timing: percentScore,
-    completeness: percentScore,
-  }),
-  perNote: z.array(exerciseScoreNoteSchema),
-  extras: z.number().int().min(0),
-  analyzedAt: z.iso.datetime(),
-})
 
 const exerciseResultSchema = z.object({
   exerciseId: z.string().min(1),
   grade: exerciseGrade,
-  score: exerciseScoreSchema.optional(),
 })
 
 export const practiceSessionSchema = z.object({
@@ -42,7 +17,6 @@ export const practiceSessionSchema = z.object({
   durationSeconds: z.number().int().min(0),
   completed: z.boolean(),
   results: z.array(exerciseResultSchema),
-  score: percentScore.optional(),
 })
 
 export const sessionListOutput = z.discriminatedUnion('status', [

@@ -5,14 +5,6 @@ import {
   type DatabaseSmokeClient,
 } from '../db/smoke'
 import {
-  createProfileRepository,
-  type ProfileRepository,
-} from '../db/profiles'
-import {
-  createPreferenceRepository,
-  type PreferenceRepository,
-} from '../db/preferences'
-import {
   createSessionRepository,
   type SessionRepository,
 } from '../db/sessions'
@@ -29,8 +21,6 @@ interface CreateContextOptions {
   dbSmoke?: DatabaseSmokeClient | null
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
-  profiles?: ProfileRepository | null
-  preferences?: PreferenceRepository | null
   sessions?: SessionRepository | null
   users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
@@ -56,16 +46,6 @@ function hasClerkKeysOption(options: unknown): options is CreateContextOptions {
 
 function hasUsersOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'users' in options
-}
-
-function hasProfilesOption(options: unknown): options is CreateContextOptions {
-  return typeof options === 'object' && options !== null && 'profiles' in options
-}
-
-function hasPreferencesOption(options: unknown): options is CreateContextOptions {
-  return (
-    typeof options === 'object' && options !== null && 'preferences' in options
-  )
 }
 
 function hasSessionsOption(options: unknown): options is CreateContextOptions {
@@ -128,12 +108,6 @@ export function createContext(options?: unknown) {
   const userRepository = hasUsersOption(options)
     ? options.users
     : createUserRepository({ hyperdrive })
-  const profileRepository = hasProfilesOption(options)
-    ? options.profiles
-    : createProfileRepository({ hyperdrive })
-  const preferenceRepository = hasPreferencesOption(options)
-    ? options.preferences
-    : createPreferenceRepository({ hyperdrive })
   const sessionRepository = hasSessionsOption(options)
     ? options.sessions
     : createSessionRepository({ hyperdrive })
@@ -144,8 +118,6 @@ export function createContext(options?: unknown) {
     dbSmoke,
     logger,
     requestMetadata,
-    profiles: profileRepository,
-    preferences: preferenceRepository,
     sessions: sessionRepository,
     users: userRepository,
   }

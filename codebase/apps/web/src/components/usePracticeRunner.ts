@@ -1,10 +1,9 @@
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
 import type { Lesson } from '../content'
-import {
-  type ExerciseScore,
-  type ExerciseGrade,
-  type ExerciseResult,
-  type PracticeSession,
+import type {
+  ExerciseGrade,
+  ExerciseResult,
+  PracticeSession,
 } from '../appData/session'
 
 /**
@@ -19,8 +18,8 @@ export interface RunnerState {
   /** Epoch ms of the Start click (owned by the page's event handler). */
   startedAt: number
   /**
-   * Epoch ms of the current exercise's active playthrough, once playback or
-   * recording begins. Null while the user is setting up or grading.
+   * Epoch ms of the current exercise's active playthrough, once the player
+   * begins it. Null while the user is setting up or grading.
    */
   activeExerciseStartedAt: number | null
   /** Accumulated active playthrough time, excluding setup and grading prompt time. */
@@ -34,7 +33,7 @@ export interface RunnerState {
 export type RunnerAction =
   | { type: 'begin-exercise'; at: number }
   | { type: 'complete-exercise'; at: number }
-  | { type: 'grade'; grade: ExerciseGrade; score?: ExerciseScore; at: number }
+  | { type: 'grade'; grade: ExerciseGrade; at: number }
 
 export interface RunnerInit {
   lesson: Lesson
@@ -86,13 +85,9 @@ export function runnerReducer(
       if (state.finished) return state
       const completedState = completeActiveExercise(state, action.at)
       const exercise = state.lesson.exercises[state.exerciseIndex]
-      const results = [
+      const results: ExerciseResult[] = [
         ...completedState.results,
-        {
-          exerciseId: exercise.id,
-          grade: action.grade,
-          ...(action.score ? { score: action.score } : {}),
-        },
+        { exerciseId: exercise.id, grade: action.grade },
       ]
       const isLast =
         completedState.exerciseIndex + 1 >= completedState.lesson.exercises.length
@@ -112,17 +107,6 @@ export function toSessionRecord(
   state: RunnerState,
   now: number,
 ): PracticeSession {
-  const scoredResults = state.results.filter(
-    (result): result is ExerciseResult & { score: ExerciseScore } =>
-      result.score !== undefined,
-  )
-  const score =
-    scoredResults.length > 0
-      ? Math.round(
-          scoredResults.reduce((sum, result) => sum + result.score.score, 0) /
-            scoredResults.length,
-        )
-      : undefined
   return {
     id: state.sessionId,
     lessonId: state.lesson.id,
@@ -133,7 +117,6 @@ export function toSessionRecord(
         : completeActiveExercise(state, now).durationSeconds,
     completed: state.finished,
     results: state.results,
-    ...(score !== undefined ? { score } : {}),
   }
 }
 
@@ -144,11 +127,15 @@ export function usePracticeRunner(init: RunnerInit) {
   // Synchronize committed state to the server: every grade upserts the record,
   // so abandoning the lesson or closing the tab never loses graded history.
   // An Effect (not the handler) so the persisted record can never diverge
-  // from what React actually committed under rapid repeat dispatches.
+  // from what React actually committed under rapid repeat dispatches. It
+  // fires on grades only — begin/complete change no persisted field on their
+  // own, and the grade that follows them carries the accumulated time.
+  const stateRef = useRef(state)
+  stateRef.current = state
   useEffect(() => {
     if (state.results.length === 0) return
-    onSessionChange(toSessionRecord(state, Date.now()))
-  }, [onSessionChange, state])
+    onSessionChange(toSessionRecord(stateRef.current, Date.now()))
+  }, [onSessionChange, state.results])
 
   function beginExercise(at = Date.now()): void {
     dispatch({ type: 'begin-exercise', at })
@@ -158,12 +145,8 @@ export function usePracticeRunner(init: RunnerInit) {
     dispatch({ type: 'complete-exercise', at })
   }
 
-  function grade(
-    gradeValue: ExerciseGrade,
-    score?: ExerciseScore,
-    at = Date.now(),
-  ): void {
-    dispatch({ type: 'grade', grade: gradeValue, score, at })
+  function grade(gradeValue: ExerciseGrade, at = Date.now()): void {
+    dispatch({ type: 'grade', grade: gradeValue, at })
   }
 
   return { state, beginExercise, completeExercise, grade }
