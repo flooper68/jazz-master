@@ -23,6 +23,8 @@ complete deployed bundle locally at `http://localhost:4322/_storybook/`.
 
 ## Catalog and authoring
 
+- **Foundations:** the Woodshed theme — every `--c-*` token from `src/index.css`,
+  type, shapes and the primitives, in light and dark (toolbar).
 - **Pages:** each practice page, onboarding, landing, sign-in and sign-up.
   Dashboard/practice/history include empty, loading and service-error states.
 - **Primitives:** actual shared buttons, cards, badges, selects, radios and

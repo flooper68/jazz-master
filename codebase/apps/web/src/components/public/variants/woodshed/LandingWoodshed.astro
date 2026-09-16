@@ -1,0 +1,172 @@
+---
+import WoodshedShell from './WoodshedShell.astro'
+
+interface Props {
+  theme?: 'light' | 'dark'
+}
+
+const { theme } = Astro.props
+
+const chords = ['Dm7', 'G7', 'Cmaj7', 'A7']
+const steps = [
+  ['Open the app', 'Today’s rep is already chosen — the chord, the key, the tempo, the ear prompt.'],
+  ['Play a few minutes', 'The runner keeps time, shows notation and fretboard, and loops the play-along.'],
+  ['Close it', 'Your take is scored and remembered. Tomorrow is planned before you put the guitar down.'],
+]
+---
+
+<WoodshedShell theme={theme}>
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+      <!-- Floating shapes -->
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <span class="absolute top-[14%] left-[1%] h-28 w-28 rotate-12 rounded-[42%] bg-accent"></span>
+        <span class="absolute top-[42%] left-[16%] h-28 w-24 -rotate-12 rounded-[38%] bg-blue"></span>
+        <span class="absolute top-[58%] -left-10 h-32 w-24 rotate-[20deg] rounded-[35%] bg-accent"></span>
+        <span class="absolute top-[6%] right-[30%] h-24 w-28 rotate-[24deg] rounded-[45%_45%_45%_45%/60%_60%_40%_40%] bg-accent"></span>
+        <span class="absolute top-[28%] right-[6%] h-28 w-28 -rotate-6 rounded-[44%] bg-blue"></span>
+        <span class="absolute top-[38%] right-[15%] h-24 w-32 rotate-[-18deg] rounded-[40%] bg-lilac"></span>
+        <span class="absolute top-[60%] -right-8 h-28 w-28 rotate-[30deg] rounded-[40%] bg-lilac"></span>
+      </div>
+
+      <div class="relative mx-auto max-w-7xl px-5 pt-16 pb-0 text-center sm:px-6 md:pt-24 lg:px-8">
+        <h1 class="mx-auto max-w-4xl font-display text-5xl leading-[1.02] font-bold tracking-[-0.03em] sm:text-6xl lg:text-7xl">
+          Smart practice, made easy
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-xl leading-9 text-fg-2 sm:text-2xl">
+          Your personal guitar practice, planned for you — chords, changes, tunes and ear, a few focused minutes a day
+        </p>
+        <a href="/sign-up" class="mt-9 inline-block rounded-2xl bg-cta px-9 py-4.5 text-lg font-medium text-cta-fg hover:bg-cta-hover">
+          Start practising free
+        </a>
+
+        <!-- Tilted cards -->
+        <div class="relative mt-20 grid gap-6 pb-40 md:grid-cols-3 md:gap-0 md:pb-48">
+          <article class="rounded-[28px] bg-blue p-8 text-left text-on-blue shadow-xl shadow-shade md:-rotate-3 md:translate-y-8">
+            <h2 class="font-display text-[2rem] leading-tight font-bold tracking-tight">Today’s&nbsp;rep&nbsp;<span aria-hidden="true">›</span></h2>
+            <p class="mt-3 text-lg leading-7">Chosen for you: the chord, the key, the tempo. Open the app and play.</p>
+            <div class="mt-6 rounded-t-2xl bg-mock p-4 text-mock-fg">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-mock-muted">Chosen for you</span><span>112 bpm · 6 min</span>
+              </div>
+              <p class="mt-2 text-xl font-semibold">Autumn ii–V–I</p>
+              <div class="mt-4 grid grid-cols-4 gap-1.5">
+                {chords.map((c, i) => (
+                  <span class:list={['rounded-lg py-2 text-center text-sm font-medium', i === 2 ? 'bg-accent text-on-accent' : 'bg-white/10']}>{c}</span>
+                ))}
+              </div>
+            </div>
+          </article>
+
+          <article class="z-10 rounded-[28px] bg-accent p-8 text-left text-on-accent shadow-xl shadow-shade md:-mx-4">
+            <h2 class="font-display text-[2rem] leading-tight font-bold tracking-tight">Chords &amp;&nbsp;changes&nbsp;<span aria-hidden="true">›</span></h2>
+            <p class="mt-3 text-lg leading-7">Voicings, ii–V–I, blues turnarounds — through every key until the motion is automatic.</p>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              {['Drop-2', 'Shell'].map((v) => (
+                <div class="rounded-t-2xl bg-mock p-3 text-mock-fg">
+                  <div class="flex items-center gap-1"><span class="h-1.5 w-1.5 rounded-full bg-mock-muted"></span><span class="h-1.5 w-1.5 rounded-full bg-mock-muted"></span><span class="ml-auto text-xs">{v}</span></div>
+                  <div class="mt-3 grid grid-cols-6 gap-1" aria-hidden="true">
+                    {Array.from({ length: 18 }).map((_, i) => (
+                      <span class:list={['h-2 rounded-full', (i * 5) % 7 === 0 ? 'bg-blue' : 'bg-white/15']}></span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article class="rounded-[28px] bg-lilac p-8 text-left text-on-lilac shadow-xl shadow-shade md:rotate-3 md:translate-y-8">
+            <h2 class="font-display text-[2rem] leading-tight font-bold tracking-tight">Ear &amp;&nbsp;takes&nbsp;<span aria-hidden="true">›</span></h2>
+            <p class="mt-3 text-lg leading-7">Record a take, get a score, and know exactly what to work on tomorrow.</p>
+            <div class="mt-6 rounded-t-2xl bg-mock p-4 text-mock-fg">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-mock-muted">Last take</span><span class="font-semibold">86</span>
+              </div>
+              <div class="mt-3 flex items-end gap-1" aria-hidden="true">
+                {Array.from({ length: 28 }).map((_, i) => (
+                  <span class="w-full rounded-sm bg-lilac" style={`height:${6 + ((i * 7) % 26)}px`}></span>
+                ))}
+              </div>
+              <p class="mt-3 text-xs text-mock-muted">G7 → C slipped · tomorrow: resolve the 7th</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- The arc that swallows the cards -->
+      <div aria-hidden="true" class="absolute -bottom-6 -left-[10%] z-20 h-44 w-[120%] rounded-t-[100%] bg-panel"></div>
+    </section>
+
+    <!-- Why -->
+    <section id="why" class="bg-panel">
+      <div class="mx-auto grid max-w-7xl gap-10 px-5 py-24 sm:px-6 md:grid-cols-2 lg:px-8">
+        <h2 class="font-display text-4xl leading-[1.05] font-bold tracking-[-0.02em] sm:text-5xl">
+          Deciding what to practise is half the work.
+        </h2>
+        <p class="self-center text-lg leading-8 text-fg-2">
+          Tabs, backing tracks, lesson notes and old recordings all compete for the hour you have — and the hour
+          goes to choosing. Woodshed chooses for you: it picks the rep, sets the tempo, scores the take and knows
+          what to ask for tomorrow. Jazz standards, blues, pop changes — your tunes, your pace.
+        </p>
+      </div>
+    </section>
+
+    <!-- What you practise -->
+    <section id="practise" class="bg-panel">
+      <div class="mx-auto max-w-7xl px-5 pb-24 sm:px-6 lg:px-8">
+        <h2 class="max-w-3xl font-display text-4xl leading-[1.05] font-bold tracking-[-0.02em] sm:text-5xl">
+          Everything a guitarist needs, planned for you
+        </h2>
+        <div class="mt-12 grid gap-5 md:grid-cols-4">
+          {[
+            ['Chords & voicings', 'Grips and voice-leading you can actually recall on a tune.', 'bg-blue text-on-blue'],
+            ['Changes', 'ii–V–I, blues, turnarounds — through every key.', 'bg-accent text-on-accent'],
+            ['Your repertoire', 'Tunes, keys, weak bars and what to play next — remembered.', 'bg-lilac text-on-lilac'],
+            ['Ear & takes', 'Hear it, play it, record it, review it — one loop.', 'bg-mock text-mock-fg'],
+          ].map(([title, body, tone]) => (
+            <article class:list={['rounded-3xl p-6', tone]}>
+              <h3 class="font-display text-2xl font-bold tracking-tight">{title}</h3>
+              <p class="mt-2 leading-7 opacity-85">{body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- A day -->
+    <section id="day" class="relative overflow-hidden">
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <span class="absolute top-10 -left-8 h-24 w-24 rotate-12 rounded-[42%] bg-lilac"></span>
+        <span class="absolute bottom-8 right-[4%] h-28 w-28 -rotate-12 rounded-[40%] bg-blue"></span>
+      </div>
+      <div class="relative mx-auto max-w-7xl px-5 py-24 sm:px-6 lg:px-8">
+        <h2 class="text-center font-display text-4xl leading-[1.05] font-bold tracking-[-0.02em] sm:text-5xl">
+          Six minutes, no planning
+        </h2>
+        <ol class="mt-14 grid gap-6 md:grid-cols-3">
+          {steps.map(([title, body], i) => (
+            <li class="rounded-3xl border border-line bg-panel p-7">
+              <span class:list={['inline-flex h-10 w-10 items-center justify-center rounded-full font-display text-lg font-bold', ['bg-accent text-on-accent', 'bg-blue text-on-blue', 'bg-lilac text-on-lilac'][i]]}>{i + 1}</span>
+              <h3 class="mt-5 text-xl font-semibold">{title}</h3>
+              <p class="mt-2 leading-7 text-fg-2">{body}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="bg-panel">
+      <div class="mx-auto max-w-7xl px-5 py-24 text-center sm:px-6 lg:px-8">
+        <h2 class="font-display text-5xl leading-[1.02] font-bold tracking-[-0.03em] sm:text-6xl">
+          Less planning. More playing.
+        </h2>
+        <p class="mx-auto mt-5 max-w-xl text-xl text-fg-2">Start with one rep tonight. Woodshed plans tomorrow.</p>
+        <a href="/sign-up" class="mt-9 inline-block rounded-2xl bg-cta px-9 py-4.5 text-lg font-medium text-cta-fg hover:bg-cta-hover">
+          Start practising free
+        </a>
+      </div>
+    </section>
+  </main>
+</WoodshedShell>

@@ -1,32 +1,32 @@
 import type { ComponentProps } from 'react'
 
-const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const buttonVariants = {
-  primary: 'bg-amber-500 text-zinc-950 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-400',
-  secondary: 'border border-zinc-700 text-zinc-100 hover:border-amber-500 hover:text-amber-400 disabled:text-zinc-500',
-  quiet: 'text-zinc-400 hover:text-zinc-200 disabled:text-zinc-600',
+  primary: 'bg-cta text-cta-fg hover:bg-cta-hover disabled:bg-panel-2 disabled:text-muted',
+  secondary: 'border border-line-strong bg-panel text-fg hover:border-fg disabled:border-line disabled:text-muted',
+  quiet: 'text-fg-2 hover:bg-panel-2 hover:text-fg disabled:text-muted disabled:hover:bg-transparent',
 } as const
 
 export function Button({ variant = 'primary', className = '', type = 'button', ...props }: ComponentProps<'button'> & { variant?: keyof typeof buttonVariants }) {
-  return <button type={type} className={`rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed ${focus} ${buttonVariants[variant]} ${className}`} {...props} />
+  return <button type={type} className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${focus} ${buttonVariants[variant]} ${className}`} {...props} />
 }
 
 export function Card({ className = '', ...props }: ComponentProps<'div'>) {
-  return <div className={`rounded-lg border border-zinc-800 bg-zinc-900 p-4 ${className}`} {...props} />
+  return <div className={`rounded-2xl border border-line bg-panel p-5 ${className}`} {...props} />
 }
 
 export function Badge({ className = '', ...props }: ComponentProps<'span'>) {
-  return <span className={`rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-amber-400 ${className}`} {...props} />
+  return <span className={`rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-medium text-fg-2 ${className}`} {...props} />
 }
 
 export function Select({ className = '', ...props }: ComponentProps<'select'>) {
-  return <select className={`rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 ${focus} ${className}`} {...props} />
+  return <select className={`rounded-lg border border-line-strong bg-field px-2.5 py-1.5 text-sm text-fg ${focus} ${className}`} {...props} />
 }
 
 export function Radio({ className = '', ...props }: Omit<ComponentProps<'input'>, 'type'>) {
-  return <input type="radio" className={`accent-amber-500 ${className}`} {...props} />
+  return <input type="radio" className={`accent-cta ${className}`} {...props} />
 }
 
 export function Checkbox({ className = '', ...props }: Omit<ComponentProps<'input'>, 'type'>) {
-  return <input type="checkbox" className={`accent-amber-500 ${className}`} {...props} />
+  return <input type="checkbox" className={`accent-cta ${className}`} {...props} />
 }

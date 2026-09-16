@@ -20,7 +20,7 @@ export function HealthFooter() {
   return (
     <footer
       aria-label="API health"
-      className="fixed right-2 bottom-2 rounded bg-zinc-900/90 px-2 py-1 text-xs text-zinc-500"
+      className="fixed right-2 bottom-2 rounded bg-panel/90 px-2 py-1 text-xs text-muted"
     >
       {health.isPending && <span>API: checking…</span>}
       {health.isError && <span>API: unreachable</span>}

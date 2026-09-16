@@ -153,11 +153,11 @@ export function PracticeRunner({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           Lesson complete — {lesson.title}
         </h2>
-        <ul className="mt-4 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
+        <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-panel">
           {lesson.exercises.map((exercise) => {
             const exerciseGrade = gradeByExercise.get(exercise.id)
             return (
@@ -165,8 +165,8 @@ export function PracticeRunner({
                 key={exercise.id}
                 className="flex items-baseline justify-between gap-4 p-4"
               >
-                <span className="text-zinc-100">{exercise.title}</span>
-                <span className="shrink-0 text-sm text-zinc-400">
+                <span className="text-fg">{exercise.title}</span>
+                <span className="shrink-0 text-sm text-muted">
                   {exerciseGrade ? GRADE_LABELS[exerciseGrade] : '—'}
                 </span>
               </li>
@@ -178,7 +178,7 @@ export function PracticeRunner({
           onClick={() => {
             void exitRunner()
           }}
-          className="mt-6 rounded-md bg-amber-500 px-4 py-2 font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="mt-6 rounded-lg bg-cta px-4 py-2 font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           Done
         </button>
@@ -193,19 +193,19 @@ export function PracticeRunner({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {lesson.title}
         </h2>
         <button
           type="button"
           onClick={exitRunner}
-          className="shrink-0 text-sm text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="shrink-0 text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           End lesson
         </button>
       </div>
-      <p className="mt-1 text-sm text-zinc-400">
+      <p className="mt-1 text-sm text-muted">
         Exercise {state.exerciseIndex + 1} of {lesson.exercises.length}
       </p>
       {/* Keyed so per-exercise state (the countdown) resets on advance. */}
@@ -736,14 +736,14 @@ function ExercisePanel({
         : `Play play-along for ${exercise.title}`
 
   return (
-    <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+    <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="font-medium text-zinc-100">{exercise.title}</h3>
-        <span className="shrink-0 text-sm text-zinc-400">
+        <h3 className="font-medium text-fg">{exercise.title}</h3>
+        <span className="shrink-0 text-sm text-muted">
           {tempoBpm} BPM
         </span>
       </div>
-      <p className="mt-1 text-sm text-zinc-400">
+      <p className="mt-1 text-sm text-muted">
         {exercise.duration.kind === 'minutes' ? (
           <Countdown
             initialSeconds={exercise.duration.minutes * 60}
@@ -754,14 +754,14 @@ function ExercisePanel({
           `${exercise.duration.count} repetitions`
         )}
       </p>
-      <div className="mt-4 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
+      <div className="mt-4 rounded-lg border border-line bg-panel-2 p-3">
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={beginPlaythrough}
             disabled={playthroughStatus !== 'not-started'}
             aria-label={`Begin ${exercise.title}`}
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
+            className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:border-line disabled:text-muted"
           >
             Begin
           </button>
@@ -770,7 +770,7 @@ function ExercisePanel({
             onClick={() => void togglePlayback()}
             disabled={playbackStatus === 'loading'}
             aria-label={playbackButtonLabel}
-            className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-wait disabled:bg-zinc-700 disabled:text-zinc-300"
+            className="rounded-lg bg-cta px-3 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-wait disabled:bg-panel-2 disabled:text-muted"
           >
             {playbackStatus === 'playing'
               ? 'Stop'
@@ -778,21 +778,21 @@ function ExercisePanel({
                 ? 'Loading'
                 : 'Play'}
           </button>
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="flex items-center gap-2 text-sm text-fg-2">
             <input
               type="checkbox"
               checked={loopEnabled}
               onChange={updateLoop}
-              className="h-4 w-4 accent-amber-500"
+              className="h-4 w-4 accent-cta"
             />
             Loop
           </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="flex items-center gap-2 text-sm text-fg-2">
             <input
               type="checkbox"
               checked={clickEnabled}
               onChange={updateClick}
-              className="h-4 w-4 accent-amber-500"
+              className="h-4 w-4 accent-cta"
             />
             Click + count-in
           </label>
@@ -801,14 +801,14 @@ function ExercisePanel({
             onClick={completePlaythrough}
             disabled={playthroughStatus !== 'active'}
             aria-label={`End playthrough and grade ${exercise.title}`}
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
+            className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:border-line disabled:text-muted"
           >
             Next
           </button>
         </div>
         <label
           htmlFor={`tempo-${exercise.id}`}
-          className="mt-3 flex items-center justify-between gap-4 text-sm text-zinc-300"
+          className="mt-3 flex items-center justify-between gap-4 text-sm text-fg-2"
         >
           <span>Tempo</span>
           <span>{tempoBpm} BPM</span>
@@ -822,7 +822,7 @@ function ExercisePanel({
           value={tempoBpm}
           onChange={updateTempo}
           aria-label={`Tempo for ${exercise.title}`}
-          className="mt-2 w-full accent-amber-500"
+          className="mt-2 w-full accent-cta"
         />
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <VolumeControl
@@ -839,7 +839,7 @@ function ExercisePanel({
           />
         </div>
         {playbackError && (
-          <p role="alert" className="mt-2 text-sm text-red-300">
+          <p role="alert" className="mt-2 text-sm text-danger-text">
             {playbackError}
           </p>
         )}
@@ -867,7 +867,7 @@ function ExercisePanel({
       {/* Long exercises hit the SVG's min-width floor and scroll sideways
           instead of shrinking fret digits into illegibility (INS-029). */}
       {exercise.display.includes('notation') && (
-        <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
+        <div className="mt-3 rounded-lg border border-line bg-panel-2 p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <NotationDisplayControls
               exerciseTitle={exercise.title}
@@ -879,7 +879,7 @@ function ExercisePanel({
               type="button"
               onClick={openScoreFocus}
               aria-label={`Open focus mode for ${exercise.title} score`}
-              className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+              className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               Focus
             </button>
@@ -887,7 +887,7 @@ function ExercisePanel({
           <div
             tabIndex={0}
             aria-label={`${exercise.title} score viewport`}
-            className="mt-3 min-h-[18rem] overflow-x-auto rounded-md border border-zinc-800 bg-zinc-950/60 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 sm:min-h-[21rem]"
+            className="mt-3 min-h-[18rem] overflow-x-auto rounded-lg border border-line bg-panel-2 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg sm:min-h-[21rem]"
           >
             <Notation
               measures={notationMeasures}
@@ -934,7 +934,7 @@ function VolumeControl({
     <div>
       <label
         htmlFor={id}
-        className="flex items-center justify-between gap-4 text-sm text-zinc-300"
+        className="flex items-center justify-between gap-4 text-sm text-fg-2"
       >
         <span>{label}</span>
         <span>{value}%</span>
@@ -948,7 +948,7 @@ function VolumeControl({
         value={value}
         onChange={onChange}
         aria-label={label}
-        className="mt-2 w-full accent-amber-500"
+        className="mt-2 w-full accent-cta"
       />
     </div>
   )
@@ -967,7 +967,7 @@ function NotationDisplayControls({
     <div
       role="group"
       aria-label={`Score display for ${exerciseTitle}`}
-      className="flex rounded-md border border-zinc-700 bg-zinc-950 p-0.5"
+      className="flex rounded-lg border border-line-strong bg-panel p-0.5"
     >
       {NOTATION_DISPLAY_MODES.map((mode) => {
         const selected = displayMode === mode
@@ -981,8 +981,8 @@ function NotationDisplayControls({
             onClick={() => onChange(mode)}
             className={
               selected
-                ? 'rounded-sm bg-amber-500 px-3 py-1.5 text-sm font-medium text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
-                : 'rounded-sm px-3 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
+                ? 'rounded-sm bg-cta px-3 py-1.5 text-sm font-medium text-cta-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+                : 'rounded-sm px-3 py-1.5 text-sm font-medium text-fg-2 hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
             }
           >
             {text}
@@ -1111,11 +1111,11 @@ function NotationFocusDialog({
       aria-modal="true"
       aria-label={`${exerciseTitle} score focus mode`}
       onKeyDown={trapTabFocus}
-      className="fixed inset-0 z-50 flex flex-col bg-zinc-950 p-4 text-zinc-100 sm:p-6"
+      className="fixed inset-0 z-50 flex flex-col bg-canvas p-4 text-fg sm:p-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <div>
-          <p className="text-sm text-zinc-400">Score focus</p>
+          <p className="text-sm text-muted">Score focus</p>
           <h3 className="font-display text-xl font-bold tracking-tight">
             {exerciseTitle}
           </h3>
@@ -1130,7 +1130,7 @@ function NotationFocusDialog({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+            className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
           >
             Exit focus
           </button>
@@ -1139,7 +1139,7 @@ function NotationFocusDialog({
       <div
         tabIndex={0}
         aria-label={`${exerciseTitle} focus score viewport`}
-        className="my-4 min-h-0 flex-1 overflow-auto rounded-md border border-zinc-800 bg-zinc-900 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        className="my-4 min-h-0 flex-1 overflow-auto rounded-lg border border-line bg-panel p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
       >
         <Notation
           measures={measures}
@@ -1188,14 +1188,14 @@ function GradePromptDialog({
       role="dialog"
       aria-modal="true"
       aria-label={`Grade ${exerciseTitle}`}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90 p-4 text-zinc-100"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-fg/50 p-4 text-fg"
     >
       <div
         ref={dialogRef}
         onKeyDown={trapTabFocus}
-        className="w-full max-w-sm rounded-lg border border-zinc-800 bg-zinc-900 p-4 shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-line bg-panel p-4 shadow-xl shadow-shade"
       >
-        <p className="text-sm text-zinc-400">Grade exercise</p>
+        <p className="text-sm text-muted">Grade exercise</p>
         <h3 className="mt-1 font-display text-lg font-bold tracking-tight">
           {exerciseTitle}
         </h3>
@@ -1226,7 +1226,7 @@ function GradeButtons({
           ref={index === 0 ? firstButtonRef : undefined}
           type="button"
           onClick={() => onGrade(gradeValue)}
-          className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="rounded-lg border border-line-strong bg-panel px-4 py-2 font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {GRADE_LABELS[gradeValue]}
         </button>
@@ -1281,11 +1281,11 @@ function RecordingPanel({
             : 'Record'
 
   return (
-    <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3">
+    <div className="mt-3 rounded-lg border border-line bg-panel-2 p-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-zinc-100">Take recorder</p>
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="text-sm font-medium text-fg">Take recorder</p>
+          <p className="mt-1 text-xs text-muted">
             Uses your microphone only for this exercise. Audio stays on this device and is discarded when you leave it.
           </p>
         </div>
@@ -1294,14 +1294,14 @@ function RecordingPanel({
           onClick={onRecord}
           disabled={busy}
           aria-label={buttonLabel}
-          className="rounded-md border border-emerald-500 bg-emerald-500 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-wait disabled:border-zinc-700 disabled:bg-zinc-700 disabled:text-zinc-300"
+          className="rounded-lg border border-success bg-success px-3 py-1.5 text-sm font-medium text-cta-fg hover:bg-success-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-wait disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
         >
           {buttonText}
         </button>
       </div>
       {(state.status === 'counting-in' || state.status === 'recording') && (
         <div className="mt-3">
-          <div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+          <div className="flex items-center justify-between gap-3 text-xs text-muted">
             <span>
               {state.status === 'counting-in'
                 ? `Count-in beat ${state.countInBeat ?? 1} of ${RECORDING_COUNT_IN_BEATS}`
@@ -1315,10 +1315,10 @@ function RecordingPanel({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={levelPercent}
-            className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+            className="mt-2 h-2 overflow-hidden rounded-full bg-panel-2"
           >
             <div
-              className="h-full rounded-full bg-emerald-400"
+              className="h-full rounded-full bg-success"
               style={{ width: `${levelPercent}%` }}
             />
           </div>
@@ -1327,11 +1327,11 @@ function RecordingPanel({
       {state.take && (
         <RecordedTakePlayer take={state.take} onReset={onReset} />
       )}
-      <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
+      <div className="mt-3 rounded-lg border border-line bg-panel-2 p-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label
             htmlFor={`score-tolerance-${exerciseId}`}
-            className="text-sm font-medium text-zinc-100"
+            className="text-sm font-medium text-fg"
           >
             Scoring tolerance
           </label>
@@ -1339,7 +1339,7 @@ function RecordingPanel({
             id={`score-tolerance-${exerciseId}`}
             value={tolerance}
             onChange={onToleranceChange}
-            className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+            className="rounded-lg border border-line-strong bg-canvas px-3 py-1.5 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
           >
             {SCORE_TOLERANCE_PRESETS.map((preset) => (
               <option key={preset} value={preset}>
@@ -1351,7 +1351,7 @@ function RecordingPanel({
         <ScoreAnalysisPanel state={scoreAnalysis} />
       </div>
       {state.error && (
-        <p role="alert" className="mt-3 text-sm text-red-300">
+        <p role="alert" className="mt-3 text-sm text-danger-text">
           {state.error}
         </p>
       )}
@@ -1362,7 +1362,7 @@ function RecordingPanel({
 function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
   if (state.status === 'idle') {
     return (
-      <p className="mt-3 text-sm text-zinc-400">
+      <p className="mt-3 text-sm text-muted">
         Record a take to get pitch and timing feedback.
       </p>
     )
@@ -1370,7 +1370,7 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
 
   if (state.status === 'analyzing') {
     return (
-      <p role="status" className="mt-3 text-sm text-zinc-300">
+      <p role="status" className="mt-3 text-sm text-fg-2">
         Analyzing take…
       </p>
     )
@@ -1378,7 +1378,7 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
 
   if (state.status === 'unclear' || state.status === 'failed') {
     return (
-      <p role="alert" className="mt-3 text-sm text-amber-200">
+      <p role="alert" className="mt-3 text-sm text-warning-text">
         {state.message}
       </p>
     )
@@ -1389,8 +1389,8 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
     <div className="mt-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-zinc-400">Machine score</p>
-          <p className="font-display text-3xl font-bold tracking-tight text-zinc-100">
+          <p className="text-sm text-muted">Machine score</p>
+          <p className="font-display text-3xl font-bold tracking-tight text-fg">
             {score.score}
           </p>
         </div>
@@ -1400,9 +1400,9 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
         {score.perNote.map((note, index) => (
           <li
             key={note.expectedId}
-            className="flex items-center justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2"
+            className="flex items-center justify-between gap-3 rounded-lg border border-line bg-canvas px-3 py-2"
           >
-            <span className="text-sm text-zinc-100">
+            <span className="text-sm text-fg">
               {index + 1}. {displayAccidentals(note.expectedNote)}
             </span>
             <span
@@ -1414,7 +1414,7 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
         ))}
       </ul>
       {score.extras > 0 && (
-        <p className="mt-2 text-xs text-zinc-400">
+        <p className="mt-2 text-xs text-muted">
           {score.extras} extra {score.extras === 1 ? 'note' : 'notes'} detected.
         </p>
       )}
@@ -1424,18 +1424,18 @@ function ScoreAnalysisPanel({ state }: { state: ScoreAnalysisState }) {
 
 function ScoreComponents({ components }: { components: ScoreComponents }) {
   return (
-    <dl className="grid grid-cols-3 gap-2 text-right text-xs text-zinc-400">
+    <dl className="grid grid-cols-3 gap-2 text-right text-xs text-muted">
       <div>
         <dt>Pitch</dt>
-        <dd className="mt-1 font-medium text-zinc-100">{components.pitch}</dd>
+        <dd className="mt-1 font-medium text-fg">{components.pitch}</dd>
       </div>
       <div>
         <dt>Timing</dt>
-        <dd className="mt-1 font-medium text-zinc-100">{components.timing}</dd>
+        <dd className="mt-1 font-medium text-fg">{components.timing}</dd>
       </div>
       <div>
         <dt>Complete</dt>
-        <dd className="mt-1 font-medium text-zinc-100">
+        <dd className="mt-1 font-medium text-fg">
           {components.completeness}
         </dd>
       </div>
@@ -1446,13 +1446,13 @@ function ScoreComponents({ components }: { components: ScoreComponents }) {
 function scoreVerdictClass(verdict: ScoreVerdict): string {
   switch (verdict) {
     case 'correct':
-      return 'bg-emerald-500/20 text-emerald-200'
+      return 'bg-success-soft text-success-text'
     case 'early':
     case 'late':
-      return 'bg-amber-500/20 text-amber-200'
+      return 'bg-warning-soft text-warning-text'
     case 'wrong-pitch':
     case 'missed':
-      return 'bg-red-500/20 text-red-200'
+      return 'bg-danger-soft text-danger-text'
   }
 }
 
@@ -1464,8 +1464,8 @@ function RecordedTakePlayer({
   onReset: () => void
 }) {
   return (
-    <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-      <div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+    <div className="mt-3 rounded-lg border border-line bg-panel-2 p-3">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted">
         <span>
           Take captured · {Math.max(Math.round(take.durationSeconds), 1)}s ·{' '}
           {Math.round(take.sampleRate / 1000)} kHz
@@ -1473,7 +1473,7 @@ function RecordedTakePlayer({
         <button
           type="button"
           onClick={onReset}
-          className="text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           Discard
         </button>

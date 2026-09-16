@@ -12,7 +12,7 @@ import {
 import { useTodayPlan } from '../../planner'
 
 const linkClasses =
-  'font-medium text-amber-400 hover:text-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400'
+  'font-medium text-accent-text hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -52,30 +52,30 @@ export default function DashboardPage() {
       <h1 className="font-display text-2xl font-bold tracking-tight">
         Dashboard
       </h1>
-      <p className="mt-4 text-zinc-300">
+      <p className="mt-4 text-fg-2">
         What to practice now, and how the week is going.
       </p>
 
       <section className="mt-8 max-w-2xl">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-medium text-zinc-400">Today's plan</h2>
-          <span className="shrink-0 text-sm text-zinc-500">
+          <h2 className="text-sm font-medium text-muted">Today's plan</h2>
+          <span className="shrink-0 text-sm text-muted">
             {plan.totalMinutes} min · {plan.date}
           </span>
         </div>
         {status === 'pending' ? (
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-sm text-zinc-300">Loading today's plan...</p>
+          <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+            <p className="text-sm text-fg-2">Loading today's plan...</p>
           </div>
         ) : status !== 'ready' ? (
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-sm text-zinc-300">
+          <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+            <p className="text-sm text-fg-2">
               {message ?? "Today's plan could not be loaded."}
             </p>
           </div>
         ) : plan.items.length === 0 ? (
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-sm text-zinc-300">
+          <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+            <p className="text-sm text-fg-2">
               No matching lessons yet. Adjust your goals on the{' '}
               <Link
                 to="/profile"
@@ -94,27 +94,27 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900">
-            <ol className="divide-y divide-zinc-800">
+          <div className="mt-3 rounded-2xl border border-line bg-panel">
+            <ol className="divide-y divide-line">
               {plan.items.map((item) => {
                 const done = completedLessonIds.has(item.lessonId)
                 return (
                   <li key={item.lessonId} className="p-4">
                     <div className="flex items-baseline justify-between gap-4">
-                      <h3 className="font-medium text-zinc-100">
+                      <h3 className="font-medium text-fg">
                         {item.lessonTitle}
                       </h3>
-                      <span className="shrink-0 text-sm text-zinc-400">
+                      <span className="shrink-0 text-sm text-muted">
                         {done ? 'Done today' : `~${item.estimatedMinutes} min`}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-zinc-400">{item.reason}</p>
+                    <p className="mt-1 text-sm text-muted">{item.reason}</p>
                   </li>
                 )
               })}
             </ol>
-            <div className="flex items-center justify-between gap-4 border-t border-zinc-800 p-4">
-              <span className="text-sm text-zinc-400">
+            <div className="flex items-center justify-between gap-4 border-t border-line p-4">
+              <span className="text-sm text-muted">
                 {planDone
                   ? 'Plan complete — nice work.'
                   : `Next up: ${nextItem.lessonTitle}`}
@@ -122,7 +122,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={startPracticing}
-                className="shrink-0 rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                className="shrink-0 rounded-lg bg-cta px-4 py-2 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
               >
                 {planDone ? 'Practice again' : 'Start practicing'}
               </button>
@@ -135,38 +135,38 @@ export default function DashboardPage() {
         aria-label="Practice stats"
         className="mt-8 grid max-w-2xl gap-4 sm:grid-cols-2"
       >
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <h2 className="text-sm font-medium text-zinc-400">Streak</h2>
-          <p className="mt-2 text-3xl font-bold text-zinc-100">
+        <div className="rounded-2xl border border-line bg-panel p-4">
+          <h2 className="text-sm font-medium text-muted">Streak</h2>
+          <p className="mt-2 text-3xl font-bold text-fg">
             {streak} {streak === 1 ? 'day' : 'days'}
           </p>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-muted">
             {streak === 0
               ? 'Practice today to start one.'
               : 'Consecutive days practiced.'}
           </p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <h2 className="text-sm font-medium text-zinc-400">This week</h2>
-          <p className="mt-2 text-3xl font-bold text-zinc-100">
+        <div className="rounded-2xl border border-line bg-panel p-4">
+          <h2 className="text-sm font-medium text-muted">This week</h2>
+          <p className="mt-2 text-3xl font-bold text-fg">
             {practicedMinutes}
-            <span className="text-base font-normal text-zinc-400">
+            <span className="text-base font-normal text-muted">
               {' '}
               of {budgetMinutes} min
             </span>
           </p>
           <div
             aria-hidden="true"
-            className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800"
+            className="mt-3 h-2 overflow-hidden rounded-full bg-panel-2"
           >
             <div
-              className="h-full rounded-full bg-amber-500"
+              className="h-full rounded-full bg-cta"
               style={{
                 width: `${Math.min(100, budgetMinutes > 0 ? (practicedMinutes / budgetMinutes) * 100 : 0)}%`,
               }}
             />
           </div>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-muted">
             Last {WEEK_DAYS} days against your {profile.minutesPerDay} min/day
             budget.
           </p>
@@ -174,30 +174,30 @@ export default function DashboardPage() {
       </section>
 
       <section className="mt-8 max-w-2xl">
-        <h2 className="text-sm font-medium text-zinc-400">Areas</h2>
-        <ul className="mt-2 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
+        <h2 className="text-sm font-medium text-muted">Areas</h2>
+        <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-panel">
           {areas.map((status) => (
             <li key={status.area} className="p-4">
               <div className="flex items-baseline justify-between gap-4">
-                <h3 className="font-medium text-zinc-100">
+                <h3 className="font-medium text-fg">
                   {AREA_LABELS[status.area]}
                 </h3>
-                <span className="shrink-0 text-sm text-zinc-400">
+                <span className="shrink-0 text-sm text-muted">
                   {status.completedLessonCount} of {status.lessonCount} lessons
                   completed
                 </span>
               </div>
               <p className="mt-1 text-sm">
                 {status.attentionLessonTitles.length > 0 ? (
-                  <span className="text-amber-400">
+                  <span className="text-accent-text">
                     Needs attention: {status.attentionLessonTitles.join(', ')}
                   </span>
                 ) : status.lastPracticedDate ? (
-                  <span className="text-zinc-400">
+                  <span className="text-muted">
                     Last practiced {status.lastPracticedDate}.
                   </span>
                 ) : (
-                  <span className="text-zinc-400">Not practiced yet.</span>
+                  <span className="text-muted">Not practiced yet.</span>
                 )}
               </p>
             </li>

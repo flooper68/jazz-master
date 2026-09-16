@@ -29,7 +29,7 @@ describe('Layout responsive shell (ISSUE-001)', () => {
   it('gives the sidebar its fixed width only from md up', async () => {
     await renderRoute('/practice')
     const sidebar = screen.getByRole('complementary')
-    expect(sidebar).toHaveClass('md:w-56')
-    expect(sidebar).not.toHaveClass('w-56')
+    expect(sidebar).toHaveClass('md:w-60')
+    expect(sidebar).not.toHaveClass('w-60')
   })
 })

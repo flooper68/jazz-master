@@ -13,5 +13,5 @@ export function PublicPreview({ name, title }: { name: string; title: string }) 
         link.setAttribute('aria-disabled', 'true')
       })
     }}
-    style={{ display: 'block', width: '100%', height: '100vh', border: 0, background: '#fafaf9' }} />
+    style={{ display: 'block', width: '100%', height: '100vh', border: 0, background: 'var(--c-canvas)' }} />
 }

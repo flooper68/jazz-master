@@ -34,7 +34,7 @@ describe('app router', () => {
   it('shows the app title in the persistent layout', async () => {
     seedProfile()
     await renderRoute('/practice')
-    expect(screen.getByText('Jazz Master')).toBeInTheDocument()
+    expect(screen.getByText('woodshed')).toBeInTheDocument()
   })
 
   it('shows only the usable current surfaces in primary navigation', async () => {

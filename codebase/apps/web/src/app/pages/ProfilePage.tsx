@@ -24,11 +24,11 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl">
       <h1 className="font-display text-2xl font-bold tracking-tight">Profile</h1>
-      <p className="mt-4 text-zinc-300">
+      <p className="mt-4 text-fg-2">
         Your practice profile — the planner sizes and picks lessons from this.
       </p>
       <section className="mt-8">
-        <h2 className="text-sm font-medium text-zinc-400">Comfort level</h2>
+        <h2 className="text-sm font-medium text-muted">Comfort level</h2>
         <Card className="mt-3">
           <LevelFields
             levels={profile.levels}
@@ -37,7 +37,7 @@ export default function ProfilePage() {
         </Card>
       </section>
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-zinc-400">Goals</h2>
+        <h2 className="text-sm font-medium text-muted">Goals</h2>
         <Card className="mt-3">
           <GoalAreaFields
             goalAreas={profile.goalAreas}
@@ -46,7 +46,7 @@ export default function ProfilePage() {
         </Card>
       </section>
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-zinc-400">Time budget</h2>
+        <h2 className="text-sm font-medium text-muted">Time budget</h2>
         <Card className="mt-3">
           <MinutesFields
             minutesPerDay={profile.minutesPerDay}
@@ -72,16 +72,16 @@ export default function ProfilePage() {
         >
           Save
         </Button>
-        <p aria-live="polite" className="text-sm text-zinc-400">
+        <p aria-live="polite" className="text-sm text-muted">
           {saved ? 'Saved.' : ''}
           {saveStatus}
           {profile.goalAreas.length === 0 ? 'Pick at least one goal area.' : ''}
         </p>
       </div>
       <section className="mt-10">
-        <h2 className="text-sm font-medium text-zinc-400">Data sync</h2>
+        <h2 className="text-sm font-medium text-muted">Data sync</h2>
         <Card className="mt-3">
-          <p className="text-sm text-zinc-300">
+          <p className="text-sm text-fg-2">
             Your profile, practice history, plans, and settings sync to your
             signed-in account, so they are available wherever you sign in.
           </p>

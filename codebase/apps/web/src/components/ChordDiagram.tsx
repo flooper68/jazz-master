@@ -85,7 +85,7 @@ export function ChordDiagram({
           textAnchor="middle"
           fontSize={14}
           fontWeight={600}
-          className="fill-zinc-100"
+          className="fill-fg"
         >
           {displayLabel}
         </text>
@@ -97,7 +97,7 @@ export function ChordDiagram({
         y1={GRID_TOP}
         x2={PAD_X + GRID_W}
         y2={GRID_TOP}
-        className={hasNut ? 'stroke-zinc-300' : 'stroke-zinc-600'}
+        className={hasNut ? 'stroke-fg' : 'stroke-line-strong'}
         strokeWidth={hasNut ? 4 : 1.5}
       />
       {Array.from({ length: fretCount }, (_, i) => (
@@ -107,7 +107,7 @@ export function ChordDiagram({
           y1={GRID_TOP + (i + 1) * FRET_GAP}
           x2={PAD_X + GRID_W}
           y2={GRID_TOP + (i + 1) * FRET_GAP}
-          className="stroke-zinc-600"
+          className="stroke-line-strong"
           strokeWidth={1.5}
         />
       ))}
@@ -118,7 +118,7 @@ export function ChordDiagram({
           y1={GRID_TOP}
           x2={stringX(6 - i)}
           y2={gridBottom}
-          className="stroke-zinc-500"
+          className="stroke-line-strong"
           strokeWidth={1}
         />
       ))}
@@ -129,7 +129,7 @@ export function ChordDiagram({
           y={fretCenterY(baseFret)}
           dominantBaseline="central"
           fontSize={10}
-          className="fill-zinc-400"
+          className="fill-muted"
         >
           {baseFret}fr
         </text>
@@ -147,7 +147,7 @@ export function ChordDiagram({
               textAnchor="middle"
               dominantBaseline="central"
               fontSize={11}
-              className="fill-zinc-500"
+              className="fill-muted"
             >
               ×
             </text>
@@ -163,7 +163,7 @@ export function ChordDiagram({
               cy={GRID_TOP - 9}
               r={3.5}
               fill="none"
-              className="stroke-zinc-300"
+              className="stroke-fg"
               strokeWidth={1.25}
             />
           )
@@ -179,7 +179,7 @@ export function ChordDiagram({
               cx={stringX(stringNumber)}
               cy={fretCenterY(fret)}
               r={DOT_R}
-              className="fill-zinc-200"
+              className="fill-fg"
             />
             {finger > 0 && (
               <text
@@ -189,7 +189,7 @@ export function ChordDiagram({
                 dominantBaseline="central"
                 fontSize={9.5}
                 fontWeight={600}
-                className="fill-zinc-950"
+                className="fill-panel"
               >
                 {finger}
               </text>

@@ -89,7 +89,7 @@ export function Notation({
       }
       aria-describedby={ariaLabel ? descriptionId : undefined}
       aria-busy={status === 'loading'}
-      className="text-zinc-100"
+      className="text-fg"
     >
       {ariaLabel && (
         <p id={descriptionId} className="sr-only">
@@ -100,10 +100,10 @@ export function Notation({
           give sighted users feedback instead of a blank gap meanwhile — and a
           terminal message on failure, never an eternal "loading". */}
       {status === 'loading' && (
-        <p className="py-4 text-sm text-zinc-400">Loading notation…</p>
+        <p className="py-4 text-sm text-muted">Loading notation…</p>
       )}
       {status === 'failed' && (
-        <p className="py-4 text-sm text-zinc-400">Notation couldn’t load.</p>
+        <p className="py-4 text-sm text-muted">Notation couldn’t load.</p>
       )}
       <div ref={containerRef} />
     </div>

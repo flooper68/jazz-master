@@ -63,33 +63,33 @@ export default function HistoryPage() {
   return (
     <div>
       <h1 className="font-display text-2xl font-bold tracking-tight">History</h1>
-      <p className="mt-4 text-zinc-300">
+      <p className="mt-4 text-fg-2">
         Every practice session, day by day. Expand a session for per-exercise
         grades.
       </p>
       {sessionsQuery.isPending ? (
-        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">Loading history...</p>
+        <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">Loading history...</p>
         </div>
       ) : sessionsQuery.isError || sessionsQuery.data?.status === 'error' ? (
-        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">
+        <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">
             Practice history could not be loaded.
           </p>
         </div>
       ) : sessionsQuery.data?.status === 'unconfigured' ? (
-        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">
+        <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">
             Practice history is not configured yet.
           </p>
         </div>
       ) : sessions.length === 0 ? (
-        <div className="mt-8 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">
+        <div className="mt-8 max-w-2xl rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">
             No practice sessions yet. Run your first lesson on the{' '}
             <Link
               to="/practice"
-              className="font-medium text-amber-400 hover:text-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+              className="font-medium text-accent-text hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               Practice page
             </Link>{' '}
@@ -99,7 +99,7 @@ export default function HistoryPage() {
       ) : (
         <>
           <div className="mt-6 flex max-w-2xl flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-zinc-400">
+            <label className="flex items-center gap-2 text-sm text-muted">
               Area
               <Select
                 value={area}
@@ -115,7 +115,7 @@ export default function HistoryPage() {
                 ))}
               </Select>
             </label>
-            <label className="flex items-center gap-2 text-sm text-zinc-400">
+            <label className="flex items-center gap-2 text-sm text-muted">
               Period
               <Select
                 value={range}
@@ -132,18 +132,18 @@ export default function HistoryPage() {
             </label>
           </div>
           {dayGroups.length === 0 ? (
-            <div className="mt-6 max-w-2xl rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-300">
+            <div className="mt-6 max-w-2xl rounded-2xl border border-line bg-panel p-4">
+              <p className="text-sm text-fg-2">
                 No sessions match these filters.
               </p>
             </div>
           ) : (
             dayGroups.map((group) => (
               <section key={group.date} className="mt-8 max-w-2xl">
-                <h2 className="text-sm font-medium text-zinc-400">
+                <h2 className="text-sm font-medium text-muted">
                   {group.date}
                 </h2>
-                <ul className="mt-2 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
+                <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-panel">
                   {group.sessions.map((session) => (
                     <SessionRow key={session.id} session={session} />
                   ))}
@@ -170,13 +170,13 @@ function SessionRow({ session }: { session: PracticeSession }) {
   return (
     <li className="p-4">
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="font-medium text-zinc-100">{title}</h3>
-        <span className="shrink-0 text-sm text-zinc-400">
+        <h3 className="font-medium text-fg">{title}</h3>
+        <span className="shrink-0 text-sm text-muted">
           {formatTime(session.startedAt)} · {formatDuration(session.durationSeconds)}
         </span>
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-4">
-        <span className="flex items-baseline gap-3 text-sm text-zinc-400">
+        <span className="flex items-baseline gap-3 text-sm text-muted">
           <span>
             <span aria-hidden="true">
               {tally.gotIt} ✓ · {tally.shaky} ~ · {tally.missed} ✗
@@ -196,15 +196,15 @@ function SessionRow({ session }: { session: PracticeSession }) {
           aria-expanded={expanded}
           aria-controls={detailsId}
           aria-label={`${toggleText} for ${title} at ${formatTime(session.startedAt)}`}
-          className="shrink-0 text-sm text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="shrink-0 text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {toggleText}
         </button>
       </div>
       {expanded && (
-        <div id={detailsId} className="mt-3 border-t border-zinc-800 pt-3">
+        <div id={detailsId} className="mt-3 border-t border-line pt-3">
           {!session.completed && lesson && (
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-muted">
               {session.results.length} of {lesson.exercises.length} exercises
               graded before the session ended.
             </p>
@@ -215,10 +215,10 @@ function SessionRow({ session }: { session: PracticeSession }) {
                 key={result.exerciseId}
                 className="flex items-baseline justify-between gap-4 text-sm"
               >
-                <span className="text-zinc-300">
+                <span className="text-fg-2">
                   {exerciseTitleById.get(result.exerciseId) ?? result.exerciseId}
                 </span>
-                <span className="shrink-0 text-zinc-400">
+                <span className="shrink-0 text-muted">
                   {GRADE_LABELS[result.grade]}
                   {result.score !== undefined && ` · Score ${result.score.score}`}
                 </span>

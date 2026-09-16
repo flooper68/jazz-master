@@ -32,7 +32,8 @@ const DOT_R = 9
 const SINGLE_MARKER_FRETS = [3, 5, 7, 9, 15, 17, 19, 21]
 const DOUBLE_MARKER_FRETS = [12, 24]
 
-const ROLE_FILL = { root: 'fill-amber-500', other: 'fill-zinc-200' }
+const ROLE_FILL = { root: 'fill-accent', other: 'fill-fg' }
+const ROLE_LABEL_FILL = { root: 'fill-on-accent', other: 'fill-panel' }
 
 /** y of a string line; tab convention — string 1 (high E) on top. */
 function stringY(string: GuitarString): number {
@@ -80,7 +81,7 @@ export function Fretboard({
           y1={yTop}
           x2={x0 + i * FRET_W}
           y2={yBottom}
-          className={hasNut && i === 0 ? 'stroke-zinc-300' : 'stroke-zinc-600'}
+          className={hasNut && i === 0 ? 'stroke-fg' : 'stroke-line-strong'}
           strokeWidth={hasNut && i === 0 ? 5 : 1.5}
         />
       ))}
@@ -91,7 +92,7 @@ export function Fretboard({
           y1={stringY(s)}
           x2={x0 + spanCount * FRET_W}
           y2={stringY(s)}
-          className="stroke-zinc-500"
+          className="stroke-line-strong"
           strokeWidth={0.75 + s * 0.25}
         />
       ))}
@@ -102,7 +103,7 @@ export function Fretboard({
           cx={fretCenterX(f)}
           cy={yMid}
           r={5}
-          className="fill-zinc-700"
+          className="fill-muted"
         />
       ))}
       {DOUBLE_MARKER_FRETS.filter(inSpan).map((f) => (
@@ -111,13 +112,13 @@ export function Fretboard({
             cx={fretCenterX(f)}
             cy={yMid - STRING_GAP}
             r={5}
-            className="fill-zinc-700"
+            className="fill-muted"
           />
           <circle
             cx={fretCenterX(f)}
             cy={yMid + STRING_GAP}
             r={5}
-            className="fill-zinc-700"
+            className="fill-muted"
           />
         </g>
       ))}
@@ -127,7 +128,7 @@ export function Fretboard({
           y={height - 2}
           textAnchor="middle"
           fontSize={11}
-          className="fill-zinc-400"
+          className="fill-muted"
         >
           {min}fr
         </text>
@@ -153,7 +154,7 @@ export function Fretboard({
               dominantBaseline="central"
               fontSize={10}
               fontWeight={600}
-              className="fill-zinc-950"
+              className={ROLE_LABEL_FILL[role]}
             >
               {displayAccidentals(label)}
             </text>

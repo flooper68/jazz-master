@@ -21,7 +21,7 @@ function RootComponent() {
   if (status === 'pending') {
     return (
       <>
-        <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-300">
+        <main className="flex min-h-screen items-center justify-center bg-canvas px-4 text-fg-2">
           <p>Loading profile...</p>
         </main>
         <HealthFooter />
@@ -32,7 +32,7 @@ function RootComponent() {
   if (status === 'error') {
     return (
       <>
-        <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-300">
+        <main className="flex min-h-screen items-center justify-center bg-canvas px-4 text-fg-2">
           <p>Profile could not be loaded.</p>
         </main>
         <HealthFooter />

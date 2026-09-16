@@ -116,28 +116,28 @@ export default function PracticePage() {
         </h1>
         <div className="mt-6">
           {preferenceControls.message && (
-            <p role="alert" className="mb-3 text-sm text-red-300">
+            <p role="alert" className="mb-3 text-sm text-danger-text">
               {preferenceControls.message}
             </p>
           )}
           {preferenceControls.status === 'pending' ? (
-            <p className="text-sm text-zinc-300">Loading practice settings...</p>
+            <p className="text-sm text-fg-2">Loading practice settings...</p>
           ) : preferenceControls.status === 'error' ? (
             <div>
-              <p className="text-sm text-zinc-300">
+              <p className="text-sm text-fg-2">
                 Practice settings must load before this lesson can start.
               </p>
               <button
                 type="button"
                 onClick={exitRun}
-                className="mt-3 rounded-md border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:border-amber-500 hover:text-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                className="mt-3 rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
               >
                 Back to lessons
               </button>
             </div>
           ) : (
             <>
-              <p aria-live="polite" className="mb-3 text-sm text-zinc-400">
+              <p aria-live="polite" className="mb-3 text-sm text-muted">
                 {preferenceControls.isSaving ? 'Saving practice settings...' : ''}
               </p>
               <PracticeRunner
@@ -168,11 +168,11 @@ export default function PracticePage() {
       <h1
         ref={listHeadingRef}
         tabIndex={-1}
-        className="font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        className="font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
       >
         Practice
       </h1>
-      <p className="mt-4 text-zinc-300">
+      <p className="mt-4 text-fg-2">
         The v1 lesson pack — scales and arpeggios by level. Pick a lesson and
         start a guided session.
       </p>
@@ -185,20 +185,20 @@ export default function PracticePage() {
       />
       {areas.map((area) => (
         <section key={area} className="mt-8 max-w-2xl">
-          <h2 className="text-sm font-medium text-zinc-400">
+          <h2 className="text-sm font-medium text-muted">
             {AREA_LABELS[area]}
           </h2>
-          <ul className="mt-2 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
+          <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-panel">
             {LESSONS.filter((lesson) => lesson.area === area).map((lesson) => (
               <li key={lesson.id} className="p-4">
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="font-medium text-zinc-100">{lesson.title}</span>
-                  <span className="shrink-0 text-sm text-zinc-400">
+                  <span className="font-medium text-fg">{lesson.title}</span>
+                  <span className="shrink-0 text-sm text-muted">
                     Level {lesson.level} · ~{lesson.estimatedMinutes} min
                   </span>
                 </div>
                 <div className="mt-1 flex items-baseline justify-between gap-4">
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-muted">
                     {lesson.exercises.length} exercises
                     {lesson.prerequisites.length > 0 &&
                       ` · after: ${lesson.prerequisites
@@ -208,7 +208,7 @@ export default function PracticePage() {
                   <button
                     type="button"
                     onClick={() => startLesson(lesson)}
-                    className="shrink-0 rounded-md bg-amber-500 px-3 py-1 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                    className="shrink-0 rounded-lg bg-cta px-3 py-1 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
                     aria-label={`Start ${lesson.title}`}
                   >
                     Start
@@ -239,30 +239,30 @@ function TodayPlan({
   return (
     <section className="mt-8 max-w-2xl">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-sm font-medium text-zinc-400">Today's plan</h2>
-        <span className="shrink-0 text-sm text-zinc-500">
+        <h2 className="text-sm font-medium text-muted">Today's plan</h2>
+        <span className="shrink-0 text-sm text-muted">
           {plan.totalMinutes} min · {plan.date}
         </span>
       </div>
       {status === 'pending' ? (
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">Loading today's plan...</p>
+        <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">Loading today's plan...</p>
         </div>
       ) : status !== 'ready' ? (
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">
+        <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">
             {message ?? "Today's plan could not be loaded."}
           </p>
         </div>
       ) : plan.items.length === 0 ? (
-        <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-300">
+        <div className="mt-3 rounded-2xl border border-line bg-panel p-4">
+          <p className="text-sm text-fg-2">
             No matching lessons yet. Adjust your profile goals or browse the
             lesson pack below.
           </p>
         </div>
       ) : (
-        <ol className="mt-3 divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900">
+        <ol className="mt-3 divide-y divide-line rounded-2xl border border-line bg-panel">
           {plan.items.map((item, index) => {
             const lesson = lessonById.get(item.lessonId)
             const done = completedLessonIds.has(item.lessonId)
@@ -270,27 +270,27 @@ function TodayPlan({
               <li key={item.lessonId} className="p-4">
                 <div className="flex items-baseline justify-between gap-4">
                   <div>
-                    <p className="text-xs font-medium uppercase text-zinc-500">
+                    <p className="text-xs font-medium uppercase text-muted">
                       Item {index + 1}
                     </p>
-                    <h3 className="mt-1 font-medium text-zinc-100">
+                    <h3 className="mt-1 font-medium text-fg">
                       {item.lessonTitle}
                     </h3>
                   </div>
-                  <span className="shrink-0 text-sm text-zinc-400">
+                  <span className="shrink-0 text-sm text-muted">
                     ~{item.estimatedMinutes} min
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-zinc-400">{item.reason}</p>
+                <p className="mt-2 text-sm text-muted">{item.reason}</p>
                 <div className="mt-3 flex items-center justify-between gap-4">
-                  <span className="text-sm text-zinc-400">
+                  <span className="text-sm text-muted">
                     {done ? 'Done today' : AREA_LABELS[item.area]}
                   </span>
                   <button
                     type="button"
                     onClick={() => lesson && onStart(lesson)}
                     disabled={!lesson}
-                    className="shrink-0 rounded-md bg-amber-500 px-3 py-1 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+                    className="shrink-0 rounded-lg bg-cta px-3 py-1 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:bg-panel-2 disabled:text-muted"
                     aria-label={`Start planned lesson ${item.lessonTitle}`}
                   >
                     {done ? 'Practice again' : 'Start'}

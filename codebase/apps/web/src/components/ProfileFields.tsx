@@ -32,14 +32,14 @@ export function LevelFields({ levels, onChange }: LevelFieldsProps) {
     <div className="flex flex-col gap-4">
       {PRACTICE_AREAS.map((area) => (
         <fieldset key={area}>
-          <legend className="text-sm font-medium text-zinc-300">
+          <legend className="text-sm font-medium text-fg-2">
             {AREA_LABELS[area]}
           </legend>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-2">
             {LEVELS.map((level) => (
               <label
                 key={level}
-                className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
+                className="flex items-center gap-2 text-sm text-muted has-checked:text-fg"
               >
                 <Radio
                   name={`level-${area}`}
@@ -65,7 +65,7 @@ interface GoalAreaFieldsProps {
 export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
   return (
     <fieldset>
-      <legend className="text-sm text-zinc-400">
+      <legend className="text-sm text-muted">
         Pick in order of priority — first picked matters most.
       </legend>
       <div className="mt-2 flex flex-col gap-2">
@@ -75,7 +75,7 @@ export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
           return (
             <label
               key={area}
-              className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
+              className="flex items-center gap-2 text-sm text-muted has-checked:text-fg"
             >
               <Checkbox
                 checked={checked}
@@ -89,7 +89,7 @@ export function GoalAreaFields({ goalAreas, onChange }: GoalAreaFieldsProps) {
               />
               {AREA_LABELS[area]}
               {checked && (
-                <span className="text-xs text-amber-400">#{priority + 1}</span>
+                <span className="text-xs text-accent-text">#{priority + 1}</span>
               )}
             </label>
           )
@@ -107,14 +107,14 @@ interface MinutesFieldsProps {
 export function MinutesFields({ minutesPerDay, onChange }: MinutesFieldsProps) {
   return (
     <fieldset>
-      <legend className="text-sm text-zinc-400">
+      <legend className="text-sm text-muted">
         Minutes of practice per day.
       </legend>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
         {MINUTES_PER_DAY_OPTIONS.map((minutes) => (
           <label
             key={minutes}
-            className="flex items-center gap-2 text-sm text-zinc-400 has-checked:text-zinc-100"
+            className="flex items-center gap-2 text-sm text-muted has-checked:text-fg"
           >
             <Radio
               name="minutes-per-day"

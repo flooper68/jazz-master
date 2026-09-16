@@ -45,18 +45,18 @@ export function OnboardingWizard({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-      <section className="w-full max-w-lg rounded-lg border border-zinc-800 bg-zinc-900 p-8">
-        <p className="font-display text-sm font-bold tracking-tight text-amber-400">
-          Jazz Master
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 text-fg">
+      <section className="w-full max-w-lg rounded-2xl border border-line bg-panel p-8">
+        <p className="font-display text-lg font-extrabold tracking-tight">
+          woodshed
         </p>
-        <p className="mt-4 text-xs text-zinc-400">
+        <p className="mt-4 text-xs text-muted">
           Step {step + 1} of {STEP_TITLES.length}
         </p>
         <h1
           ref={headingRef}
           tabIndex={-1}
-          className="mt-1 font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          className="mt-1 font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {STEP_TITLES[step]}
         </h1>
@@ -85,7 +85,7 @@ export function OnboardingWizard({
             <button
               type="button"
               onClick={() => setStep(step - 1)}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-fg-2 hover:border-fg hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               Back
             </button>
@@ -94,7 +94,7 @@ export function OnboardingWizard({
             type="button"
             onClick={lastStep ? finish : () => setStep(step + 1)}
             disabled={isSaving || (step === 1 && goalsEmpty)}
-            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+            className="rounded-lg bg-cta px-4 py-2 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:bg-panel-2 disabled:text-muted"
           >
             {lastStep ? 'Start practicing' : 'Next'}
           </button>
@@ -102,13 +102,13 @@ export function OnboardingWizard({
             type="button"
             onClick={finish}
             disabled={isSaving}
-            className="ml-auto text-sm text-zinc-400 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+            className="ml-auto text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
           >
             Skip for now
           </button>
         </div>
         {step === 1 && goalsEmpty && (
-          <p className="mt-3 text-xs text-zinc-400">
+          <p className="mt-3 text-xs text-muted">
             Pick at least one area to continue, or skip to use the defaults.
           </p>
         )}
