@@ -75,20 +75,17 @@ export const test = base.extend<{
 export { expect }
 export type { Page }
 
-/** Begin, finish, and grade the current exercise "Got it". */
-export async function gradeCurrentExercise(page: Page): Promise<void> {
+/** Play the current exercise and finish it with Next. */
+export async function finishCurrentExercise(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^Play / }).click()
   await page.getByRole('button', { name: /^Next: finish / }).click()
-  const grade = page.getByRole('group', { name: /^Grade / })
-  await expect(grade).toBeVisible()
-  await grade.getByRole('button', { name: 'Got it' }).click()
 }
 
 /**
- * Grade every exercise "Got it" until the summary appears. The cap only guards
+ * Play every exercise through until the summary appears. The cap only guards
  * against an infinite loop if the player stops advancing.
  */
-export async function gradeThroughLesson(page: Page): Promise<void> {
+export async function playThroughLesson(page: Page): Promise<void> {
   const summaryHeading = page.getByRole('heading', { name: /^Lesson complete/ })
   for (let i = 0; i < 20; i++) {
     // Wait until the player settles into one of its two states before acting.
@@ -96,7 +93,7 @@ export async function gradeThroughLesson(page: Page): Promise<void> {
       summaryHeading.or(page.getByRole('button', { name: /^Play / })).first(),
     ).toBeVisible()
     if (await summaryHeading.isVisible()) break
-    await gradeCurrentExercise(page)
+    await finishCurrentExercise(page)
   }
   await expect(summaryHeading).toBeVisible()
 }
@@ -105,7 +102,7 @@ interface StoredSession {
   id: string
   lessonId: string
   completed: boolean
-  results: Array<{ exerciseId: string; grade: string }>
+  exercisesCompleted: number
 }
 
 /** The signed-in user's persisted sessions, read over the same tRPC wire the app uses. */

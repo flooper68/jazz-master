@@ -1,12 +1,12 @@
-import { asc, desc, eq, inArray } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import type { ExerciseGrade, PracticeSession } from '../../appData/session'
+import type { PracticeSession } from '../../appData/session'
 import {
   readDatabaseUrl,
   resolveDatabaseConnectionString,
   type HyperdriveConnection,
 } from './connection'
-import { practiceSessionResults, practiceSessions, schema, users } from './schema'
+import { practiceSessions, schema, users } from './schema'
 
 export class SessionOwnerMismatchError extends Error {
   constructor() {
@@ -46,29 +46,12 @@ export function createSessionRepository({
       const db = drizzle(connectionString, { schema })
 
       try {
-        const sessionRows = await db
+        const rows = await db
           .select()
           .from(practiceSessions)
           .where(eq(practiceSessions.clerkUserId, clerkUserId))
           .orderBy(desc(practiceSessions.startedAt))
-
-        if (sessionRows.length === 0) return []
-
-        const resultRows = await db
-          .select()
-          .from(practiceSessionResults)
-          .where(
-            inArray(
-              practiceSessionResults.sessionId,
-              sessionRows.map((session) => session.id),
-            ),
-          )
-          .orderBy(
-            asc(practiceSessionResults.sessionId),
-            asc(practiceSessionResults.position),
-          )
-
-        return sessionRows.map((session) => serializeSession(session, resultRows))
+        return rows.map(serializeSession)
       } finally {
         await db.$client.end()
       }
@@ -99,47 +82,30 @@ export function createSessionRepository({
             throw new SessionOwnerMismatchError()
           }
 
-          const sessionValues = {
+          const values = {
             id: session.id,
             clerkUserId,
             lessonId: session.lessonId,
             startedAt: new Date(session.startedAt),
             durationSeconds: session.durationSeconds,
             completed: session.completed,
+            exercisesCompleted: session.exercisesCompleted,
             updatedAt: new Date(),
           }
 
           const [row] = existing
             ? await tx
                 .update(practiceSessions)
-                .set(sessionValues)
+                .set(values)
                 .where(eq(practiceSessions.id, session.id))
                 .returning()
-            : await tx
-                .insert(practiceSessions)
-                .values(sessionValues)
-                .returning()
+            : await tx.insert(practiceSessions).values(values).returning()
 
           if (!row) {
             throw new Error('Session row was not returned after upsert')
           }
 
-          await tx
-            .delete(practiceSessionResults)
-            .where(eq(practiceSessionResults.sessionId, session.id))
-
-          const resultValues = session.results.map((result, position) => ({
-            sessionId: session.id,
-            position,
-            exerciseId: result.exerciseId,
-            grade: result.grade,
-          }))
-          const results =
-            resultValues.length > 0
-              ? await tx.insert(practiceSessionResults).values(resultValues).returning()
-              : []
-
-          return serializeSession(row, results)
+          return serializeSession(row)
         })
       } finally {
         await db.$client.end()
@@ -150,7 +116,6 @@ export function createSessionRepository({
 
 function serializeSession(
   row: typeof practiceSessions.$inferSelect,
-  allResults: Array<typeof practiceSessionResults.$inferSelect>,
 ): PracticeSession {
   return {
     id: row.id,
@@ -158,12 +123,6 @@ function serializeSession(
     startedAt: row.startedAt.toISOString(),
     durationSeconds: row.durationSeconds,
     completed: row.completed,
-    results: allResults
-      .filter((result) => result.sessionId === row.id)
-      .sort((a, b) => a.position - b.position)
-      .map((result) => ({
-        exerciseId: result.exerciseId,
-        grade: result.grade as ExerciseGrade,
-      })),
+    exercisesCompleted: row.exercisesCompleted,
   }
 }

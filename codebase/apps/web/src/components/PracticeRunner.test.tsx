@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeSession } from '../appData/session'
@@ -27,7 +27,7 @@ const lesson: Lesson = {
     },
     {
       id: 'fx-2',
-      title: 'G7 arpeggio — open position',
+      title: 'G major — open position',
       tempoBpm: 120,
       duration: { kind: 'repetitions', count: 2 },
       notes: [
@@ -86,8 +86,14 @@ function renderRunner({
   return { ...view, onSessionChange, onExit, click }
 }
 
-async function begin(user: ReturnType<typeof userEvent.setup>, title: string) {
+type User = ReturnType<typeof userEvent.setup>
+
+async function play(user: User, title: string) {
   await user.click(screen.getByRole('button', { name: `Play ${title}` }))
+}
+
+async function next(user: User, title: string) {
+  await user.click(screen.getByRole('button', { name: `Next: finish ${title}` }))
 }
 
 /** The runner's cursor polls on animation frames; jsdom needs a nudge. */
@@ -100,21 +106,7 @@ async function advanceClock(ms: number) {
 }
 
 function currentNote(): string | null {
-  return (
-    document
-      .querySelector('[data-current]')
-      ?.getAttribute('data-note') ?? null
-  )
-}
-
-async function finishAndGrade(
-  user: ReturnType<typeof userEvent.setup>,
-  title: string,
-  grade: string,
-) {
-  await user.click(screen.getByRole('button', { name: `Next: finish ${title}` }))
-  const group = screen.getByRole('group', { name: `Grade ${title}` })
-  await user.click(within(group).getByRole('button', { name: grade }))
+  return document.querySelector('[data-current]')?.getAttribute('data-note') ?? null
 }
 
 describe('PracticeRunner', () => {
@@ -141,37 +133,41 @@ describe('PracticeRunner', () => {
       screen.getByRole('img', { name: 'C major — open position tab, 3 notes' }),
     ).toBeInTheDocument()
     expect(currentNote()).toBeNull()
-    expect(screen.queryByRole('group', { name: /^Grade / })).toBeNull()
   })
 
-  it('starts the click at the exercise tempo on Begin and stops it on Next', async () => {
+  it('starts the click at the exercise tempo on Play and stops it on Next', async () => {
     const user = userEvent.setup()
     const { click } = renderRunner()
 
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
     expect(click.calls).toEqual(['start 60'])
 
-    await user.click(
-      screen.getByRole('button', { name: 'Next: finish C major — open position' }),
-    )
-    expect(click.calls).toEqual(['start 60', 'stop'])
+    await next(user, 'C major — open position')
+    expect(click.calls.slice(0, 2)).toEqual(['start 60', 'stop'])
+    expect(click.track.playing).toBe(false)
+    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
     expect(
-      within(
-        screen.getByRole('group', { name: 'Grade C major — open position' }),
-      ).getByRole('button', { name: 'Got it' }),
+      screen.getByRole('heading', { level: 2, name: 'G major — open position' }),
     ).toHaveFocus()
   })
 
-  it('lets the player silence and resume the click mid-exercise', async () => {
+  it('lets the player silence and resume the click mid-exercise, and keeps the choice', async () => {
     const user = userEvent.setup()
     const { click } = renderRunner()
 
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
     expect(click.calls).toEqual([])
 
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
     expect(click.calls).toEqual(['start 60'])
+
+    await user.click(screen.getByRole('checkbox', { name: 'Click' }))
+    await next(user, 'C major — open position')
+    expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
+    await play(user, 'G major — open position')
+    expect(click.calls.filter((call) => call !== 'stop')).toEqual(['start 60'])
+    expect(click.track.playing).toBe(false)
   })
 
   it('reports a click that cannot start without breaking the exercise', async () => {
@@ -182,7 +178,7 @@ describe('PracticeRunner', () => {
     }
     renderRunner({ click })
 
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       'The click is unavailable in this browser.',
@@ -192,50 +188,11 @@ describe('PracticeRunner', () => {
     ).toBeInTheDocument()
   })
 
-  it('counts the timer down only while the exercise is active and grades at zero', async () => {
-    vi.restoreAllMocks()
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderRunner()
-
-    act(() => vi.advanceTimersByTime(3_000))
-    expect(screen.getByText('1:00')).toBeInTheDocument()
-
-    await begin(user, 'C major — open position')
-    act(() => vi.advanceTimersByTime(2_000))
-    expect(screen.getByText('0:58')).toBeInTheDocument()
-
-    act(() => vi.advanceTimersByTime(58_000))
-    expect(screen.getByText('Time — grade yourself')).toBeInTheDocument()
-    expect(
-      screen.getByRole('group', { name: 'Grade C major — open position' }),
-    ).toBeInTheDocument()
-    // A timer expiry announces; it does not steal focus.
-    expect(screen.getByRole('button', { name: 'Got it' })).not.toHaveFocus()
-    vi.useRealTimers()
-  })
-
-  it('moves focus to the next exercise heading on advance and keeps the click preference', async () => {
-    const user = userEvent.setup()
-    const { click } = renderRunner()
-
-    await user.click(screen.getByRole('checkbox', { name: 'Click' }))
-    await begin(user, 'C major — open position')
-    await finishAndGrade(user, 'C major — open position', 'Got it')
-
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'G7 arpeggio — open position' }),
-    ).toHaveFocus()
-    expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
-    await begin(user, 'G7 arpeggio — open position')
-    expect(click.calls).toEqual([])
-  })
-
   it('moves the cursor through the tab on the clock and loops', async () => {
     const user = userEvent.setup()
     renderRunner()
 
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
     expect(currentNote()).toBe('0')
     expect(
       screen.getByRole('img', { name: 'C major — open position tab, 3 notes, on note 1' }),
@@ -247,49 +204,65 @@ describe('PracticeRunner', () => {
     expect(currentNote()).toBe('2')
     await advanceClock(1_000)
     expect(currentNote()).toBe('0')
-    expect(
-      screen.getByRole('img', { name: 'C major — open position tab, 3 notes, on note 1' }),
-    ).toBeInTheDocument()
   })
 
-  it('counts passes and grades when the target is reached', async () => {
-    const user = userEvent.setup()
+  it('counts the timer down only while playing and advances at zero', async () => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderRunner()
-    await begin(user, 'C major — open position')
-    await finishAndGrade(user, 'C major — open position', 'Got it')
 
+    act(() => vi.advanceTimersByTime(3_000))
+    expect(screen.getByText('1:00')).toBeInTheDocument()
+
+    await play(user, 'C major — open position')
+    act(() => vi.advanceTimersByTime(2_000))
+    expect(screen.getByText('0:58')).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(58_000))
     expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('counts passes and advances when the target is reached', async () => {
+    const user = userEvent.setup()
+    const { onSessionChange } = renderRunner()
+    await play(user, 'C major — open position')
+    await next(user, 'C major — open position')
+
     expect(screen.getByText('0 of 2 passes')).toBeInTheDocument()
-    await begin(user, 'G7 arpeggio — open position')
+    await play(user, 'G major — open position')
     // 120 BPM, two beats per pass: one pass per second.
     await advanceClock(1_100)
     expect(screen.getByText('1 of 2 passes')).toBeInTheDocument()
     await advanceClock(1_000)
 
     expect(
-      screen.getByRole('group', { name: 'Grade G7 arpeggio — open position' }),
-    ).toBeInTheDocument()
-    expect(currentNote()).toBeNull()
+      screen.getByRole('heading', { level: 1, name: 'Lesson complete — Fixture lesson' }),
+    ).toHaveFocus()
+    expect(onSessionChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ completed: true, exercisesCompleted: 2 }),
+    )
   })
 
-  it('persists every grade and finishes with the summary', async () => {
+  it('persists every finished exercise and ends with the summary', async () => {
     const user = userEvent.setup()
     const { onSessionChange, onExit, click } = renderRunner()
 
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
     vi.spyOn(Date, 'now').mockReturnValue(31_000)
-    await finishAndGrade(user, 'C major — open position', 'Shaky')
+    await next(user, 'C major — open position')
     expect(onSessionChange).toHaveBeenLastCalledWith({
       id: 'session-1',
       lessonId: 'fixture-lesson',
       startedAt: new Date(1_000).toISOString(),
       durationSeconds: 30,
       completed: false,
-      results: [{ exerciseId: 'fx-1', grade: 'shaky' }],
+      exercisesCompleted: 1,
     })
 
-    await begin(user, 'G7 arpeggio — open position')
-    await finishAndGrade(user, 'G7 arpeggio — open position', 'Got it')
+    await play(user, 'G major — open position')
+    await next(user, 'G major — open position')
 
     expect(
       screen.getByRole('heading', {
@@ -297,16 +270,9 @@ describe('PracticeRunner', () => {
         name: 'Lesson complete — Fixture lesson',
       }),
     ).toHaveFocus()
-    expect(screen.getByText('Shaky')).toBeInTheDocument()
-    expect(screen.getByText('Got it')).toBeInTheDocument()
+    expect(screen.getAllByText('Done')).toHaveLength(3)
     expect(onSessionChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        completed: true,
-        results: [
-          { exerciseId: 'fx-1', grade: 'shaky' },
-          { exerciseId: 'fx-2', grade: 'got-it' },
-        ],
-      }),
+      expect.objectContaining({ completed: true, exercisesCompleted: 2 }),
     )
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
@@ -318,23 +284,20 @@ describe('PracticeRunner', () => {
     const user = userEvent.setup()
     const { onSessionChange, onExit } = renderRunner()
 
-    await begin(user, 'C major — open position')
-    await finishAndGrade(user, 'C major — open position', 'Missed')
+    await play(user, 'C major — open position')
+    await next(user, 'C major — open position')
     await user.click(screen.getByRole('button', { name: 'End lesson' }))
 
     expect(onExit).toHaveBeenCalledTimes(1)
     expect(onSessionChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        completed: false,
-        results: [{ exerciseId: 'fx-1', grade: 'missed' }],
-      }),
+      expect.objectContaining({ completed: false, exercisesCompleted: 1 }),
     )
   })
 
   it('disposes the click track when the player unmounts', async () => {
     const user = userEvent.setup()
     const { unmount, click } = renderRunner()
-    await begin(user, 'C major — open position')
+    await play(user, 'C major — open position')
     expect(click.track.playing).toBe(true)
     unmount()
     expect(click.calls.at(-1)).toBe('dispose')

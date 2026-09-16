@@ -405,7 +405,7 @@ describe('appRouter.sessions', () => {
     })
   })
 
-  it('preserves the order of graded exercises', async () => {
+  it('updates a session in place as the run progresses', async () => {
     const sessions = createMemorySessionRepository()
     const caller = createCaller(
       createContext({
@@ -413,19 +413,21 @@ describe('appRouter.sessions', () => {
         sessions,
       }),
     )
-    const session = sessionRecord({
-      results: [
-        { exerciseId: 'exercise-1', grade: 'got-it' },
-        { exerciseId: 'exercise-2', grade: 'shaky' },
-        { exerciseId: 'exercise-3', grade: 'missed' },
-      ],
-    })
+    const started = sessionRecord({ exercisesCompleted: 1 })
 
-    await caller.sessions.upsert(session)
+    await caller.sessions.upsert(started)
+    await caller.sessions.upsert({
+      ...started,
+      durationSeconds: 300,
+      completed: true,
+      exercisesCompleted: 3,
+    })
 
     await expect(caller.sessions.list()).resolves.toEqual({
       status: 'ok',
-      sessions: [session],
+      sessions: [
+        { ...started, durationSeconds: 300, completed: true, exercisesCompleted: 3 },
+      ],
     })
   })
 
@@ -518,14 +520,11 @@ function sessionRecord(
     startedAt: '2026-07-09T10:00:00.000Z',
     durationSeconds: 120,
     completed: false,
-    results: [{ exerciseId: 'exercise-1', grade: 'missed' }],
+    exercisesCompleted: 0,
     ...overrides,
   }
 }
 
 function cloneSession(session: PracticeSession): PracticeSession {
-  return {
-    ...session,
-    results: session.results.map((result) => ({ ...result })),
-  }
+  return { ...session }
 }

@@ -3,20 +3,13 @@ import { z } from 'zod'
 import { SessionOwnerMismatchError } from '../../db/sessions'
 import { protectedProcedure, router } from '../init'
 
-const exerciseGrade = z.enum(['got-it', 'shaky', 'missed'])
-
-const exerciseResultSchema = z.object({
-  exerciseId: z.string().min(1),
-  grade: exerciseGrade,
-})
-
 export const practiceSessionSchema = z.object({
   id: z.uuid(),
   lessonId: z.string().min(1),
   startedAt: z.iso.datetime(),
   durationSeconds: z.number().int().min(0),
   completed: z.boolean(),
-  results: z.array(exerciseResultSchema),
+  exercisesCompleted: z.number().int().min(0),
 })
 
 export const sessionListOutput = z.discriminatedUnion('status', [

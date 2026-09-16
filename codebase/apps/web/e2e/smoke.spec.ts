@@ -1,8 +1,8 @@
 import {
   expect,
-  gradeCurrentExercise,
-  gradeThroughLesson,
+  finishCurrentExercise,
   listStoredSessions,
+  playThroughLesson,
   test,
 } from './fixtures'
 
@@ -61,7 +61,7 @@ test('happy path: pick a lesson, play it through, and the session is stored', as
     page.getByRole('img', { name: /^C major — open position tab, \d+ notes$/ }),
   ).toBeVisible()
 
-  await gradeThroughLesson(page)
+  await playThroughLesson(page)
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(
     page.getByRole('heading', { name: 'Lessons', level: 1 }),
@@ -72,13 +72,11 @@ test('happy path: pick a lesson, play it through, and the session is stored', as
   expect(sessions[0]).toMatchObject({
     lessonId: 'scales-major-open',
     completed: true,
+    exercisesCompleted: 3,
   })
-  expect(sessions[0].results.map((result) => result.grade)).toEqual(
-    Array(sessions[0].results.length).fill('got-it'),
-  )
 })
 
-test('Play starts the timer and the click; Next opens grading', async ({ page }) => {
+test('Play starts the timer, the click, and the cursor; Next advances', async ({ page }) => {
   await page.goto('/app/lessons/scales-major-open')
 
   await expect(page.getByText('2:00')).toBeVisible()
@@ -98,9 +96,10 @@ test('Play starts the timer and the click; Next opens grading', async ({ page })
   })
 
   await page.getByRole('button', { name: /^Next: finish / }).click()
-  const grade = page.getByRole('group', { name: /^Grade / })
-  await expect(grade).toBeVisible()
-  await expect(grade.getByRole('button', { name: 'Got it' })).toBeFocused()
+  await expect(page.getByText('Exercise 2 of 3')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'G major — open position', level: 2 }),
+  ).toBeFocused()
 })
 
 test('an abandoned run is stored incomplete and survives a reload', async ({
@@ -112,7 +111,7 @@ test('an abandoned run is stored incomplete and survives a reload', async ({
     page.waitForResponse((response) =>
       response.url().includes('sessions.upsert'),
     ),
-    gradeCurrentExercise(page),
+    finishCurrentExercise(page),
   ])
   await expect(page.getByText('Exercise 2 of 3')).toBeVisible()
 
@@ -124,6 +123,6 @@ test('an abandoned run is stored incomplete and survives a reload', async ({
   expect(sessions[0]).toMatchObject({
     lessonId: 'scales-major-open',
     completed: false,
-    results: [{ exerciseId: 'scales-major-open-c', grade: 'got-it' }],
+    exercisesCompleted: 1,
   })
 })

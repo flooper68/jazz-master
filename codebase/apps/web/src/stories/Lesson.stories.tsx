@@ -4,7 +4,7 @@ import { PagePreview } from './PagePreview'
 
 const meta = {
   title: 'Pages/Lesson', component: PagePreview,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The lesson player page. Grades are saved to an in-memory fixture; the click plays through the browser\'s Web Audio when Begin is pressed.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The lesson player page. Progress is saved to an in-memory fixture; the click plays through the browser\'s Web Audio when Play is pressed.' } } },
   args: { path: `/lessons/${LESSONS[0].id}`, scenario: 'ready' },
   render: (args) => <PagePreview key={`${args.path}-${args.scenario}`} {...args} />,
 } satisfies Meta<typeof PagePreview>

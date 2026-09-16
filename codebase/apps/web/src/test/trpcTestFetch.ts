@@ -44,10 +44,7 @@ const sessionRepository = {
 } satisfies SessionRepository
 
 function cloneSession(session: PracticeSession): PracticeSession {
-  return {
-    ...session,
-    results: session.results.map((result) => ({ ...result })),
-  }
+  return { ...session }
 }
 
 function listStoredSessions(clerkUserId: string): PracticeSession[] {

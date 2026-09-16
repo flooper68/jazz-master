@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LESSONS } from '../../content'
@@ -24,40 +24,38 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function gradeCurrentExercise(user: User, grade: string): Promise<void> {
+async function finishCurrentExercise(user: User): Promise<void> {
   await user.click(screen.getByRole('button', { name: /^Play / }))
   await user.click(screen.getByRole('button', { name: /^Next: finish / }))
-  const group = screen.getByRole('group', { name: /^Grade / })
-  await user.click(within(group).getByRole('button', { name: grade }))
 }
 
 describe('LessonPage', () => {
-  it('persists each grade to the server and marks the finished run complete', async () => {
+  it('persists progress to the server and marks the finished run complete', async () => {
     const user = userEvent.setup()
     await renderRoute(`/lessons/${lesson.id}`)
 
-    await gradeCurrentExercise(user, 'Shaky')
+    await finishCurrentExercise(user)
     await waitFor(() => {
       expect(getTrpcTestSessions()).toHaveLength(1)
     })
     expect(getTrpcTestSessions()[0]).toMatchObject({
       lessonId: lesson.id,
       completed: false,
-      results: [{ exerciseId: lesson.exercises[0].id, grade: 'shaky' }],
+      exercisesCompleted: 1,
     })
 
     for (let i = 1; i < lesson.exercises.length; i++) {
-      await gradeCurrentExercise(user, 'Got it')
+      await finishCurrentExercise(user)
     }
     expect(
       screen.getByRole('heading', { level: 1, name: /^Lesson complete/ }),
     ).toBeInTheDocument()
     await waitFor(() => {
-      expect(getTrpcTestSessions()[0].completed).toBe(true)
+      expect(getTrpcTestSessions()[0]).toMatchObject({
+        completed: true,
+        exercisesCompleted: lesson.exercises.length,
+      })
     })
-    expect(getTrpcTestSessions()[0].results).toHaveLength(
-      lesson.exercises.length,
-    )
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(
@@ -70,26 +68,26 @@ describe('LessonPage', () => {
     const user = userEvent.setup()
     await renderRoute(`/lessons/${lesson.id}`)
 
-    await gradeCurrentExercise(user, 'Got it')
+    await finishCurrentExercise(user)
 
     expect(screen.getByText('Exercise 2 of 3')).toBeInTheDocument()
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The last save failed. Your grades are sent again with the next one.',
+      'The last save failed. Your progress is sent again with the next exercise.',
     )
     expect(getTrpcTestSessions()).toEqual([])
 
     setTrpcTestSessionsRepositoryAvailable(true)
-    await gradeCurrentExercise(user, 'Got it')
+    await finishCurrentExercise(user)
     await waitFor(() => {
       expect(screen.queryByRole('alert')).toBeNull()
     })
-    expect(getTrpcTestSessions()[0].results).toHaveLength(2)
+    expect(getTrpcTestSessions()[0].exercisesCompleted).toBe(2)
   })
 
   it('starts a fresh run when leaving and reopening a lesson', async () => {
     const user = userEvent.setup()
     await renderRoute(`/lessons/${lesson.id}`)
-    await gradeCurrentExercise(user, 'Got it')
+    await finishCurrentExercise(user)
     await waitFor(() => {
       expect(getTrpcTestSessions()).toHaveLength(1)
     })
@@ -102,14 +100,13 @@ describe('LessonPage', () => {
       await screen.findByText(`Exercise 1 of ${lesson.exercises.length}`),
     ).toBeInTheDocument()
 
-    await gradeCurrentExercise(user, 'Shaky')
+    await finishCurrentExercise(user)
     await waitFor(() => {
       expect(getTrpcTestSessions()).toHaveLength(2)
     })
-    expect(getTrpcTestSessions().map((s) => s.results[0].grade).sort()).toEqual([
-      'got-it',
-      'shaky',
-    ])
+    expect(
+      getTrpcTestSessions().map((session) => session.exercisesCompleted),
+    ).toEqual([1, 1])
   })
 
   it('renders not found for an unknown lesson', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ExerciseGrade, PracticeSession } from '../appData/session'
+import type { PracticeSession } from '../appData/session'
 import { createClickTrack, type ClickTrack } from '../audio/click'
 import {
   beatsElapsed,
@@ -13,22 +13,13 @@ import { useViewFocus } from './useViewFocus'
 
 /**
  * The lesson player: one exercise at a time — its tab, a click at the
- * exercise tempo with a cursor moving through the tab on the same clock, a
- * timer or pass counter, and a self-grade — then the lesson summary. Session
- * flow lives in usePracticeRunner; this component only renders it.
+ * exercise tempo with a cursor moving through the tab on the same clock, and
+ * a timer or pass counter — then the lesson summary. Session flow lives in
+ * usePracticeRunner; this component only renders it.
  */
-
-const GRADE_LABELS: Record<ExerciseGrade, string> = {
-  'got-it': 'Got it',
-  shaky: 'Shaky',
-  missed: 'Missed',
-}
-const GRADE_ORDER: readonly ExerciseGrade[] = ['got-it', 'shaky', 'missed']
 
 const BUTTON_PRIMARY =
   'rounded-lg bg-cta px-4 py-2 font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:bg-panel-2 disabled:text-muted'
-const BUTTON_SECONDARY =
-  'rounded-lg border border-line-strong bg-panel px-4 py-2 font-medium text-fg hover:border-fg hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const HEADING =
   'font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
@@ -59,7 +50,7 @@ export function PracticeRunner({
   createClick = createClickTrack,
   now = () => performance.now(),
 }: PracticeRunnerProps) {
-  const { state, beginExercise, completeExercise, grade } = usePracticeRunner({
+  const { state, beginExercise, finishExercise } = usePracticeRunner({
     lesson,
     sessionId,
     startedAt,
@@ -104,36 +95,28 @@ export function PracticeRunner({
   async function exitRunner(): Promise<void> {
     if (exiting) return
     setExiting(true)
-    if (state.results.length > 0) {
+    if (state.exercisesCompleted > 0) {
       await onSessionChange(toSessionRecord(state, Date.now()))
     }
     onExit()
   }
 
   if (state.finished) {
-    const gradeByExercise = new Map(
-      state.results.map((result) => [result.exerciseId, result.grade]),
-    )
     return (
       <section className="max-w-2xl">
         <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
           Lesson complete — {lesson.title}
         </h1>
         <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-panel">
-          {lesson.exercises.map((exercise) => {
-            const exerciseGrade = gradeByExercise.get(exercise.id)
-            return (
-              <li
-                key={exercise.id}
-                className="flex items-baseline justify-between gap-4 p-4"
-              >
-                <span className="text-fg">{exercise.title}</span>
-                <span className="shrink-0 text-sm text-muted">
-                  {exerciseGrade ? GRADE_LABELS[exerciseGrade] : '—'}
-                </span>
-              </li>
-            )
-          })}
+          {lesson.exercises.map((exercise) => (
+            <li
+              key={exercise.id}
+              className="flex items-baseline justify-between gap-4 p-4"
+            >
+              <span className="text-fg">{exercise.title}</span>
+              <span className="shrink-0 text-sm text-muted">Done</span>
+            </li>
+          ))}
         </ul>
         <button
           type="button"
@@ -176,14 +159,11 @@ export function PracticeRunner({
         clickOn={clickOn}
         onClickOnChange={setClickOn}
         onBegin={beginExercise}
-        onComplete={completeExercise}
-        onGrade={grade}
+        onFinish={finishExercise}
       />
     </section>
   )
 }
-
-type PanelStatus = 'ready' | 'playing' | 'grading'
 
 function ExercisePanel({
   exercise,
@@ -193,8 +173,7 @@ function ExercisePanel({
   clickOn,
   onClickOnChange,
   onBegin,
-  onComplete,
-  onGrade,
+  onFinish,
 }: {
   exercise: Exercise
   isFirst: boolean
@@ -203,24 +182,18 @@ function ExercisePanel({
   clickOn: boolean
   onClickOnChange: (on: boolean) => void
   onBegin: () => void
-  onComplete: () => void
-  onGrade: (grade: ExerciseGrade) => void
+  onFinish: () => void
 }) {
-  const [status, setStatus] = useState<PanelStatus>('ready')
+  const [playing, setPlaying] = useState(false)
   const [clickError, setClickError] = useState<string | null>(null)
   // The cursor: which note is sounding and how many passes are complete.
   const [playhead, setPlayhead] = useState<{ noteIndex: number; pass: number } | null>(null)
   const playStartedAtRef = useRef<number | null>(null)
-  // Grading entered by the player's own action (Next, last rep) moves focus
-  // to the grades; a timer expiry only announces, so focus is not stolen.
-  const [focusGrades, setFocusGrades] = useState(false)
-  const firstGradeRef = useRef<HTMLButtonElement>(null)
   // ISSUE-002: advancing remounts this panel; its heading is the new view.
   // The first panel defers to the lesson heading the runner focuses on mount.
   const exerciseHeadingRef = useViewFocus<HTMLHeadingElement>(exercise.id, {
     focusOnMount: !isFirst,
   })
-
 
   // Silence the click whenever this exercise leaves the screen.
   useEffect(() => () => click.stop(), [click])
@@ -231,7 +204,7 @@ function ExercisePanel({
   const passTarget =
     exercise.duration.kind === 'repetitions' ? exercise.duration.count : null
   useEffect(() => {
-    if (status !== 'playing') return
+    if (!playing) return
     let frame = 0
     const tick = () => {
       const startedAt = playStartedAtRef.current
@@ -248,16 +221,12 @@ function ExercisePanel({
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [status, exercise, now])
+  }, [playing, exercise, now])
   const passesDone = playhead?.pass ?? 0
   const passesComplete = passTarget !== null && passesDone >= passTarget
   useEffect(() => {
-    if (passesComplete) completeRef.current(false)
+    if (passesComplete) finishRef.current()
   }, [passesComplete])
-
-  useEffect(() => {
-    if (status === 'grading' && focusGrades) firstGradeRef.current?.focus()
-  }, [status, focusGrades])
 
   function startClick(): void {
     try {
@@ -268,28 +237,27 @@ function ExercisePanel({
     }
   }
 
-  function begin(): void {
+  function play(): void {
     onBegin()
     playStartedAtRef.current = now()
     setPlayhead(playheadAt(exercise.notes, 0))
-    setStatus('playing')
+    setPlaying(true)
     if (clickOn) startClick()
   }
 
-  function complete(byPlayer: boolean): void {
-    if (status !== 'playing') return
+  function finish(): void {
+    if (!playing) return
     click.stop()
-    onComplete()
-    setFocusGrades(byPlayer)
-    setStatus('grading')
+    setPlaying(false)
+    onFinish()
   }
-  const completeRef = useRef(complete)
-  completeRef.current = complete
+  const finishRef = useRef(finish)
+  finishRef.current = finish
 
   function toggleClick(): void {
     const next = !clickOn
     onClickOnChange(next)
-    if (status !== 'playing') return
+    if (!playing) return
     if (next) startClick()
     else click.stop()
   }
@@ -310,8 +278,8 @@ function ExercisePanel({
         {exercise.duration.kind === 'minutes' ? (
           <Countdown
             initialSeconds={exercise.duration.minutes * 60}
-            active={status === 'playing'}
-            onExpire={() => complete(false)}
+            active={playing}
+            onExpire={() => finishRef.current()}
           />
         ) : (
           <span aria-live="polite">
@@ -322,71 +290,46 @@ function ExercisePanel({
       <div className="mt-3 overflow-x-auto rounded-lg border border-line bg-panel-2 p-3">
         <Tab
           notes={exercise.notes}
-          currentIndex={status === 'playing' ? (playhead?.noteIndex ?? null) : null}
+          currentIndex={playing ? (playhead?.noteIndex ?? null) : null}
           aria-label={`${exercise.title} tab, ${exercise.notes.length} notes${
-            status === 'playing' && playhead ? `, on note ${playhead.noteIndex + 1}` : ''
+            playing && playhead ? `, on note ${playhead.noteIndex + 1}` : ''
           }`}
         />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        {status === 'ready' && (
+        {playing ? (
           <button
             type="button"
-            onClick={begin}
+            onClick={finish}
+            aria-label={`Next: finish ${exercise.title}`}
+            className={BUTTON_PRIMARY}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={play}
             aria-label={`Play ${exercise.title}`}
             className={BUTTON_PRIMARY}
           >
             Play
           </button>
         )}
-        {status === 'playing' && (
-          <button
-            type="button"
-            onClick={() => complete(true)}
-            aria-label={`Next: finish ${exercise.title}`}
-            className={BUTTON_PRIMARY}
-          >
-            Next
-          </button>
-        )}
-        {status !== 'grading' && (
-          <label className="flex items-center gap-2 text-sm text-fg-2">
-            <input
-              type="checkbox"
-              checked={clickOn}
-              onChange={toggleClick}
-              className="h-4 w-4 accent-cta"
-            />
-            Click
-          </label>
-        )}
+        <label className="flex items-center gap-2 text-sm text-fg-2">
+          <input
+            type="checkbox"
+            checked={clickOn}
+            onChange={toggleClick}
+            className="h-4 w-4 accent-cta"
+          />
+          Click
+        </label>
       </div>
       {clickError && (
         <p role="alert" className="mt-2 text-sm text-danger-text">
           {clickError}
         </p>
-      )}
-      {status === 'grading' && (
-        <div
-          role="group"
-          aria-label={`Grade ${exercise.title}`}
-          className="mt-4"
-        >
-          <p className="text-sm text-muted">How did it go?</p>
-          <div className="mt-2 flex flex-wrap gap-3">
-            {GRADE_ORDER.map((gradeValue, index) => (
-              <button
-                key={gradeValue}
-                ref={index === 0 ? firstGradeRef : undefined}
-                type="button"
-                onClick={() => onGrade(gradeValue)}
-                className={BUTTON_SECONDARY}
-              >
-                {GRADE_LABELS[gradeValue]}
-              </button>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   )
@@ -434,7 +377,7 @@ function Countdown({
       <span className="sr-only">Time remaining </span>
       <span>{expired ? '' : formatSeconds(secondsLeft)}</span>
       {/* Persistent live region so expiry is announced, without chatty ticks. */}
-      <span aria-live="polite">{expired ? 'Time — grade yourself' : ''}</span>
+      <span aria-live="polite">{expired ? 'Time — next exercise' : ''}</span>
     </>
   )
 }

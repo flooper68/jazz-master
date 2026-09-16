@@ -35,9 +35,9 @@ function LessonRun({ lesson }: { lesson: Lesson }) {
     sessionId: crypto.randomUUID(),
     startedAt: Date.now(),
   }))
-  // Grades upsert the same record; serialize the writes so an older snapshot
-  // can never land after a newer one. Every write carries the whole record,
-  // so a failed save is covered by the next one.
+  // Every finished exercise upserts the same record; serialize the writes so
+  // an older snapshot can never land after a newer one. Every write carries
+  // the whole record, so a failed save is covered by the next one.
   const saveQueueRef = useRef(Promise.resolve())
   const saveSessionProgress = useCallback(
     (session: PracticeSession) => {
@@ -58,7 +58,7 @@ function LessonRun({ lesson }: { lesson: Lesson }) {
     <>
       {saveFailed && (
         <p role="alert" className="mb-4 max-w-2xl text-sm text-danger-text">
-          The last save failed. Your grades are sent again with the next one.
+          The last save failed. Your progress is sent again with the next exercise.
         </p>
       )}
       <PracticeRunner
