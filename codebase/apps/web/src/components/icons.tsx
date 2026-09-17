@@ -93,8 +93,8 @@ export const SlidersIcon = () => (
     <path d="M2 4h6v1.5H2zM10.5 2.5h1.5v4.5h-1.5zM10 4h4v1.5h-4zM2 10.5h4V12H2zM6.5 9H8v4.5H6.5zM8 10.5h6V12H8z" />
   </Icon>
 )
-export const InfoIcon = () => (
-  <Icon>
+export const InfoIcon = ({ size = 14 }: { size?: number }) => (
+  <Icon size={size}>
     <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 1.5a5 5 0 1 0 0 10A5 5 0 0 0 8 3zm-.9 3.8h1.8V12H7.1zM8 4.3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
   </Icon>
 )
