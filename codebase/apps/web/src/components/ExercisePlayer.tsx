@@ -8,6 +8,7 @@ import type { LoopRegion, TempoLadder } from '../player/plan'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
 import { usePlayerTransport } from '../player/usePlayerTransport'
 import { Score, type ScoreHandle } from '../score/Score'
+import { useAgentPlayerTools } from '../webmcp/useAgentPlayerTools'
 import { AboutPanel } from './AboutPanel'
 import { SourceTag } from './SourceTag'
 import { Select } from './ui/Select'
@@ -223,6 +224,32 @@ export function ExercisePlayer({
     setStarted(true)
     transport.play()
   }
+
+  // An AI assistant in the user's browser gets the same controls as the buttons below.
+  useAgentPlayerTools({
+    state() {
+      const now = transport.getSnapshot()
+      const at = transport.position()
+      return {
+        exerciseId: exercise.id,
+        title: exercise.title,
+        playing: now.status === 'playing',
+        waitingForSound: now.status === 'playing' && at.phase === 'idle',
+        // The tempo sounding now, as the readout shows it: a tempo ladder moves it pass by pass.
+        tempoBpm: at.tempoBpm,
+        exerciseTempoBpm: exercise.tempoBpm,
+        bar: Math.floor(at.beat / beatsPerBar + 1e-9) + 1,
+        beat: Math.floor((at.beat % beatsPerBar) + 1e-9) + 1,
+        passesDone: now.pass,
+        finished: now.finished,
+        soundAvailable: !now.audioUnavailable,
+      }
+    },
+    play,
+    pause: () => transport.pause(),
+    stop: () => transport.stop(),
+    setTempo: (bpm) => transport.setTempo(bpm),
+  })
 
   function finish(): void {
     transport.pause()
