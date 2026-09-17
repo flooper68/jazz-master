@@ -101,6 +101,8 @@
   --c-on-blue: #143039;
   --c-lilac: #c9a4e6;
   --c-on-lilac: #2d1a44;
+  --c-rose: #efb3c0;
+  --c-on-rose: #44131f;
   --c-success: #2a7d50;
   --c-success-hover: #236a44;
   --c-success-soft: #e3f3ea;
@@ -138,6 +140,8 @@
   --c-on-blue: #0e2229;
   --c-lilac: #ab84cf;
   --c-on-lilac: #22133a;
+  --c-rose: #cf8a9c;
+  --c-on-rose: #33101a;
   --c-success: #3aa86c;
   --c-success-hover: #46b878;
   --c-success-soft: rgba(58, 168, 108, 0.18);
@@ -176,6 +180,8 @@
     --c-on-blue: #0e2229;
     --c-lilac: #ab84cf;
     --c-on-lilac: #22133a;
+    --c-rose: #cf8a9c;
+    --c-on-rose: #33101a;
     --c-success: #3aa86c;
     --c-success-hover: #46b878;
     --c-success-soft: rgba(58, 168, 108, 0.18);
@@ -216,6 +222,8 @@
   --color-on-blue: var(--c-on-blue);
   --color-lilac: var(--c-lilac);
   --color-on-lilac: var(--c-on-lilac);
+  --color-rose: var(--c-rose);
+  --color-on-rose: var(--c-on-rose);
   --color-success: var(--c-success);
   --color-success-hover: var(--c-success-hover);
   --color-success-soft: var(--c-success-soft);

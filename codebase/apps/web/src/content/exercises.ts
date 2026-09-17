@@ -1,19 +1,27 @@
+import { ARPEGGIOS_AFTER_II_V_I, ARPEGGIOS_BEFORE_II_V_I } from './pack/arpeggios'
+import { CHORDS } from './pack/chords'
+import { ETUDES } from './pack/etudes'
+import { LINES_AFTER_BEBOP_LINE, LINES_BEFORE_BEBOP_LINE } from './pack/lines'
+import { PATTERNS } from './pack/patterns'
+import { SCALES } from './pack/scales'
+import { TECHNIQUE } from './pack/technique'
 import type { Exercise } from './types'
 
 /**
- * The exercise pack, written as tabs, in the order the list shows them. Each
- * exercise is a literal series of notes (string, fret, beats) the player
- * renders and steps through; the scale tabs below were produced by `scaleTab`
- * in authoring.ts — one note per eighth, up through the open position and
- * back down.
+ * The five exercises the app began with, written as literal tabs: a series of
+ * notes (string, fret, beats) the player renders and steps through. The scale
+ * tabs were produced by `scaleTab` in authoring.ts — one note per eighth, up
+ * through the open position and back down. Their ids are in users' run
+ * history and routines, so they stay as they are.
  */
-export const EXERCISES: readonly Exercise[] = [
+const FOUNDING: readonly Exercise[] = [
   {
     id: 'scales-major-open-c',
     title: 'C major — open position',
     area: 'scales',
     level: 1,
     key: 'C',
+    series: 'major-open',
     about: [
       'The major scale is the ruler everything else in jazz is measured against. Chord symbols, the modes, the ii–V–I — all of them are described as alterations of it, so knowing it under the fingers in every key is the first real investment.',
       'The open position is the lowest place on the neck to play it: the four frets nearest the nut plus the open strings. It uses a different fingering in every key, which is exactly the point — the scale has to become a sound you find, not a shape you memorise.',
@@ -68,6 +76,7 @@ export const EXERCISES: readonly Exercise[] = [
     area: 'scales',
     level: 1,
     key: 'G',
+    series: 'major-open',
     about: [
       'The open-position major scale again, a fifth up — the story of the scale is told with C major. One sharp: F♯. Everything else is the same as C major, so listen for the one note that moves — the F on the low E, D and high E strings has stepped up a fret.',
     ],
@@ -118,6 +127,7 @@ export const EXERCISES: readonly Exercise[] = [
     area: 'scales',
     level: 1,
     key: 'F',
+    series: 'major-open',
     about: [
       'The open-position major scale once more, this time on the flat side of C. One flat: B♭. The B string is the trap — its open note is out of the key, so the scale takes the first fret there instead. F major is the first key where the open strings stop doing the work for you.',
     ],
@@ -166,6 +176,8 @@ export const EXERCISES: readonly Exercise[] = [
     area: 'arpeggios',
     level: 2,
     key: 'F',
+    styles: ['jazz'],
+    contexts: ['major-ii-V-I'],
     about: [
       'The ii–V–I is the most common chord movement in jazz: in F major that is Gm7 to C7 to Fmaj7. The bass moves down in fifths, the harmony leans forward twice and then lands, and most standards are built from chains of this one cadence.',
       'Every chord in it comes from the F major scale, so the same seven notes fit all three — what changes is which of them feel like home. Lines that work outline the chord tones on the strong beats and use the rest of the scale, plus the odd chromatic note, to get between them.',
@@ -209,9 +221,12 @@ export const EXERCISES: readonly Exercise[] = [
   {
     id: 'lines-ii-v-i-f-line',
     title: 'Gm7 – C7 – Fmaj7 — a bebop line',
-    area: 'standards',
+    area: 'lines',
     level: 2,
     key: 'F',
+    styles: ['jazz/bebop'],
+    contexts: ['major-ii-V-I'],
+    feel: 'swing-8',
     about: [
       'The same Gm7 – C7 – Fmaj7 as the arpeggio exercise, in the same position around the fifth to eighth frets — learn the arpeggios first so the chord tones are already under your fingers. A line in the bebop manner: up the Gm7 arpeggio, down the scale, then over C7 the third, fifth, seventh and root before the one chromatic note — A♭, the flat thirteenth of C7 — which slides down to A, the third of Fmaj7, on the downbeat.',
       'That resolution is the whole lesson: a note outside the key placed a half step above its target lands the change. Play the line until the A♭ sounds inevitable rather than wrong.',
@@ -246,4 +261,32 @@ export const EXERCISES: readonly Exercise[] = [
       { string: 2, fret: 6, beats: 2 },
     ],
   },
+]
+
+function founding(id: string): Exercise {
+  const exercise = FOUNDING.find((candidate) => candidate.id === id)
+  if (!exercise) throw new Error(`No founding exercise "${id}"`)
+  return exercise
+}
+
+/**
+ * The exercise pack. The list groups by area, so what this order decides is
+ * the order within each area, which is the order to learn them in; the
+ * sections are built in pack/, each with the helpers in authoring.ts.
+ */
+export const EXERCISES: readonly Exercise[] = [
+  ...TECHNIQUE,
+  founding('scales-major-open-c'),
+  founding('scales-major-open-g'),
+  founding('scales-major-open-f'),
+  ...SCALES,
+  ...PATTERNS,
+  ...ARPEGGIOS_BEFORE_II_V_I,
+  founding('lines-ii-v-i-f-arpeggios'),
+  ...ARPEGGIOS_AFTER_II_V_I,
+  ...CHORDS,
+  ...LINES_BEFORE_BEBOP_LINE,
+  founding('lines-ii-v-i-f-line'),
+  ...LINES_AFTER_BEBOP_LINE,
+  ...ETUDES,
 ]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EXERCISES } from '../content'
+import { EXERCISES as PACK } from '../content'
 import {
   planQuickRun,
   sessionSearch,
@@ -9,6 +9,10 @@ import {
   pickQuickRun,
   QUICK_RUN_MAX,
 } from './quickRun'
+
+/** The five founding exercises: a pack small enough for a test to count — three scales, an arpeggio, a line. */
+const FOUNDING_IDS = ['scales-major-open-c', 'scales-major-open-g', 'scales-major-open-f', 'lines-ii-v-i-f-arpeggios', 'lines-ii-v-i-f-line']
+const EXERCISES = PACK.filter((exercise) => FOUNDING_IDS.includes(exercise.id))
 
 const defaults = defaultQuickRunSettings(EXERCISES)
 
@@ -61,8 +65,14 @@ describe('quick run settings', () => {
       loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 2, areas: ['bagpipes'] }) }),
     ).toEqual({ count: 2, areas: defaults.areas, routineId: null })
     expect(
-      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 4, areas: ['standards', 'scales'], routineId: 'r-1' }) }),
-    ).toEqual({ count: 4, areas: ['scales', 'standards'], routineId: 'r-1' })
+      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 4, areas: ['lines', 'scales'], routineId: 'r-1' }) }),
+    ).toEqual({ count: 4, areas: ['scales', 'lines'], routineId: 'r-1' })
+  })
+
+  it('reads areas saved before standards became lines', () => {
+    expect(
+      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 3, areas: ['standards'] }) }).areas,
+    ).toEqual(['lines'])
   })
 })
 

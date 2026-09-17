@@ -16,6 +16,19 @@ function exercise(overrides: Partial<Exercise>): Exercise {
 }
 
 describe('exerciseShape', () => {
+  it('marks the tonic as the root when the exercise names one: A minor pentatonic is written in C, and is in A', () => {
+    const notes = [
+      { string: 6 as const, fret: 5, beats: 1 }, // A
+      { string: 6 as const, fret: 8, beats: 1 }, // C
+    ]
+    const roots = (overrides: Partial<Exercise>) =>
+      exerciseShape(exercise({ notes, ...overrides })).positions.filter((position) => position.role === 'root').map((position) => position.label)
+    expect(roots({ key: 'C' })).toEqual(['C'])
+    expect(roots({ key: 'C', tonic: 'A' })).toEqual(['A'])
+    // A tonic needs no key to go with it.
+    expect(roots({ tonic: 'A' })).toEqual(['A'])
+  })
+
   it('lists each position once, labelled in the key, roots marked, low strings first', () => {
     const shape = exerciseShape(
       exercise({

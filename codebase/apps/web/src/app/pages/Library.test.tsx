@@ -35,17 +35,18 @@ describe('the user’s own exercises, in the app', () => {
     const heading = await screen.findByRole('heading', { level: 3, name: /Dm7 shell voicings, broken/ })
     const card = within(heading.closest('li') as HTMLElement)
     expect(card.getByText('Yours')).toBeInTheDocument()
-    // An area the pack has nothing in appears once the library does.
-    expect(screen.getByRole('heading', { level: 2, name: 'Chords' })).toBeInTheDocument()
+    // It sits in its own area's section, among the pack's chords.
+    const section = within(screen.getByRole('region', { name: 'Chords' }))
+    expect(section.getByRole('heading', { level: 3, name: /Dm7 shell voicings, broken/ })).toBeInTheDocument()
     // The pack is untouched, and carries no such mark.
     const pack = within(screen.getByRole('heading', { level: 3, name: 'C major — open position' }).closest('li') as HTMLElement)
     expect(pack.queryByText('Yours')).toBeNull()
     expect(pack.getByText('Built-in')).toBeInTheDocument()
     expect(card.queryByText('Built-in')).toBeNull()
     expect(pack.queryByRole('button', { name: /^Delete / })).toBeNull()
-    // Level 4 is past the pack's three dots; every row grows to match.
-    expect(card.getByRole('img', { name: 'Level 4' }).children).toHaveLength(4)
-    expect(pack.getByRole('img', { name: 'Level 1' }).children).toHaveLength(4)
+    // Every row shows as many dots as the hardest exercise on the page has levels.
+    expect(card.getByRole('img', { name: 'Level 4' }).children).toHaveLength(5)
+    expect(pack.getByRole('img', { name: 'Level 1' }).children).toHaveLength(5)
   })
 
   it('opens one in the player by its id', async () => {
@@ -71,7 +72,6 @@ describe('the user’s own exercises, in the app', () => {
     await user.click(within(show).getByRole('radio', { name: 'Built-in' }))
     expect(screen.queryByRole('heading', { level: 3, name: /Dm7 shell voicings/ })).toBeNull()
     expect(screen.getByRole('heading', { level: 3, name: 'C major — open position' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 2, name: 'Chords' })).toBeNull()
 
     await user.click(within(show).getByRole('radio', { name: 'Yours' }))
     expect(screen.getByRole('heading', { level: 3, name: /Dm7 shell voicings/ })).toBeInTheDocument()
@@ -120,6 +120,5 @@ describe('the user’s own exercises, in the app', () => {
     expect(screen.getByRole('heading', { level: 3, name: /Dm7 shell voicings/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: `Delete ${chords.title} for good` }))
     await waitFor(() => expect(screen.queryByRole('heading', { level: 3, name: /Dm7 shell voicings/ })).toBeNull())
-    expect(screen.queryByRole('heading', { level: 2, name: 'Chords' })).toBeNull()
   })
 })

@@ -34,7 +34,7 @@ describe('HistoryPage', () => {
     const today = within(await screen.findByRole('region', { name: 'Today' }))
     const line = within(today.getByRole('listitem'))
     expect(line.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
-    expect(line.getByText('Standards')).toBeInTheDocument()
+    expect(line.getByText('Lines')).toBeInTheDocument()
     expect(line.getByText('Quick run')).toBeInTheDocument()
     expect(line.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
     expect(line.getByLabelText('Felt 8 out of 10')).toBeInTheDocument()

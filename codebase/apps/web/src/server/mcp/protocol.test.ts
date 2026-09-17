@@ -156,6 +156,35 @@ describe('the MCP server, on the wire', () => {
   })
 })
 
+describe('exercise labels over MCP', () => {
+  it('lists the built-in exercises with the labels they are filtered by, and offers the vocabularies in the schema', async () => {
+    const client = await connect('user_123', createMemoryUserExerciseRepository())
+    const builtin = await client.callTool({ name: 'list_builtin_exercises', arguments: {} })
+    const listed = (builtin.structuredContent as { exercises: { id: string; styles?: string[]; contexts?: string[]; feel?: string }[] }).exercises
+    expect(listed.find((exercise) => exercise.id === 'lines-ii-v-i-f-line')).toMatchObject({
+      styles: ['jazz/bebop'],
+      contexts: ['major-ii-V-I'],
+      feel: 'swing-8',
+    })
+
+    // A model can only land on the fixed words if the tool shows them.
+    const { tools } = await client.listTools()
+    const schema = JSON.stringify(tools.find((tool) => tool.name === 'create_exercise')?.inputSchema)
+    for (const word of ['etudes', 'jazz/bebop', 'rhythm-changes', 'rest-stroke', 'drop-2', 'shuffle']) expect(schema).toContain(word)
+  })
+
+  it('stores a labelled exercise, and refuses a label outside the vocabulary by name', async () => {
+    const client = await connect('user_123', createMemoryUserExerciseRepository())
+    const labelled = { ...line, styles: ['blues', 'rock'], techniques: ['alternate'], series: 'my-licks', tags: ['from lesson 3'] }
+    const stored = await client.callTool({ name: 'create_exercise', arguments: { exercise: labelled } })
+    expect((stored.structuredContent as { exercise: typeof labelled }).exercise).toMatchObject({ styles: ['blues', 'rock'], tags: ['from lesson 3'] })
+
+    const refused = await client.callTool({ name: 'validate_exercise', arguments: { exercise: { ...line, styles: ['bagpipes'] } } })
+    expect(refused.isError).toBe(true)
+    expect(JSON.stringify(refused.structuredContent)).toContain('styles.0')
+  })
+})
+
 describe('practice routines over MCP', () => {
   it('builds a routine from built-in and own exercises, changes it, and deletes it', async () => {
     const userExercises = createMemoryUserExerciseRepository()

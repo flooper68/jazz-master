@@ -1,4 +1,4 @@
-import { transposeMajorKey } from '@jazz-master/theory'
+import { parseNote, pitchClass, transposeMajorKey } from '@jazz-master/theory'
 import type { Exercise } from './types'
 
 /**
@@ -50,5 +50,25 @@ export function transposeExercise(exercise: Exercise, semitones: number): Exerci
     ...exercise,
     notes: exercise.notes.map((note) => ({ ...note, fret: note.fret + shift })),
     key: exercise.key ? (transposeMajorKey(exercise.key, shift) ?? undefined) : undefined,
+    tonic: exercise.tonic ? transposeTonic(exercise.tonic, shift) : undefined,
   }
+}
+
+/** A tonic is a name for a pitch class, not a spelled degree, so it takes the commonest name: B♭ rather than A♯, F♯ rather than G♭. */
+const TONIC_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
+
+function transposeTonic(tonic: string, semitones: number): string | undefined {
+  const note = parseNote(tonic)
+  return note ? TONIC_NAMES[(((pitchClass(note) + semitones) % 12) + 12) % 12] : undefined
+}
+
+/**
+ * What to call where an exercise is at home, for a caption: `C major` when
+ * the key is the home, the tonic alone (`A`) when the material is minor or
+ * modal and the key only lends its signature — the caption cannot know the
+ * mode, and the title already says it. Null when the exercise names neither.
+ */
+export function homeLabel(exercise: Pick<Exercise, 'key' | 'tonic'>): string | null {
+  if (exercise.tonic && exercise.tonic !== exercise.key) return exercise.tonic
+  return exercise.key ? `${exercise.key} major` : null
 }

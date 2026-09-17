@@ -1,7 +1,7 @@
 import { keySignature, midiAt } from '@jazz-master/theory'
 import { describe, expect, it } from 'vitest'
 import { EXERCISES } from './exercises'
-import { clampTransposition, HIGHEST_TRANSPOSED_FRET, transposeExercise, transposeRange } from './transpose'
+import { clampTransposition, HIGHEST_TRANSPOSED_FRET, homeLabel, transposeExercise, transposeRange } from './transpose'
 import type { Exercise } from './types'
 
 const line: Exercise = {
@@ -81,6 +81,33 @@ describe('transposeExercise', () => {
         expect(moved.notes.every((note) => note.fret >= 0 && note.fret <= HIGHEST_TRANSPOSED_FRET)).toBe(true)
         if (exercise.key) expect(keySignature(moved.key ?? '')).not.toBeNull()
       }
+    }
+  })
+})
+
+describe('the tonic, transposed and captioned', () => {
+  const minor: Exercise = {
+    id: 'm', title: 'A minor pentatonic', area: 'scales', level: 1, tempoBpm: 60, key: 'C', tonic: 'A',
+    duration: { kind: 'repetitions', count: 1 }, notes: [{ string: 6, fret: 5, beats: 4 }],
+  }
+
+  it('slides with the shape, by its commonest name', () => {
+    expect(transposeExercise(minor, 1)).toMatchObject({ key: 'Db', tonic: 'Bb' })
+    expect(transposeExercise(minor, -3)).toMatchObject({ key: 'A', tonic: 'F#' })
+  })
+
+  it('captions a key as a major key, and a tonic of its own as the tonic alone', () => {
+    expect(homeLabel({ key: 'F' })).toBe('F major')
+    expect(homeLabel({ key: 'C', tonic: 'C' })).toBe('C major')
+    expect(homeLabel(minor)).toBe('A')
+    expect(homeLabel({ tonic: 'G' })).toBe('G')
+    expect(homeLabel({})).toBeNull()
+  })
+
+  it('names in the pack, as its tonic, the note every exercise titled in a minor key or a mode is built on', () => {
+    for (const exercise of EXERCISES) {
+      const named = /^([A-G][♭♯]?) (?:natural minor|harmonic minor|melodic minor|minor pentatonic|blues scale|Dorian|Phrygian|Lydian|Mixolydian|Locrian|Hungarian minor|minor triad)/.exec(exercise.title)
+      if (named) expect({ id: exercise.id, tonic: exercise.tonic }).toEqual({ id: exercise.id, tonic: named[1].replace('♭', 'b').replace('♯', '#') })
     }
   })
 })

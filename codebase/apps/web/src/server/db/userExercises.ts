@@ -1,7 +1,7 @@
 import { and, asc, count, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { LIBRARY_ID_PREFIX } from '../../content/library'
-import { exerciseInputSchema, type ExerciseInput, type LibraryExercise } from '../../content/exerciseInput'
+import { exerciseInputSchema, withCurrentArea, type ExerciseInput, type LibraryExercise } from '../../content/exerciseInput'
 import {
   readDatabaseUrl,
   resolveDatabaseConnectionString,
@@ -126,9 +126,10 @@ export function createUserExerciseRepository({
 /**
  * A stored row as an exercise. The column is parsed again on the way out: a
  * row written under older rules, or by hand, is left out rather than handed
- * to a player that trusts its input.
+ * to a player that trusts its input. An area renamed since the row was
+ * written is read under its new name, so the row needs no migration.
  */
 export function storedExercise(rowId: string, stored: unknown): LibraryExercise | null {
-  const parsed = exerciseInputSchema.safeParse(stored)
+  const parsed = exerciseInputSchema.safeParse(withCurrentArea(stored))
   return parsed.success ? { ...parsed.data, id: userExerciseId(rowId) } : null
 }

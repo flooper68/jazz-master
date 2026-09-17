@@ -16,6 +16,10 @@ describe('stored user exercises', () => {
     expect(storedExercise(rowId, stored)).toEqual({ ...stored, id: `user-${rowId}` })
   })
 
+  it('reads a row stored under an area renamed since as the area it became', () => {
+    expect(storedExercise(rowId, { ...stored, area: 'standards' })).toEqual({ ...stored, area: 'lines', id: `user-${rowId}` })
+  })
+
   it('leaves out a row that no longer passes the rules instead of handing it to the player', () => {
     expect(storedExercise(rowId, { ...stored, notes: [] })).toBeNull()
     expect(storedExercise(rowId, { ...stored, script: '<script>' })).toBeNull()

@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref }
 import type { RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import { VOICES } from '../audio/voices'
-import { clampTransposition, DEFAULT_BEATS_PER_BAR, noteIndexAt, transposeExercise, transposeRange, type Exercise } from '../content'
+import { clampTransposition, DEFAULT_BEATS_PER_BAR, homeLabel, noteIndexAt, transposeExercise, transposeRange, type Exercise } from '../content'
 import { formatBarBeat, formatSeconds } from '../player/formatting'
 import type { LoopRegion, TempoLadder } from '../player/plan'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
@@ -347,9 +347,9 @@ export function ExercisePlayer({
           <span className="ml-1 font-sans text-xs font-normal text-muted tabular-nums">
             {[
               semitones !== 0
-                ? `${shown.key ? `in ${keyLabel(shown.key)} major, ` : ''}${formatSemitones(semitones)}`
-                : exercise.key && !exercise.title.includes(`${exercise.key} major`)
-                  ? `${keyLabel(exercise.key)} major`
+                ? `${homeLabel(shown) ? `in ${keyLabel(homeLabel(shown) ?? '')}, ` : ''}${formatSemitones(semitones)}`
+                : homeLabel(exercise) && !exercise.title.includes(homeLabel(exercise) ?? '')
+                  ? keyLabel(homeLabel(exercise) ?? '')
                   : null,
               `${beatsPerBar}/4`,
               `${exercise.tempoBpm} BPM`,
@@ -534,7 +534,7 @@ export function ExercisePlayer({
                 onClick={() => setSemitones(0)}
                 disabled={semitones === 0}
                 label="Back to the written key"
-                data-tip={`Back to the written key${exercise.key ? `, ${keyLabel(exercise.key)} major` : ''}`}
+                data-tip={`Back to the written key${homeLabel(exercise) ? `, ${keyLabel(homeLabel(exercise) ?? '')}` : ''}`}
               >
                 <ResetIcon />
               </IconButton>

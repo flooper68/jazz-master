@@ -98,6 +98,22 @@ describe('the new routine page', () => {
     })
   })
 
+  it('narrows what the picker offers, and Enter in the search does not save the routine', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/routines/new')
+    const editor = within(await screen.findByRole('form', { name: 'New routine' }))
+    await user.type(editor.getByLabelText('Name'), 'Modes')
+    await user.click(editor.getByRole('button', { name: 'Add' }))
+
+    await user.type(editor.getByRole('searchbox', { name: 'Search exercises' }), 'dorian{Enter}')
+    const offered = () => within(editor.getByLabelText('Exercise to add')).getAllByRole('option').map((option) => option.textContent)
+    await waitFor(() => expect(offered()).not.toContain('Ode to Joy'))
+    expect(offered()).toContain('D Dorian — fifth position')
+    // Still on the editor, and nothing stored beyond the starters.
+    expect(screen.getByRole('heading', { level: 1, name: 'New routine' })).toBeInTheDocument()
+    expect((await getTrpcTestRoutines()).map((routine) => routine.name)).not.toContain('Modes')
+  })
+
   it('goes back to the cards on Cancel, storing nothing', async () => {
     const user = userEvent.setup()
     await seedTrpcTestRoutines([warmUp])

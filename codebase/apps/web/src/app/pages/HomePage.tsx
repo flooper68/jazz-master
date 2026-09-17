@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { formatDuration, summarizeRuns, type ActivityDay, type Dashboard } from '../../appData/dashboard'
+import { firstPicks } from '../../appData/firstPicks'
 import { dayLabel } from '../../appData/history'
 import { loadQuickRunSettings, planQuickRun, sessionSearch } from '../../appData/quickRun'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
@@ -195,10 +196,10 @@ function NextUp({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<strin
     const exercise = byId.get(exerciseId)
     return exercise ? [{ exercise, reason: `Felt ${rating}/10 last time` }] : []
   })
-  const fresh = summary.unplayed.flatMap((exerciseId) => {
-    const exercise = byId.get(exerciseId)
-    return exercise ? [{ exercise, reason: 'Not played yet' }] : []
-  })
+  const fresh = firstPicks(summary.unplayed.flatMap((exerciseId) => byId.get(exerciseId) ?? [])).map((exercise) => ({
+    exercise,
+    reason: 'Not played yet',
+  }))
   const picks = [...hard, ...fresh].slice(0, 3)
   return (
     <section aria-labelledby="home-next" className="min-w-0">

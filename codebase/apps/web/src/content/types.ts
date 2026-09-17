@@ -1,4 +1,12 @@
 import type { GuitarString } from '@jazz-master/theory'
+import type {
+  ExerciseArea,
+  ExerciseContext,
+  ExerciseFeel,
+  ExerciseStyle,
+  ExerciseTechnique,
+  ExerciseVoicing,
+} from './taxonomy'
 
 /**
  * An exercise is a series of notes, written as tablature. The player renders the
@@ -20,8 +28,6 @@ export type ExerciseDuration =
   | { kind: 'minutes'; minutes: number }
   | { kind: 'repetitions'; count: number }
 
-export type ExerciseArea = 'scales' | 'arpeggios' | 'chords' | 'standards'
-
 /**
  * The blueprint of one playable unit: a tab, a tempo, how long to loop it,
  * and the metadata the list (and later the planner) reads.
@@ -41,10 +47,30 @@ export interface Exercise {
    * the key signature. Omitted: C major, sharps for anything chromatic.
    */
   key?: string
+  /**
+   * The note the material is built on, when that is not the key's own tonic:
+   * `A` for A minor pentatonic written in C's signature, `D` for D Dorian. It
+   * is the root the neck diagram marks. Omitted: the key's tonic.
+   */
+  tonic?: string
   /** Beats per bar; 4 unless the exercise says otherwise. */
   beatsPerBar?: number
   /** The story and what to know before playing — the theory, the fingering — a paragraph per entry. */
   about?: readonly string[]
+  /** Styles of music it belongs to; none means a fundamental, at home in all of them. */
+  styles?: readonly ExerciseStyle[]
+  /** The harmony it is played over. */
+  contexts?: readonly ExerciseContext[]
+  /** What it trains the hands to do. */
+  techniques?: readonly ExerciseTechnique[]
+  /** How the subdivision is felt. */
+  feel?: ExerciseFeel
+  /** Kinds of chord shape, for an exercise in the chords area. */
+  voicings?: readonly ExerciseVoicing[]
+  /** Exercises sharing a series belong together and are learned in list order: the five boxes, a scale through its keys. */
+  series?: string
+  /** The owner's own labels, free text; searched, never offered as a filter. */
+  tags?: readonly string[]
 }
 
 export const DEFAULT_BEATS_PER_BAR = 4

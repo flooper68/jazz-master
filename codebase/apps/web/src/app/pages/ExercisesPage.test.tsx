@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { EXERCISES } from '../../content'
@@ -17,14 +17,16 @@ function card(title: string) {
 describe('ExercisesPage', () => {
   it('lists every exercise under its area with a link into the player', async () => {
     await renderRoute('/exercises')
-    for (const area of ['Scales', 'Arpeggios', 'Standards']) {
+    for (const area of ['Technique', 'Scales', 'Patterns', 'Arpeggios', 'Chords', 'Lines', 'Études']) {
       expect(screen.getByRole('heading', { level: 2, name: area })).toBeInTheDocument()
     }
+    // One query for the lot: asking the page for each of a hundred and sixty links by name is a minute of test.
+    const links = new Map(screen.getAllByRole('link', { name: /^Start / }).map((link) => [link.getAttribute('aria-label'), link.getAttribute('href')]))
     for (const exercise of EXERCISES) {
-      expect(
-        screen.getByRole('link', { name: `Start ${exercise.title}` }),
-      ).toHaveAttribute('href', `/app/exercises/${exercise.id}`)
+      expect(links.get(`Start ${exercise.title}`)).toBe(`/app/exercises/${exercise.id}`)
     }
+    // Titles name exercises on the page, so no two may share one.
+    expect(new Set(EXERCISES.map((exercise) => exercise.title)).size).toBe(EXERCISES.length)
   })
 
   it('shows level, length and tempo per exercise, the length read from the exercise itself', async () => {
@@ -69,5 +71,65 @@ describe('ExercisesPage', () => {
     unmount()
     await renderRoute('/exercises')
     expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
+  })
+
+  describe('finding exercises', () => {
+    const shown = () => screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+
+    it('narrows to a style, brings the fundamentals along, and leaves them out when asked', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises')
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      await user.click(find.getByRole('button', { name: /^Blues/ }))
+
+      expect(shown()).toContain('A blues scale — box 1')
+      expect(shown()).not.toContain('Ode to Joy')
+      // No style of its own, so it belongs to every style.
+      expect(shown()).toContain('C major — open position')
+
+      await user.click(find.getByRole('checkbox', { name: /Fundamentals too/ }))
+      expect(shown()).not.toContain('C major — open position')
+      expect(shown()).toContain('A blues scale — box 1')
+    })
+
+    it('offers the children of a family once the family is chosen', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises')
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      expect(find.queryByRole('button', { name: /^Bebop/ })).toBeNull()
+      await user.click(find.getByRole('button', { name: /^Jazz/ }))
+      await user.click(find.getByRole('button', { name: /^Bebop/ }))
+      await user.click(find.getByRole('checkbox', { name: /Fundamentals too/ }))
+      // Jazz or bebop is still all of jazz: choices in one facet widen.
+      expect(shown()).toContain('A bossa study')
+    })
+
+    it('reads the filter from the URL, and writes it back', async () => {
+      const user = userEvent.setup()
+      const { router } = await renderRoute('/exercises?ctx=rhythm-changes&level=4')
+      expect(shown()).toEqual(['Rhythm changes in B♭ — the A section'])
+      // Arriving with something chosen behind the button opens the panel.
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      expect(find.getByRole('button', { name: /^Filters/ })).toHaveAttribute('aria-expanded', 'true')
+      expect(find.getByRole('button', { name: /^Rhythm changes/ })).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(find.getByRole('button', { name: 'Remove Level 4' }))
+      expect(router.state.location.search).toEqual({ ctx: 'rhythm-changes' })
+    })
+
+    it('searches, says when nothing matches, and clears', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises')
+      const search = screen.getByRole('searchbox', { name: 'Search exercises' })
+      await user.type(search, 'dorian')
+      // The list follows once the typing settles.
+      await waitFor(() => expect(shown()).not.toContain('Ode to Joy'))
+      expect(shown()).toContain('D Dorian — fifth position')
+
+      await user.type(search, ' bagpipes')
+      await user.click(await screen.findByRole('button', { name: 'Show everything' }))
+      expect(shown()).toContain('Ode to Joy')
+      expect(search).toHaveValue('')
+    })
   })
 })

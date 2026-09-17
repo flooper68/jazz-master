@@ -20,11 +20,13 @@ export async function renderRoute(path: string, { strict = false }: { strict?: b
     }),
   )
   await router.load()
-  return render(
+  const view = render(
     <Mode>
       <AppProviders fetch={trpcTestFetch}>
         <RouterProvider router={router} />
       </AppProviders>
     </Mode>,
   )
+  // The router too, for tests that read where a press has taken the URL.
+  return { ...view, router }
 }

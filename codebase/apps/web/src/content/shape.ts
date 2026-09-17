@@ -1,4 +1,4 @@
-import { keySignature, midiAt, pitchClass, spellMidi, type FretRange, type GuitarString } from '@jazz-master/theory'
+import { keySignature, midiAt, parseNote, pitchClass, spellMidi, type FretRange, type GuitarString } from '@jazz-master/theory'
 import type { Exercise } from './types'
 
 /**
@@ -21,7 +21,9 @@ export interface ExerciseShape {
 
 export function exerciseShape(exercise: Exercise): ExerciseShape {
   const key = exercise.key ? keySignature(exercise.key) : null
-  const rootPc = key ? pitchClass(key.tonic) : midiAt(exercise.notes[0].string, exercise.notes[0].fret) % 12
+  // The tonic when the exercise names one: A minor pentatonic is written in C's signature, and its root is A.
+  const tonic = exercise.tonic ? parseNote(exercise.tonic) : null
+  const rootPc = tonic ? pitchClass(tonic) : key ? pitchClass(key.tonic) : midiAt(exercise.notes[0].string, exercise.notes[0].fret) % 12
   const seen = new Set<string>()
   const positions: ShapePosition[] = []
   for (const note of exercise.notes) {

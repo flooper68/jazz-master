@@ -3,9 +3,10 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useId, useState } from 'react'
 import { MOST_ROUTINE_ITEMS, type Routine, type RoutineInput } from '../../appData/routine'
 import { AREA_LABELS } from '../../components/areaLabels'
+import { ExerciseFilter } from '../../components/ExerciseFilter'
 import { ArrowDownIcon, ArrowUpIcon, ChevronLeftIcon, CloseIcon, PlusIcon } from '../../components/icons'
 import { PAGE_READING } from '../../components/pageFrame'
-import type { Exercise } from '../../content'
+import { EVERYTHING, filterExercises, type Exercise, type ExerciseQuery } from '../../content'
 import { useTRPC } from '../trpc'
 import { useExerciseCatalog } from '../useExerciseCatalog'
 import { useRoutines } from '../useRoutines'
@@ -112,7 +113,10 @@ function RoutineEditor({ routine, exercises, onClose }: RoutineEditorProps) {
   const [itemIds, setItemIds] = useState<string[]>(() => routine?.items.map((item) => item.exerciseId) ?? [])
   const [problems, setProblems] = useState<string[]>([])
   const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]))
-  const addable = exercises.filter((exercise) => !itemIds.includes(exercise.id))
+  const notIn = exercises.filter((exercise) => !itemIds.includes(exercise.id))
+  // Narrows what the picker offers; with a long list of exercises it is the way to the one you mean.
+  const [query, setQuery] = useState<ExerciseQuery>(EVERYTHING)
+  const addable = filterExercises(notIn, query)
   const [adding, setAdding] = useState('')
   const toAdd = addable.some((exercise) => exercise.id === adding) ? adding : (addable[0]?.id ?? '')
 
@@ -218,6 +222,9 @@ function RoutineEditor({ routine, exercises, onClose }: RoutineEditorProps) {
         </ol>
       )}
 
+      <div className="mt-3">
+        <ExerciseFilter exercises={notIn} query={query} onChange={setQuery} />
+      </div>
       <div className="mt-2 flex items-end gap-2">
         <div className="min-w-0 flex-1">
           <label htmlFor={ids.add} className="sr-only">Exercise to add</label>
@@ -228,7 +235,7 @@ function RoutineEditor({ routine, exercises, onClose }: RoutineEditorProps) {
             disabled={addable.length === 0 || itemIds.length >= MOST_ROUTINE_ITEMS}
             className={FIELD}
           >
-            {addable.length === 0 && <option value="">Every exercise is already in</option>}
+            {addable.length === 0 && <option value="">{notIn.length === 0 ? 'Every exercise is already in' : 'Nothing matches these filters'}</option>}
             {[...new Set(addable.map((exercise) => exercise.area))].map((area) => (
               <optgroup key={area} label={AREA_LABELS[area]}>
                 {addable.filter((exercise) => exercise.area === area).map((exercise) => (

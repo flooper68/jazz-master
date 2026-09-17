@@ -3,8 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { QuickRunPlan } from '../appData/quickRun'
 import type { Routine } from '../appData/routine'
-import { EXERCISES } from '../content'
+import { EXERCISES as PACK } from '../content'
 import { QuickRunButton } from './QuickRunButton'
+
+/** The five founding exercises: a pack small enough for a test to count — three scales, an arpeggio, a line. */
+const FOUNDING_IDS = ['scales-major-open-c', 'scales-major-open-g', 'scales-major-open-f', 'lines-ii-v-i-f-arpeggios', 'lines-ii-v-i-f-line']
+const EXERCISES = PACK.filter((exercise) => FOUNDING_IDS.includes(exercise.id))
 
 beforeEach(() => {
   localStorage.clear()
@@ -44,7 +48,7 @@ describe('QuickRunButton', () => {
     await user.click(settings.getByRole('button', { name: 'Fewer exercises' }))
     expect(settings.getByRole('status')).toHaveTextContent('2')
     await user.click(settings.getByRole('checkbox', { name: /^Arpeggios/ }))
-    await user.click(settings.getByRole('checkbox', { name: /^Standards/ }))
+    await user.click(settings.getByRole('checkbox', { name: /^Lines/ }))
     // The last area cannot be taken away.
     await user.click(settings.getByRole('checkbox', { name: /^Scales/ }))
     expect(settings.getByRole('checkbox', { name: /^Scales/ })).toBeChecked()
@@ -61,7 +65,7 @@ describe('QuickRunButton', () => {
     await user.click(screen.getByRole('button', { name: 'Quick run settings' }))
     const settings = within(screen.getByRole('dialog'))
     await user.click(settings.getByRole('checkbox', { name: /^Scales/ }))
-    await user.click(settings.getByRole('checkbox', { name: /^Standards/ }))
+    await user.click(settings.getByRole('checkbox', { name: /^Lines/ }))
     expect(settings.getByText('Only 1 to draw from — the run will have 1.')).toBeInTheDocument()
   })
 

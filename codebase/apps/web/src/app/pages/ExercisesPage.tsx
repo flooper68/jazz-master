@@ -1,20 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { queryOfSearch, searchOfQuery } from '../../appData/exerciseSearch'
 import { dayLabel } from '../../appData/history'
 import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
+import { ExerciseFilter } from '../../components/ExerciseFilter'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ClickIcon, ClockIcon, GridIcon, RowsIcon } from '../../components/icons'
-import { exerciseSeconds, type Exercise, type ExerciseArea } from '../../content'
+import { displayAccidentals } from '@jazz-master/theory'
+import { activeFilterCount, EVERYTHING, EXERCISE_AREAS, exerciseSeconds, filterExercises, homeLabel, type Exercise, type ExerciseQuery } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useTRPC } from '../trpc'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
 // Authored order is the order to learn them in, so grouping keeps it within each area.
-/** Areas always read in this order; only those with something in them are shown. */
-const AREA_ORDER: readonly ExerciseArea[] = ['scales', 'arpeggios', 'chords', 'standards']
 
 type ListView = 'cards' | 'list'
 const VIEW_KEY = 'jazz-master.exercises-view'
@@ -51,6 +52,8 @@ function loadView(): ListView {
   }
 }
 
+const NO_RUNS: ExerciseRun[] = []
+
 const START_LINK =
   'shrink-0 rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg after:absolute after:inset-0 group-hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
@@ -74,11 +77,26 @@ export default function ExercisesPage() {
   const shownSource = hasOwn ? source : 'all'
   // A remembered "Yours" waits for the library instead of flashing the whole pack first.
   const waitingForOwn = libraryPending && source === 'yours'
-  const catalog = everything.filter(
+  const fromSource = everything.filter(
     (exercise) => shownSource === 'all' || isLibraryExerciseId(exercise.id) === (shownSource === 'yours'),
   )
-  const areas = AREA_ORDER.filter((area) => catalog.some((exercise) => exercise.area === area))
+  // Loose, so the page also renders inside Storybook's ad hoc router.
+  const query = queryOfSearch(useSearch({ strict: false }))
+  const navigate = useNavigate()
+  const setQuery = (next: ExerciseQuery) =>
+    // Replaced, not pushed: Back leaves the list instead of undoing the filter a keystroke at a time.
+    void navigate({ to: '.', search: searchOfQuery(next), replace: true })
+  const catalog = filterExercises(fromSource, query)
+  // Areas always read in vocabulary order; only those with something in them are shown.
+  const areas = EXERCISE_AREAS.filter((area) => catalog.some((exercise) => exercise.area === area))
   const maxLevel = Math.max(...everything.map((exercise) => exercise.level), 3)
+  // Grouped once: with a pack this size, filtering the runs again for every row adds up.
+  const runsOf = new Map<string, ExerciseRun[]>()
+  for (const run of runs) {
+    const ofExercise = runsOf.get(run.exerciseId)
+    if (ofExercise) ofExercise.push(run)
+    else runsOf.set(run.exerciseId, [run])
+  }
   const [view, setView] = useState<ListView>(loadView)
   useEffect(() => {
     try {
@@ -94,8 +112,8 @@ export default function ExercisesPage() {
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Exercises</h1>
           <p className="mt-1 max-w-xl text-sm text-fg-2">
-            Scales, arpeggios and lines by level. Pick an exercise, pick up the
-            guitar, and play.
+            Technique, scales, arpeggios, lines and studies — by style and by
+            level. Pick an exercise, pick up the guitar, and play.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -136,7 +154,18 @@ export default function ExercisesPage() {
           </div>
         </div>
       </div>
+      <div className="mt-5">
+        <ExerciseFilter exercises={fromSource} query={query} onChange={setQuery} />
+      </div>
       {waitingForOwn && <p className="mt-7 text-sm text-muted" role="status">Loading your exercises…</p>}
+      {!waitingForOwn && catalog.length === 0 && (
+        <p className="mt-7 text-sm text-muted" role="status">
+          Nothing matches{activeFilterCount(query) > 0 ? ' these filters' : ''}.{' '}
+          <button type="button" onClick={() => setQuery(EVERYTHING)} className="cursor-pointer underline underline-offset-2 hover:text-fg">
+            Show everything
+          </button>
+        </p>
+      )}
       {!waitingForOwn && areas.map((area) => {
         const exercises = catalog.filter((exercise) => exercise.area === area)
         return (
@@ -162,7 +191,7 @@ export default function ExercisesPage() {
                     key={exercise.id}
                     exercise={exercise}
                     maxLevel={maxLevel}
-                    runs={runs.filter((run) => run.exerciseId === exercise.id)}
+                    runs={runsOf.get(exercise.id) ?? NO_RUNS}
                   />
                 )
               })}
@@ -255,7 +284,8 @@ function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
           <SourceTag exerciseId={exercise.id} />
           <span className="inline-flex items-center gap-1"><ClockIcon />~{minutesOf(exercise)} min</span>
           <span className="inline-flex items-center gap-1"><ClickIcon />{exercise.tempoBpm} BPM</span>
-          {exercise.key && <span>{exercise.key} major</span>}
+          {/* A bare tonic says nothing the title has not; only a key is worth the room. */}
+          {homeLabel(exercise)?.endsWith(' major') && <span>{displayAccidentals(homeLabel(exercise) ?? '')}</span>}
         </p>
         <div className="mt-3 flex items-center justify-between gap-3">
           <p className="text-xs text-muted">

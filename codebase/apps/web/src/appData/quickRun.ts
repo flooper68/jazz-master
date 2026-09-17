@@ -103,9 +103,9 @@ export function loadQuickRunSettings(
     const raw = storage?.getItem(QUICK_RUN_KEY)
     if (!raw) return defaults
     const parsed = JSON.parse(raw) as Partial<Record<keyof QuickRunSettings, unknown>>
-    const areas = Array.isArray(parsed.areas)
-      ? defaults.areas.filter((area) => (parsed.areas as unknown[]).includes(area))
-      : []
+    // Settings saved before `standards` became `lines` still mean the same exercises.
+    const saved = Array.isArray(parsed.areas) ? parsed.areas.map((area: unknown) => (area === 'standards' ? 'lines' : area)) : []
+    const areas = defaults.areas.filter((area) => saved.includes(area))
     return {
       count: typeof parsed.count === 'number' ? clampQuickRunCount(parsed.count) : defaults.count,
       areas: areas.length > 0 ? areas : defaults.areas,

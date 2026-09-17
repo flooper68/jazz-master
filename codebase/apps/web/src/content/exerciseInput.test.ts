@@ -24,6 +24,27 @@ function problemsOf(input: unknown): string[] {
 }
 
 describe('parseExerciseInput', () => {
+  it('takes labels from the fixed vocabularies, several to a facet', () => {
+    const labelled = {
+      ...valid,
+      styles: ['jazz/modal', 'funk-soul'],
+      contexts: ['modal-vamp'],
+      techniques: ['alternate', 'position-shift'],
+      feel: 'swing-8',
+      series: 'modes-fifth-position',
+      tags: ['warm-up'],
+    }
+    expect(parseExerciseInput(labelled)).toEqual({ ok: true, exercise: labelled })
+  })
+
+  it('refuses a label outside its vocabulary, a repeated one, and an area that no longer exists', () => {
+    expect(problemsOf({ ...valid, styles: ['bagpipes'] })[0]).toMatch(/^styles\.0/)
+    expect(problemsOf({ ...valid, techniques: ['legato', 'legato'] })[0]).toMatch(/must not repeat/)
+    expect(problemsOf({ ...valid, feel: 'loose' })[0]).toMatch(/^feel/)
+    expect(problemsOf({ ...valid, series: 'Not A Slug' })[0]).toMatch(/lowercase slug/)
+    expect(problemsOf({ ...valid, area: 'standards' })[0]).toMatch(/^area/)
+  })
+
   it('accepts a well-formed exercise and hands it back trimmed', () => {
     const result = parseExerciseInput({ ...valid, title: '  D Dorian — fifth position  ' })
     expect(result).toEqual({ ok: true, exercise: valid })

@@ -1,5 +1,13 @@
-import { keySignature } from '@jazz-master/theory'
+import { keySignature, parseNote } from '@jazz-master/theory'
 import { z } from 'zod'
+import {
+  EXERCISE_AREAS,
+  EXERCISE_CONTEXTS,
+  EXERCISE_FEELS,
+  EXERCISE_STYLES,
+  EXERCISE_TECHNIQUES,
+  EXERCISE_VOICINGS,
+} from './taxonomy'
 import { passBeats } from './timeline'
 import { DEFAULT_BEATS_PER_BAR, type Exercise } from './types'
 import { validateExercises } from './validate'
@@ -17,6 +25,16 @@ export const NOTE_LENGTHS_IN_BEATS = [4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25] a
 export const HIGHEST_FRET = 22
 export const MOST_NOTES = 512
 export const HIGHEST_LEVEL = 5
+export const MOST_TAGS = 12
+
+/** A facet that takes several values: each from its vocabulary, none twice. */
+function facet<const Values extends readonly [string, ...string[]]>(values: Values) {
+  return z
+    .array(z.enum(values))
+    .max(values.length)
+    .refine((chosen) => new Set(chosen).size === chosen.length, { message: 'must not repeat a value' })
+    .optional()
+}
 
 const noteSchema = z.strictObject({
   string: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
@@ -30,7 +48,7 @@ const noteSchema = z.strictObject({
 
 export const exerciseInputSchema = z.strictObject({
   title: z.string().trim().min(1).max(120),
-  area: z.enum(['scales', 'arpeggios', 'chords', 'standards']),
+  area: z.enum(EXERCISE_AREAS),
   level: z.number().int().min(1).max(HIGHEST_LEVEL),
   tempoBpm: z.number().int().min(20).max(400),
   duration: z.discriminatedUnion('kind', [
@@ -42,9 +60,39 @@ export const exerciseInputSchema = z.strictObject({
     .string()
     .refine((key) => keySignature(key) !== null, { message: 'key must be a major key such as C, F, Bb or F#' })
     .optional(),
+  tonic: z
+    .string()
+    .max(2)
+    .refine((tonic) => parseNote(tonic) !== null, { message: 'tonic must be a note name such as A, Bb or F#' })
+    .optional(),
   beatsPerBar: z.number().int().min(2).max(12).optional(),
   about: z.array(z.string().trim().min(1).max(1200)).max(8).optional(),
+  styles: facet(EXERCISE_STYLES),
+  contexts: facet(EXERCISE_CONTEXTS),
+  techniques: facet(EXERCISE_TECHNIQUES),
+  feel: z.enum(EXERCISE_FEELS).optional(),
+  voicings: facet(EXERCISE_VOICINGS),
+  series: z
+    .string()
+    .max(60)
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: 'series must be a lowercase slug such as minor-pentatonic-boxes' })
+    .optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(MOST_TAGS).optional(),
 })
+
+/**
+ * Areas an exercise may have been stored under before the vocabulary changed.
+ * `standards` held lines over changes; tunes had not been written yet.
+ */
+const RENAMED_AREAS: Record<string, string> = { standards: 'lines' }
+
+/** A stored exercise as today's schema reads it: an area that was renamed since is given its new name. */
+export function withCurrentArea(stored: unknown): unknown {
+  if (typeof stored !== 'object' || stored === null || !('area' in stored)) return stored
+  const area = (stored as { area: unknown }).area
+  // Own keys only: `constructor` is `in` every object, and this is the one place untrusted JSON picks a key.
+  return typeof area === 'string' && Object.hasOwn(RENAMED_AREAS, area) ? { ...stored, area: RENAMED_AREAS[area] } : stored
+}
 
 export type ExerciseInput = z.infer<typeof exerciseInputSchema>
 /** An exercise as the library hands it out: the input, plus the id it was stored under. It is an `Exercise`. */

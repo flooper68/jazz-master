@@ -25,9 +25,11 @@ export function toolArgument(args: unknown, name: string): unknown {
   return typeof args === 'object' && args !== null && name in args ? (args as Record<string, unknown>)[name] : undefined
 }
 
-/** What list_builtin_exercises answers with, through either door: the pack without its tabs. */
+/** What list_builtin_exercises answers with, through either door: the pack without its tabs, with the labels it is filtered by. */
 export function builtinExerciseSummaries() {
-  return EXERCISES.map(({ id, title, area, level, key, tempoBpm }) => ({ id, title, area, level, key, tempoBpm }))
+  return EXERCISES.map(({ id, title, area, level, key, tonic, tempoBpm, styles, contexts, techniques, feel, voicings, series }) => ({
+    id, title, area, level, key, tonic, tempoBpm, styles, contexts, techniques, feel, voicings, series,
+  }))
 }
 
 export function objectSchema(properties: Record<string, unknown>, required: string[]): Record<string, unknown> {
@@ -47,10 +49,17 @@ const EXERCISE_FORMAT = [
   '(0.5 is an eighth note). There are no rests and no chords: one note sounds at a time, so write a chord as an arpeggio.',
   'The note lengths must add up to a whole number of bars (`beatsPerBar`, default 4); end on a long note to land on',
   'the bar line. `key` is the MAJOR key whose signature the notation uses (`C`, `F`, `Bb`, `F#`): for a minor or modal',
-  'line give the relative major (D Dorian and A minor are both `C`). `tempoBpm` is the target tempo. `duration` is how',
+  'line give the relative major (D Dorian and A minor are both `C`) and name the note it is built on in `tonic` (`D`,',
+  '`A`), which is the root the neck diagram marks. `tempoBpm` is the target tempo. `duration` is how',
   'long to stay on it: `{ "kind": "repetitions", "count": 4 }` or `{ "kind": "minutes", "minutes": 2 }`. `level` runs',
   'from 1 (beginner) to 5. `about` is optional teaching text, a paragraph per entry: the theory, the fingering, what to',
   'listen for. Keep a pass short — 2 to 8 bars is typical — and keep the fingering playable in one position.',
+  'Label it so the user can find it: `area` is required (`technique` for mechanics with no musical material, `patterns`',
+  'for sequences and intervals, `lines` for licks, riffs and vocabulary, `etudes` for studies and tunes). The rest are',
+  'optional, each from the fixed list in the schema, and an exercise takes every value that is true of it: `styles`',
+  '(leave it out for a fundamental that belongs to every style; `jazz/bebop` already counts as `jazz`), `contexts` (the',
+  'harmony it is played over), `techniques`, `feel`, and `voicings` for chord shapes. Exercises sharing a `series` slug',
+  "belong together and are learned in the order they were added. `tags` are the user's own free-text labels.",
 ].join(' ')
 
 /** What a model needs to know to put a routine together. */
@@ -105,7 +114,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'list_builtin_exercises',
     title: 'List the built-in exercises',
     description:
-      'List the exercises that ship with Jazz Master — id, title, area, level, key, tempo — without their tabs. Every user has these; use their ids in a routine alongside ids from list_exercises.',
+      'List the exercises that ship with Jazz Master — id, title, area, level, key, tempo and the labels they are filtered by — without their tabs. Every user has these; use their ids in a routine alongside ids from list_exercises.',
     inputSchema: objectSchema({}, []),
     annotations: READ_ONLY,
   },
