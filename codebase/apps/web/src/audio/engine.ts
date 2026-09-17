@@ -20,6 +20,7 @@ export interface EngineAudioContext {
   createOscillator(): OscillatorNode
   createGain(): GainNode
   createBiquadFilter(): BiquadFilterNode
+  createWaveShaper(): WaveShaperNode
   createBuffer(channels: number, length: number, sampleRate: number): AudioBuffer
   createBufferSource(): AudioBufferSourceNode
   decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer>
@@ -57,6 +58,20 @@ const PLUCK_RELEASE_SECONDS = 0.09
 
 export function midiToFrequency(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12)
+}
+
+/**
+ * An amp's transfer curve: soft clipping that gets harder with `drive`.
+ * Symmetric tanh, so a clean signal passes through the middle untouched.
+ */
+export function driveCurve(drive: number, samples = 1024): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(new ArrayBuffer(samples * 4))
+  const gain = 1 + drive * 24
+  for (let i = 0; i < samples; i += 1) {
+    const x = (i / (samples - 1)) * 2 - 1
+    curve[i] = Math.tanh(x * gain) / Math.tanh(gain)
+  }
+  return curve
 }
 
 /**
@@ -126,6 +141,7 @@ export function createPlayerAudio({
   let disposed = false
   let voiceId: VoiceId = initialVoice
   const synthCache = new Map<string, AudioBuffer>()
+  const curveCache = new Map<number, Float32Array<ArrayBuffer>>()
   const sampleCache = new Map<string, AudioBuffer>()
   const sampleLoads = new Map<string, Promise<void>>()
   const scheduled = new Map<AudioScheduledSourceNode, number>()
@@ -211,7 +227,19 @@ export function createPlayerAudio({
       source.buffer = buffer
       let head: AudioNode = source
       if (synth) {
-        // Tone and body only shape the model; recordings already carry theirs.
+        // Amp, tone and body only shape the model; recordings already carry theirs.
+        if (synth.drive) {
+          const amp = ctx.createWaveShaper()
+          let curve = curveCache.get(synth.drive)
+          if (!curve) {
+            curve = driveCurve(synth.drive)
+            curveCache.set(synth.drive, curve)
+          }
+          amp.curve = curve
+          amp.oversample = '2x'
+          head.connect(amp)
+          head = amp
+        }
         const tone = ctx.createBiquadFilter()
         tone.type = 'lowpass'
         tone.frequency.setValueAtTime(synth.toneHz, time)

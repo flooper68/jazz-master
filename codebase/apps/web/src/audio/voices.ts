@@ -10,9 +10,15 @@ export type VoiceId =
   | 'nylon'
   | 'steel'
   | 'jazz'
+  | 'electric-clean'
+  | 'electric-crunch'
+  | 'electric-lead'
   | 'nylon-sampled'
   | 'steel-sampled'
   | 'jazz-sampled'
+  | 'electric-clean-sampled'
+  | 'overdrive-sampled'
+  | 'distortion-sampled'
 
 export interface BodyResonance {
   frequency: number
@@ -35,6 +41,8 @@ export interface SynthVoice {
   /** Playback tone control, Hz. */
   toneHz: number
   body: BodyResonance[]
+  /** Amp drive 0..1: 0 is clean, 1 saturates hard. */
+  drive?: number
   /** Level relative to the click. */
   level: number
 }
@@ -99,6 +107,53 @@ export const VOICES: readonly Voice[] = [
     level: 1,
   },
   {
+    kind: 'synth',
+    id: 'electric-clean',
+    label: 'Electric clean (synth)',
+    decaySeconds: 6,
+    blend: 0.25,
+    pickPosition: 0.12,
+    excitationSmoothing: 0.2,
+    toneHz: 4200,
+    body: [
+      { frequency: 180, q: 2, gainDb: 2 },
+      { frequency: 2600, q: 1.5, gainDb: 3 },
+    ],
+    level: 0.7,
+  },
+  {
+    kind: 'synth',
+    id: 'electric-crunch',
+    label: 'Electric crunch (synth)',
+    decaySeconds: 7,
+    blend: 0.3,
+    pickPosition: 0.14,
+    excitationSmoothing: 0.25,
+    toneHz: 3600,
+    body: [
+      { frequency: 160, q: 2, gainDb: 3 },
+      { frequency: 1800, q: 1.2, gainDb: 4 },
+    ],
+    drive: 0.45,
+    level: 0.55,
+  },
+  {
+    kind: 'synth',
+    id: 'electric-lead',
+    label: 'Electric lead (synth)',
+    decaySeconds: 9,
+    blend: 0.35,
+    pickPosition: 0.2,
+    excitationSmoothing: 0.4,
+    toneHz: 3000,
+    body: [
+      { frequency: 140, q: 2, gainDb: 3 },
+      { frequency: 1200, q: 1, gainDb: 5 },
+    ],
+    drive: 0.85,
+    level: 0.45,
+  },
+  {
     kind: 'sampled',
     id: 'nylon-sampled',
     label: 'Nylon (sampled)',
@@ -121,6 +176,30 @@ export const VOICES: readonly Voice[] = [
     instrument: 'electric_guitar_jazz',
     fallback: 'jazz',
     level: 0.9,
+  },
+  {
+    kind: 'sampled',
+    id: 'electric-clean-sampled',
+    label: 'Electric clean (sampled)',
+    instrument: 'electric_guitar_clean',
+    fallback: 'electric-clean',
+    level: 0.8,
+  },
+  {
+    kind: 'sampled',
+    id: 'overdrive-sampled',
+    label: 'Overdriven (sampled)',
+    instrument: 'overdriven_guitar',
+    fallback: 'electric-crunch',
+    level: 0.6,
+  },
+  {
+    kind: 'sampled',
+    id: 'distortion-sampled',
+    label: 'Distortion (sampled)',
+    instrument: 'distortion_guitar',
+    fallback: 'electric-lead',
+    level: 0.5,
   },
 ]
 

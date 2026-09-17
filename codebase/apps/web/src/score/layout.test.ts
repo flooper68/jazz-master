@@ -14,7 +14,7 @@ const notes: TabNote[] = [
 describe('layoutScore', () => {
   const layout = layoutScore(notes, { beatsPerBar: 4, leftInset: 40, beatWidth: 50 })
 
-  it('lays notes out in proportion to their length, with room after each bar line', () => {
+  it('lays notes out at one width per beat, bar lines a lead ahead of each downbeat', () => {
     expect(layout.totalBeats).toBe(10)
     expect(layout.systems).toHaveLength(1)
     const [system] = layout.systems
@@ -24,12 +24,20 @@ describe('layoutScore', () => {
     expect(b - a).toBe(50)
     expect(c - b).toBe(25)
     expect(d - c).toBe(25)
-    // Crossing a bar line adds the gap and lead, on top of the two beats.
-    expect(e - d).toBeGreaterThan(100)
-    expect(f - e).toBeGreaterThan(200)
+    // Crossing a bar line costs nothing extra: two beats are two beats.
+    expect(e - d).toBe(100)
+    expect(f - e).toBe(200)
+    // Every bar line sits the same distance before its downbeat.
+    expect(layout.xOfBeat(4).x - system.bars[1].x).toBe(layout.xOfBeat(0).x - system.bars[0].x)
     expect(system.endX).toBeGreaterThan(f)
     expect(layout.width).toBeGreaterThan(system.endX)
     expect(system.noteIndices).toEqual([0, 1, 2, 3, 4, 5])
+  })
+
+  it('keeps x linear in the beat along a line', () => {
+    for (let beat = 0; beat <= 10; beat += 0.25) {
+      expect(layout.xOfBeat(beat).x).toBeCloseTo(layout.xOfBeat(0).x + beat * 50)
+    }
   })
 
   it('maps beats to points and back', () => {
@@ -41,25 +49,6 @@ describe('layoutScore', () => {
     expect(layout.xOfBeat(99)).toEqual(layout.xOfBeat(10))
     expect(layout.beatOfPoint(0, 0)).toBe(0)
     expect(layout.beatOfPoint(10_000, 0)).toBe(10)
-    // Inside the gap after a bar line reads as the start of the next bar.
-    expect(layout.beatOfPoint(layout.systems[0].bars[1].x + 2, 0)).toBe(4)
-  })
-
-  it('glides the cursor over the gap after a bar line', () => {
-    // Beat 3 → 4 crosses from bar 1 into bar 2 on the same line.
-    const atThree = layout.cursorXOfBeat(3)
-    const atFour = layout.cursorXOfBeat(4)
-    expect(atThree).toEqual(layout.xOfBeat(3))
-    expect(atFour).toEqual(layout.xOfBeat(4))
-    // Halfway through the last beat the cursor is halfway across, gap included.
-    expect(layout.cursorXOfBeat(3.5).x).toBeCloseTo((atThree.x + atFour.x) / 2)
-    expect(layout.cursorXOfBeat(3.5).x).toBeGreaterThan(layout.xOfBeat(3.5).x)
-    // Earlier beats are untouched.
-    expect(layout.cursorXOfBeat(1.25)).toEqual(layout.xOfBeat(1.25))
-    // At a line break there is no gap to glide over; the cursor stays on its line.
-    const wrapped = layoutScore(notes, { beatsPerBar: 4, leftInset: 40, beatWidth: 50, availableWidth: 640 })
-    expect(wrapped.cursorXOfBeat(7.5)).toEqual(wrapped.xOfBeat(7.5))
-    expect(wrapped.cursorXOfBeat(7.5).system).toBe(0)
   })
 
   it('finds the sounding note for a beat', () => {
@@ -78,7 +67,7 @@ describe('layoutScore', () => {
 
   it('wraps whole bars into lines that fill the available width', () => {
     // Three bars, room for two per line: bars 1–2 then bar 3.
-    const wrapped = layoutScore(notes, { beatsPerBar: 4, leftInset: 40, beatWidth: 50, availableWidth: 640 })
+    const wrapped = layoutScore(notes, { beatsPerBar: 4, leftInset: 40, beatWidth: 50, availableWidth: 560 })
     expect(wrapped.systems).toHaveLength(2)
     expect(wrapped.systems[0].bars.map((bar) => bar.index)).toEqual([0, 1])
     expect(wrapped.systems[1].bars.map((bar) => bar.index)).toEqual([2])
@@ -87,13 +76,16 @@ describe('layoutScore', () => {
     expect(wrapped.noteSystem).toEqual([0, 0, 0, 0, 0, 1])
     // Full lines are stretched to the width; the beat grew past its natural size.
     expect(wrapped.beatWidth).toBeGreaterThan(50)
-    expect(wrapped.systems[0].endX).toBeCloseTo(640 - 24)
+    // The line fills the width, leaving the right pad and a lead after the closing bar line.
+    expect(wrapped.systems[0].endX).toBeCloseTo(560 - 24 - 14)
     expect(wrapped.systems[1].endX).toBeLessThan(wrapped.systems[0].endX)
     // A note on the second line starts back at the left.
     expect(wrapped.noteX[5]).toBeLessThan(wrapped.noteX[4])
     expect(wrapped.xOfBeat(8)).toEqual({ x: wrapped.noteX[5], system: 1 })
     expect(wrapped.beatOfPoint(wrapped.noteX[5], 1)).toBeCloseTo(8)
     expect(wrapped.beatOfPoint(wrapped.noteX[5] + 10_000, 1)).toBe(10)
+    // Linear on every line.
+    expect(wrapped.xOfBeat(6).x - wrapped.xOfBeat(2).x).toBeCloseTo(4 * wrapped.beatWidth)
   })
 
   it('never wraps below one bar per line, and keeps a short single line natural', () => {

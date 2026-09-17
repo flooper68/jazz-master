@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPlayerAudio, midiToFrequency, renderPluck, type EngineAudioContext } from './engine'
+import { createPlayerAudio, driveCurve, midiToFrequency, renderPluck, type EngineAudioContext } from './engine'
 import { sampleUrl, VOICES, voiceById, type SynthVoice } from './voices'
 
 interface Scheduled {
@@ -48,6 +48,17 @@ export function fakeContext() {
         },
         connect() {},
       }) as unknown as GainNode,
+    createWaveShaper: () => {
+      const shaper = {
+        type: 'waveshaper',
+        curve: null as Float32Array | null,
+        oversample: 'none',
+        connect(next: { type?: string }) {
+          if (next.type) lastSource?.filters.push(next.type)
+        },
+      }
+      return shaper as unknown as WaveShaperNode
+    },
     createBiquadFilter: () => {
       const filter = {
         type: 'lowpass',
@@ -153,6 +164,17 @@ describe('renderPluck', () => {
     expect(ratio).toBeLessThan(2.5)
   })
 
+  it('shapes an amp curve that stays clean at the middle and clips harder with drive', () => {
+    const soft = driveCurve(0.2)
+    const hard = driveCurve(0.9)
+    expect(soft[512]).toBeCloseTo(0, 1)
+    expect(soft[0]).toBeCloseTo(-1)
+    expect(soft[1023]).toBeCloseTo(1)
+    // A quarter of the way in, the hard curve is already near the rail.
+    expect(hard[768]).toBeGreaterThan(soft[768])
+    expect(hard[768]).toBeGreaterThan(0.99)
+  })
+
   it('tunes A4 to 440', () => {
     expect(midiToFrequency(69)).toBe(440)
     expect(midiToFrequency(57)).toBe(220)
@@ -167,7 +189,8 @@ describe('voices', () => {
   })
 
   it('offers synthesized and sampled guitars, every sampled one with a synth fallback', () => {
-    expect(VOICES.filter((v) => v.kind === 'synth')).toHaveLength(3)
+    expect(VOICES.filter((v) => v.kind === 'synth')).toHaveLength(6)
+    expect(VOICES.filter((v) => v.kind === 'sampled')).toHaveLength(6)
     for (const voice of VOICES) {
       if (voice.kind === 'sampled') expect(voiceById(voice.fallback).kind).toBe('synth')
     }
@@ -191,6 +214,16 @@ describe('createPlayerAudio', () => {
     expect(ctx.scheduled[2].filters).toEqual(['lowpass', 'peaking', 'peaking'])
     expect(ctx.buffers).toHaveLength(2)
     expect(ctx.scheduled[2].bufferId).toBe(ctx.scheduled[3].bufferId)
+  })
+
+  it('runs a driven electric through the amp before tone and body', () => {
+    const ctx = fakeContext()
+    const audio = createPlayerAudio({ createContext: () => ctx, voice: 'electric-lead' })
+    audio.pluck(0, 60, 1, 1)
+    expect(ctx.scheduled[0].filters).toEqual(['waveshaper', 'lowpass', 'peaking', 'peaking'])
+    audio.setVoice('electric-clean')
+    audio.pluck(1, 60, 1, 1)
+    expect(ctx.scheduled[1].filters).toEqual(['lowpass', 'peaking', 'peaking'])
   })
 
   it('renders a fresh buffer per voice and pitch', () => {

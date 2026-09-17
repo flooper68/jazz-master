@@ -2,9 +2,10 @@ import { noteStarts, passBeats, type TabNote } from '../content'
 
 /**
  * The horizontal layout shared by every staff of a score: where each beat
- * and each note onset sits, and where the bar lines fall. Time is
- * proportional (an eighth takes half the room of a quarter) with a little
- * extra room after every bar line, the way engraved music breathes.
+ * and each note onset sits, and where the bar lines fall. Time is strictly
+ * linear along a line — every beat is the same width, so a cursor moving
+ * with the clock moves at one speed — and each bar line sits a little ahead
+ * of its downbeat so the first note of a bar has room after it.
  *
  * Given an available width the bars wrap into systems (lines), as many
  * whole bars per line as fit, stretched so full lines fill the width.
@@ -49,12 +50,6 @@ export interface ScoreLayout {
   noteSystem: number[]
   systems: SystemLayout[]
   xOfBeat(beat: number): ScorePoint
-  /**
-   * Where the playback cursor sits at a beat: as xOfBeat, except that the
-   * last beat of a bar stretches over the gap after the bar line, so the
-   * cursor glides into the next bar instead of leaping the gap.
-   */
-  cursorXOfBeat(beat: number): ScorePoint
   /** The beat under an x within a system, clamped to the system's bars. */
   beatOfPoint(x: number, system: number): number
   /** Index of the note sounding at a beat (the last onset at or before it), or null before the first. */
@@ -70,7 +65,7 @@ export interface LayoutOptions {
 }
 
 export const DEFAULT_BEAT_WIDTH = 56
-const BAR_GAP = 18
+/** Room between a bar line and the downbeat after it. */
 const NOTE_LEAD = 14
 const RIGHT_PAD = 24
 
@@ -83,22 +78,23 @@ export function layoutScore(
   const barCount = Math.max(Math.ceil(totalBeats / beatsPerBar - 1e-9), 1)
 
   // How many bars per line, and how wide a beat is once the line is filled.
-  const naturalBarWidth = BAR_GAP + NOTE_LEAD + beatsPerBar * naturalBeatWidth
+  const naturalBarWidth = beatsPerBar * naturalBeatWidth
   let barsPerSystem = barCount
   let beatWidth = naturalBeatWidth
   if (availableWidth !== undefined) {
-    const room = availableWidth - leftInset - RIGHT_PAD
+    const room = availableWidth - leftInset - NOTE_LEAD - RIGHT_PAD
     // A line that fits keeps its natural spacing; wrapped lines fill the width.
     if (barCount * naturalBarWidth > room) {
       barsPerSystem = Math.max(Math.floor(room / naturalBarWidth), 1)
-      beatWidth = Math.max((room / barsPerSystem - BAR_GAP - NOTE_LEAD) / beatsPerBar, naturalBeatWidth * 0.6)
+      beatWidth = Math.max(room / barsPerSystem / beatsPerBar, naturalBeatWidth * 0.6)
     }
   }
-  const barWidth = BAR_GAP + NOTE_LEAD + beatsPerBar * beatWidth
+  const barWidth = beatsPerBar * beatWidth
   const systemCount = Math.ceil(barCount / barsPerSystem)
 
-  const barLocalX = (localBar: number) => leftInset + localBar * barWidth
+  // A line's time axis: its first downbeat sits a lead past the opening bar line.
   const systemOf = (bar: number) => Math.floor(bar / barsPerSystem)
+  const barLocalX = (localBar: number) => leftInset + localBar * barWidth
 
   const xOfBeat = (beat: number): ScorePoint => {
     const clamped = Math.min(Math.max(beat, 0), totalBeats)
@@ -106,17 +102,6 @@ export function layoutScore(
     const system = systemOf(bar)
     const localBar = bar - system * barsPerSystem
     return { x: barLocalX(localBar) + NOTE_LEAD + (clamped - bar * beatsPerBar) * beatWidth, system }
-  }
-
-  const cursorXOfBeat = (beat: number): ScorePoint => {
-    const clamped = Math.min(Math.max(beat, 0), totalBeats)
-    const bar = Math.min(Math.floor(clamped / beatsPerBar), barCount - 1)
-    const lastBeatStart = bar * beatsPerBar + beatsPerBar - 1
-    const isLastBarOfSystem = (bar + 1) % barsPerSystem === 0 || bar === barCount - 1
-    if (clamped < lastBeatStart || isLastBarOfSystem) return xOfBeat(clamped)
-    const start = xOfBeat(lastBeatStart)
-    const span = beatWidth + BAR_GAP + NOTE_LEAD
-    return { x: start.x + (clamped - lastBeatStart) * span, system: start.system }
   }
 
   const systems: SystemLayout[] = Array.from({ length: systemCount }, (_, index) => {
@@ -128,12 +113,9 @@ export function layoutScore(
     }
     const startBeat = firstBar * beatsPerBar
     const endBeat = Math.min((lastBar + 1) * beatsPerBar, totalBeats)
-    const endX = xOfBeat(endBeat).x + NOTE_LEAD
+    // Closing bar line: a lead before the beat after the last one, like every bar line.
+    const endX = barLocalX(bars.length - 1) + (endBeat - lastBar * beatsPerBar) * beatWidth
     return { index, bars, startBeat, endBeat, endX, noteIndices: [] }
-  })
-  // The last system closes where the music ends, others at their last bar line.
-  systems.forEach((system) => {
-    if (system.index < systemCount - 1) system.endX = barLocalX(system.bars.length)
   })
 
   const noteX: number[] = []
@@ -149,9 +131,8 @@ export function layoutScore(
 
   const beatOfPoint = (x: number, systemIndex: number): number => {
     const system = systems[Math.min(Math.max(systemIndex, 0), systemCount - 1)]
-    const localBar = Math.min(Math.max(Math.floor((x - leftInset) / barWidth), 0), system.bars.length - 1)
-    const within = Math.min(Math.max((x - barLocalX(localBar) - NOTE_LEAD) / beatWidth, 0), beatsPerBar)
-    return Math.min(system.bars[localBar].startBeat + within, totalBeats)
+    const beat = system.startBeat + (x - leftInset - NOTE_LEAD) / beatWidth
+    return Math.min(Math.max(beat, system.startBeat), system.endBeat)
   }
 
   const noteIndexAtBeat = (beat: number): number | null => {
@@ -174,7 +155,6 @@ export function layoutScore(
     noteSystem,
     systems,
     xOfBeat,
-    cursorXOfBeat,
     beatOfPoint,
     noteIndexAtBeat,
   }

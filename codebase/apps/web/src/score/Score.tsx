@@ -154,7 +154,7 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     ref,
     () => ({
       moveCursor(beat, follow, approach = 0) {
-        const point = layout.cursorXOfBeat(beat)
+        const point = layout.xOfBeat(beat)
         const x = point.x - Math.min(Math.max(approach, 0), 1) * (point.x - 6)
         const cursor = cursorRef.current
         if (cursor) cursor.setAttribute('transform', `translate(${x} ${point.system * systemHeight})`)
@@ -277,8 +277,8 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     const end = Math.min(shownLoop.endBeat, system.endBeat)
     if (end <= start) return null
     const x1 = layout.xOfBeat(start).x
-    // The end of a line belongs to the next line's x space; use this line's closing bar.
-    const x2 = end >= system.endBeat ? system.endX - 14 : layout.xOfBeat(end).x
+    // The end of a line belongs to the next line's x space; stop at this line's closing bar.
+    const x2 = end >= system.endBeat ? system.endX : layout.xOfBeat(end).x
     return [x1, x2]
   }
 
