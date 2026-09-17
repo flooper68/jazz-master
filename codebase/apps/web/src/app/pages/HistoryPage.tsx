@@ -4,6 +4,7 @@ import { groupRunsByDay } from '../../appData/history'
 import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
+import { RepeatIcon } from '../../components/icons'
 import { EXERCISES } from '../../content'
 import { formatSeconds } from '../../player/formatting'
 import { useTRPC } from '../trpc'
@@ -127,9 +128,10 @@ function RunRow({ run }: { run: ExerciseRun }) {
           to="/exercises/$exerciseId"
           params={{ exerciseId: exercise.id }}
           aria-label={`Play ${exercise.title} again`}
-          className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
-          Play
+          <RepeatIcon />
+          <span className="hidden sm:inline">Play again</span>
         </Link>
       )}
     </li>

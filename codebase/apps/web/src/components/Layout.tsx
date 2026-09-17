@@ -37,6 +37,28 @@ const THEME_ICON_SVG: Record<Theme, string> = {
     '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M6.2 1.6a6.5 6.5 0 1 0 8.2 8.2A5.5 5.5 0 0 1 6.2 1.6z"/></svg>',
 }
 
+// With the name shown: avatar first, the name after it in the theme's own
+// colour, cut short rather than pushing the sidebar wider. A constant, so
+// Clerk does not see a new appearance on every render.
+const USER_BUTTON_APPEARANCE = {
+  elements: {
+    rootBox: { maxWidth: '100%' },
+    userButtonTrigger: { maxWidth: '100%' },
+    userButtonBox: { flexDirection: 'row-reverse', maxWidth: '100%', gap: '0.625rem' },
+    userButtonOuterIdentifier: {
+      color: 'var(--c-fg)',
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      paddingLeft: 0,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      // The phone top bar has no room for it.
+      '@media (max-width: 767px)': { display: 'none' },
+    },
+  },
+} as const
+
 const NAV = [
   { to: '/', label: 'Exercises', icon: ListIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
@@ -158,13 +180,19 @@ export function Layout() {
             </Link>
           ))}
         </nav>
-        <div className={`ml-auto md:mt-auto md:ml-0 ${collapsed ? 'md:flex md:justify-center' : 'md:px-2'}`}>
+        <div className={`ml-auto min-w-0 md:mt-auto md:ml-0 ${collapsed ? 'md:flex md:justify-center' : 'md:px-2'}`}>
           {usePlaywrightAccountStub ? (
             <span className={`text-xs font-medium text-muted ${collapsed ? 'md:sr-only' : ''}`}>Test account</span>
           ) : (
             <Suspense fallback={null}>
-              {/* Clerk reads the menu items once, at mount: remount so the label follows the theme. */}
-              <ClerkUserButton key={theme} customMenuItems={menuItems} />
+              {/* Clerk reads these props once, at mount: remount so the theme label
+                  and the name follow the theme and the fold. */}
+              <ClerkUserButton
+                key={`${theme}-${collapsed}`}
+                customMenuItems={menuItems}
+                showName={!collapsed}
+                appearance={USER_BUTTON_APPEARANCE}
+              />
             </Suspense>
           )}
         </div>
