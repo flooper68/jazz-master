@@ -66,7 +66,7 @@ describe('app router', () => {
     // Playing an exercise is still being in Exercises.
     expect(screen.getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page')
 
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
+    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Exercises' }))
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Exercises' }),
     ).toBeInTheDocument()

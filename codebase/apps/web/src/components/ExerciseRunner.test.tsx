@@ -154,7 +154,8 @@ describe('ExerciseRunner', () => {
   it('shows the exercise on the stage with its score, tempo and time', () => {
     renderRunner()
     expect(screen.getByRole('heading', { level: 1, name: 'C major — open position 4/4 · 60 BPM' })).toHaveFocus()
-    expect(screen.getByRole('button', { name: 'Back to exercises' })).toBeInTheDocument()
+    // Leaving is the navigation's job: the stage itself carries no way out.
+    expect(screen.queryByRole('button', { name: 'Back to exercises' })).toBeNull()
     expect(readout('Time left')).toBe('1:00')
     expect(readout('Position')).toBe('1.1')
     expect(screen.getByRole('img', { name: 'C major — open position score, 6 notes' })).toBeInTheDocument()
@@ -563,12 +564,12 @@ describe('ExerciseRunner', () => {
     expect(onRunChange).not.toHaveBeenCalled()
   })
 
-  it('leaves from the stage without finishing, and records nothing', async () => {
+  it('records nothing for a run the player walks away from', async () => {
     const user = userEvent.setup()
-    const { onRunChange, onExit } = renderRunner()
+    const { onRunChange, unmount } = renderRunner()
     await play(user, 'C major — open position')
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
-    expect(onExit).toHaveBeenCalledTimes(1)
+    // Navigating away unmounts the stage mid-run.
+    unmount()
     expect(onRunChange).not.toHaveBeenCalled()
   })
 

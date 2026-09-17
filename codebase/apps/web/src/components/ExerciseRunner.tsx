@@ -162,21 +162,23 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
       onPrefsChange={setPrefs}
       onFinish={finish}
       headingRef={headingRef}
+      // On its own an exercise needs no way out in the header — the navigation
+      // is right there; a session says where it stands and how to end it.
       headerAction={
-        <span className="flex items-baseline gap-3 text-xs text-muted">
-          {session && (
+        session && (
+          <span className="flex items-baseline gap-3 text-xs text-muted">
             <span className="tabular-nums">
               {session.label} · {session.step} of {session.total}
             </span>
-          )}
-          <button
-            type="button"
-            onClick={onExit}
-            className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-          >
-            {session ? session.endLabel : 'Back to exercises'}
-          </button>
-        </span>
+            <button
+              type="button"
+              onClick={onExit}
+              className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+            >
+              {session.endLabel}
+            </button>
+          </span>
+        )
       }
       createAudio={createAudio}
       now={now}

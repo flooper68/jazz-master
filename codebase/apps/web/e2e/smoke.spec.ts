@@ -94,7 +94,7 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
 test('a run left from the stage is not stored', async ({ page }) => {
   await page.goto('/app/exercises/scales-major-open-c')
   await page.getByRole('button', { name: /^Play / }).click()
-  await page.getByRole('button', { name: 'Back to exercises' }).click()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Exercises' }).click()
   await expect(
     page.getByRole('heading', { name: 'Exercises', level: 1 }),
   ).toBeVisible()

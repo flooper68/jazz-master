@@ -65,7 +65,7 @@ describe('ExercisePage', () => {
     const user = userEvent.setup()
     await renderRoute(`/exercises/${exercise.id}`)
     await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
+    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Exercises' }))
     await screen.findByRole('heading', { level: 1, name: 'Exercises' })
     expect(getTrpcTestRuns()).toEqual([])
   })
