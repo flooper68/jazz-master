@@ -1,12 +1,6 @@
-import {
-  expect,
-  finishCurrentExercise,
-  listStoredSessions,
-  playThroughLesson,
-  test,
-} from './fixtures'
+import { expect, finishCurrentExercise, test } from './fixtures'
 
-const FIRST_LESSON = 'Major scale I — open position'
+const FIRST_EXERCISE = 'C major — open position'
 
 test('landing page renders and links to app-hosted auth', async ({ page }) => {
   await page.goto('/')
@@ -44,40 +38,39 @@ test('Clerk nested auth states stay on app-hosted routes', async ({ page }) => {
   await expect(page.getByText('404: Not found')).toHaveCount(0)
 })
 
-test('happy path: pick a lesson, play it through, and the session is stored', async ({
+test('happy path: pick an exercise, play it, see it summed up, and return to the list', async ({
   page,
 }) => {
   await page.goto('/app')
   await expect(
-    page.getByRole('heading', { name: 'Lessons', level: 1 }),
+    page.getByRole('heading', { name: 'Exercises', level: 1 }),
   ).toBeVisible()
 
-  await page.getByRole('link', { name: `Start ${FIRST_LESSON}` }).click()
-  await expect(page).toHaveURL(/\/app\/lessons\/scales-major-open$/)
-  const heading = page.getByRole('heading', { name: FIRST_LESSON, level: 1 })
+  await page.getByRole('link', { name: `Start ${FIRST_EXERCISE}` }).click()
+  await expect(page).toHaveURL(/\/app\/exercises\/scales-major-open-c$/)
+  const heading = page.getByRole('heading', {
+    name: new RegExp(`^${FIRST_EXERCISE}`),
+    level: 1,
+  })
   await expect(heading).toBeVisible()
   await expect(heading).toBeFocused()
   await expect(
     page.getByRole('img', { name: /^C major — open position score, \d+ notes$/ }),
   ).toBeVisible()
 
-  await playThroughLesson(page)
-  await page.getByRole('button', { name: 'Done' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Lessons', level: 1 }),
-  ).toBeVisible()
+  await finishCurrentExercise(page)
+  const summary = page.getByRole('heading', { name: 'Exercise complete', level: 1 })
+  await expect(summary).toBeFocused()
+  await expect(page.getByText(FIRST_EXERCISE)).toBeVisible()
 
-  const sessions = await listStoredSessions(page)
-  expect(sessions).toHaveLength(1)
-  expect(sessions[0]).toMatchObject({
-    lessonId: 'scales-major-open',
-    completed: true,
-    exercisesCompleted: 3,
-  })
+  await page.getByRole('button', { name: 'Back to exercises' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Exercises', level: 1 }),
+  ).toBeVisible()
 })
 
-test('Play starts the timer, the click, and the cursor; Next advances', async ({ page }) => {
-  await page.goto('/app/lessons/scales-major-open')
+test('Play starts the timer, the click, and the cursor; Play again starts over', async ({ page }) => {
+  await page.goto('/app/exercises/scales-major-open-c')
 
   await expect(page.getByText('2:00')).toBeVisible()
   await page.waitForTimeout(1_500)
@@ -95,34 +88,10 @@ test('Play starts the timer, the click, and the cursor; Next advances', async ({
     timeout: 8_000,
   })
 
-  await page.getByRole('button', { name: /^Next: finish / }).click()
-  await expect(page.getByText('Exercise 2 of 3')).toBeVisible()
+  await page.getByRole('button', { name: /^Finish / }).click()
+  await page.getByRole('button', { name: 'Play again' }).click()
   await expect(
-    page.getByRole('heading', { name: 'G major — open position', level: 2 }),
+    page.getByRole('heading', { name: new RegExp(`^${FIRST_EXERCISE}`), level: 1 }),
   ).toBeFocused()
-})
-
-test('an abandoned run is stored incomplete and survives a reload', async ({
-  page,
-}) => {
-  await page.goto('/app/lessons/scales-major-open')
-
-  await Promise.all([
-    page.waitForResponse((response) =>
-      response.url().includes('sessions.upsert'),
-    ),
-    finishCurrentExercise(page),
-  ])
-  await expect(page.getByText('Exercise 2 of 3')).toBeVisible()
-
-  await page.reload()
-  await expect(page.getByText('Exercise 1 of 3')).toBeVisible()
-
-  const sessions = await listStoredSessions(page)
-  expect(sessions).toHaveLength(1)
-  expect(sessions[0]).toMatchObject({
-    lessonId: 'scales-major-open',
-    completed: false,
-    exercisesCompleted: 1,
-  })
+  await expect(page.getByText('2:00')).toBeVisible()
 })

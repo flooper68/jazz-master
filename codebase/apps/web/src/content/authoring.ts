@@ -9,8 +9,8 @@ import {
 import type { TabNote } from './types'
 
 /**
- * Authoring helpers: theory in, tab out. Lesson data is written as literal
- * tabs (see lessons.ts); these functions are how those tabs were produced and
+ * Authoring helpers: theory in, tab out. Exercise data is written as literal
+ * tabs (see exercises.ts); these functions are how those tabs were produced and
  * how new ones get made, never something the player calls.
  */
 

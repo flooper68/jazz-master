@@ -3,7 +3,7 @@ import { Fretboard } from './Fretboard'
 import { CloseIcon } from './icons'
 
 /**
- * The lesson's story and the exercise's notes, with the shape the exercise
+ * The exercise's story and notes, with the shape the exercise
  * makes on the neck — roots in the accent colour, every other note named.
  * A drawer down the right edge of the screen; it stays while playing until
  * closed.
@@ -11,14 +11,12 @@ import { CloseIcon } from './icons'
 
 interface AboutPanelProps {
   exercise: Exercise
-  /** The lesson intro, shown with the first exercise. */
-  intro?: readonly string[]
   onClose: () => void
 }
 
-export function AboutPanel({ exercise, intro = [], onClose }: AboutPanelProps) {
+export function AboutPanel({ exercise, onClose }: AboutPanelProps) {
   const shape = exerciseShape(exercise)
-  const paragraphs = [...intro, ...(exercise.about ?? [])]
+  const paragraphs = exercise.about ?? []
   return (
     <aside
       aria-label={`About ${exercise.title}`}

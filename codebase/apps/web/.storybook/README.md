@@ -25,12 +25,12 @@ complete deployed bundle locally at `http://localhost:4322/_storybook/`.
 
 - **Foundations:** the Woodshed theme — every `--c-*` token from `src/index.css`,
   type, shapes and the primitives, in light and dark (toolbar).
-- **Pages:** the lesson list and the lesson player, plus landing, sign-in and
-  sign-up. The player includes a save-error state.
+- **Pages:** the exercise list and the exercise player, plus landing, sign-in
+  and sign-up.
 - **Primitives:** actual shared buttons, cards, badges, selects, radios and
   checkboxes, including disabled/checked variants.
 - **Components:** fretboard, the score (tab, notation, cursor and loop) and the
-  practice runner (the lesson player). Layout is exercised by every page story.
+  exercise runner (the player, then its summary). Layout is exercised by every page story.
 - **Public:** actual Astro header, footer, landing sections and practice board.
 - Docs and controls come from typed CSF stories. Use the viewport toolbar for
   mobile (390 × 844) and desktop (1280 × 800); the accessibility panel runs axe.

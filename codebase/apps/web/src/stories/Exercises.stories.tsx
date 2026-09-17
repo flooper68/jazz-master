@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PagePreview } from './PagePreview'
 
 const meta = {
-  title: 'Pages/Lessons', component: PagePreview,
+  title: 'Pages/Exercises', component: PagePreview,
   parameters: { layout: 'fullscreen' },
   args: { path: '/', scenario: 'ready' },
   render: (args) => <PagePreview key={`${args.path}-${args.scenario}`} {...args} />,

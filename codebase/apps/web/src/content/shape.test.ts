@@ -6,6 +6,8 @@ function exercise(overrides: Partial<Exercise>): Exercise {
   return {
     id: 'x',
     title: 'x',
+    area: 'scales',
+    level: 1,
     tempoBpm: 60,
     duration: { kind: 'minutes', minutes: 1 },
     notes: [],

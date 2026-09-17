@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { LESSONS } from '../content'
+import { EXERCISES } from '../content'
 import { Score } from './Score'
-const line = LESSONS[1].exercises[1]
+const [, , fMajor, arpeggios, line] = EXERCISES
 const meta = { title: 'Components/Score', component: Score,
   args: { notes: line.notes, beatsPerBar: 4, keyName: line.key, view: 'both', currentIndex: 5, loop: null, cursorVisible: false, onSeek: fn(), onLoopChange: fn(), 'aria-label': line.title },
   argTypes: { view: { control: 'inline-radio', options: ['tab', 'notation', 'both'] } },
@@ -14,5 +14,5 @@ export const BebopLine: Story = {}
 export const TabOnly: Story = { args: { view: 'tab' } }
 export const NotationOnly: Story = { args: { view: 'notation' } }
 export const Looping: Story = { args: { loop: { startBeat: 4, endBeat: 8 }, currentIndex: 9 } }
-export const MajorScale: Story = { args: { notes: LESSONS[0].exercises[2].notes, keyName: 'F', 'aria-label': 'F major, open position', currentIndex: 3 } }
-export const Arpeggios: Story = { args: { notes: LESSONS[1].exercises[0].notes, 'aria-label': LESSONS[1].exercises[0].title, currentIndex: null } }
+export const MajorScale: Story = { args: { notes: fMajor.notes, keyName: 'F', 'aria-label': 'F major, open position', currentIndex: 3 } }
+export const Arpeggios: Story = { args: { notes: arpeggios.notes, 'aria-label': arpeggios.title, currentIndex: null } }

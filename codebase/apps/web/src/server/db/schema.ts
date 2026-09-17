@@ -19,6 +19,8 @@ export const users = pgTable('users', {
     .defaultNow(),
 })
 
+// Dormant: rows are runs of the retired lesson model and nothing reads or
+// writes them. Kept so no migration is generated; exercise runs replace it.
 export const practiceSessions = pgTable(
   'practice_sessions',
   {

@@ -10,7 +10,7 @@ export default function NotFoundPage() {
           to="/"
           className="underline hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
-          Back to the lessons
+          Back to the exercises
         </Link>
         .
       </p>

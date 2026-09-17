@@ -1,4 +1,4 @@
-import type { TabNote } from './types'
+import type { Exercise, TabNote } from './types'
 
 /**
  * Pure timing over a tab: where each note starts, how long one pass is, and
@@ -20,6 +20,12 @@ export function noteStarts(notes: readonly TabNote[]): number[] {
 /** Total beats in one pass through the tab. */
 export function passBeats(notes: readonly TabNote[]): number {
   return notes.reduce((sum, note) => sum + note.beats, 0)
+}
+
+/** How long the exercise asks for at its written tempo, in seconds. */
+export function exerciseSeconds(exercise: Exercise): number {
+  if (exercise.duration.kind === 'minutes') return exercise.duration.minutes * 60
+  return (exercise.duration.count * passBeats(exercise.notes) * 60) / exercise.tempoBpm
 }
 
 /** Index of the note sounding at a beat of a single pass, or null before the first onset. */

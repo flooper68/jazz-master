@@ -75,44 +75,8 @@ export const test = base.extend<{
 export { expect }
 export type { Page }
 
-/** Play the current exercise and finish it with Next. */
+/** Play the exercise on the stage and end it with Finish. */
 export async function finishCurrentExercise(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^Play / }).click()
-  await page.getByRole('button', { name: /^Next: finish / }).click()
-}
-
-/**
- * Play every exercise through until the summary appears. The cap only guards
- * against an infinite loop if the player stops advancing.
- */
-export async function playThroughLesson(page: Page): Promise<void> {
-  const summaryHeading = page.getByRole('heading', { name: /^Lesson complete/ })
-  for (let i = 0; i < 20; i++) {
-    // Wait until the player settles into one of its two states before acting.
-    await expect(
-      summaryHeading.or(page.getByRole('button', { name: /^Play / })).first(),
-    ).toBeVisible()
-    if (await summaryHeading.isVisible()) break
-    await finishCurrentExercise(page)
-  }
-  await expect(summaryHeading).toBeVisible()
-}
-
-interface StoredSession {
-  id: string
-  lessonId: string
-  completed: boolean
-  exercisesCompleted: number
-}
-
-/** The signed-in user's persisted sessions, read over the same tRPC wire the app uses. */
-export async function listStoredSessions(page: Page): Promise<StoredSession[]> {
-  const body = await page.evaluate(async () => {
-    const response = await fetch('/trpc/sessions.list')
-    return (await response.json()) as {
-      result: { data: { status: string; sessions?: StoredSession[] } }
-    }
-  })
-  expect(body.result.data.status).toBe('ok')
-  return body.result.data.sessions ?? []
+  await page.getByRole('button', { name: /^Finish / }).click()
 }

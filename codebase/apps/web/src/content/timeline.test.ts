@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { noteIndexAt, noteStarts, passBeats } from './timeline'
-import type { TabNote } from './types'
+import { exerciseSeconds, noteIndexAt, noteStarts, passBeats } from './timeline'
+import type { Exercise, TabNote } from './types'
 
 const tab: TabNote[] = [
   { string: 5, fret: 3, beats: 0.5 },
@@ -20,5 +20,15 @@ describe('timeline', () => {
     expect(noteIndexAt(tab, 1.5)).toBe(2)
     expect(noteIndexAt(tab, 7)).toBe(2)
     expect(noteIndexAt(tab, -0.1)).toBeNull()
+  })
+
+  it('reads how long an exercise asks for: the clock, or its passes at tempo', () => {
+    const base: Exercise = {
+      id: 'ex', title: 'Ex', area: 'scales', level: 1, tempoBpm: 60,
+      duration: { kind: 'minutes', minutes: 2 }, notes: tab,
+    }
+    expect(exerciseSeconds(base)).toBe(120)
+    // Four passes of two beats at 60 BPM: eight seconds.
+    expect(exerciseSeconds({ ...base, duration: { kind: 'repetitions', count: 4 } })).toBe(8)
   })
 })

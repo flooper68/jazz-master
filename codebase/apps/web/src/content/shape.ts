@@ -3,8 +3,8 @@ import type { Exercise } from './types'
 
 /**
  * The shape an exercise makes on the neck: every position it uses, labelled
- * with its note name as the key spells it, roots marked. What a diagram in
- * the lesson intro draws.
+ * with its note name as the key spells it, roots marked. What the diagram in
+ * the About drawer draws.
  */
 
 export interface ShapePosition {

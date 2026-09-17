@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react'
 import type { PlayerAudio } from '../audio/engine'
 import { VOICES } from '../audio/voices'
 import { DEFAULT_BEATS_PER_BAR, noteIndexAt, type Exercise } from '../content'
@@ -38,24 +38,24 @@ import {
   TabIcon,
 } from './icons'
 import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type PlayerPrefs } from './playerPrefs'
-import { useViewFocus } from './useViewFocus'
 
 /**
  * The stage for one exercise: the score as a canvas, with the readouts,
  * the tool menus (loop, repeat, tempo ramp, sound, view) and the transport
- * floating over it. Session flow (begin, finish) is the runner's; this
- * component reports it and otherwise owns playback.
+ * floating over it. What follows the exercise is the runner's; this
+ * component reports the finish and otherwise owns playback.
  */
 
 interface ExercisePlayerProps {
   exercise: Exercise
-  isFirst: boolean
-  /** The lesson intro, shown with the first exercise's notes. */
-  intro?: readonly string[]
   prefs: PlayerPrefs
   onPrefsChange: (prefs: PlayerPrefs) => void
-  onBegin: () => void
+  /** The timer ran out, the passes are done, or the player pressed Finish. */
   onFinish: () => void
+  /** The title is the page's heading; the runner moves focus to it. */
+  headingRef?: Ref<HTMLHeadingElement>
+  /** What sits at the far end of the title row — the way out. */
+  headerAction?: ReactNode
   createAudio?: () => PlayerAudio
   now?: () => number
 }
@@ -81,12 +81,11 @@ const FIELD = `h-8 rounded-md border border-line bg-field px-2 text-sm text-fg t
 
 export function ExercisePlayer({
   exercise,
-  isFirst,
-  intro,
   prefs,
   onPrefsChange,
-  onBegin,
   onFinish,
+  headingRef,
+  headerAction,
   createAudio,
   now,
 }: ExercisePlayerProps) {
@@ -99,7 +98,7 @@ export function ExercisePlayer({
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
   const [countingIn, setCountingIn] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
-  // The intro waits behind its button; nothing opens on its own.
+  // The About drawer waits behind its button; nothing opens on its own.
   const [aboutOpen, setAboutOpen] = useState(false)
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
   const stageRef = useRef<HTMLDivElement>(null)
@@ -116,7 +115,6 @@ export function ExercisePlayer({
     else void stageRef.current?.requestFullscreen?.()
   }
   const scoreRef = useRef<ScoreHandle>(null)
-  const headingRef = useViewFocus<HTMLHeadingElement>(exercise.id, { focusOnMount: !isFirst })
   const ids = { tempo: useId(), repeat: useId() }
 
   // Apply the shared preferences to this exercise's transport.
@@ -178,10 +176,7 @@ export function ExercisePlayer({
   }, [runFinished, exercise.duration.kind])
 
   function play(): void {
-    if (!started) {
-      setStarted(true)
-      onBegin()
-    }
+    setStarted(true)
     transport.play()
   }
 
@@ -259,17 +254,17 @@ export function ExercisePlayer({
 
   return (
     <section
-      className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
       onKeyDown={onKeyDown}
       aria-label={`${exercise.title} player`}
     >
-      {/* Same text column as the lesson row above; the 1px is the panel's border. */}
-      <header className="px-[calc(0.5rem-1px)] pt-2 pb-1.5 md:px-[calc(2rem-1px)]">
+      {/* Same text column as the app header; the 1px is the panel's border. */}
+      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-[calc(0.5rem-1px)] pt-2 pb-1.5 md:px-[calc(2rem-1px)]">
         {/* One line: the title, then what the title does not already say. */}
-        <h2
+        <h1
           ref={headingRef}
           tabIndex={-1}
-          className="font-display text-sm font-semibold tracking-tight text-fg focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-dashed focus-visible:outline-line-strong"
+          className="font-display text-base font-semibold tracking-tight text-fg focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-dashed focus-visible:outline-line-strong"
         >
           {exercise.title}{' '}
           <span className="ml-1 font-sans text-xs font-normal text-muted tabular-nums">
@@ -281,10 +276,11 @@ export function ExercisePlayer({
               .filter(Boolean)
               .join(' · ')}
           </span>
-        </h2>
+        </h1>
+        {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
       </header>
 
-      {/* The scene: the score is the canvas; the chrome and the intro float over it. */}
+      {/* The scene: the score is the canvas; the chrome and the About drawer float over it. */}
       <div
         ref={stageRef}
         className="relative min-h-0 flex-1 overflow-hidden rounded-b-2xl border-t border-line bg-panel-2/60 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
@@ -347,7 +343,7 @@ export function ExercisePlayer({
                 </button>
               )}
               <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→" className="h-9 w-9"><ChevronRightIcon /></IconButton>
-              <IconButton onClick={finish} label={`Next: finish ${exercise.title}`} data-tip="Finish this exercise and move to the next" className="h-9 w-9 border-line-strong">
+              <IconButton onClick={finish} label={`Finish ${exercise.title}`} data-tip="Finish this exercise" className="h-9 w-9 border-line-strong">
               <NextIcon />
             </IconButton>
             </Group>
@@ -583,7 +579,7 @@ export function ExercisePlayer({
             </div>
           </div>
         </div>
-        {/* The intro is a drawer down the full height of the screen, sliding in
+        {/* About is a drawer down the full height of the screen, sliding in
             over a light backdrop that closes it when pressed. */}
         {aboutOpen && (
           <>
@@ -593,7 +589,7 @@ export function ExercisePlayer({
               data-about-backdrop
             />
             <div className="drawer-in fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px]">
-              <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
+              <AboutPanel exercise={exercise} onClose={() => setAboutOpen(false)} />
             </div>
           </>
         )}

@@ -118,7 +118,7 @@ function ThemePage() {
             <h3 className="text-sm font-medium text-muted">Buttons</h3>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Button>Start practising</Button>
-              <Button variant="secondary">Back to lessons</Button>
+              <Button variant="secondary">Back to exercises</Button>
               <Button variant="quiet">Skip for now</Button>
               <Button disabled>Disabled</Button>
             </div>

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import type { Exercise, Lesson } from './types'
-import { validateLessons } from './validate'
+import type { Exercise } from './types'
+import { validateExercises } from './validate'
 
 function exercise(overrides: Partial<Exercise> = {}): Exercise {
   return {
     id: 'ex-1',
     title: 'C major, open position',
+    area: 'scales',
+    level: 1,
     tempoBpm: 80,
     duration: { kind: 'minutes', minutes: 5 },
     notes: [
@@ -16,41 +18,19 @@ function exercise(overrides: Partial<Exercise> = {}): Exercise {
   }
 }
 
-function lesson(overrides: Partial<Lesson> = {}): Lesson {
-  const id = overrides.id ?? 'lesson-1'
-  return {
-    id,
-    title: 'Major scale, open position',
-    area: 'scales',
-    level: 1,
-    prerequisites: [],
-    estimatedMinutes: 15,
-    exercises: [exercise({ id: `${id}/ex-1` })],
-    ...overrides,
-  }
-}
-
-describe('validateLessons', () => {
-  it('accepts a consistent lesson set', () => {
-    const lessons = [
-      lesson(),
-      lesson({ id: 'lesson-2', prerequisites: ['lesson-1'] }),
-    ]
-    expect(validateLessons(lessons)).toEqual([])
+describe('validateExercises', () => {
+  it('accepts a consistent exercise set', () => {
+    expect(validateExercises([exercise(), exercise({ id: 'ex-2' })])).toEqual([])
   })
 
   it('flags a note off the neck or with no length', () => {
-    const problems = validateLessons([
-      lesson({
-        exercises: [
-          exercise({
-            notes: [
-              { string: 7 as never, fret: 0, beats: 0.5 },
-              { string: 5, fret: -1, beats: 0.5 },
-              { string: 5, fret: 2.5, beats: 0.5 },
-              { string: 5, fret: 3, beats: 0 },
-            ],
-          }),
+    const problems = validateExercises([
+      exercise({
+        notes: [
+          { string: 7 as never, fret: 0, beats: 0.5 },
+          { string: 5, fret: -1, beats: 0.5 },
+          { string: 5, fret: 2.5, beats: 0.5 },
+          { string: 5, fret: 3, beats: 0 },
         ],
       }),
     ])
@@ -62,103 +42,43 @@ describe('validateLessons', () => {
       'note 3: beats must be positive, got 0',
       'exercise ends mid-bar: 1.5 beats in 4/4',
     ])
-    expect(problems[0]).toMatchObject({ lessonId: 'lesson-1', exerciseId: 'ex-1' })
+    expect(problems[0]).toMatchObject({ exerciseId: 'ex-1' })
   })
 
   it('flags an exercise that ends in the middle of a bar', () => {
-    const problems = validateLessons([
-      lesson({ exercises: [exercise({ notes: [{ string: 5, fret: 3, beats: 1.5 }] })] }),
+    const problems = validateExercises([
+      exercise({ notes: [{ string: 5, fret: 3, beats: 1.5 }] }),
     ])
     expect(problems.map((p) => p.message)).toEqual(['exercise ends mid-bar: 1.5 beats in 4/4'])
-    const waltz = validateLessons([
-      lesson({ exercises: [exercise({ beatsPerBar: 3, notes: [{ string: 5, fret: 3, beats: 3 }] })] }),
+    const waltz = validateExercises([
+      exercise({ beatsPerBar: 3, notes: [{ string: 5, fret: 3, beats: 3 }] }),
     ])
     expect(waltz).toEqual([])
   })
 
   it('flags an exercise with no notes', () => {
-    const problems = validateLessons([lesson({ exercises: [exercise({ notes: [] })] })])
+    const problems = validateExercises([exercise({ notes: [] })])
     expect(problems.map((problem) => problem.message)).toEqual(['exercise has no notes'])
   })
 
   it('flags non-positive tempo and duration', () => {
-    const broken = lesson({
-      exercises: [
-        exercise({
-          tempoBpm: 0,
-          duration: { kind: 'repetitions', count: -3 },
-        }),
-      ],
+    const broken = exercise({
+      tempoBpm: 0,
+      duration: { kind: 'repetitions', count: -3 },
     })
-    const messages = validateLessons([broken]).map((p) => p.message)
+    const messages = validateExercises([broken]).map((p) => p.message)
     expect(messages).toContain('tempo must be positive, got 0')
     expect(messages).toContain('duration must be positive, got -3')
   })
 
-  it('flags bad lesson metadata and empty lessons', () => {
-    const broken = lesson({ level: 0, estimatedMinutes: 0, exercises: [] })
-    const messages = validateLessons([broken]).map((p) => p.message)
-    expect(messages).toContain('level must be a positive integer, got 0')
-    expect(messages).toContain('estimated minutes must be positive, got 0')
-    expect(messages).toContain('lesson has no exercises')
+  it('flags a bad level', () => {
+    const messages = validateExercises([exercise({ level: 0 })]).map((p) => p.message)
+    expect(messages).toEqual(['level must be a positive integer, got 0'])
   })
 
-  it('flags duplicate lesson and exercise ids', () => {
-    const duplicated = lesson({
-      exercises: [exercise(), exercise({ title: 'again' })],
-    })
-    const messages = validateLessons([duplicated, lesson()]).map(
-      (p) => p.message,
-    )
-    expect(messages).toContain('duplicate exercise id "ex-1"')
-    expect(messages).toContain('duplicate lesson id "lesson-1"')
-  })
-
-  it('flags exercise ids reused across lessons (session records key on them)', () => {
-    const first = lesson({ id: 'a', exercises: [exercise({ id: 'shared' })] })
-    const second = lesson({ id: 'b', exercises: [exercise({ id: 'shared' })] })
-    expect(validateLessons([first, second])).toEqual([
-      {
-        lessonId: 'b',
-        exerciseId: 'shared',
-        message: 'duplicate exercise id "shared"',
-      },
+  it('flags a reused exercise id (the URL names it)', () => {
+    expect(validateExercises([exercise(), exercise({ title: 'again' })])).toEqual([
+      { exerciseId: 'ex-1', message: 'duplicate exercise id "ex-1"' },
     ])
-  })
-
-  it('flags a missing prerequisite', () => {
-    const orphan = lesson({ prerequisites: ['lesson-99'] })
-    expect(validateLessons([orphan])).toEqual([
-      { lessonId: 'lesson-1', message: 'unknown prerequisite "lesson-99"' },
-    ])
-  })
-
-  it('flags a prerequisite cycle once per member', () => {
-    const a = lesson({ id: 'a', prerequisites: ['b'] })
-    const b = lesson({ id: 'b', prerequisites: ['a'] })
-    const problems = validateLessons([a, b])
-    expect(problems).toHaveLength(2)
-    expect(problems.map((p) => p.lessonId).sort()).toEqual(['a', 'b'])
-    for (const problem of problems) {
-      expect(problem.message).toMatch(/prerequisite cycle/)
-    }
-  })
-
-  it('flags a self-prerequisite as a cycle', () => {
-    const selfish = lesson({ prerequisites: ['lesson-1'] })
-    expect(validateLessons([selfish])).toEqual([
-      {
-        lessonId: 'lesson-1',
-        message: 'prerequisite cycle: lesson-1 → lesson-1',
-      },
-    ])
-  })
-
-  it('does not report a cycle for a diamond dependency', () => {
-    const base = lesson({ id: 'base' })
-    const left = lesson({ id: 'left', prerequisites: ['base'] })
-    const right = lesson({ id: 'right', prerequisites: ['base'] })
-    const top = lesson({ id: 'top', prerequisites: ['left', 'right'] })
-    expect(validateLessons([base, left, right, top])).toEqual([])
   })
 })

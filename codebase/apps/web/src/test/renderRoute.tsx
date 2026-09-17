@@ -5,7 +5,7 @@ import { createAppRouter } from '../app/router'
 import { trpcTestFetch } from './trpcTestFetch'
 
 /**
- * Render the production route tree at an app-relative path (e.g. '/lessons/x').
+ * Render the production route tree at an app-relative path (e.g. '/exercises/x').
  * The router keeps its real /app basepath, so href assertions see the URLs
  * users see. Wrapped in the production providers, with tRPC served in-process
  * (the root route renders the health footer).

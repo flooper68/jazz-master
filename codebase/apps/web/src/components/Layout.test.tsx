@@ -1,11 +1,6 @@
 import { screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
-import { resetTrpcTestData } from '../test/trpcTestFetch'
-
-beforeEach(() => {
-  resetTrpcTestData()
-})
 
 // Regression guard for ISSUE-001 (app shell overflowed horizontally at phone
 // widths). jsdom performs no layout, so this asserts the load-bearing Tailwind
@@ -16,7 +11,7 @@ describe('Layout shell', () => {
     expect(screen.getByRole('main')).toHaveClass('min-w-0', 'flex-1')
   })
 
-  it('links the brand back to the lesson list', async () => {
+  it('links the brand back to the exercise list', async () => {
     await renderRoute('/')
     expect(screen.getByRole('banner')).toContainElement(
       screen.getByRole('link', { name: 'woodshed' }),

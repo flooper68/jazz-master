@@ -1,7 +1,7 @@
 import type { GuitarString } from '@jazz-master/theory'
 
 /**
- * A lesson is a series of notes, written as tablature. The player renders the
+ * An exercise is a series of notes, written as tablature. The player renders the
  * tab and moves a cursor through it on the click's clock; nothing is resolved
  * from theory at play time. Theory helpers (scale/arpeggio generators) are
  * authoring tools that emit these notes — see `authoring.ts`.
@@ -20,11 +20,19 @@ export type ExerciseDuration =
   | { kind: 'minutes'; minutes: number }
   | { kind: 'repetitions'; count: number }
 
-/** One playable unit: a tab, a tempo, and how long to loop it. */
+export type ExerciseArea = 'scales' | 'arpeggios' | 'chords' | 'standards'
+
+/**
+ * The blueprint of one playable unit: a tab, a tempo, how long to loop it,
+ * and the metadata the list (and later the planner) reads.
+ */
 export interface Exercise {
-  /** Unique across the whole curriculum — session records key on it. */
+  /** Unique across the pack — the URL names it, and later run records will key on it. */
   id: string
   title: string
+  area: ExerciseArea
+  /** Difficulty tier, 1 = beginner. */
+  level: number
   tempoBpm: number
   duration: ExerciseDuration
   notes: readonly TabNote[]
@@ -35,25 +43,8 @@ export interface Exercise {
   key?: string
   /** Beats per bar; 4 unless the exercise says otherwise. */
   beatsPerBar?: number
-  /** What to know before playing this one, a paragraph per entry. */
+  /** The story and what to know before playing — the theory, the fingering — a paragraph per entry. */
   about?: readonly string[]
 }
 
 export const DEFAULT_BEATS_PER_BAR = 4
-
-export type LessonArea = 'scales' | 'arpeggios' | 'chords' | 'standards'
-
-/** An ordered run of exercises plus the metadata the list (and later the planner) reads. */
-export interface Lesson {
-  id: string
-  title: string
-  area: LessonArea
-  /** Difficulty tier, 1 = beginner. */
-  level: number
-  /** Lesson ids to complete first. */
-  prerequisites: readonly string[]
-  estimatedMinutes: number
-  exercises: readonly Exercise[]
-  /** The lesson's story — the theory, the history, why it matters — a paragraph per entry. */
-  intro?: readonly string[]
-}
