@@ -9,6 +9,7 @@ import { RepeatIcon } from '../../components/icons'
 import { EXERCISES } from '../../content'
 import { formatSeconds } from '../../player/formatting'
 import { useTRPC } from '../trpc'
+import { PAGE_READING } from '../../components/pageFrame'
 
 const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 
@@ -21,7 +22,7 @@ export default function HistoryPage() {
   const { data, isPending, isError } = useQuery(trpc.runs.list.queryOptions())
 
   return (
-    <div className="max-w-3xl">
+    <div className={PAGE_READING}>
       <h1 className="font-display text-3xl font-bold tracking-tight">History</h1>
       <p className="mt-2 text-fg-2">What you played, when, and how it felt.</p>
       <HistoryBody

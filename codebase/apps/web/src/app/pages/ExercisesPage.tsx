@@ -8,6 +8,7 @@ import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ClickIcon, ClockIcon, GridIcon, RowsIcon } from '../../components/icons'
 import { EXERCISES, exerciseSeconds, type Exercise } from '../../content'
 import { useTRPC } from '../trpc'
+import { PAGE_WIDE } from '../../components/pageFrame'
 
 // Authored order is the order to learn them in, so grouping keeps it within each area.
 const areas = [...new Set(EXERCISES.map((exercise) => exercise.area))]
@@ -47,7 +48,7 @@ export default function ExercisesPage() {
   }, [view])
 
   return (
-    <div className="max-w-6xl">
+    <div className={PAGE_WIDE}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">Exercises</h1>

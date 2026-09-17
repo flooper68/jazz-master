@@ -8,6 +8,7 @@ import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ShuffleIcon } from '../../components/icons'
 import { EXERCISES, type Exercise } from '../../content'
 import { useTRPC } from '../trpc'
+import { PAGE_WIDE } from '../../components/pageFrame'
 
 const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 const EXERCISE_IDS = EXERCISES.map((exercise) => exercise.id)
@@ -33,7 +34,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className={PAGE_WIDE}>
       <h1 className="font-display text-3xl font-bold tracking-tight">Home</h1>
       <p className="mt-2 text-fg-2">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
