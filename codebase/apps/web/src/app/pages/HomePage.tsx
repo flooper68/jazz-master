@@ -14,7 +14,7 @@ const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]
 const EXERCISE_IDS = EXERCISES.map((exercise) => exercise.id)
 
 const CARD = 'rounded-2xl border border-line bg-panel'
-const SECTION_TITLE = 'font-display text-lg font-semibold tracking-tight'
+const SECTION_TITLE = 'font-display text-base font-semibold tracking-tight'
 const QUIET_LINK =
   'text-sm font-medium text-fg-2 underline-offset-4 hover:text-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
@@ -35,8 +35,8 @@ export default function HomePage() {
 
   return (
     <div className={PAGE_WIDE}>
-      <h1 className="font-display text-3xl font-bold tracking-tight">Home</h1>
-      <p className="mt-2 text-fg-2">
+      <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
+      <p className="mt-1 text-sm text-fg-2">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
         {summary.streakDays > 1 && ` · ${summary.streakDays} days in a row`}
       </p>
@@ -46,9 +46,9 @@ export default function HomePage() {
         </p>
       )}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <section className="rounded-2xl bg-accent p-5 text-on-accent lg:col-span-1" aria-labelledby="home-quick-run">
-          <h2 id="home-quick-run" className="font-display text-xl font-bold tracking-tight">
+      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+        <section className="rounded-2xl bg-accent p-4 text-on-accent lg:col-span-1" aria-labelledby="home-quick-run">
+          <h2 id="home-quick-run" className="font-display text-lg font-bold tracking-tight">
             {summary.totalRuns === 0 ? 'Start with a quick run' : 'Ready for today?'}
           </h2>
           <p className="mt-1 text-sm opacity-90">
@@ -57,14 +57,14 @@ export default function HomePage() {
           <button
             type="button"
             onClick={startQuickRun}
-            className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-on-accent px-4 py-2 text-sm font-semibold text-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent"
+            className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-on-accent px-3 py-1.5 text-sm font-semibold text-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent"
           >
             <ShuffleIcon />
             Start a quick run
           </button>
         </section>
 
-        <section className={`${CARD} min-w-0 p-5 lg:col-span-2`} aria-labelledby="home-week">
+        <section className={`${CARD} min-w-0 p-4 lg:col-span-2`} aria-labelledby="home-week">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4">
             <h2 id="home-week" className={SECTION_TITLE}>
               Last 7 days
@@ -75,14 +75,14 @@ export default function HomePage() {
         </section>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="This week" value={formatDuration(summary.weekSeconds)} note={`${summary.weekRuns} ${summary.weekRuns === 1 ? 'run' : 'runs'}`} />
         <Stat label="Streak" value={`${summary.streakDays} ${summary.streakDays === 1 ? 'day' : 'days'}`} note={summary.streakDays === 0 ? 'Play today to start one' : 'Keep it going'} />
         <Stat label="Felt this week" value={summary.weekRating === null ? '—' : `${summary.weekRating}/10`} note={summary.weekRating === null ? 'No ratings yet' : 'Average difficulty'} />
         <Stat label="All time" value={formatDuration(summary.totalSeconds)} note={`${summary.totalRuns} ${summary.totalRuns === 1 ? 'run' : 'runs'}`} />
       </dl>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="mt-7 grid gap-6 lg:grid-cols-2">
         <RecentRuns summary={summary} />
         <NextUp summary={summary} />
       </div>
@@ -92,10 +92,10 @@ export default function HomePage() {
 
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className={`${CARD} px-4 py-3`}>
+    <div className={`${CARD} px-3.5 py-2.5`}>
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="mt-0.5">
-        <span className="block font-display text-2xl font-bold tracking-tight tabular-nums">{value}</span>
+        <span className="block font-display text-xl font-bold tracking-tight tabular-nums">{value}</span>
         <span className="block text-xs text-muted">{note}</span>
       </dd>
     </div>
@@ -110,7 +110,7 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
 function WeekChart({ week }: { week: ActivityDay[] }) {
   const peak = Math.max(...week.map((day) => day.seconds), 60)
   return (
-    <ol className="mt-4 grid h-36 grid-cols-7 items-end gap-2" aria-label="Minutes played per day, oldest first">
+    <ol className="mt-3 grid h-28 grid-cols-7 items-end gap-2" aria-label="Minutes played per day, oldest first">
       {week.map((day, index) => {
         const today = index === week.length - 1
         const name = day.date.toLocaleDateString(undefined, { weekday: 'short' })
@@ -162,7 +162,7 @@ function RecentRuns({ summary }: { summary: Dashboard }) {
           {summary.recent.map((run) => {
             const exercise = exerciseById.get(run.exerciseId)
             return (
-              <li key={run.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={run.id} className="flex items-center gap-3 px-3.5 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-fg">{exercise?.title ?? 'An exercise no longer in the pack'}</p>
                   <p className="mt-0.5 text-sm text-muted tabular-nums">
@@ -212,7 +212,7 @@ function NextUp({ summary }: { summary: Dashboard }) {
           Everything has been played and nothing felt too hard. A quick run keeps it that way.
         </p>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-3 space-y-2">
           {picks.map(({ exercise, reason }) => (
             <PickRow key={exercise.id} exercise={exercise} reason={reason} />
           ))}
@@ -224,8 +224,8 @@ function NextUp({ summary }: { summary: Dashboard }) {
 
 function PickRow({ exercise, reason }: { exercise: Exercise; reason: string }) {
   return (
-    <li className={`group relative flex items-center gap-3 p-2.5 hover:border-line-strong ${CARD}`}>
-      <ExerciseThumb exercise={exercise} className="h-14 w-28 shrink-0" />
+    <li className={`group relative flex items-center gap-3 p-2 hover:border-line-strong ${CARD}`}>
+      <ExerciseThumb exercise={exercise} className="h-12 w-24 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-fg">{exercise.title}</p>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
@@ -239,7 +239,7 @@ function PickRow({ exercise, reason }: { exercise: Exercise; reason: string }) {
         to="/exercises/$exerciseId"
         params={{ exerciseId: exercise.id }}
         aria-label={`Start ${exercise.title}`}
-        className="mr-1.5 shrink-0 rounded-lg bg-cta px-3 py-1.5 text-sm font-medium text-cta-fg after:absolute after:inset-0 after:rounded-2xl group-hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+        className="mr-1 shrink-0 rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg after:absolute after:inset-0 after:rounded-2xl group-hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
       >
         Start
       </Link>

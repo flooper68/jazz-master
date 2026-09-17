@@ -130,7 +130,7 @@ export function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas text-fg md:flex-row">
+    <div data-app className="flex min-h-screen flex-col bg-canvas text-fg md:flex-row">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-panel focus:px-3 focus:py-2 focus:text-fg focus:outline-2 focus:outline-fg"
@@ -142,8 +142,8 @@ export function Layout() {
         ref={headerRef}
         data-collapsed={collapsed || undefined}
         style={{ '--sidebar-w': `${sidebar.width}px` } as CSSProperties}
-        className={`z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-panel px-4 py-3 md:sticky md:top-0 md:h-dvh md:shrink-0 md:flex-col md:flex-nowrap md:items-stretch md:gap-y-6 md:border-r md:border-b-0 md:py-5 ${
-          collapsed ? 'md:w-16 md:px-2' : 'md:w-(--sidebar-w) md:px-3'
+        className={`z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-panel px-4 py-3 md:sticky md:top-0 md:h-dvh md:shrink-0 md:flex-col md:flex-nowrap md:items-stretch md:gap-y-4 md:border-r md:border-b-0 md:py-4 ${
+          collapsed ? 'md:w-14 md:px-1.5' : 'md:w-(--sidebar-w) md:px-2.5'
         } ${dragging ? 'select-none' : 'md:transition-[width] md:duration-150'}`}
       >
         <div className={`flex items-start gap-2 ${collapsed ? 'md:flex-col md:items-center' : 'md:justify-between md:px-2'}`}>
@@ -151,7 +151,7 @@ export function Layout() {
             <Link
               to="/"
               aria-label="woodshed"
-              className="font-display text-2xl leading-none font-extrabold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+              className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               <span className={collapsed ? 'md:hidden' : undefined}>woodshed</span>
               {collapsed && <span className="hidden md:inline">w</span>}
@@ -181,7 +181,7 @@ export function Layout() {
               to={to}
               aria-current={to === current ? 'page' : undefined}
               title={collapsed ? label : undefined}
-              className={`inline-flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium min-[420px]:px-3 hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+              className={`inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium min-[420px]:px-2.5 hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
                 to === current ? 'bg-panel-2 text-fg' : 'text-fg-2'
               } ${collapsed ? 'md:justify-center md:px-0' : ''}`}
             >
@@ -193,7 +193,7 @@ export function Layout() {
             </Link>
           ))}
           {/* The primary action: first in the sidebar, above the links; at the end of the phone row. */}
-          <div className="ml-auto md:@container md:order-first md:mb-3 md:ml-0">
+          <div className="ml-auto md:@container md:order-first md:mb-2 md:ml-0">
             <QuickRunButton
               exercises={EXERCISES}
               iconOnly={collapsed}
@@ -240,7 +240,7 @@ export function Layout() {
           />
         )}
       </header>
-      <main id="main" className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
+      <main id="main" className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-7">
         <Outlet />
       </main>
     </div>

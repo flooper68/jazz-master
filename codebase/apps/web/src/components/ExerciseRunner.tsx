@@ -19,11 +19,11 @@ import { useViewFocus } from './useViewFocus'
  */
 
 const BUTTON_PRIMARY =
-  'rounded-lg bg-cta px-4 py-2 font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'rounded-lg bg-cta px-3.5 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const BUTTON_SECONDARY =
-  'rounded-lg border border-line bg-panel px-4 py-2 font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const HEADING =
-  'font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /**
  * Where this exercise sits in a practice session, and how to move on from it.
@@ -95,7 +95,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
           <div className="flex items-center gap-3">
             <span
               aria-hidden="true"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
             >
               <CheckIcon />
             </span>
@@ -109,7 +109,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
             </div>
           </div>
 
-          <ul className="mt-6 rounded-2xl border border-line bg-panel p-2.5">
+          <ul className="mt-5 rounded-2xl border border-line bg-panel p-2">
             <li className="flex items-center gap-4">
               <ExerciseThumb exercise={exercise} className="h-16 w-32 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -125,12 +125,12 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
           </ul>
 
           {run && (
-            <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
+            <div className="mt-3 rounded-2xl border border-line bg-panel p-3.5">
               <RatingInput value={run.rating} onChange={rate} />
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-2.5">
             <button type="button" onClick={onExit} className={BUTTON_PRIMARY}>
               Back to exercises
             </button>

@@ -9,7 +9,7 @@ import { RATING_MAX, RATING_MIN, RATING_SKIPPED } from '../appData/run'
 
 const VALUES = Array.from({ length: RATING_MAX - RATING_MIN + 1 }, (_, index) => RATING_MIN + index)
 const BASE =
-  'inline-flex h-10 items-center justify-center rounded-lg border text-sm font-medium tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'inline-flex h-8 items-center justify-center rounded-lg border text-sm font-medium tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /** What the number means, said back once it is chosen. */
 function feel(rating: number): string {
@@ -38,7 +38,7 @@ export function RatingInput({ value, onChange, subject }: RatingInputProps) {
           {value === null ? '' : `${value}/10 · ${feel(value)}`}
         </p>
       </div>
-      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+      <div className="mt-2.5 grid grid-cols-5 gap-1 sm:grid-cols-10">
         {VALUES.map((rating) => {
           const chosen = rating === value
           const skipped = rating === RATING_SKIPPED

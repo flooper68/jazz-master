@@ -15,9 +15,9 @@ import NotFoundPage from './NotFoundPage'
 const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 
 const BUTTON_PRIMARY =
-  'rounded-lg bg-cta px-4 py-2 font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'rounded-lg bg-cta px-3.5 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const BUTTON_SECONDARY =
-  'rounded-lg border border-line bg-panel px-4 py-2 font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /**
  * A practice session (a quick run): the exercises named in the URL, played
@@ -59,7 +59,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
             <div className="flex items-center gap-3">
               <span
                 aria-hidden="true"
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
               >
                 <CheckIcon />
               </span>
@@ -67,7 +67,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
                 <h1
                   ref={headingRef}
                   tabIndex={-1}
-                  className="font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+                  className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
                 >
                   Quick run complete
                 </h1>
@@ -78,11 +78,11 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
               </div>
             </div>
 
-            <ol className="mt-6 space-y-3">
+            <ol className="mt-5 space-y-2.5">
               {exercises.map((exercise, step) => {
                 const run = runs.get(step)
                 return (
-                  <li key={exercise.id} className="rounded-2xl border border-line bg-panel p-2.5">
+                  <li key={exercise.id} className="rounded-2xl border border-line bg-panel p-2">
                     <div className="flex items-center gap-4">
                       <ExerciseThumb exercise={exercise} className="h-14 w-28 shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
               })}
             </ol>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               <button type="button" onClick={() => void navigate({ to: '/exercises' })} className={BUTTON_PRIMARY}>
                 Back to exercises
               </button>

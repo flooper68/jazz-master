@@ -50,4 +50,4 @@ export function UnsavedRunAlert({ unsaved, onRetry }: { unsaved: ExerciseRun | n
 
 /** The player is a full-bleed stage: cancel the shell's page padding and take the viewport — below the phone header, beside the sidebar from md up. */
 export const STAGE_FRAME =
-  '-mx-4 -my-6 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col px-2 py-2 md:-mx-10 md:-my-10 md:h-dvh'
+  '-mx-4 -my-6 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col px-2 py-2 md:-mx-8 md:-my-7 md:h-dvh'

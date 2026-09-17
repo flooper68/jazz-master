@@ -61,16 +61,16 @@ describe('Layout shell', () => {
   it('resizes from the keyboard and by dragging its edge, within bounds, and resets on double-click', async () => {
     await renderRoute('/')
     const edge = screen.getByRole('separator', { name: 'Resize sidebar' })
-    expect(edge).toHaveAttribute('aria-valuenow', '224')
-
-    fireEvent.keyDown(edge, { key: 'ArrowRight' })
-    expect(edge).toHaveAttribute('aria-valuenow', '240')
-    fireEvent.keyDown(edge, { key: 'ArrowLeft' })
-    fireEvent.keyDown(edge, { key: 'ArrowLeft' })
     expect(edge).toHaveAttribute('aria-valuenow', '208')
 
+    fireEvent.keyDown(edge, { key: 'ArrowRight' })
+    expect(edge).toHaveAttribute('aria-valuenow', '224')
+    fireEvent.keyDown(edge, { key: 'ArrowLeft' })
+    fireEvent.keyDown(edge, { key: 'ArrowLeft' })
+    expect(edge).toHaveAttribute('aria-valuenow', '192')
+
     // jsdom lays nothing out, so the sidebar's left edge is x = 0.
-    fireEvent.pointerDown(edge, { pointerId: 1, clientX: 208 })
+    fireEvent.pointerDown(edge, { pointerId: 1, clientX: 192 })
     fireEvent.pointerMove(edge, { pointerId: 1, clientX: 300 })
     expect(edge).toHaveAttribute('aria-valuenow', '300')
     fireEvent.pointerMove(edge, { pointerId: 1, clientX: 5_000 })
@@ -81,7 +81,7 @@ describe('Layout shell', () => {
     expect(JSON.parse(localStorage.getItem('jazz-master.sidebar') ?? '{}')).toMatchObject({ width: 360 })
 
     fireEvent.doubleClick(edge)
-    expect(edge).toHaveAttribute('aria-valuenow', '224')
+    expect(edge).toHaveAttribute('aria-valuenow', '208')
   })
 
   it('starts a quick run of three random exercises from the navigation', async () => {

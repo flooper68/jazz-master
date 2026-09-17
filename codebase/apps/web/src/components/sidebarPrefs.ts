@@ -9,12 +9,12 @@ export interface SidebarPrefs {
   collapsedOnStage: boolean
 }
 
-export const SIDEBAR_MIN = 184
+export const SIDEBAR_MIN = 176
 export const SIDEBAR_MAX = 360
 export const SIDEBAR_STEP = 16
 
 export const DEFAULT_SIDEBAR_PREFS: SidebarPrefs = {
-  width: 224,
+  width: 208,
   collapsed: false,
   collapsedOnStage: true,
 }

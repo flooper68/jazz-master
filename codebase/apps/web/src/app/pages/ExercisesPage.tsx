@@ -31,7 +31,7 @@ function loadView(): ListView {
 }
 
 const START_LINK =
-  'shrink-0 rounded-lg bg-cta px-3 py-1.5 text-sm font-medium text-cta-fg after:absolute after:inset-0 group-hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'shrink-0 rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg after:absolute after:inset-0 group-hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 export default function ExercisesPage() {
   const trpc = useTRPC()
@@ -51,8 +51,8 @@ export default function ExercisesPage() {
     <div className={PAGE_WIDE}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Exercises</h1>
-          <p className="mt-2 max-w-xl text-fg-2">
+          <h1 className="font-display text-2xl font-bold tracking-tight">Exercises</h1>
+          <p className="mt-1 max-w-xl text-sm text-fg-2">
             Scales, arpeggios and lines by level. Pick an exercise, pick up the
             guitar, and play.
           </p>
@@ -78,10 +78,10 @@ export default function ExercisesPage() {
       {areas.map((area) => {
         const exercises = EXERCISES.filter((exercise) => exercise.area === area)
         return (
-          <section key={area} className="mt-10" aria-labelledby={`area-${area}`}>
+          <section key={area} className="mt-7" aria-labelledby={`area-${area}`}>
             <div className="flex items-center gap-2">
               <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${AREA_BADGE[area]}`} />
-              <h2 id={`area-${area}`} className="font-display text-lg font-semibold tracking-tight">
+              <h2 id={`area-${area}`} className="font-display text-base font-semibold tracking-tight">
                 {AREA_LABELS[area]}
               </h2>
               <span className="text-sm text-muted tabular-nums">{exercises.length}</span>
@@ -89,8 +89,8 @@ export default function ExercisesPage() {
             <ul
               className={
                 view === 'cards'
-                  ? 'mt-3 grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-4'
-                  : 'mt-3 divide-y divide-line rounded-2xl border border-line bg-panel'
+                  ? 'mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3'
+                  : 'mt-2.5 divide-y divide-line rounded-2xl border border-line bg-panel'
               }
             >
               {exercises.map((exercise) => {
@@ -147,7 +147,7 @@ function LevelDots({ level }: { level: number }) {
 /** The simple view: one line per exercise, no picture. */
 function ExerciseRow({ exercise, runs }: ItemProps) {
   return (
-    <li className="group relative flex items-center gap-4 px-4 py-3 first:rounded-t-2xl last:rounded-b-2xl hover:bg-panel-2/60">
+    <li className="group relative flex items-center gap-4 px-3.5 py-2 first:rounded-t-2xl last:rounded-b-2xl hover:bg-panel-2/60">
       <div className="min-w-0 flex-1">
         <h3 className="truncate font-medium text-fg">{exercise.title}</h3>
         <p className="mt-0.5 text-sm text-muted tabular-nums">
@@ -170,23 +170,23 @@ function ExerciseRow({ exercise, runs }: ItemProps) {
 
 function ExerciseCard({ exercise, runs }: ItemProps) {
   return (
-    <li className="group relative flex flex-col rounded-2xl border border-line bg-panel p-2.5 transition-shadow focus-within:border-line-strong hover:border-line-strong hover:shadow-lg hover:shadow-shade">
+    <li className="group relative flex flex-col rounded-2xl border border-line bg-panel p-2 transition-shadow focus-within:border-line-strong hover:border-line-strong hover:shadow-lg hover:shadow-shade">
       <ExerciseThumb exercise={exercise} className="aspect-[5/2]" />
-      <div className="flex flex-1 flex-col px-1 pt-3 pb-1">
+      <div className="flex flex-1 flex-col px-1 pt-2.5 pb-0.5">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display text-base leading-snug font-semibold tracking-tight text-fg">
+          <h3 className="font-display text-[15px] leading-snug font-semibold tracking-tight text-fg">
             {exercise.title}
           </h3>
           <span className="mt-1.5">
             <LevelDots level={exercise.level} />
           </span>
         </div>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted tabular-nums">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted tabular-nums">
           <span className="inline-flex items-center gap-1"><ClockIcon />~{minutesOf(exercise)} min</span>
           <span className="inline-flex items-center gap-1"><ClickIcon />{exercise.tempoBpm} BPM</span>
           {exercise.key && <span>{exercise.key} major</span>}
         </p>
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-3 flex items-center justify-between gap-3">
           <p className="text-xs text-muted">
             {playedLine(runs)}
           </p>

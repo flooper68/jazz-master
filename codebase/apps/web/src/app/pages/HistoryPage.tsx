@@ -14,7 +14,7 @@ import { PAGE_READING } from '../../components/pageFrame'
 const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 
 const LINK =
-  'rounded-lg bg-cta px-3 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /** Every saved run, newest first, a day at a time. */
 export default function HistoryPage() {
@@ -23,8 +23,8 @@ export default function HistoryPage() {
 
   return (
     <div className={PAGE_READING}>
-      <h1 className="font-display text-3xl font-bold tracking-tight">History</h1>
-      <p className="mt-2 text-fg-2">What you played, when, and how it felt.</p>
+      <h1 className="font-display text-2xl font-bold tracking-tight">History</h1>
+      <p className="mt-1 text-sm text-fg-2">What you played, when, and how it felt.</p>
       <HistoryBody
         runs={data?.status === 'ok' ? data.runs : null}
         loading={isPending}
@@ -61,13 +61,13 @@ function HistoryBody({ runs, loading, failed }: { runs: ExerciseRun[] | null; lo
   const totalSeconds = runs.reduce((sum, run) => sum + run.durationSeconds, 0)
   return (
     <>
-      <dl className="mt-6 grid grid-cols-3 gap-3">
+      <dl className="mt-5 grid grid-cols-3 gap-3">
         <Stat label="Runs" value={String(runs.length)} />
         <Stat label="Time played" value={formatDuration(totalSeconds)} />
         <Stat label="Days" value={String(days.length)} />
       </dl>
       {days.map((day) => (
-        <section key={day.day} className="mt-8" aria-labelledby={`day-${day.day}`}>
+        <section key={day.day} className="mt-6" aria-labelledby={`day-${day.day}`}>
           <h2 id={`day-${day.day}`} className="text-sm font-medium text-muted">
             {day.label}
           </h2>
@@ -84,9 +84,9 @@ function HistoryBody({ runs, loading, failed }: { runs: ExerciseRun[] | null; lo
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-panel px-4 py-3">
+    <div className="rounded-2xl border border-line bg-panel px-3.5 py-2.5">
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className="mt-0.5 font-display text-2xl font-bold tracking-tight tabular-nums">{value}</dd>
+      <dd className="mt-0.5 font-display text-xl font-bold tracking-tight tabular-nums">{value}</dd>
     </div>
   )
 }
@@ -95,8 +95,8 @@ function RunRow({ run }: { run: ExerciseRun }) {
   const exercise = exerciseById.get(run.exerciseId)
   const time = new Date(run.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
   return (
-    <li className="flex items-center gap-4 p-3 sm:p-4">
-      {exercise && <ExerciseThumb exercise={exercise} className="hidden h-14 w-32 shrink-0 sm:block" />}
+    <li className="flex items-center gap-3.5 px-3 py-2.5">
+      {exercise && <ExerciseThumb exercise={exercise} className="hidden h-12 w-24 shrink-0 sm:block" />}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <h3 className="font-medium text-fg">{exercise?.title ?? 'An exercise no longer in the pack'}</h3>
@@ -111,7 +111,7 @@ function RunRow({ run }: { run: ExerciseRun }) {
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted tabular-nums">
+        <p className="mt-0.5 text-[13px] text-muted tabular-nums">
           {time} · {formatSeconds(run.durationSeconds)} played · {run.tempoBpm} BPM ·{' '}
           {run.passes} {run.passes === 1 ? 'pass' : 'passes'}
           {!run.completed && ' · ended early'}
@@ -135,7 +135,7 @@ function RunRow({ run }: { run: ExerciseRun }) {
           to="/exercises/$exerciseId"
           params={{ exerciseId: exercise.id }}
           aria-label={`Play ${exercise.title} again`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           <RepeatIcon />
           <span className="hidden sm:inline">Play again</span>

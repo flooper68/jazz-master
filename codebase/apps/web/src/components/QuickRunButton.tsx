@@ -78,7 +78,7 @@ export function QuickRunButton({ exercises, onStart, iconOnly = false }: QuickRu
         onClick={() => onStart(pickQuickRun(exercises, settings))}
         aria-label={`Quick run: ${drawn} random ${drawn === 1 ? 'exercise' : 'exercises'}, about ${minutes} min`}
         title={iconOnly ? 'Quick run' : undefined}
-        className={`inline-flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-l-lg bg-accent px-3 py-2 text-sm font-semibold text-on-accent hover:bg-accent-hover ${FOCUS} ${
+        className={`inline-flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-l-lg bg-accent px-2.5 py-1.5 text-sm font-semibold text-on-accent hover:bg-accent-hover ${FOCUS} ${
           iconOnly ? 'md:justify-center md:rounded-lg md:px-0' : ''
         }`}
       >

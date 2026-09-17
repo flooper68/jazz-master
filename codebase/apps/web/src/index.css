@@ -47,7 +47,7 @@
   max-width: 22rem;
   width: max-content;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--c-fg);
   color: var(--c-panel);
   font-size: 11px;
@@ -57,6 +57,19 @@
   white-space: normal;
   pointer-events: none;
   animation: fade-in 120ms ease-out 150ms both;
+}
+
+/*
+ * The app's corners are tighter than the public pages': the same radius
+ * utilities (`rounded-lg`, `rounded-2xl` …) resolve to smaller values inside
+ * the app shell, so components need no second vocabulary.
+ */
+[data-app] {
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.3125rem;
+  --radius-xl: 0.4375rem;
+  --radius-2xl: 0.5rem;
 }
 
 /*
