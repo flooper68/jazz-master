@@ -3,6 +3,7 @@ import { DEFAULT_BEATS_PER_BAR } from '../../../content'
 import { Score } from '../../../score/Score'
 import { GOALS, STYLES } from './demo'
 import { Lockup } from '../../Brand'
+import { Button, ButtonLink } from '../../ui/Primitives'
 import './downbeat.css'
 import type { JoinWaitlist } from './joinWaitlist'
 import { useCountIn } from './useCountIn'
@@ -243,8 +244,6 @@ function Nudge({ when, text }: { when: string; text: string }) {
   )
 }
 
-const SOLID = 'inline-flex items-center justify-center rounded-md bg-cta px-5 py-3 text-sm leading-none font-semibold text-cta-fg transition-colors hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
-
 export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
   const [goalIndex, setGoalIndex] = useState(0)
   const [typeRun, setTypeRun] = useState(0)
@@ -303,12 +302,12 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
             <span className="ci-num rounded-sm border border-line-strong px-1.5 py-1 text-[10px] leading-none tracking-[0.14em] text-muted uppercase">Beta</span>
           </span>
           <nav className="flex items-center gap-2" aria-label="Account">
-            <a href="/sign-in" className="rounded-md px-4 py-3 text-sm leading-none font-semibold text-fg hover:bg-panel-2">
+            <ButtonLink href="/sign-in" variant="quiet" size="lg">
               Sign in
-            </a>
-            <a href="#beta" className={SOLID}>
+            </ButtonLink>
+            <ButtonLink href="#beta" size="lg">
               Join the beta
-            </a>
+            </ButtonLink>
           </nav>
         </header>
 
@@ -321,12 +320,12 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
               Describe your goal. Get a plan made for you. Five minutes free? You'll always practice the right thing.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-              <a href="#beta" className={SOLID}>
+              <ButtonLink href="#beta" size="lg">
                 Join the beta
-              </a>
-              <a href="/sign-in" className="text-sm font-medium text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg">
+              </ButtonLink>
+              <ButtonLink href="/sign-in" variant="link" className="text-sm">
                 Already in the beta? Sign in
-              </a>
+              </ButtonLink>
             </div>
           </div>
         </div>
@@ -336,9 +335,9 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
         <div className="ci-wipe ci-wipe-late absolute inset-0 z-30 flex flex-col bg-canvas" data-open={open} style={origin} aria-hidden={!open}>
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
             <Lockup />
-            <button type="button" onClick={demo.reset} tabIndex={open ? 0 : -1} className="text-sm font-medium text-fg-2 underline-offset-4 hover:text-fg hover:underline">
+            <Button variant="link" onClick={demo.reset} tabIndex={open ? 0 : -1} className="text-sm">
               Close
-            </button>
+            </Button>
           </div>
           <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-8 px-5 pb-16 sm:px-8">
             <div className="flex items-baseline justify-between gap-3">
@@ -359,13 +358,12 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
               aria-label={goal.demo.title}
             />
             <div className={`flex flex-wrap items-center gap-3 transition-opacity duration-500 ${demo.phase === 'done' ? 'opacity-100' : 'opacity-0'}`}>
-              <a href="#beta" onClick={demo.reset} tabIndex={demo.phase === 'done' ? 0 : -1} className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-3 text-sm leading-none font-semibold text-on-accent hover:bg-accent-hover">
-                <span className="size-2 rounded-full bg-current" aria-hidden="true" />
+              <ButtonLink href="#beta" variant="accent" size="lg" onClick={demo.reset} tabIndex={demo.phase === 'done' ? 0 : -1}>
                 Join the beta and get my plan
-              </a>
-              <button type="button" onClick={count} tabIndex={demo.phase === 'done' ? 0 : -1} className="rounded-md border border-line-strong px-5 py-3 text-sm leading-none font-semibold hover:bg-panel-2">
+              </ButtonLink>
+              <Button variant="secondary" size="lg" onClick={count} tabIndex={demo.phase === 'done' ? 0 : -1}>
                 Take it again
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -379,9 +377,9 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
             <span className="ci-num text-xs tracking-[0.1em] text-muted uppercase">or say</span>
             {GOALS.map((option, index) =>
               index === goalIndex ? null : (
-                <button key={option.ask} type="button" onClick={() => chooseGoal(index)} className="text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg hover:decoration-accent">
+                <Button key={option.ask} variant="link" onClick={() => chooseGoal(index)} className="text-[15px]">
                   {option.ask}
-                </button>
+                </Button>
               ),
             )}
           </div>
@@ -475,12 +473,12 @@ export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
             <h2 className="ci-display text-[clamp(2.75rem,7vw,6rem)] leading-[0.94] font-semibold text-balance">We count you in. You play.</h2>
             <p className="max-w-[46ch] text-lg leading-relaxed">Nothing to set up and nothing to decide. Count-in is in beta: it is free, guitar comes first, and what you tell us shapes what gets built next.</p>
             <WaitlistForm goal={goal.ask} onJoin={onJoin} />
-            <button type="button" onClick={count} className="text-[15px] font-semibold underline underline-offset-4">
+            <button type="button" onClick={count} className="rounded-sm text-[15px] font-semibold underline underline-offset-4 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent">
               Or try it first
             </button>
             <p className="text-[15px]">
               Already in the beta?{' '}
-              <a href="/sign-in" className="font-semibold underline underline-offset-4">
+              <a href="/sign-in" className="rounded-sm font-semibold underline underline-offset-4 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent">
                 Sign in
               </a>
               <span className="ci-num ml-3 text-[13px]">guitar first · free during the beta</span>

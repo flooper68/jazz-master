@@ -143,9 +143,9 @@ function BrandPage() {
         </div>
       </Section>
 
-      <Section eyebrow="Shape" title="Sharp, not soft">
+      <Section eyebrow="Shape" title="Crisp, not soft">
         <p className="max-w-2xl text-fg-2">
-          Corners are a few pixels at most. The only round things in Count-in are the beats: the dots of the mark, the cursor on the note, a day in a streak.
+          Corners are crisp: 4px on buttons and fields, 6px on cards, 8px at most. The only round things in Count-in are the beats: the dots of the mark, the cursor on the note, a day in a streak.
           Sharp interface, round beats; the contrast is the point.
         </p>
       </Section>

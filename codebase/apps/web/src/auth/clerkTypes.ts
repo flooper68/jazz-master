@@ -51,13 +51,36 @@ export interface SignUpResource {
   authenticateWithRedirect(params: RedirectParams): Promise<void>
 }
 
+export interface ClerkSessionActivity {
+  browserName?: string
+  deviceType?: string
+  city?: string
+  country?: string
+  isMobile?: boolean
+}
+
+/** One signed-in device, as the account page lists it. */
+export interface ClerkDeviceSession {
+  id: string
+  status?: string
+  lastActiveAt?: Date | string
+  latestActivity?: ClerkSessionActivity | null
+  revoke(): Promise<unknown>
+}
+
 export interface ClerkUser {
   fullName?: string | null
   firstName?: string | null
+  lastName?: string | null
   username?: string | null
   imageUrl?: string
   hasImage?: boolean
+  passwordEnabled?: boolean
   primaryEmailAddress?: { emailAddress: string } | null
+  update?(params: { firstName?: string; lastName?: string }): Promise<unknown>
+  updatePassword?(params: { currentPassword?: string; newPassword: string; signOutOfOtherSessions?: boolean }): Promise<unknown>
+  getSessions?(): Promise<ClerkDeviceSession[]>
+  delete?(): Promise<unknown>
 }
 
 interface AttributeSetting {
@@ -76,6 +99,7 @@ export interface ClerkEnvironment {
 export interface ClerkLike {
   loaded?: boolean
   user?: ClerkUser | null
+  session?: { id: string } | null
   client?: { signIn: SignInResource; signUp: SignUpResource }
   setActive(params: { session: string | null }): Promise<void>
   signOut(options?: { redirectUrl?: string }): Promise<void>

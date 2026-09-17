@@ -166,7 +166,7 @@ export function Layout({ exercises, routines }: LayoutProps) {
           {usePlaywrightAccountStub ? (
             <span className={`text-xs font-medium text-muted ${collapsed ? 'md:sr-only' : ''}`}>Test account</span>
           ) : (
-            <AccountMenu theme={theme} onToggleTheme={toggleTheme} showName={!collapsed} />
+            <AccountMenu theme={theme} onToggleTheme={toggleTheme} onOpenAccount={() => void navigate({ to: '/account' })} showName={!collapsed} />
           )}
         </div>
         {!collapsed && (

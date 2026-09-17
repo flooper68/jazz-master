@@ -1,45 +1,22 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { Theme } from '../components/theme'
-import type { ClerkLike, ClerkUser } from './clerkTypes'
+import { Button } from '../components/ui/Primitives'
+import type { ClerkUser } from './clerkTypes'
+import { useClerkUser } from './useClerkUser'
 
 /**
  * The account control of the app shell: who is signed in, the theme, the way
- * to the account settings, and the way out. Ours rather than Clerk's
- * UserButton; Clerk is only asked for the user and to sign out.
+ * to the account page, and the way out. Ours rather than Clerk's UserButton;
+ * Clerk is only asked for the user and to sign out.
  */
-
-function useClerkUser(): { clerk: ClerkLike | null; user: ClerkUser | null } {
-  const [state, setState] = useState<{ clerk: ClerkLike | null; user: ClerkUser | null }>({ clerk: null, user: null })
-
-  useEffect(() => {
-    let stop: (() => void) | undefined
-    let timer: number | undefined
-    const attach = () => {
-      const clerk = window.Clerk
-      if (!clerk?.loaded) {
-        timer = window.setTimeout(attach, 120)
-        return
-      }
-      setState({ clerk, user: clerk.user ?? null })
-      stop = clerk.addListener?.(({ user }) => setState({ clerk, user: user ?? null }))
-    }
-    attach()
-    return () => {
-      window.clearTimeout(timer)
-      stop?.()
-    }
-  }, [])
-
-  return state
-}
 
 function displayName(user: ClerkUser | null): string {
   return user?.fullName || user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Account'
 }
 
-const ITEM = 'flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm font-medium hover:bg-panel-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
+const ITEM = 'w-full text-fg'
 
-export function AccountMenu({ theme, onToggleTheme, showName }: { theme: Theme; onToggleTheme: () => void; showName: boolean }) {
+export function AccountMenu({ theme, onToggleTheme, onOpenAccount, showName }: { theme: Theme; onToggleTheme: () => void; onOpenAccount: () => void; showName: boolean }) {
   const { clerk, user } = useClerkUser()
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement | null>(null)
@@ -93,25 +70,24 @@ export function AccountMenu({ theme, onToggleTheme, showName }: { theme: Theme; 
             {email && email !== name && <p className="truncate text-xs text-muted">{email}</p>}
           </div>
           <div className="flex flex-col pt-1.5">
-            <button type="button" role="menuitem" className={ITEM} onClick={onToggleTheme}>
+            <Button
+              variant="quiet"
+              align="start"
+              role="menuitem"
+              className={ITEM}
+              onClick={() => {
+                setOpen(false)
+                onOpenAccount()
+              }}
+            >
+              Account
+            </Button>
+            <Button variant="quiet" align="start" role="menuitem" className={ITEM} onClick={onToggleTheme}>
               {theme === 'dark' ? 'Light theme' : 'Dark theme'}
-            </button>
-            {clerk?.openUserProfile && (
-              <button
-                type="button"
-                role="menuitem"
-                className={ITEM}
-                onClick={() => {
-                  setOpen(false)
-                  clerk.openUserProfile?.()
-                }}
-              >
-                Account settings
-              </button>
-            )}
-            <button type="button" role="menuitem" className={ITEM} disabled={!clerk} onClick={() => void clerk?.signOut({ redirectUrl: '/' })}>
+            </Button>
+            <Button variant="quiet" align="start" role="menuitem" className={ITEM} disabled={!clerk} onClick={() => void clerk?.signOut({ redirectUrl: '/' })}>
               Sign out
-            </button>
+            </Button>
           </div>
         </div>
       )}

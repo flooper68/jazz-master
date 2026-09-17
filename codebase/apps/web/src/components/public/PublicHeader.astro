@@ -1,5 +1,6 @@
 ---
 import { Lockup } from '../Brand'
+import { ButtonLink } from '../ui/Primitives'
 ---
 
 <header class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
@@ -9,17 +10,7 @@ import { Lockup } from '../Brand'
   </a>
 
   <nav aria-label="Account" class="flex items-center gap-2">
-    <a
-      href="/sign-in"
-      class="rounded-md px-4 py-3 text-sm leading-none font-semibold text-fg hover:bg-panel-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-    >
-      Sign in
-    </a>
-    <a
-      href="/#beta"
-      class="rounded-md bg-cta px-5 py-3 text-sm leading-none font-semibold text-cta-fg transition-colors hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-    >
-      Join the beta
-    </a>
+    <ButtonLink href="/sign-in" variant="quiet" size="lg">Sign in</ButtonLink>
+    <ButtonLink href="/#beta" size="lg">Join the beta</ButtonLink>
   </nav>
 </header>

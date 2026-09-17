@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Button, Input } from '../components/ui/Primitives'
 import { APP_HOME, authErrorMessage, readAuthSettings, safeRedirectPath, whenClerkReady, type AuthSettings, type SocialProvider } from './clerkBrowser'
 import type { ClerkLike } from './clerkTypes'
 
@@ -60,9 +61,6 @@ export function AuthCard({ title, lede, children }: { title: string; lede?: Reac
   )
 }
 
-const INPUT =
-  'w-full rounded-md border border-line-strong bg-field px-3.5 py-3 text-base text-fg placeholder:text-muted focus-visible:border-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60'
-
 interface FieldProps {
   label: string
   name: string
@@ -79,7 +77,7 @@ export function Field({ label, hint, ...input }: FieldProps) {
   return (
     <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
       {label}
-      <input {...input} className={INPUT} />
+      <Input {...input} />
       {hint && <span className="text-xs font-normal text-muted">{hint}</span>}
     </label>
   )
@@ -90,29 +88,24 @@ export function CodeField({ label = 'Code' }: { label?: string }) {
   return (
     <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
       {label}
-      <input name="code" inputMode="numeric" autoComplete="one-time-code" required autoFocus maxLength={12} className={`${INPUT} font-mono text-xl tracking-[0.3em]`} />
+      <Input name="code" inputMode="numeric" autoComplete="one-time-code" required autoFocus maxLength={12} className="font-mono text-xl tracking-[0.3em]" />
     </label>
   )
 }
 
 export function Submit({ busy, children }: { busy: boolean; children: ReactNode }) {
   return (
-    <button
-      type="submit"
-      disabled={busy}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3.5 text-[15px] leading-none font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
-    >
-      <span className="size-2 rounded-full bg-current" aria-hidden="true" />
+    <Button type="submit" variant="accent" size="lg" disabled={busy} className="w-full">
       {busy ? 'One moment' : children}
-    </button>
+    </Button>
   )
 }
 
 export function TextButton({ onClick, children, disabled }: { onClick: () => void; children: ReactNode; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="text-left text-[13px] font-medium text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg disabled:opacity-60">
+    <Button variant="link" onClick={onClick} disabled={disabled}>
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -130,15 +123,9 @@ export function SocialButtons({ providers, verb, onChoose, disabled }: { provide
   return (
     <div className="flex flex-col gap-3">
       {providers.map((provider) => (
-        <button
-          key={provider.strategy}
-          type="button"
-          disabled={disabled}
-          onClick={() => onChoose(provider)}
-          className="inline-flex w-full items-center justify-center rounded-md border border-line-strong px-5 py-3.5 text-[15px] leading-none font-semibold hover:bg-panel-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
-        >
+        <Button key={provider.strategy} variant="secondary" size="lg" disabled={disabled} onClick={() => onChoose(provider)} className="w-full">
           {verb} with {provider.name}
-        </button>
+        </Button>
       ))}
       <p className="flex items-center gap-3 font-mono text-xs tracking-[0.1em] text-muted uppercase before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">or</p>
     </div>

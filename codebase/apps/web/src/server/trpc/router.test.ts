@@ -267,6 +267,7 @@ describe('appRouter.users.ensure', () => {
           updatedAt: createdAt,
         }
       },
+      async deleteUser() {},
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -315,6 +316,7 @@ describe('appRouter.users.ensure', () => {
 
         return created
       },
+      async deleteUser() {},
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -344,6 +346,7 @@ describe('appRouter.users.ensure', () => {
           updatedAt: '2026-07-09T10:00:00.000Z',
         }
       },
+      async deleteUser() {},
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -615,3 +618,40 @@ describe('appRouter.routines', () => {
   })
 })
 
+describe('appRouter.users.deleteData', () => {
+  it('deletes what the app saved under the signed-in user, and only theirs', async () => {
+    const deleted: string[] = []
+    const users = {
+      async ensureUser(clerkUserId: string) {
+        return { clerkUserId, createdAt: '2026-07-09T10:00:00.000Z', updatedAt: '2026-07-09T10:00:00.000Z' }
+      },
+      async deleteUser(clerkUserId: string) {
+        deleted.push(clerkUserId)
+      },
+    } satisfies UserRepository
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_wes' }, users }))
+
+    await expect(caller.users.deleteData()).resolves.toEqual({ status: 'ok' })
+    expect(deleted).toEqual(['user_wes'])
+  })
+
+  it('refuses a signed-out caller', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: null }, users: null }))
+
+    await expect(caller.users.deleteData()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+
+  it('reports an error rather than ok when the delete fails, so the account is left alone', async () => {
+    const users = {
+      async ensureUser(clerkUserId: string) {
+        return { clerkUserId, createdAt: '2026-07-09T10:00:00.000Z', updatedAt: '2026-07-09T10:00:00.000Z' }
+      },
+      async deleteUser() {
+        throw new Error('connection refused')
+      },
+    } satisfies UserRepository
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_wes' }, users }))
+
+    await expect(caller.users.deleteData()).resolves.toEqual({ status: 'error', message: 'Account data could not be deleted' })
+  })
+})

@@ -15,6 +15,8 @@ export interface AppUser {
 
 export interface UserRepository {
   ensureUser(clerkUserId: string): Promise<AppUser>
+  /** Delete the user and, by cascade, everything saved under them: runs, exercises, routines. */
+  deleteUser(clerkUserId: string): Promise<void>
 }
 
 interface UserRepositoryOptions {
@@ -61,6 +63,16 @@ export function createUserRepository({
         }
 
         return serializeUser(row)
+      } finally {
+        await db.$client.end()
+      }
+    },
+
+    async deleteUser(clerkUserId) {
+      const db = drizzle(connectionString, { schema })
+
+      try {
+        await db.delete(users).where(eq(users.clerkUserId, clerkUserId))
       } finally {
         await db.$client.end()
       }

@@ -1,10 +1,8 @@
 import { useId, useState, type FormEvent } from 'react'
+import { Button, Input } from '../../ui/Primitives'
 import { joinWaitlist, type JoinWaitlist } from './joinWaitlist'
 
 type Phase = 'idle' | 'sending' | 'joined' | 'failed'
-
-const FIELD =
-  'w-full rounded-md border border-on-accent/40 bg-transparent px-4 py-3.5 text-base text-on-accent placeholder:text-on-accent/55 focus-visible:border-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent'
 
 /**
  * The beta waitlist, on the amber closing screen: an address, and (if they
@@ -42,21 +40,17 @@ export function WaitlistForm({ goal, onJoin = joinWaitlist }: { goal: string; on
       <div className="grid gap-3 sm:grid-cols-2">
         <label htmlFor={emailId} className="flex flex-col gap-1.5 text-[13px] font-semibold">
           Email
-          <input id={emailId} name="email" type="email" required autoComplete="email" placeholder="you@example.com" className={FIELD} />
+          <Input tone="onAccent" id={emailId} name="email" type="email" required autoComplete="email" placeholder="you@example.com" />
         </label>
         <label htmlFor={goalId} className="flex flex-col gap-1.5 text-[13px] font-semibold">
           What do you want to learn?
-          <input key={goal} id={goalId} name="goal" type="text" maxLength={500} defaultValue={goal} className={FIELD} />
+          <Input tone="onAccent" key={goal} id={goalId} name="goal" type="text" maxLength={500} defaultValue={goal} />
         </label>
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <button
-          type="submit"
-          disabled={phase === 'sending'}
-          className="inline-flex items-center gap-2 rounded-md bg-on-accent px-6 py-4 text-base leading-none font-semibold text-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent disabled:opacity-60"
-        >
+        <Button type="submit" variant="onAccent" size="lg" disabled={phase === 'sending'}>
           {phase === 'sending' ? 'Joining' : 'Join the beta'}
-        </button>
+        </Button>
         {phase === 'failed' && (
           <p role="alert" className="text-[15px] font-medium">
             That did not save. Try again in a moment.

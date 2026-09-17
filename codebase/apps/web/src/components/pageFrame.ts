@@ -5,8 +5,12 @@
  * full-bleed surface and frames itself.
  */
 
-/** Dashboards and grids: wide, and a step wider on the largest screens, where the card grid adds columns. */
+/**
+ * The top-level pages (Home, Exercises, Routines, History): wide, and a step wider on the largest
+ * screens, where the card grid adds columns. They share one frame so their headings sit on one line
+ * as you move between them.
+ */
 export const PAGE_WIDE = 'mx-auto w-full max-w-6xl min-[2000px]:max-w-[90rem]'
 
-/** Lists read row by row: narrower, so a title and its action stay in one glance. */
+/** Pages you read or fill in from top to bottom (an editor, account settings): narrower, so a label and its field stay in one glance. */
 export const PAGE_READING = 'mx-auto w-full max-w-4xl'

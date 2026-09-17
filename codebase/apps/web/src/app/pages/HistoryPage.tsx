@@ -11,7 +11,7 @@ import { useTRPC } from '../trpc'
 import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
-import { PAGE_READING } from '../../components/pageFrame'
+import { PAGE_WIDE } from '../../components/pageFrame'
 
 const LINK =
   'rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
@@ -22,7 +22,7 @@ export default function HistoryPage() {
   const { data, isPending, isError } = useQuery(trpc.runs.list.queryOptions())
 
   return (
-    <div className={PAGE_READING}>
+    <div className={PAGE_WIDE}>
       <h1 className="font-display text-2xl font-bold tracking-tight">History</h1>
       <p className="mt-1 text-sm text-fg-2">What you played, when, and how it felt.</p>
       <HistoryBody

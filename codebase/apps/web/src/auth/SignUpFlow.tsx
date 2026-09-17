@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { AuthCard, AuthFooter, CodeField, ErrorNote, Field, formValues, SocialButtons, Submit, TextButton, useAuthSession, type AuthFlowProps } from './authUi'
 import { authErrorMessage, type SocialProvider } from './clerkBrowser'
+import { ButtonLink } from '../components/ui/Primitives'
 import type { SignUpResource } from './clerkTypes'
 import { SsoCallback } from './SsoCallback'
 
@@ -84,9 +85,9 @@ export function SignUpFlow(props: AuthFlowProps) {
   if (clerk && settings.signUpMode !== 'public') {
     return (
       <AuthCard title="Count-in is in beta" lede="New accounts are by invitation for now. Join the waitlist and we will count you in.">
-        <a href="/#beta" className="inline-flex w-full items-center justify-center rounded-md bg-accent px-5 py-3.5 text-[15px] leading-none font-semibold text-on-accent hover:bg-accent-hover">
+        <ButtonLink href="/#beta" variant="accent" size="lg" className="w-full">
           Join the beta
-        </a>
+        </ButtonLink>
         {footer}
       </AuthCard>
     )

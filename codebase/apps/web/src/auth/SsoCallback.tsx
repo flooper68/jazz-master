@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ButtonLink } from '../components/ui/Primitives'
 import { AuthCard, ErrorNote, type AuthSession } from './authUi'
 import { authErrorMessage } from './clerkBrowser'
 
@@ -23,9 +24,9 @@ export function SsoCallback({ session }: { session: AuthSession }) {
     <AuthCard title="Signing you in" lede={error || loadError ? undefined : 'One moment.'}>
       <ErrorNote message={error ?? loadError} />
       {(error || loadError) && (
-        <a href="/sign-in" className="text-[15px] font-semibold underline underline-offset-4">
+        <ButtonLink href="/sign-in" variant="secondary" size="lg">
           Back to sign in
-        </a>
+        </ButtonLink>
       )}
       {/* Clerk's bot check draws here when a social sign-up needs it. */}
       <div id="clerk-captcha" />

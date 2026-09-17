@@ -1,4 +1,4 @@
-import type { ClerkApiError, ClerkLike, ClerkUser, SignInResource, SignUpResource } from './clerkTypes'
+import type { ClerkApiError, ClerkDeviceSession, ClerkLike, ClerkUser, SignInResource, SignUpResource } from './clerkTypes'
 
 /**
  * A stand-in for Clerk's browser API, for tests and Storybook: one known
@@ -27,7 +27,43 @@ function fail(code: string, message: string): never {
 
 export function createFakeClerk({ account = { email: 'player@example.com', password: 'correct horse' }, signUpMode = 'public', social = [], signedIn = false }: FakeClerkOptions = {}): FakeClerk {
   const calls: string[] = []
-  const user: ClerkUser = { fullName: 'Demo Player', primaryEmailAddress: { emailAddress: account.email } }
+  const devices: ClerkDeviceSession[] = [
+    { id: 'sess_fake', status: 'active', lastActiveAt: new Date(), latestActivity: { browserName: 'Chrome', deviceType: 'Mac', city: 'Prague', country: 'CZ' }, revoke: async () => {} },
+    {
+      id: 'sess_phone',
+      status: 'active',
+      lastActiveAt: new Date(Date.now() - 86_400_000),
+      latestActivity: { browserName: 'Safari', deviceType: 'iPhone', isMobile: true },
+      revoke: async () => {
+        calls.push('session.revoke:sess_phone')
+        devices.splice(1, 1)
+      },
+    },
+  ]
+  const user: ClerkUser = {
+    fullName: 'Demo Player',
+    firstName: 'Demo',
+    lastName: 'Player',
+    passwordEnabled: true,
+    primaryEmailAddress: { emailAddress: account.email },
+    async update({ firstName, lastName }) {
+      calls.push('user.update')
+      user.firstName = firstName ?? user.firstName
+      user.lastName = lastName ?? user.lastName
+      user.fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
+    },
+    async updatePassword({ currentPassword, newPassword }) {
+      calls.push('user.updatePassword')
+      if (currentPassword !== account.password) fail('form_password_incorrect', 'Password is incorrect.')
+      account.password = newPassword
+    },
+    async getSessions() {
+      return [...devices]
+    },
+    async delete() {
+      calls.push('user.delete')
+    },
+  }
 
   const afterFirstFactor = (): Partial<SignInResource> =>
     account.secondFactor ? { status: 'needs_second_factor', supportedSecondFactors: [{ strategy: 'totp' }] } : { status: 'complete', createdSessionId: 'sess_fake' }
@@ -103,6 +139,7 @@ export function createFakeClerk({ account = { email: 'player@example.com', passw
   const clerk: FakeClerk = {
     loaded: true,
     user: signedIn ? user : null,
+    session: signedIn ? { id: 'sess_fake' } : null,
     client: { signIn, signUp },
     activeSession: null,
     calls,

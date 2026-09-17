@@ -14,7 +14,8 @@ describe('AccountMenu', () => {
     const clerk = createFakeClerk({ signedIn: true })
     window.Clerk = clerk
     const onToggleTheme = vi.fn()
-    render(<AccountMenu theme="dark" onToggleTheme={onToggleTheme} showName />)
+    const onOpenAccount = vi.fn()
+    render(<AccountMenu theme="dark" onToggleTheme={onToggleTheme} onOpenAccount={onOpenAccount} showName />)
 
     await user.click(await screen.findByRole('button', { name: 'Account: Demo Player' }))
     expect(screen.getByRole('menu', { name: 'Account' })).toHaveTextContent('player@example.com')
@@ -22,6 +23,10 @@ describe('AccountMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Light theme' }))
     expect(onToggleTheme).toHaveBeenCalledOnce()
 
+    await user.click(screen.getByRole('menuitem', { name: 'Account' }))
+    expect(onOpenAccount).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Account: Demo Player' }))
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
     expect(clerk.calls).toContain('signOut')
   })
@@ -29,7 +34,7 @@ describe('AccountMenu', () => {
   it('closes on Escape', async () => {
     const user = userEvent.setup()
     window.Clerk = createFakeClerk({ signedIn: true })
-    render(<AccountMenu theme="light" onToggleTheme={vi.fn()} showName={false} />)
+    render(<AccountMenu theme="light" onToggleTheme={vi.fn()} onOpenAccount={vi.fn()} showName={false} />)
 
     await user.click(await screen.findByRole('button', { name: /^Account/ }))
     await user.keyboard('{Escape}')
