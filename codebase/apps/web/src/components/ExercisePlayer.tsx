@@ -263,7 +263,8 @@ export function ExercisePlayer({
       onKeyDown={onKeyDown}
       aria-label={`${exercise.title} player`}
     >
-      <header className="px-4 pt-2 pb-1.5">
+      {/* Same text column as the lesson row above; the 1px is the panel's border. */}
+      <header className="px-[calc(0.5rem-1px)] pt-2 pb-1.5 md:px-[calc(2rem-1px)]">
         {/* One line: the title, then what the title does not already say. */}
         <h2
           ref={headingRef}

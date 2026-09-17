@@ -104,7 +104,8 @@ export function PracticeRunner({
   const exercise = lesson.exercises[state.exerciseIndex]
   return (
     <section className="flex flex-1 flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {/* The stage is full-bleed, but its text keeps the app header's column. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-2 md:px-8">
         <h1 ref={headingRef} tabIndex={-1} className={STAGE_HEADING}>
           {lesson.title}
         </h1>
