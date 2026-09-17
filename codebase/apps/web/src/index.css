@@ -60,20 +60,20 @@
 }
 
 /*
- * The app's corners are tighter than the public pages': the same radius
- * utilities (`rounded-lg`, `rounded-2xl` …) resolve to smaller values inside
- * the app shell, so components need no second vocabulary.
+ * Corners are sharp everywhere: the only round things in Count-in are the
+ * beats (the dots of the mark, the cursor on the note). The radius utilities
+ * (`rounded-lg`, `rounded-2xl` …) all resolve to a few pixels.
  */
-[data-app] {
-  --radius-sm: 0.125rem;
-  --radius-md: 0.25rem;
-  --radius-lg: 0.3125rem;
-  --radius-xl: 0.4375rem;
-  --radius-2xl: 0.5rem;
+:root {
+  --radius-sm: 0.0625rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.1875rem;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.25rem;
 }
 
 /*
- * Woodshed theme tokens. Light is the default; dark follows the system
+ * Count-in theme tokens: night, bone and one amber beat. Light is the default; dark follows the system
  * scheme or an explicit data-theme on any ancestor. Utilities are mapped
  * below with `@theme inline`, so `bg-panel`, `text-muted`, `border-line`,
  * `bg-cta` … resolve from the nearest themed ancestor at runtime.
@@ -81,13 +81,13 @@
 :root,
 [data-theme='light'] {
   color-scheme: light;
-  --c-canvas: #f7f7f7;
+  --c-canvas: #fbfaf8;
   --c-panel: #ffffff;
-  --c-panel-2: #f0f0f2;
+  --c-panel-2: #f1f0ec;
   --c-field: #ffffff;
   --c-fg: #0f0f14;
-  --c-fg-2: #3f3f49;
-  --c-muted: #65656f;
+  --c-fg-2: #3d3c44;
+  --c-muted: #6b6963;
   --c-line: rgba(15, 15, 20, 0.1);
   --c-line-strong: rgba(15, 15, 20, 0.28);
   --c-cta: #0f0f14;
@@ -95,8 +95,8 @@
   --c-cta-fg: #ffffff;
   --c-accent: #e69b4c;
   --c-accent-hover: #d98a35;
-  --c-accent-text: #a35d17;
-  --c-on-accent: #3a2410;
+  --c-accent-text: #9a5613;
+  --c-on-accent: #2e1b08;
   --c-blue: #a9cbd8;
   --c-on-blue: #143039;
   --c-lilac: #c9a4e6;
@@ -132,10 +132,10 @@
   --c-cta: #f4f2ee;
   --c-cta-hover: #dedbd4;
   --c-cta-fg: #0f0f14;
-  --c-accent: #cf8a3e;
-  --c-accent-hover: #e09a4c;
-  --c-accent-text: #e6a75f;
-  --c-on-accent: #3a2410;
+  --c-accent: #e69b4c;
+  --c-accent-hover: #f0ab62;
+  --c-accent-text: #e9a862;
+  --c-on-accent: #2e1b08;
   --c-blue: #86adbc;
   --c-on-blue: #0e2229;
   --c-lilac: #ab84cf;
@@ -146,7 +146,7 @@
   --c-success-hover: #46b878;
   --c-success-soft: rgba(58, 168, 108, 0.18);
   --c-success-text: #8fd9ae;
-  --c-warning-soft: rgba(207, 138, 62, 0.18);
+  --c-warning-soft: rgba(230, 155, 76, 0.16);
   --c-warning-text: #f0c58a;
   --c-danger: #e05a5a;
   --c-danger-soft: rgba(224, 90, 90, 0.18);
@@ -172,10 +172,10 @@
     --c-cta: #f4f2ee;
     --c-cta-hover: #dedbd4;
     --c-cta-fg: #0f0f14;
-    --c-accent: #cf8a3e;
-    --c-accent-hover: #e09a4c;
-    --c-accent-text: #e6a75f;
-    --c-on-accent: #3a2410;
+    --c-accent: #e69b4c;
+    --c-accent-hover: #f0ab62;
+    --c-accent-text: #e9a862;
+    --c-on-accent: #2e1b08;
     --c-blue: #86adbc;
     --c-on-blue: #0e2229;
     --c-lilac: #ab84cf;
@@ -186,7 +186,7 @@
     --c-success-hover: #46b878;
     --c-success-soft: rgba(58, 168, 108, 0.18);
     --c-success-text: #8fd9ae;
-    --c-warning-soft: rgba(207, 138, 62, 0.18);
+    --c-warning-soft: rgba(230, 155, 76, 0.16);
     --c-warning-text: #f0c58a;
     --c-danger: #e05a5a;
     --c-danger-soft: rgba(224, 90, 90, 0.18);
@@ -200,7 +200,8 @@
 
 @theme inline {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --color-canvas: var(--c-canvas);
   --color-panel: var(--c-panel);

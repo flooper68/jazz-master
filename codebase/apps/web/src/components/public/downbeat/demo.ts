@@ -1,4 +1,4 @@
-import { EXERCISES, type TabNote } from '../../content'
+import { EXERCISES, type TabNote } from '../../../content'
 
 /** What the stage needs of an exercise — less than the app's `Exercise`, so a demo tab can be written inline. */
 export interface DemoExercise {

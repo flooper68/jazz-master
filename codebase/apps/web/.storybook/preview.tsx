@@ -6,7 +6,7 @@ const preview: Preview = {
   tags: ['autodocs'],
   globalTypes: {
     theme: {
-      description: 'Woodshed color scheme',
+      description: 'Count-in color scheme',
       toolbar: { title: 'Theme', icon: 'mirror', items: ['light', 'dark'], dynamicTitle: true },
     },
   },

@@ -1,4 +1,4 @@
-# Jazz Master Web App
+# Count-in Web App
 
 ## Clerk authentication
 
@@ -9,7 +9,7 @@ Clerk user ID from Astro locals.
 Local values live in the gitignored `codebase/apps/web/.env.development`. Copy
 `.env.development.example` and fill it in. If a Clerk setup provides a
 framework-specific `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, map its value to Clerk
-Astro's `PUBLIC_CLERK_PUBLISHABLE_KEY`; Jazz Master does not read the Next.js
+Astro's `PUBLIC_CLERK_PUBLISHABLE_KEY`; Count-in does not read the Next.js
 variable name.
 
 ```sh
@@ -58,7 +58,7 @@ Storybook previews and builds do not query it.
 
 When either value is missing, public routes still respond, but `/app/*` returns
 a controlled 503 because sign-in cannot be initialized. Clerk keyless
-development mode is not used. The URL values keep Clerk on Jazz Master's
+development mode is not used. The URL values keep Clerk on Count-in's
 app-hosted Astro auth pages when Account Portal is disabled. `/sign-in` and
 `/sign-up` render Clerk's prebuilt UI, so Clerk Dashboard settings own enabled
 password recovery, MFA/2FA, and required session-task prompts.
@@ -123,7 +123,7 @@ would have created a second one at a different URL.
 
 ## Dedicated Clerk test account
 
-`premysl.ciompa+test@gmail.com` is the dedicated Jazz Master Clerk user for
+`premysl.ciompa+test@gmail.com` is the dedicated Count-in Clerk user for
 manual regression and any real-Clerk automated scenario. It is test data: its
 practice sessions may be reset or overwritten by
 tests, and it must never be used as a production user.

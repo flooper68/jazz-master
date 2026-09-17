@@ -1,8 +1,10 @@
-# Jazz Master — contributor guide
+# Count-in — contributor guide
 
-An index. Jazz Master is a web app that helps guitarists practice jazz —
-chord voicings, ii–V–I drills, repertoire, ear training — built by a solo
-owner + AI agents. This file tells you how work runs and where everything
+An index. Count-in (count-in.ai; working name and repository: Jazz Master)
+is frictionless music practice, powered by AI — describe your goal, get a
+plan made for you, play along a few minutes at a time; guitar first, any
+style, any level — built by a solo owner + AI agents. The brand (mark,
+colour, type, voice) is documented in Storybook under Foundations / Brand. This file tells you how work runs and where everything
 else lives; it deliberately holds no conventions, no architecture, and no
 process detail, so there is a single surface to update when any of those
 change. `CLAUDE.md` is a symlink to this file — edit this one, never the

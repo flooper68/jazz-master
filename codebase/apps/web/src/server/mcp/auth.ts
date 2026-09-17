@@ -1,7 +1,7 @@
 import { decodeFrontendApiHost } from '../auth/clerkKeyPair'
 
 /**
- * The OAuth side of the MCP server. Jazz Master is the *resource server*:
+ * The OAuth side of the MCP server. Count-in is the *resource server*:
  * Clerk is the authorization server that signs users in and issues tokens;
  * this module says where Clerk is (RFC 9728 metadata), challenges a request
  * that has no token, and turns a verified token into a user. The token
@@ -34,7 +34,7 @@ export function protectedResourceMetadata(origin: string, authorizationServer: s
     authorization_servers: [authorizationServer],
     scopes_supported: [...MCP_SCOPES],
     bearer_methods_supported: ['header'],
-    resource_name: 'Jazz Master',
+    resource_name: 'Count-in',
   }
 }
 
@@ -50,7 +50,7 @@ export const MCP_CORS_HEADERS = {
 /** 401 with the pointer an MCP client follows to discover Clerk and start the OAuth flow. */
 export function unauthorizedResponse(origin: string, error?: 'invalid_token'): Response {
   const challenge = [`Bearer resource_metadata="${protectedResourceMetadataUrl(origin)}"`, ...(error ? [`error="${error}"`] : [])].join(', ')
-  return new Response(JSON.stringify({ error: error ?? 'unauthorized', message: 'Sign in with Jazz Master to use this MCP server.' }), {
+  return new Response(JSON.stringify({ error: error ?? 'unauthorized', message: 'Sign in with Count-in to use this MCP server.' }), {
     status: 401,
     headers: { 'content-type': 'application/json', 'www-authenticate': challenge, ...MCP_CORS_HEADERS },
   })

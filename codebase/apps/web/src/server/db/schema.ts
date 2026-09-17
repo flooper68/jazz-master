@@ -114,10 +114,24 @@ export const practiceRoutines = pgTable(
   ],
 )
 
+// People who asked to join the beta from the public landing page. Not users:
+// nobody here has an account yet, so nothing references the users table.
+export const waitlistSignups = pgTable('waitlist_signups', {
+  id: uuid('id').primaryKey(),
+  // Trimmed and lower-cased on the way in, so one address joins once.
+  email: text('email').notNull().unique(),
+  // What they want to learn, in their own words; the landing page offers it, never requires it.
+  goal: text('goal'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
+
 // Server-only Drizzle schema entrypoint.
 export const schema = {
   exerciseRuns,
   practiceRoutines,
   userExercises,
   users,
+  waitlistSignups,
 }

@@ -92,6 +92,13 @@
       "when": 1789671501685,
       "tag": "0012_aromatic_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789679070330,
+      "tag": "0013_short_galactus",
+      "breakpoints": true
     }
   ]
 }

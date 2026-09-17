@@ -1,8 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { PublicPreview } from './PublicPreview'
-const meta = { title: 'Pages/Landing', component: PublicPreview,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'Production Astro components rendered as static previews. Authentication previews show the real page shell with an inert Clerk form placeholder.' } } },
-  args: { name: 'landing', title: 'Landing preview' },
-} satisfies Meta<typeof PublicPreview>
+import { LandingDownbeat } from '../components/public/downbeat/LandingDownbeat'
+import type { JoinWaitlist } from '../components/public/downbeat/joinWaitlist'
+const joins: JoinWaitlist = async () => true
+const fails: JoinWaitlist = async () => false
+const meta = { title: 'Pages/Landing', component: LandingDownbeat,
+  tags: ['!autodocs'],
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The public landing page ("Downbeat"). The amber dot of the mark is the button: four clicks, then it opens to fill the screen and becomes the stage. Below it: simple, easy, effective, and the beta waitlist on the amber closing screen. The waitlist is stubbed here; nothing is sent.' } } },
+  args: { onJoin: joins },
+} satisfies Meta<typeof LandingDownbeat>
 export default meta
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+export const Default: Story = {}
+export const WaitlistFails: Story = { args: { onJoin: fails } }

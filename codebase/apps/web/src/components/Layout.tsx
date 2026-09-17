@@ -1,3 +1,4 @@
+import { Lockup, Mark } from './Brand'
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   lazy,
@@ -162,14 +163,16 @@ export function Layout({ exercises, routines }: LayoutProps) {
           <div className="min-w-0">
             <Link
               to="/"
-              aria-label="woodshed"
-              className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+              aria-label="count-in"
+              className="inline-flex text-2xl md:text-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fg"
             >
-              <span className={collapsed ? 'md:hidden' : undefined}>woodshed</span>
-              {collapsed && <span className="hidden md:inline">w</span>}
+              <span className={collapsed ? 'md:hidden' : undefined}>
+                <Lockup className="text-[1em]" />
+              </span>
+              {collapsed && <Mark className="hidden h-4 w-[2.42rem] md:block" />}
             </Link>
-            <p className={`mt-1 text-xs text-muted ${collapsed ? 'md:hidden' : ''}`}>
-              Smart, personal guitar practice.
+            <p className={`mt-1.5 text-xs text-muted ${collapsed ? 'md:hidden' : ''}`}>
+              Practice smart.
             </p>
           </div>
           <button

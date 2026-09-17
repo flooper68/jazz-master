@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
-import { DEFAULT_BEATS_PER_BAR } from '../../content'
-import { Score } from '../../score/Score'
+import { DEFAULT_BEATS_PER_BAR } from '../../../content'
+import { Score } from '../../../score/Score'
 import { GOALS, STYLES } from './demo'
-import { CountInShell, FooterBar, Lockup } from './parts'
+import { Lockup } from '../../Brand'
+import './downbeat.css'
+import type { JoinWaitlist } from './joinWaitlist'
 import { useCountIn } from './useCountIn'
+import { WaitlistForm } from './WaitlistForm'
 
 /**
- * 6 — Downbeat. The brand's one shape is the interaction: the amber dot of the
+ * The public landing page. The brand's one shape is the interaction: the amber dot of the
  * mark is the button, and on the downbeat it opens to fill the screen and
  * becomes the stage. Below it the page is four screens — simple, easy,
  * effective, frictionless — with almost no boxes: strings, giant numerals,
@@ -242,7 +245,7 @@ function Nudge({ when, text }: { when: string; text: string }) {
 
 const SOLID = 'inline-flex items-center justify-center rounded-md bg-cta px-5 py-3 text-sm leading-none font-semibold text-cta-fg transition-colors hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-export function LandingDownbeat() {
+export function LandingDownbeat({ onJoin }: { onJoin?: JoinWaitlist }) {
   const [goalIndex, setGoalIndex] = useState(0)
   const [typeRun, setTypeRun] = useState(0)
   const goal = GOALS[goalIndex]
@@ -292,7 +295,7 @@ export function LandingDownbeat() {
   }
 
   return (
-    <CountInShell>
+    <div className="min-h-screen bg-canvas text-fg antialiased">
       <section ref={heroRef} className="relative flex min-h-screen flex-col overflow-hidden">
         <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <span className="flex items-center gap-3">
@@ -300,10 +303,10 @@ export function LandingDownbeat() {
             <span className="ci-num rounded-sm border border-line-strong px-1.5 py-1 text-[10px] leading-none tracking-[0.14em] text-muted uppercase">Beta</span>
           </span>
           <nav className="flex items-center gap-2" aria-label="Account">
-            <a href="#sign-in" className="rounded-md px-4 py-3 text-sm leading-none font-semibold text-fg hover:bg-panel-2">
+            <a href="/sign-in" className="rounded-md px-4 py-3 text-sm leading-none font-semibold text-fg hover:bg-panel-2">
               Sign in
             </a>
-            <a href="#sign-up" className={SOLID}>
+            <a href="#beta" className={SOLID}>
               Join the beta
             </a>
           </nav>
@@ -318,10 +321,10 @@ export function LandingDownbeat() {
               Describe your goal. Get a plan made for you. Five minutes free? You'll always practice the right thing.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-              <a href="#sign-up" className={SOLID}>
+              <a href="#beta" className={SOLID}>
                 Join the beta
               </a>
-              <a href="#sign-in" className="text-sm font-medium text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg">
+              <a href="/sign-in" className="text-sm font-medium text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg">
                 Already in the beta? Sign in
               </a>
             </div>
@@ -356,7 +359,7 @@ export function LandingDownbeat() {
               aria-label={goal.demo.title}
             />
             <div className={`flex flex-wrap items-center gap-3 transition-opacity duration-500 ${demo.phase === 'done' ? 'opacity-100' : 'opacity-0'}`}>
-              <a href="#sign-up" tabIndex={demo.phase === 'done' ? 0 : -1} className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-3 text-sm leading-none font-semibold text-on-accent hover:bg-accent-hover">
+              <a href="#beta" onClick={demo.reset} tabIndex={demo.phase === 'done' ? 0 : -1} className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-3 text-sm leading-none font-semibold text-on-accent hover:bg-accent-hover">
                 <span className="size-2 rounded-full bg-current" aria-hidden="true" />
                 Join the beta and get my plan
               </a>
@@ -455,7 +458,7 @@ export function LandingDownbeat() {
       </div>
       <p className="sr-only">Any style: {STYLES.join(', ')}. Guitar first, more instruments on the way.</p>
 
-      <section className="relative overflow-hidden bg-accent text-on-accent">
+      <section id="beta" className="relative scroll-mt-0 overflow-hidden bg-accent text-on-accent">
         <div className="pointer-events-none absolute top-1/2 right-[-10vw] size-[70vw] -translate-y-1/2" aria-hidden="true">
           {[0, 1.5, 3].map((delay) => (
             <span key={delay} className="ci-ripple absolute inset-0 rounded-full border border-on-accent" style={{ animationDelay: `${delay}s` }} />
@@ -471,17 +474,13 @@ export function LandingDownbeat() {
           <Reveal className="flex flex-col items-start gap-8" delay={120}>
             <h2 className="ci-display text-[clamp(2.75rem,7vw,6rem)] leading-[0.94] font-semibold text-balance">We count you in. You play.</h2>
             <p className="max-w-[46ch] text-lg leading-relaxed">Nothing to set up and nothing to decide. Count-in is in beta: it is free, guitar comes first, and what you tell us shapes what gets built next.</p>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              <a href="#sign-up" className="inline-flex items-center gap-2 rounded-md bg-on-accent px-6 py-4 text-base leading-none font-semibold text-accent hover:opacity-90">
-                Join the beta
-              </a>
-              <button type="button" onClick={count} className="rounded-md border border-on-accent px-6 py-4 text-base leading-none font-semibold hover:bg-on-accent/10">
-                Try it first
-              </button>
-            </div>
+            <WaitlistForm goal={goal.ask} onJoin={onJoin} />
+            <button type="button" onClick={count} className="text-[15px] font-semibold underline underline-offset-4">
+              Or try it first
+            </button>
             <p className="text-[15px]">
               Already in the beta?{' '}
-              <a href="#sign-in" className="font-semibold underline underline-offset-4">
+              <a href="/sign-in" className="font-semibold underline underline-offset-4">
                 Sign in
               </a>
               <span className="ci-num ml-3 text-[13px]">guitar first · free during the beta</span>
@@ -490,7 +489,10 @@ export function LandingDownbeat() {
         </div>
       </section>
 
-      <FooterBar />
-    </CountInShell>
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-[13px] text-muted sm:px-8">
+        <Lockup className="text-base text-fg" />
+        <span className="ci-num">count-in.ai · practice smart · free during the beta</span>
+      </footer>
+    </div>
   )
 }

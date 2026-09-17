@@ -4,64 +4,36 @@ import PublicShell from '../../../components/public/PublicShell.astro'
 import PublicHeader from '../../../components/public/PublicHeader.astro'
 import PublicFooter from '../../../components/public/PublicFooter.astro'
 import AuthPage from '../../../components/public/auth/AuthPage.astro'
-import HeroSection from '../../../components/public/landing/HeroSection.astro'
-import WhySection from '../../../components/public/landing/WhySection.astro'
-import ModulesSection from '../../../components/public/landing/ModulesSection.astro'
-import DailyLoopSection from '../../../components/public/landing/DailyLoopSection.astro'
-import FinalCtaSection from '../../../components/public/landing/FinalCtaSection.astro'
-import PracticeBoardMock from '../../../components/public/landing/PracticeBoardMock.astro'
-import VariantAuthPlaceholder from '../../../components/public/variants/VariantAuthPlaceholder.astro'
-import LandingWoodshed from '../../../components/public/variants/woodshed/LandingWoodshed.astro'
-import AuthWoodshed from '../../../components/public/variants/woodshed/AuthWoodshed.astro'
 
 export const prerender = true
 
-// Design-direction exploration for the public pages ("Woodshed" is the working code name); a landing and an auth preview.
-// getStaticPaths is hoisted, so the variant names are repeated there literally.
-const variants = { woodshed: [LandingWoodshed, AuthWoodshed] } as const
-
+// Static previews of the public Astro components, for the Storybook catalog.
+// The landing page is a React component and has a story of its own.
 export function getStaticPaths() {
-  // Light is the default; `-dark` pins the dark theme.
-  const variantPreviews = ['woodshed', 'woodshed-dark'].flatMap((v) => [`landing-${v}`, `sign-in-${v}`, `sign-up-${v}`])
-  return ['landing', 'sign-in', 'sign-up', 'header', 'footer', 'hero', 'why', 'modules', 'daily-loop', 'final-cta', 'practice-board', ...variantPreviews].map((preview) => ({ params: { catalog: '_storybook', preview } }))
+  return ['sign-in', 'sign-up', 'header', 'footer'].map((preview) => ({ params: { catalog: '_storybook', preview } }))
 }
 const { preview } = Astro.params
-const sections = { header: PublicHeader, footer: PublicFooter, hero: HeroSection, why: WhySection, modules: ModulesSection, 'daily-loop': DailyLoopSection, 'final-cta': FinalCtaSection, 'practice-board': PracticeBoardMock }
+const sections = { header: PublicHeader, footer: PublicFooter }
 const Section = sections[preview as keyof typeof sections]
 const signUp = preview === 'sign-up'
-const variantMatch = /^(landing|sign-in|sign-up)-(woodshed)(-dark)?$/.exec(preview ?? '')
-const [VariantLanding, VariantAuth] = variantMatch ? variants[variantMatch[2] as keyof typeof variants] : [null, null]
-const variantMode = variantMatch?.[1] as 'landing' | 'sign-in' | 'sign-up' | undefined
-// Previews are prerendered, so a variant preview pins its theme instead of following the viewer's scheme.
-const variantTheme = variantMatch?.[3] ? 'dark' : 'light'
 ---
 
-{VariantLanding && variantMode === 'landing' ? (
-  <BaseLayout noindex title="Woodshed"><VariantLanding theme={variantTheme} /></BaseLayout>
-) : VariantAuth && (variantMode === 'sign-in' || variantMode === 'sign-up') ? (
-  <BaseLayout noindex title={variantMode === 'sign-up' ? 'Sign up - Woodshed' : 'Log in - Woodshed'}>
-    <VariantAuth mode={variantMode} theme={variantTheme}><VariantAuthPlaceholder mode={variantMode} /></VariantAuth>
-  </BaseLayout>
-) : preview === 'landing' ? (
-  <PublicShell noindex>
-    <main><HeroSection /><WhySection /><ModulesSection /><DailyLoopSection /><FinalCtaSection /></main>
-  </PublicShell>
-) : preview === 'sign-in' || signUp ? (
+{preview === 'sign-in' || signUp ? (
   <PublicShell noindex>
     <AuthPage
-      eyebrow={signUp ? 'Start practicing' : 'Welcome back'}
-      heading={signUp ? "Make today's rep easy to return to." : 'Return to your practice room.'}
-      body={signUp ? 'Create an account so Jazz Master can carry your focus, history, and practice loop across sessions.' : 'Sign in to keep your standards, daily reps, scores, and next useful repetitions connected.'}
+      eyebrow={signUp ? 'Practice smart' : 'Welcome back'}
+      heading={signUp ? 'Describe your goal. Then just play.' : 'Welcome back. Your next step is waiting.'}
+      body={signUp ? 'Create an account so Count-in can keep your plan, your history and your next step, wherever you pick up your instrument.' : 'Sign in and pick up where you left off. Nothing to decide: we count you in, you play.'}
       resetNote={signUp ? undefined : 'Need to reset your password? Start inside the Clerk sign-in form here; the recovery steps stay app-hosted on /sign-in.'}
     >
       <div class="mx-auto max-w-sm space-y-5 px-6 py-4">
-        <h2 class="text-xl font-bold">{signUp ? 'Create your account' : 'Sign in to Jazz Master'}</h2>
-        <p class="text-sm text-zinc-600">Storybook preview. The live app renders the Clerk form here.</p>
-        <label class="block text-sm font-medium">Email address<input type="email" disabled placeholder="guitarist@example.com" class="mt-2 block w-full rounded-md border border-zinc-300 px-3 py-2" /></label>
-        <button disabled class="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white opacity-60">Continue</button>
+        <h2 class="font-display text-xl font-semibold">{signUp ? 'Create your account' : 'Sign in to Count-in'}</h2>
+        <p class="text-sm text-muted">Storybook preview. The live app renders the Clerk form here.</p>
+        <label class="block text-sm font-medium">Email address<input type="email" disabled placeholder="you@example.com" class="mt-2 block w-full rounded-md border border-line-strong bg-field px-3 py-2" /></label>
+        <button disabled class="w-full rounded-md bg-cta px-4 py-2 text-sm font-medium text-cta-fg opacity-60">Continue</button>
       </div>
     </AuthPage>
   </PublicShell>
 ) : (
-  <BaseLayout noindex><div class="min-h-screen bg-stone-50 text-zinc-950">{Section && <Section />}</div></BaseLayout>
+  <BaseLayout noindex><div class="min-h-screen bg-canvas text-fg">{Section && <Section />}</div></BaseLayout>
 )}

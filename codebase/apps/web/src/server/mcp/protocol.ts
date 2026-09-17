@@ -13,10 +13,10 @@ import { MCP_TOOLS, type McpToolContext } from './tools'
 /** Newest first. A client asking for one of these gets it; any other gets the newest. */
 export const MCP_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'] as const
 
-export const MCP_SERVER_INFO = { name: 'jazz-master', title: 'Jazz Master', version: '1.0.0' } as const
+export const MCP_SERVER_INFO = { name: 'jazz-master', title: 'Count-in', version: '1.0.0' } as const
 
 const INSTRUCTIONS =
-  "Jazz Master is a practice app for jazz guitar. These tools add exercises to the signed-in user's own library and manage their practice routines. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. A practice routine is a named, ordered list of exercises the user plays straight through: find ids with list_builtin_exercises and list_exercises, then use create_routine; read its description for the format."
+  "Count-in is a music practice app, guitar first, in any style. These tools add exercises to the signed-in user's own library and manage their practice routines. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. A practice routine is a named, ordered list of exercises the user plays straight through: find ids with list_builtin_exercises and list_exercises, then use create_routine; read its description for the format."
 
 /** Requests above this are refused before they are parsed; the largest honest exercise is a fraction of it. */
 const MOST_BODY_BYTES = 256 * 1024

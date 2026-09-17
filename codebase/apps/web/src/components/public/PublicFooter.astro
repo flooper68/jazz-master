@@ -1,21 +1,13 @@
-<footer class="border-t border-zinc-200 bg-stone-50 text-zinc-700">
-  <div
-    class="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8"
-  >
-    <div>
-      <p class="font-display text-xl font-bold text-zinc-950">Jazz Master</p>
-      <p class="mt-1 text-sm">Practice jazz guitar, one focused rep at a time.</p>
-    </div>
-    <nav aria-label="Footer navigation" class="flex flex-wrap gap-4 text-sm">
-      <a href="/sign-up" class="font-semibold text-teal-800 hover:text-teal-900">
-        Start practicing
-      </a>
-      <a href="/sign-in" class="font-semibold text-zinc-700 hover:text-zinc-950">
-        Sign in
-      </a>
-      <a href="/app" class="font-semibold text-zinc-700 hover:text-zinc-950">
-        Open app
-      </a>
-    </nav>
-  </div>
+---
+import { Lockup } from '../Brand'
+---
+
+<footer class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-6 text-[13px] text-muted sm:px-8">
+  <Lockup className="text-base text-fg" />
+  <nav aria-label="Footer navigation" class="flex flex-wrap items-center gap-5">
+    <a href="/#beta" class="font-semibold text-fg hover:underline">Join the beta</a>
+    <a href="/sign-in" class="hover:text-fg">Sign in</a>
+    <a href="/app" class="hover:text-fg">Open app</a>
+    <span class="font-mono">count-in.ai · practice smart</span>
+  </nav>
 </footer>

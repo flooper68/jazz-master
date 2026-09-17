@@ -1,4 +1,6 @@
 ---
+import { Mark } from '../../Brand'
+
 interface Props {
   eyebrow: string
   heading: string
@@ -9,51 +11,22 @@ interface Props {
 const { eyebrow, heading, body, resetNote } = Astro.props
 ---
 
-<main class="bg-stone-50">
-  <div
-    class="mx-auto grid min-h-[calc(100vh-153px)] max-w-6xl items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-[0.9fr_1.1fr] lg:px-8"
-  >
-    <section class="max-w-xl">
-      <p class="text-sm font-bold uppercase text-teal-800">{eyebrow}</p>
-      <h1 class="mt-4 font-display text-4xl font-bold leading-tight text-zinc-950 sm:text-5xl">
-        {heading}
-      </h1>
-      <p class="mt-4 text-lg leading-8 text-zinc-700">{body}</p>
-      <div class="mt-8 rounded-lg border border-zinc-200 bg-white p-5">
-        <p class="text-sm font-bold uppercase text-amber-700">Practice loop</p>
-        <div class="mt-4 space-y-3">
-          <div class="flex items-center gap-3">
-            <span class="h-2 w-14 rounded-full bg-teal-700"></span>
-            <span class="text-sm font-semibold text-zinc-800">Choose the rep</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="h-2 w-20 rounded-full bg-amber-500"></span>
-            <span class="text-sm font-semibold text-zinc-800">Play with time</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="h-2 w-16 rounded-full bg-rose-500"></span>
-            <span class="text-sm font-semibold text-zinc-800">Review the take</span>
-          </div>
-        </div>
-      </div>
-    </section>
+<main class="mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-5 py-12 sm:px-8 md:grid-cols-[0.9fr_1.1fr]">
+  <section class="flex max-w-xl flex-col gap-6">
+    <p class="font-mono text-xs tracking-[0.14em] text-accent-text uppercase">{eyebrow}</p>
+    <h1 class="font-display text-[clamp(2.5rem,5.5vw,4.25rem)] leading-[0.95] font-semibold tracking-[-0.04em] text-balance">
+      {heading}
+    </h1>
+    <p class="max-w-[46ch] text-lg leading-relaxed text-fg-2">{body}</p>
+    <Mark className="mt-4 h-10 w-[6.04rem] text-fg" />
+  </section>
 
-    <section
-      class="auth-form-shell flex min-w-0 justify-center overflow-hidden rounded-lg border border-zinc-200 bg-white px-0 py-6 shadow-xl shadow-zinc-950/5 sm:px-8"
-      aria-label="Authentication form"
-    >
-      <div class="w-full min-w-0">
-        <slot />
-        {
-          resetNote && (
-            <p class="mx-auto mt-4 max-w-md text-center text-sm leading-6 text-zinc-600">
-              {resetNote}
-            </p>
-          )
-        }
-      </div>
-    </section>
-  </div>
+  <section class="auth-form-shell flex min-w-0 justify-center overflow-hidden rounded-xl border border-line bg-panel px-0 py-6 sm:px-8" aria-label="Authentication form">
+    <div class="w-full min-w-0">
+      <slot />
+      {resetNote && <p class="mx-auto mt-4 max-w-md text-center text-sm leading-6 text-muted">{resetNote}</p>}
+    </div>
+  </section>
 </main>
 
 <style>

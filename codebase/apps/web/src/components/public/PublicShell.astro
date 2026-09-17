@@ -13,7 +13,7 @@ const { title, description, noindex = false } = Astro.props
 ---
 
 <BaseLayout title={title} description={description} noindex={noindex}>
-  <div class="min-h-screen bg-stone-50 text-zinc-950">
+  <div class="flex min-h-screen flex-col bg-canvas text-fg antialiased">
     <PublicHeader />
     <slot />
     <PublicFooter />

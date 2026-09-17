@@ -26,7 +26,7 @@ describe('Clerk runtime env', () => {
 
   it('throws a clear app-specific error when keys are missing', () => {
     expect(() => assertClerkRuntimeEnv({})).toThrow(
-      'Jazz Master Clerk auth is not configured. Set PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY before starting the web app.',
+      'Count-in Clerk auth is not configured. Set PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY before starting the web app.',
     )
   })
 

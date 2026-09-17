@@ -1,6 +1,6 @@
-# Jazz Master
+# Count-in
 
-A web app that helps guitarists practice jazz — chord voicings, ii–V–I drills in all twelve keys, repertoire tracking, and ear training. Guitar-first, built around practice loops rather than reference charts.
+Count-in (count-in.ai) is frictionless music practice, powered by AI: describe your goal, get a practice plan made for you, and play along a few minutes at a time. Guitar first, any style, any level; built around practice loops rather than reference material. The repository, the chaos-house project and the package scope still carry the working name `jazz-master`.
 
 ## Getting started
 

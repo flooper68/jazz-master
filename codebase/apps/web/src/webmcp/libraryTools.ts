@@ -91,8 +91,8 @@ function failure(error: unknown): PageToolAnswer {
   if (import.meta.env.DEV) console.warn('WebMCP: a library tool failed', error)
   const code = error instanceof TRPCClientError ? (error.data as { code?: string } | undefined)?.code : undefined
   if (code === 'BAD_REQUEST') return { status: 'invalid', problems: ['The arguments are not what this tool takes; check them against its input schema.'] }
-  if (code === 'UNAUTHORIZED') return { status: 'error', message: 'The user is signed out of Jazz Master.' }
-  return { status: 'error', message: 'The request to Jazz Master failed. The user may be offline.' }
+  if (code === 'UNAUTHORIZED') return { status: 'error', message: 'The user is signed out of Count-in.' }
+  return { status: 'error', message: 'The request to Count-in failed. The user may be offline.' }
 }
 
 export function libraryPageTools(deps: LibraryToolDeps): PageTool[] {

@@ -42,7 +42,7 @@ describe('app router', () => {
 
   it('shows the app title in the persistent layout', async () => {
     await renderRoute('/')
-    expect(screen.getByText('woodshed')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'count-in' })).toBeInTheDocument()
   })
 
   it.each(['/practice', '/profile', '/lessons/scales-major-open', '/exercises/no-such-exercise', '/no-such-page'])(

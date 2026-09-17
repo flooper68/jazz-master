@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { noteStarts, passBeats, type TabNote } from '../../content'
+import { noteStarts, passBeats, type TabNote } from '../../../content'
 
 /**
  * The landing-page demo: four clicks, then one pass through a tab with the

@@ -77,7 +77,7 @@ export function uiPageTools({ location, go, exercises, routines, player, confirm
       name: 'get_current_view',
       title: 'Look at the app',
       description:
-        'Where the user is in Jazz Master right now: the page, and — when an exercise is on the stage — what the player is doing. Call it first, and again after moving: the player tools (player_play and the rest) exist only while `player` is not null.',
+        'Where the user is in Count-in right now: the page, and — when an exercise is on the stage — what the player is doing. Call it first, and again after moving: the player tools (player_play and the rest) exist only while `player` is not null.',
       inputSchema: objectSchema({}, []),
       annotations: { ...READ_ONLY, untrustedContentHint: true },
       execute: async () => ({ status: 'ok', ...view(), pages: Object.keys(APP_PAGES) }),

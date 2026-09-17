@@ -1,18 +1,8 @@
 ---
-import PublicShell from '../components/public/PublicShell.astro'
-import DailyLoopSection from '../components/public/landing/DailyLoopSection.astro'
-import FinalCtaSection from '../components/public/landing/FinalCtaSection.astro'
-import HeroSection from '../components/public/landing/HeroSection.astro'
-import ModulesSection from '../components/public/landing/ModulesSection.astro'
-import WhySection from '../components/public/landing/WhySection.astro'
+import { LandingDownbeat } from '../components/public/downbeat/LandingDownbeat'
+import BaseLayout from '../layouts/BaseLayout.astro'
 ---
 
-<PublicShell>
-  <main>
-    <HeroSection />
-    <WhySection />
-    <ModulesSection />
-    <DailyLoopSection />
-    <FinalCtaSection />
-  </main>
-</PublicShell>
+<BaseLayout title="Count-in — practice smart">
+  <LandingDownbeat client:load />
+</BaseLayout>

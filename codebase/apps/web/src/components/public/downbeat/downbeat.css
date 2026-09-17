@@ -1,59 +1,7 @@
 /*
- * Count-in prototype tokens. Scoped to `.ci`, so the prototypes redraw the
- * app's own `--c-*` tokens (and every utility mapped from them) without
- * touching the Woodshed theme in `src/index.css`. Dark follows the nearest
- * `[data-theme='dark']` ancestor — in Storybook, the toolbar.
+ * Motion and type helpers for the Downbeat landing page. Colours, fonts and
+ * radii come from the app theme in `src/index.css`.
  */
-.ci {
-  --c-canvas: #fbfaf8;
-  --c-panel: #ffffff;
-  --c-panel-2: #f1f0ec;
-  --c-field: #ffffff;
-  --c-fg: #0f0f14;
-  --c-fg-2: #3d3c44;
-  --c-muted: #6b6963;
-  --c-line: rgba(15, 15, 20, 0.1);
-  --c-line-strong: rgba(15, 15, 20, 0.28);
-  --c-cta: #0f0f14;
-  --c-cta-hover: #2b2b35;
-  --c-cta-fg: #ffffff;
-  --c-accent: #e69b4c;
-  --c-accent-hover: #d98a35;
-  --c-accent-text: #9a5613;
-  --c-on-accent: #2e1b08;
-  --c-warning-soft: #fbeedd;
-
-  /* Sharp, not soft: the only round things are the beats. */
-  --radius-sm: 1px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 3px;
-  --radius-2xl: 3px;
-}
-
-[data-theme='dark'] .ci {
-  --c-canvas: #0f0f14;
-  --c-panel: #16161d;
-  --c-panel-2: #1f1f28;
-  --c-field: #1a1a22;
-  --c-fg: #f4f2ee;
-  --c-fg-2: #c9c6bf;
-  --c-muted: #9a978f;
-  --c-line: rgba(255, 255, 255, 0.1);
-  --c-line-strong: rgba(255, 255, 255, 0.28);
-  --c-cta: #f4f2ee;
-  --c-cta-hover: #dedbd4;
-  --c-cta-fg: #0f0f14;
-  --c-accent: #e69b4c;
-  --c-accent-hover: #f0ab62;
-  --c-accent-text: #e9a862;
-  --c-on-accent: #2e1b08;
-  --c-warning-soft: rgba(230, 155, 76, 0.16);
-}
-
-.ci {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-}
 .ci-display {
   font-family: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.035em;
@@ -63,50 +11,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A count lands: the numeral swells for a moment, then settles. */
-@keyframes ci-land {
-  from {
-    transform: scale(1.18);
-  }
-}
-.ci-land {
-  animation: ci-land 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ci-land {
-    animation: none;
-  }
-}
-
-/* The assistant is thinking: the mark's four dots light in turn. */
-@keyframes ci-pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  40% {
-    opacity: 1;
-  }
-}
-.ci-think circle {
-  animation: ci-pulse 1s ease-in-out infinite;
-}
-.ci-think circle:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.ci-think circle:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.ci-think circle:nth-child(4) {
-  animation-delay: 0.45s;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ci-think circle {
-    animation: none;
-  }
-}
-
-/* Downbeat prototype: a dot of the hero mark lands on its beat. */
+/* A dot of the hero mark lands on its beat. */
 @keyframes ci-land-big {
   from {
     transform: scale(1.28);

@@ -1,4 +1,4 @@
-# Jazz Master Storybook
+# Count-in Storybook
 
 Adapted from Chaos House's React/Vite + Tailwind catalog. Run from the repo root:
 
@@ -23,7 +23,7 @@ complete deployed bundle locally at `http://localhost:4322/_storybook/`.
 
 ## Catalog and authoring
 
-- **Foundations:** the Woodshed theme — every `--c-*` token from `src/index.css`,
+- **Foundations:** the Count-in brand (mark, colour, type, voice) and theme — every `--c-*` token from `src/index.css`,
   type, shapes and the primitives, in light and dark (toolbar).
 - **Pages:** the exercise list and the exercise player, plus landing, sign-in
   and sign-up.

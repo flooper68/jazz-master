@@ -41,9 +41,9 @@ function ThemePage() {
     <div className="mx-auto max-w-5xl space-y-14 py-6">
       <header>
         <p className="text-xs font-medium tracking-[0.2em] text-muted uppercase">Foundations</p>
-        <h1 className="mt-2 font-display text-5xl font-bold tracking-[-0.03em]">Woodshed theme</h1>
+        <h1 className="mt-2 font-display text-5xl font-bold tracking-[-0.03em]">Count-in theme</h1>
         <p className="mt-4 max-w-2xl text-lg text-fg-2">
-          Off-white canvas, white panels, black pill CTAs, three pastel brand colours, and a tight grotesk for headlines.
+          Night and bone, and one amber beat: a warm off-white canvas in light, near-black in dark, sharp corners, and amber kept for whatever is live right now. Three pastels tag exercise areas. Space Grotesk for display, Inter for the interface, JetBrains Mono for every numeral. The brand itself is in Foundations / Brand.
           Every value is a <code className="rounded bg-panel-2 px-1 py-0.5 text-sm">--c-*</code> custom property in
           <code className="rounded bg-panel-2 px-1 py-0.5 text-sm"> src/index.css</code>, exposed as Tailwind utilities via
           <code className="rounded bg-panel-2 px-1 py-0.5 text-sm"> @theme inline</code>. Use the toolbar to flip light / dark.
@@ -154,7 +154,7 @@ function ThemePage() {
 const meta = {
   title: 'Foundations/Theme',
   component: ThemePage,
-  parameters: { layout: 'padded', docs: { description: { component: 'The Woodshed design tokens, type, shapes and primitives in one place. Light and dark via the toolbar.' } } },
+  parameters: { layout: 'padded', docs: { description: { component: 'The Count-in design tokens, type, shapes and primitives in one place. Light and dark via the toolbar.' } } },
 } satisfies Meta<typeof ThemePage>
 export default meta
 export const Theme: StoryObj<typeof meta> = {}

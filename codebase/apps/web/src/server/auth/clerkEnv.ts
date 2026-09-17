@@ -47,7 +47,7 @@ export function assertClerkRuntimeEnv(sources: ClerkRuntimeEnvSources) {
 
   if (missing.length > 0) {
     throw new Error(
-      `Jazz Master Clerk auth is not configured. Set ${missing.join(
+      `Count-in Clerk auth is not configured. Set ${missing.join(
         ', ',
       )} before starting the web app.`,
     )

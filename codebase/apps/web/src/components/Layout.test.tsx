@@ -19,10 +19,10 @@ describe('Layout shell', () => {
   it('links the brand back home', async () => {
     await renderRoute('/')
     expect(screen.getByRole('banner')).toContainElement(
-      screen.getByRole('link', { name: 'woodshed' }),
+      screen.getByRole('link', { name: 'count-in' }),
     )
     expect(
-      screen.getByRole('link', { name: 'woodshed' }).getAttribute('href'),
+      screen.getByRole('link', { name: 'count-in' }).getAttribute('href'),
     ).toMatch(/^\/app\/?$/)
   })
 

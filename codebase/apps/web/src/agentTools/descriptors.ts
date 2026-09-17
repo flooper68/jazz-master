@@ -92,7 +92,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'list_exercises',
     title: 'List my exercises',
     description:
-      "List the exercises in the signed-in user's own Jazz Master library (not the built-in pack), oldest first, with their full tabs. Use it to see what the user already has before adding more, and as examples of the format.",
+      "List the exercises in the signed-in user's own Count-in library (not the built-in pack), oldest first, with their full tabs. Use it to see what the user already has before adding more, and as examples of the format.",
     inputSchema: objectSchema({}, []),
     annotations: READS_USER_TEXT,
   },
@@ -106,7 +106,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
   {
     name: 'create_exercise',
     title: 'Add an exercise to my library',
-    description: `Add a new exercise to the signed-in user's Jazz Master library; it appears in the app beside the built-in pack, ready to practise. Returns the stored exercise with its id, or the problems to fix — fix them and call again. Each call adds a new exercise; there is no update. ${EXERCISE_FORMAT}`,
+    description: `Add a new exercise to the signed-in user's Count-in library; it appears in the app beside the built-in pack, ready to practise. Returns the stored exercise with its id, or the problems to fix — fix them and call again. Each call adds a new exercise; there is no update. ${EXERCISE_FORMAT}`,
     inputSchema: objectSchema(exerciseArgument, ['exercise']),
     annotations: ADDS,
   },
@@ -114,7 +114,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'list_builtin_exercises',
     title: 'List the built-in exercises',
     description:
-      'List the exercises that ship with Jazz Master — id, title, area, level, key, tempo and the labels they are filtered by — without their tabs. Every user has these; use their ids in a routine alongside ids from list_exercises.',
+      'List the exercises that ship with Count-in — id, title, area, level, key, tempo and the labels they are filtered by — without their tabs. Every user has these; use their ids in a routine alongside ids from list_exercises.',
     inputSchema: objectSchema({}, []),
     annotations: READ_ONLY,
   },

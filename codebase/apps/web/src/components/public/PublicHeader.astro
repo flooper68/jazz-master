@@ -1,37 +1,25 @@
-<header class="border-b border-zinc-200 bg-stone-50/95 text-zinc-950">
-  <div
-    class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8"
-  >
-    <a href="/" class="font-display text-2xl font-bold text-zinc-950">
-      Jazz Master
-    </a>
+---
+import { Lockup } from '../Brand'
+---
 
-    <nav
-      aria-label="Public navigation"
-      class="hidden items-center gap-6 text-sm font-medium text-zinc-700 md:flex"
+<header class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
+  <a href="/" aria-label="Count-in, home" class="flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">
+    <Lockup />
+    <span class="rounded-sm border border-line-strong px-1.5 py-1 font-mono text-[10px] leading-none tracking-[0.14em] text-muted uppercase">Beta</span>
+  </a>
+
+  <nav aria-label="Account" class="flex items-center gap-2">
+    <a
+      href="/sign-in"
+      class="rounded-md px-4 py-3 text-sm leading-none font-semibold text-fg hover:bg-panel-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <a href="/#why" class="transition-colors hover:text-zinc-950">Why</a>
-      <a href="/#modules" class="transition-colors hover:text-zinc-950">
-        Modules
-      </a>
-      <a href="/#daily-loop" class="transition-colors hover:text-zinc-950">
-        Daily loop
-      </a>
-    </nav>
-
-    <div class="flex items-center gap-2">
-      <a
-        href="/sign-in"
-        class="px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-      >
-        Sign in
-      </a>
-      <a
-        href="/sign-up"
-        class="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:px-4"
-      >
-        Start practicing
-      </a>
-    </div>
-  </div>
+      Sign in
+    </a>
+    <a
+      href="/#beta"
+      class="rounded-md bg-cta px-5 py-3 text-sm leading-none font-semibold text-cta-fg transition-colors hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      Join the beta
+    </a>
+  </nav>
 </header>

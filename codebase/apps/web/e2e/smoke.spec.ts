@@ -2,27 +2,20 @@ import { expect, finishCurrentExercise, listStoredRuns, test } from './fixtures'
 
 const FIRST_EXERCISE = 'C major — open position'
 
-test('landing page renders and links to app-hosted auth', async ({ page }) => {
+test('landing page renders, offers the beta waitlist and links to app-hosted sign-in', async ({ page }) => {
   await page.goto('/')
-  await expect(
-    page.getByRole('heading', {
-      name: 'Build jazz guitar habits that survive the gig.',
-      level: 1,
-    }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('link', { name: 'Start practicing' }).first(),
-  ).toHaveAttribute('href', '/sign-up')
-  await expect(
-    page.getByRole('link', { name: 'Sign in' }).first(),
-  ).toHaveAttribute('href', '/sign-in')
+  await expect(page.getByRole('heading', { name: 'Practice smart.', level: 1 })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Join the beta' }).first()).toHaveAttribute('href', '#beta')
+  await expect(page.getByRole('link', { name: 'Sign in' }).first()).toHaveAttribute('href', '/sign-in')
+  await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Join the beta' })).toBeVisible()
 })
 
 test('Clerk nested auth states stay on app-hosted routes', async ({ page }) => {
   await page.goto('/sign-in/factor-one')
   await expect(
     page.getByRole('heading', {
-      name: 'Return to your practice room.',
+      name: 'Welcome back. Your next step is waiting.',
       level: 1,
     }),
   ).toBeVisible()
@@ -31,7 +24,7 @@ test('Clerk nested auth states stay on app-hosted routes', async ({ page }) => {
   await page.goto('/sign-up/verify-email-address')
   await expect(
     page.getByRole('heading', {
-      name: "Make today's rep easy to return to.",
+      name: 'Describe your goal. Then just play.',
       level: 1,
     }),
   ).toBeVisible()

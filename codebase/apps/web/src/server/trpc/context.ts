@@ -12,6 +12,10 @@ import {
 } from '../db/userExercises'
 import { createUserRepository, type UserRepository } from '../db/users'
 import {
+  createWaitlistRepository,
+  type WaitlistRepository,
+} from '../db/waitlist'
+import {
   createNoopStructuredLogger,
   type RequestLogMetadata,
   type StructuredLogger,
@@ -27,6 +31,7 @@ interface CreateContextOptions {
   routines?: RoutineRepository | null
   userExercises?: UserExerciseRepository | null
   users?: UserRepository | null
+  waitlist?: WaitlistRepository | null
   hyperdrive?: HyperdriveConnection | null
 }
 
@@ -50,6 +55,10 @@ function hasClerkKeysOption(options: unknown): options is CreateContextOptions {
 
 function hasUsersOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'users' in options
+}
+
+function hasWaitlistOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'waitlist' in options
 }
 
 function hasRunsOption(options: unknown): options is CreateContextOptions {
@@ -133,6 +142,9 @@ export function createContext(options?: unknown) {
   const routineRepository = hasRoutinesOption(options)
     ? options.routines
     : createRoutineRepository({ hyperdrive })
+  const waitlistRepository = hasWaitlistOption(options)
+    ? options.waitlist
+    : createWaitlistRepository({ hyperdrive })
 
   return {
     auth,
@@ -144,6 +156,7 @@ export function createContext(options?: unknown) {
     runs: runRepository,
     userExercises: userExerciseRepository ?? null,
     users: userRepository,
+    waitlist: waitlistRepository ?? null,
   }
 }
 
