@@ -65,6 +65,9 @@ const STAFF_GAP = 16
 const TAB_INSET = 30
 const SIDE_PAD = 24
 const FALLBACK_WIDTH = 960
+/** How near a loop handle a press must land to take hold of it, in score units. */
+const HANDLE_REACH = 12
+const TOUCH_HANDLE_REACH = 24
 
 interface Bands {
   notationTop: number | null
@@ -148,7 +151,16 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
   const svgRef = useRef<SVGSVGElement>(null)
   const cursorRef = useRef<SVGGElement>(null)
   const followedSystem = useRef<number | null>(null)
-  const [railDrag, setRailDrag] = useState<{ anchor: number; region: LoopRegion; moved: boolean } | null>(null)
+  const [railDrag, setRailDrag] = useState<{
+    anchor: number
+    /** Where the press landed, to tell a drag from a press. */
+    pressBeat: number
+    /** The press took hold of an end of the loop already there. */
+    grabbed: boolean
+    region: LoopRegion
+    moved: boolean
+  } | null>(null)
+  const [overHandle, setOverHandle] = useState(false)
   const scrubbing = useRef(false)
 
   useImperativeHandle(
@@ -226,6 +238,18 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     return { startBeat, endBeat }
   }
 
+  /**
+   * The loop while one of its ends is dragged. The anchor is the end the user
+   * is not touching, so it keeps its exact beat, even a half beat set with [
+   * or ]; only the end under the pointer snaps to whole beats.
+   */
+  function draggedRegion(anchor: number, beat: number): LoopRegion {
+    const moving = beat < anchor ? Math.floor(beat) : Math.ceil(beat)
+    const startBeat = Math.min(anchor, moving)
+    const endBeat = Math.min(Math.max(anchor, moving, startBeat + 1), layout.totalBeats)
+    return { startBeat, endBeat }
+  }
+
   function barRegion(beat: number): LoopRegion {
     const bar = Math.floor(beat / beatsPerBar)
     return {
@@ -239,20 +263,63 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     return Math.min(layout.beatOfPoint(x, system), layout.totalBeats - 1e-6)
   }
 
+  /** Where the loop's handles sit: the line each is on and its x there. */
+  function loopHandles(region: LoopRegion): { end: 'start' | 'end'; system: number; x: number }[] {
+    // A region with nothing in it draws no handles, so it offers none to grab.
+    if (region.endBeat <= region.startBeat) return []
+    const start = layout.xOfBeat(region.startBeat)
+    const handles: { end: 'start' | 'end'; system: number; x: number }[] = [{ end: 'start', system: start.system, x: start.x - 6 }]
+    // The end of a line belongs to the next line's x space; the handle stays on the line the loop ends on.
+    const last = layout.systems.find((system) => region.endBeat > system.startBeat && region.endBeat <= system.endBeat)
+    if (last) {
+      handles.push({ end: 'end', system: last.index, x: region.endBeat >= last.endBeat ? last.endX : layout.xOfBeat(region.endBeat).x })
+    }
+    return handles
+  }
+
+  /** The end of the loop a press at this point takes hold of, if any: the nearer one within reach. */
+  function grabbedHandle(x: number, system: number, reach = HANDLE_REACH): 'start' | 'end' | null {
+    if (!loop) return null
+    let best: { end: 'start' | 'end'; distance: number } | null = null
+    for (const handle of loopHandles(loop)) {
+      const distance = Math.abs(handle.x - x)
+      if (handle.system === system && distance <= reach && (!best || distance < best.distance)) {
+        best = { end: handle.end, distance }
+      }
+    }
+    return best?.end ?? null
+  }
+
   function onRailPointerDown(event: PointerEvent<SVGRectElement>) {
     if (!onLoopChange || event.button !== 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
+    const { x, system } = localPoint(event)
     const beat = railBeat(event)
-    setRailDrag({ anchor: beat, region: railRegion(beat, beat), moved: false })
+    // A fingertip is wider than a pointer; handles are never closer than a beat, so the wider reach stays unambiguous.
+    const grabbed = grabbedHandle(x, system, event.pointerType === 'touch' ? TOUCH_HANDLE_REACH : HANDLE_REACH)
+    if (grabbed && loop) {
+      // Dragging one end: the other end is the anchor, so it stays where it is.
+      setRailDrag({ anchor: grabbed === 'start' ? loop.endBeat : loop.startBeat, pressBeat: beat, grabbed: true, region: loop, moved: false })
+      return
+    }
+    // Until it moves, a press shows what letting go would loop: the bar.
+    setRailDrag({ anchor: beat, pressBeat: beat, grabbed: false, region: barRegion(beat), moved: false })
   }
 
   function onRailPointerMove(event: PointerEvent<SVGRectElement>) {
-    if (!railDrag) return
+    if (!railDrag) {
+      const { x, system } = localPoint(event)
+      const over = onLoopChange !== undefined && grabbedHandle(x, system) !== null
+      if (over !== overHandle) setOverHandle(over)
+      return
+    }
     const beat = railBeat(event)
+    const moved = railDrag.moved || Math.abs(beat - railDrag.pressBeat) >= 0.5
     setRailDrag({
       ...railDrag,
-      region: railRegion(railDrag.anchor, beat),
-      moved: railDrag.moved || Math.abs(beat - railDrag.anchor) >= 0.5,
+      // A grabbed loop holds still until the pointer really moves.
+      region: !moved ? railDrag.region : railDrag.grabbed ? draggedRegion(railDrag.anchor, beat) : railRegion(railDrag.anchor, beat),
+      moved,
     })
   }
 
@@ -261,9 +328,10 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-    const region = railDrag.moved ? railDrag.region : barRegion(railDrag.anchor)
     setRailDrag(null)
-    onLoopChange?.(region)
+    // A handle pressed and let go changes nothing.
+    if (railDrag.grabbed && !railDrag.moved) return
+    onLoopChange?.(railDrag.moved ? railDrag.region : barRegion(railDrag.anchor))
   }
 
   const shownLoop = railDrag?.region ?? loop
@@ -328,11 +396,12 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
                   width={svgWidth}
                   height={RAIL_HEIGHT}
                   fill="transparent"
-                  className="cursor-crosshair"
+                  className={overHandle || railDrag?.grabbed ? 'cursor-ew-resize' : 'cursor-crosshair'}
                   onPointerDown={onRailPointerDown}
                   onPointerMove={onRailPointerMove}
                   onPointerUp={onRailPointerUp}
                   onPointerCancel={onRailPointerUp}
+                  onPointerLeave={() => setOverHandle(false)}
                   data-loop-rail
                 />
                 {system.bars.map((bar) => (

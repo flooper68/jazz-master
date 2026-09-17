@@ -106,6 +106,76 @@ describe('Score', () => {
     expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 1, endBeat: 3 })
   })
 
+  function railOf(container: HTMLElement) {
+    const rail = container.querySelector('[data-loop-rail]')!
+    rail.setPointerCapture = () => {}
+    rail.hasPointerCapture = () => false
+    const noteX = [...container.querySelectorAll('[data-note] text')].map((t) => Number(t.getAttribute('x')))
+    return { rail, noteX }
+  }
+
+  it('drags the end of a loop by its handle and leaves the start where it was', () => {
+    const { container, onLoopChange } = renderScore({ view: 'tab', loop: { startBeat: 1, endBeat: 4 } })
+    const { rail, noteX } = railOf(container)
+    // The end handle sits at beat 4; pull it back to just past beat 2.
+    fireEvent.pointerDown(rail, { clientX: noteX[4] + 2, clientY: 5, button: 0 })
+    fireEvent.pointerMove(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    fireEvent.pointerUp(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 1, endBeat: 3 })
+  })
+
+  it('drags the start of a loop by its handle and leaves the end where it was', () => {
+    const { container, onLoopChange } = renderScore({ view: 'tab', loop: { startBeat: 1, endBeat: 4 } })
+    const { rail, noteX } = railOf(container)
+    // The start handle sits at beat 1; pull it back to the top.
+    fireEvent.pointerDown(rail, { clientX: noteX[1] - 4, clientY: 5, button: 0 })
+    fireEvent.pointerMove(rail, { clientX: noteX[0] + 2, clientY: 5 })
+    fireEvent.pointerUp(rail, { clientX: noteX[0] + 2, clientY: 5 })
+    expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 0, endBeat: 4 })
+  })
+
+  it('keeps a half-beat edge exactly where it was while the other end is dragged', () => {
+    // A start set with [ can sit on a half beat; dragging the end must not re-snap it.
+    const { container, onLoopChange } = renderScore({ view: 'tab', loop: { startBeat: 1.5, endBeat: 4 } })
+    const { rail, noteX } = railOf(container)
+    fireEvent.pointerDown(rail, { clientX: noteX[4] + 2, clientY: 5, button: 0 })
+    fireEvent.pointerMove(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    fireEvent.pointerUp(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 1.5, endBeat: 3 })
+  })
+
+  it('still loops the bar on a press that is out of reach of the handles', () => {
+    const { container, onLoopChange } = renderScore({ view: 'tab', loop: { startBeat: 1, endBeat: 4 } })
+    const { rail, noteX } = railOf(container)
+    // Beat 2 is a whole beat away from either handle.
+    fireEvent.pointerDown(rail, { clientX: noteX[3] + 20, clientY: 5, button: 0 })
+    fireEvent.pointerUp(rail, { clientX: noteX[3] + 20, clientY: 5 })
+    expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 0, endBeat: 4 })
+  })
+
+  it('takes hold of a handle at the end of a line, where the next beat belongs to the line below', () => {
+    const { container, onLoopChange } = renderScore({ availableWidth: 420, view: 'tab', loop: { startBeat: 0, endBeat: 4 } })
+    expect(container.querySelectorAll('[data-system]').length).toBeGreaterThan(1)
+    const { rail, noteX } = railOf(container)
+    const lineEnd = Number(container.querySelector('[data-system="0"] [data-loop-region]')!.getAttribute('width')) +
+      Number(container.querySelector('[data-system="0"] [data-loop-region]')!.getAttribute('x')) - 4
+    fireEvent.pointerDown(rail, { clientX: lineEnd, clientY: 5, button: 0 })
+    fireEvent.pointerMove(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    fireEvent.pointerUp(rail, { clientX: noteX[3] + 4, clientY: 5 })
+    expect(onLoopChange).toHaveBeenLastCalledWith({ startBeat: 0, endBeat: 3 })
+  })
+
+  it('leaves the loop alone when a handle is pressed and let go', () => {
+    const { container, onLoopChange } = renderScore({ view: 'tab', loop: { startBeat: 1, endBeat: 4 } })
+    const rail = container.querySelector('[data-loop-rail]')!
+    rail.setPointerCapture = () => {}
+    rail.hasPointerCapture = () => false
+    const noteX = [...container.querySelectorAll('[data-note] text')].map((t) => Number(t.getAttribute('x')))
+    fireEvent.pointerDown(rail, { clientX: noteX[4] + 3, button: 0 })
+    fireEvent.pointerUp(rail, { clientX: noteX[4] + 3 })
+    expect(onLoopChange).not.toHaveBeenCalled()
+  })
+
   it('shades the loop region and moves the cursor on demand', () => {
     const { container, ref } = renderScore({ loop: { startBeat: 1, endBeat: 2 } })
     expect(container.querySelector('[data-loop-region]')).not.toBeNull()
