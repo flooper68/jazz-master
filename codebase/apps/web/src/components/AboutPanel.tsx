@@ -5,8 +5,8 @@ import { CloseIcon } from './icons'
 /**
  * The lesson's story and the exercise's notes, with the shape the exercise
  * makes on the neck — roots in the accent colour, every other note named.
- * A panel floating over the right of the canvas; it stays while playing
- * until closed.
+ * A drawer down the right edge of the screen; it stays while playing until
+ * closed.
  */
 
 interface AboutPanelProps {

@@ -653,8 +653,9 @@ export function ExercisePlayer({
             </button>
           </div>
         </div>
+        {/* The intro is a drawer down the full height of the screen. */}
         {aboutOpen && (
-          <div className="absolute top-3 right-3 bottom-32 w-[38%] max-w-xl min-w-[320px]">
+          <div className="fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px] p-3">
             <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
           </div>
         )}
