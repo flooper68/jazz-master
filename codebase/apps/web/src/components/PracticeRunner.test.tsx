@@ -172,9 +172,11 @@ describe('PracticeRunner', () => {
     expect(currentNote()).toBeNull()
   })
 
-  it('opens with the lesson intro and the shape on the neck beside the score, and closes on demand', async () => {
+  it('shows the lesson intro and the shape on the neck only when asked, and closes on demand', async () => {
     const user = userEvent.setup()
     renderRunner()
+    expect(screen.queryByRole('complementary')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'About this exercise' }))
     const about = screen.getByRole('complementary', { name: 'About C major — open position' })
     expect(within(about).getByText('The major scale is the ruler.')).toBeInTheDocument()
     expect(within(about).getByText('No sharps or flats here.')).toBeInTheDocument()
@@ -195,7 +197,7 @@ describe('PracticeRunner', () => {
     await user.click(screen.getByRole('button', { name: 'About this exercise' }))
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
-    // The second exercise has no notes of its own and is not first: nothing to show.
+    // Moving on never opens it by itself.
     await next(user, 'C major — open position')
     expect(screen.queryByRole('complementary')).toBeNull()
   })

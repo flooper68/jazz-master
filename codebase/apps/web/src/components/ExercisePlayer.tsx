@@ -99,9 +99,8 @@ export function ExercisePlayer({
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
   const [countingIn, setCountingIn] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
-  // The intro opens with the exercise and steps aside when playing starts.
-  const hasAbout = (isFirst && (intro?.length ?? 0) > 0) || (exercise.about?.length ?? 0) > 0
-  const [aboutOpen, setAboutOpen] = useState(hasAbout)
+  // The intro waits behind its button; nothing opens on its own.
+  const [aboutOpen, setAboutOpen] = useState(false)
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
   const stageRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
