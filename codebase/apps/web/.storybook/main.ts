@@ -11,6 +11,9 @@ const config: StorybookConfig = {
     config.plugins = [...(config.plugins ?? []), tailwindcss()]
     // The output sits inside public; never recursively copy it into itself.
     config.publicDir = false
+    // Astro's dev server pre-bundles into node_modules/.vite; sharing that
+    // cache lets a Storybook build wipe deps out from under a running server.
+    config.cacheDir = fileURLToPath(new URL('../node_modules/.cache/storybook-vite', import.meta.url))
     config.base = './'
     config.server = { ...config.server, proxy: { '/_storybook/previews': 'http://localhost:4321' } }
     config.resolve = {
