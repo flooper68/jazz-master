@@ -11,7 +11,6 @@ import { AboutPanel } from './AboutPanel'
 import {
   BarIcon,
   BothIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClearIcon,
@@ -62,7 +61,7 @@ const REPEAT_CHOICES: Array<number | null> = [null, 2, 4, 8, 16]
 const TEMPO_STEP = 4
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const ICON_BUTTON = `inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-panel text-fg hover:border-line-strong hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
-const PLAY_BUTTON = `inline-flex h-10 min-w-26 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cta px-4 font-medium text-cta-fg hover:bg-cta-hover ${FOCUS}`
+const PLAY_BUTTON = `inline-flex h-10 w-14 cursor-pointer items-center justify-center rounded-xl bg-cta text-cta-fg hover:bg-cta-hover ${FOCUS}`
 const FLOAT = 'rounded-2xl border border-line bg-panel/90 shadow-lg backdrop-blur-md'
 const TOGGLE_ON = 'border-fg bg-fg text-panel'
 const TOGGLE_OFF = 'border-line bg-panel text-fg-2 hover:border-line-strong'
@@ -299,16 +298,12 @@ export function ExercisePlayer({
           }`}
         />
 
-        {/* Everything floats in one bar at the bottom; menus open upward. */}
+        {/* Everything floats in one bar at the bottom, icons only, grouped by job; menus open upward. */}
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
-          <div className={`${FLOAT} pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 px-3 py-2`}>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => transport.stop()} className={ICON_BUTTON} aria-label="Back to start" title="Back to the start (Home)">
-                <SkipBackIcon />
-              </button>
-              <button type="button" onClick={() => seekBars(-1)} className={ICON_BUTTON} aria-label="Previous bar" title="Previous bar (←)">
-                <ChevronLeftIcon />
-              </button>
+          <div className={`${FLOAT} pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-2 px-3 py-2`}>
+            <Group label="Transport">
+              <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home"><SkipBackIcon /></IconButton>
+              <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←"><ChevronLeftIcon /></IconButton>
               {playing ? (
                 <button
                   type="button"
@@ -317,28 +312,18 @@ export function ExercisePlayer({
                   title="Pause (Space)"
                   className={PLAY_BUTTON}
                 >
-                  <PauseIcon /> Pause
+                  <PauseIcon />
                 </button>
               ) : (
                 <button type="button" onClick={play} aria-label={`Play ${exercise.title}`} title="Play (Space)" className={PLAY_BUTTON}>
-                  <PlayIcon /> Play
+                  <PlayIcon />
                 </button>
               )}
-              <button type="button" onClick={() => seekBars(1)} className={ICON_BUTTON} aria-label="Next bar" title="Next bar (→)">
-                <ChevronRightIcon />
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-muted">Tempo</span>
-              <button
-                type="button"
-                onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)}
-                className={`${ICON_BUTTON} h-8 w-8`}
-                aria-label="Slower"
-                title={`Slower by ${TEMPO_STEP} BPM (−)`}
-              >
-                <MinusIcon />
-              </button>
+              <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→"><ChevronRightIcon /></IconButton>
+            </Group>
+
+            <Group label="Tempo">
+              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" title={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
               <label htmlFor={ids.tempo} className="sr-only">
                 Tempo in BPM
               </label>
@@ -350,277 +335,226 @@ export function ExercisePlayer({
                 value={snapshot.tempoBpm}
                 title="Tempo in beats per minute"
                 onChange={(event) => transport.setTempo(Number(event.target.value))}
-                className={`${FIELD} w-18 text-center font-display text-base font-semibold`}
+                className={`${FIELD} w-16 text-center font-display text-base font-semibold`}
               />
-              <button
-                type="button"
-                onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)}
-                className={`${ICON_BUTTON} h-8 w-8`}
-                aria-label="Faster"
-                title={`Faster by ${TEMPO_STEP} BPM (+)`}
-              >
-                <PlusIcon />
-              </button>
+              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)} label="Faster" title={`Faster by ${TEMPO_STEP} BPM`} shortcut="+"><PlusIcon /></IconButton>
               {snapshot.tempoBpm !== exercise.tempoBpm && (
-                <button
-                  type="button"
-                  onClick={() => transport.setTempo(exercise.tempoBpm)}
-                  title={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}
-                  className={`${CHIP} ${TOGGLE_OFF}`}
-                >
-                  <ResetIcon /> Reset to {exercise.tempoBpm}
-                </button>
+                <IconButton onClick={() => transport.setTempo(exercise.tempoBpm)} label={`Reset to ${exercise.tempoBpm}`} title={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}><ResetIcon /></IconButton>
+              )}
+              <IconButton
+                onClick={() => setLadder(snapshot.ladder ? null : {})}
+                pressed={snapshot.ladder !== null}
+                label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
+                title="Tempo ramp: raise the tempo every few passes, up to a target"
+              >
+                <RampIcon />
+              </IconButton>
+              {snapshot.ladder && (
+                <div className="flex items-center gap-1 text-xs text-fg-2" data-ramp-settings>
+                  <span>+</span>
+                  <NumberField label="BPM per step" title="BPM added at each step" value={snapshot.ladder.stepBpm} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
+                  <span>every</span>
+                  <NumberField label="Passes per step" title="Passes between steps" value={snapshot.ladder.everyPasses} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
+                  <span>→</span>
+                  <NumberField label="Target tempo" title="Tempo the ramp stops at" value={snapshot.ladder.toBpm} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
+                </div>
               )}
               {snapshot.ladder && tempoNow !== snapshot.tempoBpm && (
                 <span className="text-xs text-accent-text tabular-nums" title="Tempo of the current pass on the ramp">
                   now {tempoNow}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-4 border-l border-line pl-4">
-            <Readout
-              label="Position"
-              value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
-              title="Bar and beat under the cursor"
-            />
-            <Readout label="Passes" value={passLabel} title="Passes through the loop so far" live />
-            {secondsLeft !== null && (
-              <Readout label="Time left" value={formatSeconds(secondsLeft)} title="Playing time left on this exercise" />
-            )}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 border-l border-line pl-4">
-            <Menu
-              id="loop"
-              label="Loop"
-              icon={<LoopIcon />}
-              value={snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'whole'}
-              title="Loop a part of the exercise for detailed practice"
-              active={snapshot.loop !== null}
-              open={openMenu === 'loop'}
-              onToggle={toggleMenu}
-            >
-              <p className="text-xs text-muted">Press or drag on the bar numbers above the score, or:</p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button type="button" onClick={loopCurrentBar} title="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
-                  <BarIcon /> This bar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => markLoop('start')}
-                  className={`${CHIP} ${TOGGLE_OFF}`}
-                  aria-label="Set loop start at cursor"
-                  title="Start the loop at the cursor ([)"
-                >
-                  <LoopStartIcon /> Start here
-                </button>
-                <button
-                  type="button"
-                  onClick={() => markLoop('end')}
-                  className={`${CHIP} ${TOGGLE_OFF}`}
-                  aria-label="Set loop end at cursor"
-                  title="End the loop at the cursor (])"
-                >
-                  <LoopEndIcon /> End here
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLoop(null)}
-                  disabled={!snapshot.loop}
-                  title="Play the whole exercise again (⇧L)"
-                  className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
-                >
-                  <ClearIcon /> Clear
-                </button>
-              </div>
-            </Menu>
+            </Group>
 
-            <Menu
-              id="repeat"
-              label="Repeat"
-              icon={<RepeatIcon />}
-              value={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
-              title="How many passes to play before stopping"
-              active={snapshot.repeat !== null}
-              open={openMenu === 'repeat'}
-              onToggle={toggleMenu}
-            >
-              <p className="text-xs text-muted">Passes through the loop before the player stops.</p>
-              <div className="mt-2 flex items-center gap-1.5">
-                {REPEAT_CHOICES.map((choice) => (
-                  <button
-                    key={choice ?? 'loop'}
-                    type="button"
-                    onClick={() => transport.setRepeat(choice)}
-                    aria-pressed={snapshot.repeat === choice}
-                    title={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
-                    className={`${CHIP} ${snapshot.repeat === choice ? TOGGLE_ON : TOGGLE_OFF}`}
-                  >
-                    {choice === null ? '∞' : `${choice}×`}
-                  </button>
-                ))}
-                <label htmlFor={ids.repeat} className="sr-only">
-                  Custom repeat count
-                </label>
-                <input
-                  id={ids.repeat}
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={snapshot.repeat ?? ''}
-                  placeholder="n"
-                  title="Any number of passes"
-                  onChange={(event) =>
-                    transport.setRepeat(event.target.value === '' ? null : Number(event.target.value))
-                  }
-                  className={`${FIELD} w-14 text-center`}
-                />
-              </div>
-            </Menu>
-
-            {/* Tempo ramp: a toggle, its settings inline while it is on. */}
-            <button
-              type="button"
-              onClick={() => setLadder(snapshot.ladder ? null : {})}
-              aria-pressed={snapshot.ladder !== null}
-              aria-label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
-              title="Raise the tempo every few passes, up to a target"
-              className={`${CHIP} ${snapshot.ladder ? 'border-line-strong bg-panel-2 text-fg' : TOGGLE_OFF}`}
-            >
-              <span className={snapshot.ladder ? 'text-accent-text' : 'text-muted'}><RampIcon /></span>
-              <span className="text-muted">Tempo ramp</span>
-              <span className={snapshot.ladder ? 'text-accent-text' : undefined}>{snapshot.ladder ? 'on' : 'off'}</span>
-            </button>
-            {snapshot.ladder && (
-              <div className="flex items-center gap-1 text-xs text-fg-2" data-ramp-settings>
-                <span>+</span>
-                <NumberField label="BPM per step" title="BPM added at each step" value={snapshot.ladder.stepBpm} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
-                <span>every</span>
-                <NumberField label="Passes per step" title="Passes between steps" value={snapshot.ladder.everyPasses} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
-                <span>passes →</span>
-                <NumberField label="Target tempo" title="Tempo the ramp stops at" value={snapshot.ladder.toBpm} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
-              </div>
-            )}
-
-            {/* Sound: direct toggles, and the guitar beside the play-along one. */}
-            <Toggle label="Click" icon={<ClickIcon />} title="Metronome click on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
-            <Toggle label="Count-in" icon={<CountInIcon />} title="One bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
-            <Toggle label="Play along" icon={<GuitarIcon />} title="A guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
-            <label htmlFor={ids.guitar} className="sr-only">
-              Guitar
-            </label>
-            <select
-              id={ids.guitar}
-              value={prefs.guitar}
-              title="Which guitar plays the line along. Sampled guitars load one note at a time from the web; the synth plays until each one arrives."
-              onChange={(event) => onPrefsChange({ ...prefs, guitar: event.target.value as VoiceId })}
-              className={`${FIELD} max-w-44 cursor-pointer text-xs`}
-            >
-              {VOICES.map((voice) => (
-                <option key={voice.id} value={voice.id}>
-                  {voice.label}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => setAboutOpen((open) => !open)}
-              aria-pressed={aboutOpen}
-              aria-label="About this exercise"
-              title="About this exercise: the theory and the shape on the neck (I)"
-              className={`${CHIP} h-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
-            >
-              <InfoIcon /> About
-            </button>
-            {fullscreenAvailable && (
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                aria-pressed={fullscreen}
-                aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-                title={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
-                className={`${ICON_BUTTON} h-8 w-8`}
+            <Group label="Practice">
+              <Menu
+                id="loop"
+                label="Loop"
+                icon={<LoopIcon />}
+                value={snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'whole'}
+                badge={snapshot.loop ? `${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : null}
+                title={`Loop: ${snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'the whole exercise'}. Loop a part for detailed practice`}
+                active={snapshot.loop !== null}
+                open={openMenu === 'loop'}
+                onToggle={toggleMenu}
               >
-                <FullscreenIcon exit={fullscreen} />
-              </button>
-            )}
-            <Menu
-              id="view"
-              label="View"
-              icon={prefs.view === 'tab' ? <TabIcon /> : prefs.view === 'notation' ? <NotesIcon /> : <BothIcon />}
-              value={prefs.view === 'tab' ? 'tab' : prefs.view === 'notation' ? 'notes' : 'both'}
-              title="Show tab, notation or both"
-              active={false}
-              open={openMenu === 'view'}
-              onToggle={toggleMenu}
-            >
-              <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Score view">
+                <p className="text-xs text-muted">Press or drag on the bar numbers above the score, or:</p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button type="button" onClick={loopCurrentBar} title="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
+                    <BarIcon /> This bar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => markLoop('start')}
+                    className={`${CHIP} ${TOGGLE_OFF}`}
+                    aria-label="Set loop start at cursor"
+                    title="Start the loop at the cursor ([)"
+                  >
+                    <LoopStartIcon /> Start here
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => markLoop('end')}
+                    className={`${CHIP} ${TOGGLE_OFF}`}
+                    aria-label="Set loop end at cursor"
+                    title="End the loop at the cursor (])"
+                  >
+                    <LoopEndIcon /> End here
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoop(null)}
+                    disabled={!snapshot.loop}
+                    title="Play the whole exercise again (⇧L)"
+                    className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
+                  >
+                    <ClearIcon /> Clear
+                  </button>
+                </div>
+              </Menu>
+
+              <Menu
+                id="repeat"
+                label="Repeat"
+                icon={<RepeatIcon />}
+                value={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
+                badge={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
+                title={`Repeat: ${snapshot.repeat === null ? 'until you stop' : `${snapshot.repeat} passes`}. How many passes to play before stopping`}
+                active={snapshot.repeat !== null}
+                open={openMenu === 'repeat'}
+                onToggle={toggleMenu}
+              >
+                <p className="text-xs text-muted">Passes through the loop before the player stops.</p>
+                <div className="mt-2 flex items-center gap-1.5">
+                  {REPEAT_CHOICES.map((choice) => (
+                    <button
+                      key={choice ?? 'loop'}
+                      type="button"
+                      onClick={() => transport.setRepeat(choice)}
+                      aria-pressed={snapshot.repeat === choice}
+                      title={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
+                      className={`${CHIP} ${snapshot.repeat === choice ? TOGGLE_ON : TOGGLE_OFF}`}
+                    >
+                      {choice === null ? '∞' : `${choice}×`}
+                    </button>
+                  ))}
+                  <label htmlFor={ids.repeat} className="sr-only">
+                    Custom repeat count
+                  </label>
+                  <input
+                    id={ids.repeat}
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={snapshot.repeat ?? ''}
+                    placeholder="n"
+                    title="Any number of passes"
+                    onChange={(event) =>
+                      transport.setRepeat(event.target.value === '' ? null : Number(event.target.value))
+                    }
+                    className={`${FIELD} w-14 text-center`}
+                  />
+                </div>
+              </Menu>
+            </Group>
+
+            <Group label="Sound">
+              <Toggle label="Click" icon={<ClickIcon />} title="Click: metronome on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
+              <Toggle label="Count-in" icon={<CountInIcon />} title="Count-in: one bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
+              <Toggle label="Play along" icon={<GuitarIcon />} title="Play along: a guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
+              <label htmlFor={ids.guitar} className="sr-only">
+                Guitar
+              </label>
+              <select
+                id={ids.guitar}
+                value={prefs.guitar}
+                title="Which guitar plays the line along. Sampled guitars load one note at a time from the web; the synth plays until each one arrives."
+                onChange={(event) => onPrefsChange({ ...prefs, guitar: event.target.value as VoiceId })}
+                className={`${FIELD} max-w-40 cursor-pointer text-xs`}
+              >
+                {VOICES.map((voice) => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.label}
+                  </option>
+                ))}
+              </select>
+            </Group>
+
+            <Group label="View">
+              <div className="flex items-center gap-1" role="radiogroup" aria-label="Score view">
                 {(
                   [
                     ['tab', 'Tab', <TabIcon key="tab" />, 'Tablature only'],
                     ['notation', 'Notes', <NotesIcon key="notes" />, 'Standard notation only'],
                     ['both', 'Both', <BothIcon key="both" />, 'Notation over tablature'],
                   ] as const
-                ).map(([choice, text, icon, title]) => (
+                ).map(([choice, text, icon, description]) => (
                   <button
                     key={choice}
                     type="button"
                     role="radio"
                     aria-checked={prefs.view === choice}
-                    title={title}
+                    aria-label={text}
+                    title={`${text}: ${description}`}
                     onClick={() => onPrefsChange({ ...prefs, view: choice })}
-                    className={`${CHIP} ${prefs.view === choice ? TOGGLE_ON : TOGGLE_OFF}`}
+                    className={`${ICON_BUTTON} h-8 w-8 ${prefs.view === choice ? TOGGLE_ON : ''}`}
                   >
-                    {icon} {text}
+                    {icon}
                   </button>
                 ))}
               </div>
-              <div className="mt-3 flex items-center gap-1.5">
-                <span className="text-xs font-medium text-muted">Size</span>
-                <button
-                  type="button"
-                  onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom - ZOOM_STEP) })}
-                  disabled={prefs.zoom <= ZOOM_MIN}
-                  aria-label="Smaller score"
-                  title="Smaller score"
-                  className={`${ICON_BUTTON} h-8 w-8`}
-                >
-                  <MinusIcon />
-                </button>
-                <span className="w-12 text-center text-sm font-semibold text-fg tabular-nums" aria-live="polite" title="Score magnification">
-                  {Math.round(prefs.zoom * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom + ZOOM_STEP) })}
-                  disabled={prefs.zoom >= ZOOM_MAX}
-                  aria-label="Larger score"
-                  title="Larger score"
-                  className={`${ICON_BUTTON} h-8 w-8`}
-                >
-                  <PlusIcon />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onPrefsChange({ ...prefs, zoom: 1 })}
-                  disabled={prefs.zoom === 1}
-                  title="Back to the engraved size"
-                  className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
-                >
-                  <ResetIcon /> 100%
-                </button>
-              </div>
-            </Menu>
-            </div>
-            <button
-              type="button"
-              onClick={finish}
-              aria-label={`Next: finish ${exercise.title}`}
-              title="Finish this exercise and move to the next"
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-panel px-4 py-2 font-medium text-fg hover:border-fg ${FOCUS}`}
-            >
-              Next <NextIcon />
-            </button>
+              <IconButton
+                onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom - ZOOM_STEP) })}
+                disabled={prefs.zoom <= ZOOM_MIN}
+                label="Smaller score"
+              >
+                <MinusIcon />
+              </IconButton>
+              <span className="w-10 text-center text-xs font-semibold text-fg tabular-nums" aria-live="polite" title="Score magnification">
+                {Math.round(prefs.zoom * 100)}%
+              </span>
+              <IconButton
+                onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom + ZOOM_STEP) })}
+                disabled={prefs.zoom >= ZOOM_MAX}
+                label="Larger score"
+              >
+                <PlusIcon />
+              </IconButton>
+            </Group>
+
+            <Group label="Help">
+              <button
+                type="button"
+                onClick={() => setAboutOpen((open) => !open)}
+                aria-pressed={aboutOpen}
+                aria-label="About this exercise"
+                title="About this exercise: the theory and the shape on the neck (I)"
+                className={`${ICON_BUTTON} h-8 w-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
+              >
+                <InfoIcon />
+              </button>
+              {fullscreenAvailable && (
+                <IconButton onClick={toggleFullscreen} pressed={fullscreen} label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} shortcut="F">
+                  <FullscreenIcon exit={fullscreen} />
+                </IconButton>
+              )}
+            </Group>
+
+            <Group label="Readouts">
+              <Readout
+                label="Position"
+                value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
+                title="Bar and beat under the cursor"
+              />
+              <Readout label="Passes" value={passLabel} title="Passes through the loop so far" live />
+              {secondsLeft !== null && (
+                <Readout label="Time left" value={formatSeconds(secondsLeft)} title="Playing time left on this exercise" />
+              )}
+            </Group>
+
+            <IconButton onClick={finish} label={`Next: finish ${exercise.title}`} title="Finish this exercise and move to the next" className="h-10 w-10 border-line-strong">
+              <NextIcon />
+            </IconButton>
           </div>
         </div>
         {/* The intro is a drawer down the full height of the screen, sliding in
@@ -656,6 +590,7 @@ function Menu({
   label,
   icon,
   value,
+  badge,
   title,
   active,
   open,
@@ -666,6 +601,8 @@ function Menu({
   label: string
   icon: ReactNode
   value: string
+  /** Tiny text on the button when there is a setting worth showing. */
+  badge: string | null
   title: string
   active: boolean
   open: boolean
@@ -692,12 +629,14 @@ function Menu({
         aria-controls={panelId}
         aria-label={`${label}: ${value}`}
         title={title}
-        className={`${CHIP} ${open || active ? 'border-line-strong bg-panel-2 text-fg' : TOGGLE_OFF}`}
+        className={`${ICON_BUTTON} relative h-8 w-8 ${open || active ? 'border-line-strong bg-panel-2' : ''} ${active ? 'text-accent-text' : ''}`}
       >
-        <span className={active ? 'text-accent-text' : 'text-muted'}>{icon}</span>
-        <span className="text-muted">{label}</span>
-        <span className={active ? 'text-accent-text' : undefined}>{value}</span>
-        <ChevronDownIcon />
+        {icon}
+        {badge && (
+          <span className="absolute -top-1.5 -right-1.5 rounded-full bg-fg px-1 text-[9px] leading-[14px] font-bold text-panel tabular-nums">
+            {badge}
+          </span>
+        )}
       </button>
       {open && (
         <div
@@ -710,6 +649,50 @@ function Menu({
         </div>
       )}
     </div>
+  )
+}
+
+/** A cluster of related controls, separated from its neighbours by a rule. */
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-line pl-3 first:border-l-0 first:pl-0">
+      {children}
+    </div>
+  )
+}
+
+/** An icon-only button; the text lives in the tooltip and the accessible name. */
+function IconButton({
+  onClick,
+  label,
+  title,
+  shortcut,
+  pressed,
+  disabled,
+  className = 'h-8 w-8',
+  children,
+}: {
+  onClick: () => void
+  label: string
+  title?: string
+  shortcut?: string
+  pressed?: boolean
+  disabled?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={pressed}
+      disabled={disabled}
+      title={`${title ?? label}${shortcut ? ` (${shortcut})` : ''}`}
+      className={`${ICON_BUTTON} ${className} ${pressed ? 'border-line-strong bg-panel-2 text-accent-text' : ''}`}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -736,10 +719,9 @@ function Toggle({
   onChange: (on: boolean) => void
 }) {
   return (
-    <label className={`${CHIP} ${checked ? TOGGLE_ON : TOGGLE_OFF}`} title={title}>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" />
+    <label className={`${ICON_BUTTON} h-8 w-8 ${checked ? TOGGLE_ON : ''}`} title={title}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" aria-label={label} />
       <span className={checked ? 'text-accent' : 'text-muted'}>{icon}</span>
-      {label}
     </label>
   )
 }

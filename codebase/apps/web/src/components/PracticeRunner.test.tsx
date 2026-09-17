@@ -119,7 +119,7 @@ async function next(user: User, title: string) {
 }
 
 /** The advanced controls sit behind menus; open one by its label. */
-async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'View') {
+async function openMenu(user: User, label: 'Loop' | 'Repeat') {
   const button = screen.getByRole('button', { name: new RegExp(`^${label}: `) })
   if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
 }
@@ -261,7 +261,7 @@ describe('PracticeRunner', () => {
     localStorage.setItem('jazz-master.player-prefs', JSON.stringify({ view: 'tab' }))
     renderRunner()
     expect(document.querySelector('[data-staff="notation"]')).toBeNull()
-    expect(screen.getByRole('button', { name: 'View: tab' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Tab' })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('reports missing audio without breaking the exercise', async () => {
@@ -361,7 +361,6 @@ describe('PracticeRunner', () => {
   it('magnifies the score from the View menu and remembers it', async () => {
     const user = userEvent.setup()
     renderRunner()
-    await openMenu(user, 'View')
     const svg = document.querySelector('[data-score-scroller] svg')!
     // The canvas keeps its width; the engraving inside it gets bigger (fewer units across).
     const unitsAcross = () => Number(svg.getAttribute('viewBox')?.split(' ')[2])
@@ -371,14 +370,11 @@ describe('PracticeRunner', () => {
     expect(screen.getByText('140%')).toBeInTheDocument()
     expect(unitsAcross()).toBeLessThan(before)
     expect(JSON.parse(localStorage.getItem('jazz-master.player-prefs') ?? '{}')).toMatchObject({ zoom: 1.4 })
-    await user.click(screen.getByRole('button', { name: '100%' }))
-    expect(screen.getByText('100%', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('switches between tab, notation and both', async () => {
     const user = userEvent.setup()
     renderRunner()
-    await openMenu(user, 'View')
     await user.click(screen.getByRole('radio', { name: 'Tab' }))
     expect(document.querySelector('[data-staff="notation"]')).toBeNull()
     expect(screen.getByRole('img', { name: 'C major — open position tab, 6 notes' })).toBeInTheDocument()
