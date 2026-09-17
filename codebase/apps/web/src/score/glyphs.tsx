@@ -68,8 +68,8 @@ export function Accidental({ kind, x, y }: { kind: -1 | 0 | 1; x: number; y: num
   )
 }
 
-export const HEAD_RX = 4.7
-export const HEAD_RY = 3.3
+export const HEAD_RX = 4.3
+export const HEAD_RY = 3
 
 export function NoteHeadGlyph({
   head,

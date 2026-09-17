@@ -57,7 +57,7 @@ function LessonRun({ lesson }: { lesson: Lesson }) {
   // The player is a full-bleed stage: cancel the shell's page padding and
   // take the viewport height below the header.
   return (
-    <div className="-mx-4 -my-6 flex min-h-[calc(100dvh-4.25rem)] flex-col px-3 py-3 md:-mx-10 md:-my-10">
+    <div className="-mx-4 -my-6 flex min-h-[calc(100dvh-4.25rem)] flex-col px-2 py-2 md:-mx-10 md:-my-10">
       {saveFailed && (
         <p role="alert" className="mb-3 text-sm text-danger-text">
           The last save failed. Your progress is sent again with the next exercise.

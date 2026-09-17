@@ -18,8 +18,8 @@ import { beamGroups, noteGlyph } from './rhythm'
  * the key and the bar imply.
  */
 
-const STEM_LENGTH = 3.4 * LINE_GAP
-const BEAM_THICKNESS = 3.6
+const STEM_LENGTH = 3.3 * LINE_GAP
+const BEAM_THICKNESS = 3.2
 
 interface NotationStaffProps {
   notes: readonly TabNote[]

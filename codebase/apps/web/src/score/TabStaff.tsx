@@ -11,8 +11,8 @@ import { beamGroups, noteGlyph } from './rhythm'
  * strings so the tab reads in time without the staff above it.
  */
 
-const STEM_TOP = 7
-const STEM_LENGTH = 17
+const STEM_TOP = 6
+const STEM_LENGTH = 14
 const BEAM_THICKNESS = 3
 
 interface TabStaffProps {
@@ -72,16 +72,16 @@ export function TabStaff({ notes, layout, system, top, currentIndex }: TabStaffP
         return (
           <g key={index} data-note={index} data-current={current || undefined}>
             {current ? (
-              <circle cx={x} cy={y} r={8.5} className="fill-accent" />
+              <circle cx={x} cy={y} r={7.5} className="fill-accent" />
             ) : (
-              <rect x={x - (wide ? 8 : 6)} y={y - 6.5} width={wide ? 16 : 12} height={13} rx={2} className="fill-panel" />
+              <rect x={x - (wide ? 7.5 : 5.5)} y={y - 6} width={wide ? 15 : 11} height={12} rx={2} className="fill-panel" />
             )}
             <text
               x={x}
               y={y}
               textAnchor="middle"
               dominantBaseline="central"
-              fontSize={11}
+              fontSize={10}
               fontWeight={current ? 800 : 600}
               className={current ? 'fill-on-accent' : 'fill-fg'}
             >

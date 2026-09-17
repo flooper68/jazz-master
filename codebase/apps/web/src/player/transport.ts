@@ -80,6 +80,7 @@ export interface Transport {
   setClick(on: boolean): void
   setVoice(on: boolean): void
   dispose(): void
+  readonly disposed: boolean
 }
 
 export const MIN_TEMPO = 20
@@ -358,6 +359,9 @@ export function createTransport({
     },
     setVoice(on) {
       emit({ voice: on })
+    },
+    get disposed() {
+      return disposed
     },
     dispose() {
       if (disposed) return

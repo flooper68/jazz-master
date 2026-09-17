@@ -142,6 +142,7 @@ function readout(label: string): string {
 describe('PracticeRunner', () => {
   beforeEach(() => {
     clock.ms = 0
+    localStorage.clear()
     vi.spyOn(Date, 'now').mockReturnValue(1_000)
   })
   afterEach(() => {
@@ -202,6 +203,19 @@ describe('PracticeRunner', () => {
     expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Play along' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Count-in' })).not.toBeChecked()
+    // …and across reloads.
+    expect(JSON.parse(localStorage.getItem('jazz-master.player-prefs') ?? '{}')).toMatchObject({
+      click: false,
+      voice: true,
+      countIn: false,
+    })
+  })
+
+  it('opens with the remembered view', async () => {
+    localStorage.setItem('jazz-master.player-prefs', JSON.stringify({ view: 'tab' }))
+    renderRunner()
+    expect(document.querySelector('[data-staff="notation"]')).toBeNull()
+    expect(screen.getByRole('button', { name: 'View: tab' })).toBeInTheDocument()
   })
 
   it('reports missing audio without breaking the exercise', async () => {

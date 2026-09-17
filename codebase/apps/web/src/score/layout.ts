@@ -63,7 +63,7 @@ export interface LayoutOptions {
   availableWidth?: number
 }
 
-export const DEFAULT_BEAT_WIDTH = 64
+export const DEFAULT_BEAT_WIDTH = 56
 const BAR_GAP = 18
 const NOTE_LEAD = 14
 const RIGHT_PAD = 24

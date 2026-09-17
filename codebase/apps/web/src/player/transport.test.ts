@@ -262,8 +262,10 @@ describe('createTransport', () => {
   it('disposes the audio and ignores later play calls', () => {
     const { transport, log } = harness()
     transport.play()
+    expect(transport.disposed).toBe(false)
     transport.dispose()
     expect(log.at(-1)).toBe('dispose')
+    expect(transport.disposed).toBe(true)
     transport.play()
     expect(transport.getSnapshot().status).toBe('stopped')
   })

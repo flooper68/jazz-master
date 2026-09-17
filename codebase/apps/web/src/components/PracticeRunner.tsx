@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { PracticeSession } from '../appData/session'
 import type { PlayerAudio } from '../audio/engine'
 import type { Lesson } from '../content'
 import { ExercisePlayer } from './ExercisePlayer'
-import { DEFAULT_PLAYER_PREFS, type PlayerPrefs } from './playerPrefs'
+import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
 import { toSessionRecord, usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
 
@@ -18,6 +18,8 @@ const BUTTON_PRIMARY =
   'rounded-lg bg-cta px-4 py-2 font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:bg-panel-2 disabled:text-muted'
 const HEADING =
   'font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+const STAGE_HEADING =
+  'font-display text-base font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 interface PracticeRunnerProps {
   lesson: Lesson
@@ -48,7 +50,9 @@ export function PracticeRunner({
     onSessionChange,
   })
   const [exiting, setExiting] = useState(false)
-  const [prefs, setPrefs] = useState<PlayerPrefs>(DEFAULT_PLAYER_PREFS)
+  // Sound and view choices are remembered across lessons and reloads.
+  const [prefs, setPrefs] = useState<PlayerPrefs>(loadPlayerPrefs)
+  useEffect(() => savePlayerPrefs(prefs), [prefs])
   // ISSUE-002: the summary replacing the exercises is a same-route view swap;
   // move focus to the incoming heading, and on mount (the page is the runner).
   // Advancing between exercises is handled by ExercisePlayer, which focuses
@@ -98,21 +102,12 @@ export function PracticeRunner({
 
   const exercise = lesson.exercises[state.exerciseIndex]
   return (
-    <section className="flex min-h-full flex-col">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
+    <section className="flex flex-1 flex-col">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <h1 ref={headingRef} tabIndex={-1} className={STAGE_HEADING}>
           {lesson.title}
         </h1>
-        <button
-          type="button"
-          onClick={() => void exitRunner()}
-          disabled={exiting}
-          className="shrink-0 text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-        >
-          End lesson
-        </button>
-      </div>
-      <ol className="mt-2 flex flex-wrap items-center gap-2 text-sm" aria-label="Exercises">
+        <ol className="flex flex-wrap items-center gap-1.5 text-xs" aria-label="Exercises">
         {lesson.exercises.map((item, index) => {
           const status =
             index < state.exerciseIndex ? 'done' : index === state.exerciseIndex ? 'current' : 'upcoming'
@@ -120,7 +115,7 @@ export function PracticeRunner({
             <li
               key={item.id}
               aria-current={status === 'current' ? 'step' : undefined}
-              className={`rounded-full border px-3 py-1 ${
+              className={`rounded-full border px-2.5 py-0.5 ${
                 status === 'current'
                   ? 'border-fg bg-fg text-panel'
                   : status === 'done'
@@ -132,7 +127,16 @@ export function PracticeRunner({
             </li>
           )
         })}
-      </ol>
+        </ol>
+        <button
+          type="button"
+          onClick={() => void exitRunner()}
+          disabled={exiting}
+          className="ml-auto shrink-0 text-xs text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+        >
+          End lesson
+        </button>
+      </div>
       <p className="sr-only">
         Exercise {state.exerciseIndex + 1} of {lesson.exercises.length}
       </p>

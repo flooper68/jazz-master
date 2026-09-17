@@ -54,8 +54,8 @@ export interface ScoreProps {
   availableWidth?: number
 }
 
-const RAIL_HEIGHT = 24
-const STAFF_GAP = 22
+const RAIL_HEIGHT = 22
+const STAFF_GAP = 16
 const TAB_INSET = 30
 const SIDE_PAD = 24
 const FALLBACK_WIDTH = 960
@@ -82,7 +82,7 @@ function bands(view: ScoreView): Bands {
     tabTop = y + 8
     y += TAB_HEIGHT
   }
-  return { notationTop, tabTop, bodyTop: RAIL_HEIGHT, bodyBottom: y, height: y + 14 }
+  return { notationTop, tabTop, bodyTop: RAIL_HEIGHT, bodyBottom: y, height: y + 10 }
 }
 
 /** The container's inner width, kept current as it resizes. */

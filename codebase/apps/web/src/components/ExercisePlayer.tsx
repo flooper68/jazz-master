@@ -60,6 +60,19 @@ export function ExercisePlayer({
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
   const [countingIn, setCountingIn] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+  const fullscreenAvailable = typeof document !== 'undefined' && typeof document.exitFullscreen === 'function'
+  useEffect(() => {
+    const onChange = () => setFullscreen(document.fullscreenElement === stageRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  function toggleFullscreen(): void {
+    if (!fullscreenAvailable) return
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void stageRef.current?.requestFullscreen?.()
+  }
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
   const scoreRef = useRef<ScoreHandle>(null)
   const headingRef = useViewFocus<HTMLHeadingElement>(exercise.id, { focusOnMount: !isFirst })
@@ -180,6 +193,7 @@ export function ExercisePlayer({
       '+': () => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP),
       '=': () => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP),
       '-': () => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP),
+      f: toggleFullscreen,
     }
     if (event.key === 'Escape' && openMenu) {
       setOpenMenu(null)
@@ -228,19 +242,19 @@ export function ExercisePlayer({
 
   return (
     <section
-      className="mt-4 flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel shadow-[0_1px_0_var(--c-line)]"
+      className="mt-2 flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel shadow-[0_1px_0_var(--c-line)]"
       onKeyDown={onKeyDown}
       aria-label={`${exercise.title} player`}
     >
-      <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4 pb-3">
+      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 pt-2 pb-1.5">
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="font-display text-lg font-semibold tracking-tight text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+          className="font-display text-sm font-semibold tracking-tight text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {exercise.title}
         </h2>
-        <p className="text-sm text-muted tabular-nums">
+        <p className="text-xs text-muted tabular-nums">
           {exercise.key ? `${exercise.key} major · ` : ''}
           {beatsPerBar}/4 · {exercise.tempoBpm} BPM
         </p>
@@ -248,7 +262,8 @@ export function ExercisePlayer({
 
       {/* The scene: the score is the canvas, everything else floats over it. */}
       <div
-        className="relative mx-2 mb-2 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70"
+        ref={stageRef}
+        className="relative mx-1.5 mb-1.5 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70 fullscreen:m-0 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
         data-stage
       >
         <Score
@@ -263,7 +278,7 @@ export function ExercisePlayer({
           onSeek={(beat) => transport.seek(beat)}
           onLoopChange={setLoop}
           className="absolute inset-0"
-          contentInset={{ top: 76, bottom: 100 }}
+          contentInset={{ top: 72, bottom: 84 }}
           aria-label={`${exercise.title} ${prefs.view === 'both' ? 'score' : prefs.view === 'tab' ? 'tab' : 'notation'}, ${exercise.notes.length} notes${
             started && currentIndex !== null ? `, on note ${currentIndex + 1}` : ''
           }`}
@@ -400,6 +415,18 @@ export function ExercisePlayer({
               </div>
             </Menu>
 
+            {fullscreenAvailable && (
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-pressed={fullscreen}
+                aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                title={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
+                className={`${ICON_BUTTON} h-8 w-8`}
+              >
+                <FullscreenIcon exit={fullscreen} />
+              </button>
+            )}
             <Menu
               id="view"
               label="View"
@@ -485,8 +512,8 @@ export function ExercisePlayer({
         </div>
       </div>
 
-      <p className="px-5 pb-3 text-xs text-muted">
-        Space play/pause · ← → bar · Home start · [ ] loop points · L this bar · ⇧L clear · + − tempo · Esc close menu
+      <p className="px-4 pb-1.5 text-[11px] text-muted">
+        Space play/pause · ← → bar · Home start · [ ] loop points · L this bar · ⇧L clear · + − tempo · F fullscreen · Esc close menu
       </p>
       {snapshot.audioUnavailable && (
         <p role="alert" className="border-t border-line px-5 py-3 text-sm text-danger-text">
@@ -616,6 +643,17 @@ function PauseIcon() {
 }
 function StopIcon() {
   return <Icon><path d="M3 3h10v10H3z" /></Icon>
+}
+function FullscreenIcon({ exit }: { exit: boolean }) {
+  return (
+    <Icon>
+      {exit ? (
+        <path d="M6 2v4H2v1.5h5.5V2zM10 2h-1.5v5.5H14V6h-4zM2 9v1.5h4V14h1.5V9zM8.5 9V14H10v-3.5h4V9z" />
+      ) : (
+        <path d="M2 2h5v1.5H3.5V7H2zM9 2h5v5h-1.5V3.5H9zM2 9h1.5v3.5H7V14H2zM12.5 9H14v5H9v-1.5h3.5z" />
+      )}
+    </Icon>
+  )
 }
 function ChevronDownIcon() {
   return (

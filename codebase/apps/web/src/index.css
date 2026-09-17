@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* The practice stage goes fullscreen on its own; style it there with `fullscreen:`. */
+@custom-variant fullscreen (&:fullscreen);
+
 /*
  * Woodshed theme tokens. Light is the default; dark follows the system
  * scheme or an explicit data-theme on any ancestor. Utilities are mapped
