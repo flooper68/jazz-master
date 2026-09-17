@@ -2,13 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { formatDuration, summarizeRuns, type ActivityDay, type Dashboard } from '../../appData/dashboard'
 import { dayLabel } from '../../appData/history'
-import { loadQuickRunSettings, pickQuickRun } from '../../appData/quickRun'
+import { loadQuickRunSettings, planQuickRun, sessionSearch } from '../../appData/quickRun'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ShuffleIcon } from '../../components/icons'
 import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
+import { useRoutines } from '../useRoutines'
 import { useTRPC } from '../trpc'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
@@ -27,11 +28,12 @@ export default function HomePage() {
   const runs = data?.status === 'ok' ? data.runs : []
   const failed = !isPending && data?.status !== 'ok'
   const { exercises, byId } = useExerciseCatalog()
+  const { routines } = useRoutines()
   const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
 
   function startQuickRun(): void {
-    const picked = pickQuickRun(exercises, loadQuickRunSettings(exercises))
-    void navigate({ to: '/session', search: { x: picked.map((exercise) => exercise.id).join(',') } })
+    // The same plan the navigation's button would start: the chosen routine, or a random draw.
+    void navigate({ to: '/session', search: sessionSearch(planQuickRun(exercises, loadQuickRunSettings(exercises), routines)) })
   }
 
   return (

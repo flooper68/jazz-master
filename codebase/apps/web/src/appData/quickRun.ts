@@ -1,4 +1,5 @@
 import type { Exercise, ExerciseArea } from '../content'
+import type { Routine } from './routine'
 
 /** How a quick run is put together; remembered per browser. */
 export interface QuickRunSettings {
@@ -6,6 +7,8 @@ export interface QuickRunSettings {
   count: number
   /** Areas to draw from; never empty. */
   areas: ExerciseArea[]
+  /** Play this routine instead of drawing at random; null for the random draw. */
+  routineId: string | null
 }
 
 export const QUICK_RUN_MIN = 1
@@ -13,7 +16,7 @@ export const QUICK_RUN_MAX = 6
 export const QUICK_RUN_KEY = 'jazz-master.quick-run'
 
 export function defaultQuickRunSettings(exercises: readonly Exercise[]): QuickRunSettings {
-  return { count: 3, areas: areasOf(exercises) }
+  return { count: 3, areas: areasOf(exercises), routineId: null }
 }
 
 /** The areas the pack actually has, in authored order. */
@@ -54,6 +57,42 @@ export function pickQuickRun(
     .sort((a, b) => a.level - b.level || (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
 }
 
+/** The exercises of a routine that can be played now, in its order; one deleted since is skipped. */
+export function routineExercises(routine: Routine, exercises: readonly Exercise[]): Exercise[] {
+  const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]))
+  return routine.items.flatMap((item) => byId.get(item.exerciseId) ?? [])
+}
+
+/** What one press of Quick run starts: the chosen routine as prepared, or a random draw. */
+export interface QuickRunPlan {
+  exercises: Exercise[]
+  /** Set when the plan is a routine, so the session can say whose it is. */
+  routine: Routine | null
+}
+
+/**
+ * The chosen routine, top to bottom — or the random draw when none is chosen,
+ * when the chosen one is gone, or when nothing in it can be played any more.
+ */
+export function planQuickRun(
+  exercises: readonly Exercise[],
+  settings: QuickRunSettings,
+  routines: readonly Routine[],
+  random: () => number = Math.random,
+): QuickRunPlan {
+  const routine = routines.find((candidate) => candidate.id === settings.routineId)
+  const prepared = routine ? routineExercises(routine, exercises) : []
+  return routine && prepared.length > 0
+    ? { exercises: prepared, routine }
+    : { exercises: pickQuickRun(exercises, settings, random), routine: null }
+}
+
+/** Where a plan is played: the session URL's search, which carries the draw so a reload keeps it. */
+export function sessionSearch(plan: QuickRunPlan): { x: string; r?: string } {
+  const x = plan.exercises.map((exercise) => exercise.id).join(',')
+  return plan.routine ? { x, r: plan.routine.id } : { x }
+}
+
 /** The last saved settings, or the defaults; storage that is missing or broken is ignored. */
 export function loadQuickRunSettings(
   exercises: readonly Exercise[],
@@ -70,6 +109,7 @@ export function loadQuickRunSettings(
     return {
       count: typeof parsed.count === 'number' ? clampQuickRunCount(parsed.count) : defaults.count,
       areas: areas.length > 0 ? areas : defaults.areas,
+      routineId: typeof parsed.routineId === 'string' && parsed.routineId.length > 0 ? parsed.routineId : null,
     }
   } catch {
     return defaults

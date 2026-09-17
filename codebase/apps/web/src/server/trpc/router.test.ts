@@ -6,6 +6,7 @@ import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
 import { appRouter } from './router'
+import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 
 const createCaller = createCallerFactory(appRouter)
 
@@ -537,3 +538,58 @@ function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
     ...overrides,
   }
 }
+
+describe('appRouter.routines', () => {
+  const routine = { name: 'Warm-up', items: [{ exerciseId: 'scales-major-open-c' }] }
+
+  it('creates, changes, lists and deletes a routine, for its owner only', async () => {
+    const routines = createMemoryRoutineRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, routines, userExercises: null }))
+    const other = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, routines, userExercises: null }))
+
+    const created = await caller.routines.create({ routine })
+    expect(created).toMatchObject({ status: 'ok', routine })
+    const id = created.status === 'ok' ? created.routine.id : ''
+
+    await expect(other.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
+    await expect(other.routines.update({ routineId: id, routine: { ...routine, name: 'Stolen' } })).resolves.toEqual({ status: 'not_found' })
+
+    await expect(caller.routines.update({ routineId: id, routine: { ...routine, name: 'Warm-up II' } })).resolves.toMatchObject({
+      status: 'ok',
+      routine: { id, name: 'Warm-up II' },
+    })
+    await expect(caller.routines.delete({ routineId: id })).resolves.toEqual({ status: 'ok', deleted: true })
+    await expect(caller.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
+  })
+
+  it('answers a bad routine with its problems, not a transport error', async () => {
+    const caller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_123' }, routines: createMemoryRoutineRepository(), userExercises: null }),
+    )
+    const result = await caller.routines.create({
+      routine: { name: 'Twice', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: 'scales-major-open-c' }, { exerciseId: 'nope' }], extra: true },
+    })
+    expect(result.status).toBe('invalid')
+
+    const twice = await caller.routines.create({
+      routine: { name: 'Twice', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: 'scales-major-open-c' }, { exerciseId: 'nope' }] },
+    })
+    expect(twice).toEqual({
+      status: 'invalid',
+      problems: [
+        expect.stringMatching(/^items\.1\.exerciseId: "scales-major-open-c" is already in the routine/),
+        expect.stringMatching(/^items\.2\.exerciseId: no exercise "nope"/),
+      ],
+    })
+  })
+
+  it('reports unconfigured without a database, and refuses the signed-out', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, routines: null, userExercises: null }))
+    await expect(caller.routines.list()).resolves.toEqual({ status: 'unconfigured' })
+    await expect(caller.routines.create({ routine })).resolves.toEqual({ status: 'unconfigured' })
+
+    const signedOut = createCaller(createContext({ auth: { clerkUserId: null }, routines: createMemoryRoutineRepository() }))
+    await expect(signedOut.routines.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+})
+

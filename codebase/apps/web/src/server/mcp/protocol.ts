@@ -5,7 +5,7 @@ import { MCP_TOOLS, type McpToolContext } from './tools'
  * It is the small request/response core of the Streamable HTTP transport —
  * initialize, ping, tools/list, tools/call — with no sessions and no streams,
  * because the Worker keeps no state between requests and the tools never need
- * to push. Written by hand rather than on the SDK: three tools do not justify
+ * to push. Written by hand rather than on the SDK: a handful of tools does not justify
  * its dependency tree in a Worker bundle. The SDK's own client runs against
  * this in the tests, which is what keeps it honest.
  */
@@ -16,7 +16,7 @@ export const MCP_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', 
 export const MCP_SERVER_INFO = { name: 'jazz-master', title: 'Jazz Master', version: '1.0.0' } as const
 
 const INSTRUCTIONS =
-  "Jazz Master is a practice app for jazz guitar. These tools add exercises to the signed-in user's own library. Write an exercise, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format."
+  "Jazz Master is a practice app for jazz guitar. These tools add exercises to the signed-in user's own library and manage their practice routines. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. A practice routine is a named, ordered list of exercises the user plays straight through: find ids with list_builtin_exercises and list_exercises, then use create_routine; read its description for the format."
 
 /** Requests above this are refused before they are parsed; the largest honest exercise is a fraction of it. */
 const MOST_BODY_BYTES = 256 * 1024

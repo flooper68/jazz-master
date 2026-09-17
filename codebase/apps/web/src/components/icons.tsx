@@ -137,3 +137,6 @@ export const ShuffleIcon = () => (
 export const HomeIcon = () => (
   <Icon size={16}><path d="M8 1.6 14.5 7v7.4H9.75V10h-3.5v4.4H1.5V7zm0 1.95L3 7.7v5.2h1.75V8.5h6.5v4.4H13V7.7z" /></Icon>
 )
+export const RoutineIcon = () => (
+  <Icon size={16}><path d="M4.5 1.5h7A1.5 1.5 0 0 1 13 3v10a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13V3a1.5 1.5 0 0 1 1.5-1.5zm0 1.5v10h7V3zm1.25 1.75h4.5v1.5h-4.5zm0 2.75h4.5V9h-4.5zm0 2.75h3v1.5h-3z" /></Icon>
+)

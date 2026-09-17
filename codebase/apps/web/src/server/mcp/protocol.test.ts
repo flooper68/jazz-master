@@ -1,7 +1,9 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { describe, expect, it } from 'vitest'
+import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 import { createMemoryUserExerciseRepository } from '../../test/memoryUserExercises'
+import type { RoutineRepository } from '../db/routines'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { handleMcpRequest, MCP_PROTOCOL_VERSIONS } from './protocol'
 
@@ -21,10 +23,14 @@ const line = {
 }
 
 /** The official MCP client, talking to the handler as it would over HTTP. */
-async function connect(clerkUserId: string, userExercises: UserExerciseRepository | null) {
+async function connect(
+  clerkUserId: string,
+  userExercises: UserExerciseRepository | null,
+  routines: RoutineRepository | null = createMemoryRoutineRepository(),
+) {
   const client = new Client({ name: 'test-client', version: '0.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL('https://jazz.test/mcp'), {
-    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises }),
+    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, routines }),
   })
   await client.connect(transport)
   return client
@@ -33,16 +39,28 @@ async function connect(clerkUserId: string, userExercises: UserExerciseRepositor
 function post(body: unknown, raw = false) {
   return handleMcpRequest(
     new Request('https://jazz.test/mcp', { method: 'POST', body: raw ? (body as string) : JSON.stringify(body) }),
-    { clerkUserId: 'user_123', userExercises: createMemoryUserExerciseRepository() },
+    { clerkUserId: 'user_123', userExercises: createMemoryUserExerciseRepository(), routines: createMemoryRoutineRepository() },
   )
 }
 
 describe('the MCP server, through the official client', () => {
-  it('shakes hands and offers its three tools with schemas a client can show', async () => {
+  it('shakes hands and offers its tools with schemas a client can show', async () => {
     const client = await connect('user_123', createMemoryUserExerciseRepository())
     expect(client.getServerVersion()).toMatchObject({ name: 'jazz-master' })
     const { tools } = await client.listTools()
-    expect(tools.map((tool) => tool.name)).toEqual(['list_exercises', 'validate_exercise', 'create_exercise'])
+    expect(tools.map((tool) => tool.name)).toEqual([
+      'list_exercises',
+      'validate_exercise',
+      'create_exercise',
+      'list_builtin_exercises',
+      'list_routines',
+      'create_routine',
+      'update_routine',
+      'delete_routine',
+    ])
+    const createRoutine = tools.find((tool) => tool.name === 'create_routine')!
+    expect(createRoutine.inputSchema).toMatchObject({ type: 'object', required: ['routine'] })
+    expect(tools.find((tool) => tool.name === 'delete_routine')!.annotations).toMatchObject({ destructiveHint: true })
     const create = tools.find((tool) => tool.name === 'create_exercise')!
     expect(create.inputSchema).toMatchObject({ type: 'object', required: ['exercise'] })
     expect(create.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false })
@@ -93,7 +111,7 @@ describe('the MCP server, on the wire', () => {
 
   it('accepts notifications silently, and refuses streams and sessions it does not have', async () => {
     expect((await post({ jsonrpc: '2.0', method: 'notifications/initialized' })).status).toBe(202)
-    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null })
+    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, routines: null })
     expect(get.status).toBe(405)
     expect(get.headers.get('allow')).toBe('POST')
   })
@@ -112,7 +130,7 @@ describe('the MCP server, on the wire', () => {
     // The library turns repository failures into results; a throw past it is simulated by a context that is not an object.
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'list_exercises', arguments: {} } }) }),
-      null as unknown as { clerkUserId: string; userExercises: typeof broken },
+      null as unknown as { clerkUserId: string; userExercises: typeof broken; routines: null },
     )
     expect(await response.json()).toEqual({ jsonrpc: '2.0', id: 9, error: { code: -32603, message: 'Internal error' } })
   })
@@ -120,7 +138,7 @@ describe('the MCP server, on the wire', () => {
   it('refuses a body by its declared size before reading it', async () => {
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', headers: { 'content-length': '999999' }, body: '{}' }),
-      { clerkUserId: 'user_123', userExercises: null },
+      { clerkUserId: 'user_123', userExercises: null, routines: null },
     )
     expect(response.status).toBe(413)
   })
@@ -134,5 +152,77 @@ describe('the MCP server, on the wire', () => {
       error: { code: -32602 },
     })
     expect((await post('x'.repeat(300_000), true)).status).toBe(413)
+  })
+})
+
+describe('practice routines over MCP', () => {
+  it('builds a routine from built-in and own exercises, changes it, and deletes it', async () => {
+    const userExercises = createMemoryUserExerciseRepository()
+    const client = await connect('user_123', userExercises)
+
+    const builtin = await client.callTool({ name: 'list_builtin_exercises', arguments: {} })
+    const packIds = (builtin.structuredContent as { exercises: { id: string }[] }).exercises.map((exercise) => exercise.id)
+    expect(packIds).toContain('scales-major-open-c')
+
+    const own = await client.callTool({ name: 'create_exercise', arguments: { exercise: line } })
+    const ownId = (own.structuredContent as { exercise: { id: string } }).exercise.id
+
+    const created = await client.callTool({
+      name: 'create_routine',
+      arguments: { routine: { name: 'Warm-up', about: 'Ten minutes before the gig.', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: ownId }] } },
+    })
+    expect(created.isError).toBeFalsy()
+    const routine = (created.structuredContent as { routine: { id: string; name: string } }).routine
+    expect(routine.name).toBe('Warm-up')
+
+    const updated = await client.callTool({
+      name: 'update_routine',
+      arguments: { routineId: routine.id, routine: { name: 'Warm-up, short', items: [{ exerciseId: ownId }] } },
+    })
+    expect(updated.structuredContent).toMatchObject({ status: 'ok', routine: { id: routine.id, name: 'Warm-up, short', items: [{ exerciseId: ownId }] } })
+
+    const listed = await client.callTool({ name: 'list_routines', arguments: {} })
+    expect(listed.structuredContent).toMatchObject({ status: 'ok', routines: [{ id: routine.id, name: 'Warm-up, short' }] })
+
+    const deleted = await client.callTool({ name: 'delete_routine', arguments: { routineId: routine.id } })
+    expect(deleted.structuredContent).toEqual({ status: 'ok', deleted: true })
+    expect((await client.callTool({ name: 'list_routines', arguments: {} })).structuredContent).toEqual({ status: 'ok', routines: [] })
+  })
+
+  it('refuses a routine that names an exercise the user cannot play, and says which', async () => {
+    const client = await connect('user_123', createMemoryUserExerciseRepository())
+    const refused = await client.callTool({
+      name: 'create_routine',
+      arguments: { routine: { name: 'Broken', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: 'user-not-mine' }] } },
+    })
+    expect(refused.isError).toBe(true)
+    expect(refused.structuredContent).toMatchObject({ status: 'invalid' })
+    expect((refused.structuredContent as { problems: string[] }).problems).toEqual([
+      expect.stringMatching(/^items\.1\.exerciseId: no exercise "user-not-mine"/),
+    ])
+
+    const shapeless = await client.callTool({ name: 'create_routine', arguments: { routine: { name: '', items: [] } } })
+    expect((shapeless.structuredContent as { problems: string[] }).problems.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('keeps one user’s routines from another', async () => {
+    const routines = createMemoryRoutineRepository()
+    const mine = await connect('user_123', createMemoryUserExerciseRepository(), routines)
+    const theirs = await connect('user_456', createMemoryUserExerciseRepository(), routines)
+    const created = await mine.callTool({ name: 'create_routine', arguments: { routine: { name: 'Mine', items: [{ exerciseId: 'scales-major-open-c' }] } } })
+    const id = (created.structuredContent as { routine: { id: string } }).routine.id
+
+    expect((await theirs.callTool({ name: 'list_routines', arguments: {} })).structuredContent).toEqual({ status: 'ok', routines: [] })
+    const hijack = await theirs.callTool({ name: 'update_routine', arguments: { routineId: id, routine: { name: 'Theirs now', items: [{ exerciseId: 'scales-major-open-c' }] } } })
+    expect(hijack.structuredContent).toEqual({ status: 'not_found' })
+    expect((await theirs.callTool({ name: 'delete_routine', arguments: { routineId: id } })).structuredContent).toEqual({ status: 'ok', deleted: false })
+    expect((await mine.callTool({ name: 'list_routines', arguments: {} })).structuredContent).toMatchObject({ routines: [{ name: 'Mine' }] })
+  })
+
+  it('says unconfigured where there is no database', async () => {
+    const client = await connect('user_123', null, null)
+    const listed = await client.callTool({ name: 'list_routines', arguments: {} })
+    expect(listed.isError).toBe(true)
+    expect(listed.structuredContent).toEqual({ status: 'unconfigured' })
   })
 })

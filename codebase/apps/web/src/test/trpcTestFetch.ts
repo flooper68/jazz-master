@@ -4,7 +4,10 @@ import type { RunRepository } from '../server/db/runs'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 import type { ExerciseInput } from '../content/exerciseInput'
+import type { RoutineInput } from '../appData/routine'
+import type { RoutineRepository } from '../server/db/routines'
 import type { UserExerciseRepository } from '../server/db/userExercises'
+import { createMemoryRoutineRepository } from './memoryRoutines'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
 
 export const TEST_CLERK_USER_ID = 'user_test_123'
@@ -12,11 +15,31 @@ export const TEST_CLERK_USER_ID = 'user_test_123'
 const runs = new Map<string, Map<string, ExerciseRun>>()
 let runsRepositoryAvailable = true
 let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
+let routines: RoutineRepository = createMemoryRoutineRepository()
+let routinesRepositoryAvailable = true
 
 export function resetTrpcTestData() {
   runs.clear()
   runsRepositoryAvailable = true
   userExercises = createMemoryUserExerciseRepository()
+  routines = createMemoryRoutineRepository()
+  routinesRepositoryAvailable = true
+}
+
+/** Put routines in the test user's account; resolves to them as stored, ids included. */
+export async function seedTrpcTestRoutines(seedRoutines: RoutineInput[]) {
+  const stored = []
+  // In order, so the list comes back oldest first as seeded.
+  for (const routine of seedRoutines) stored.push(await routines.createRoutine(TEST_CLERK_USER_ID, routine))
+  return stored
+}
+
+export function getTrpcTestRoutines() {
+  return routines.listRoutines(TEST_CLERK_USER_ID)
+}
+
+export function setTrpcTestRoutinesRepositoryAvailable(available: boolean) {
+  routinesRepositoryAvailable = available
 }
 
 /** Put exercises in the test user's library; resolves to them as stored, ids included. */
@@ -80,6 +103,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         runs: runsRepositoryAvailable ? runRepository : null,
+        routines: routinesRepositoryAvailable ? routines : null,
         userExercises,
         users: null,
       }),

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderRoute } from '../../test/renderRoute'
-import { getTrpcTestRuns, resetTrpcTestData } from '../../test/trpcTestFetch'
+import { getTrpcTestRuns, resetTrpcTestData, seedTrpcTestRoutines } from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -77,6 +77,26 @@ describe('SessionPage', () => {
     await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
     await user.click(screen.getByRole('button', { name: 'Another quick run' }))
     expect(await screen.findByText('Quick run · 1 of 3')).toBeInTheDocument()
+  })
+
+  it('plays a routine under its name, and offers it again at the end', async () => {
+    const user = userEvent.setup()
+    const [routine] = await seedTrpcTestRoutines([{ name: 'Warm-up', items: [{ exerciseId: 'scales-major-open-c' }] }])
+    await renderRoute(`/session?x=scales-major-open-c&r=${routine.id}`)
+
+    expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
+    await playAndFinish(user, 'C major — open position')
+    expect(screen.getByRole('heading', { level: 1, name: 'Warm-up complete' })).toHaveFocus()
+    await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(1))
+    const first = getTrpcTestRuns()[0].sessionId
+
+    await user.click(screen.getByRole('button', { name: 'Play it again' }))
+    expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
+    await playAndFinish(user, 'C major — open position')
+    // A second time through is a session of its own.
+    await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(2))
+    expect(new Set(getTrpcTestRuns().map((run) => run.sessionId)).size).toBe(2)
+    expect(first).toMatch(/^[0-9a-f-]{36}$/)
   })
 
   it('can be ended early, back to the exercises', async () => {

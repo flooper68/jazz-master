@@ -11,7 +11,9 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import type { Exercise } from '../content'
-import { HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
+import { HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
+import { sessionSearch } from '../appData/quickRun'
+import type { Routine } from '../appData/routine'
 import { QuickRunButton } from './QuickRunButton'
 import {
   clampSidebarWidth,
@@ -64,6 +66,7 @@ const USER_BUTTON_APPEARANCE = {
 const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/exercises', label: 'Exercises', icon: ListIcon },
+  { to: '/routines', label: 'Routines', icon: RoutineIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
 
@@ -71,9 +74,11 @@ const NAV = [
 interface LayoutProps {
   /** What a quick run draws from: the pack, joined by the user's own exercises once the app has them. */
   exercises: readonly Exercise[]
+  /** The user's practice routines, which a quick run can play instead. */
+  routines: readonly Routine[]
 }
 
-export function Layout({ exercises }: LayoutProps) {
+export function Layout({ exercises, routines }: LayoutProps) {
   const usePlaywrightAccountStub =
     import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
   const { theme, toggleTheme } = useTheme()
@@ -102,7 +107,9 @@ export function Layout({ exercises }: LayoutProps) {
   // Playing an exercise is still being in Exercises; a session belongs to no page.
   const current = pathname.endsWith('/history')
     ? '/history'
-    : pathname.includes('/exercises')
+    : pathname.endsWith('/routines')
+      ? '/routines'
+      : pathname.includes('/exercises')
       ? '/exercises'
       : pathname.endsWith('/session')
         ? null
@@ -178,7 +185,7 @@ export function Layout({ exercises }: LayoutProps) {
         </div>
         <nav
           aria-label="Main"
-          className={`order-last flex w-full gap-1 md:order-none md:flex md:flex-col ${onStage ? 'hidden' : ''}`}
+          className={`order-last flex w-full flex-wrap gap-0.5 md:order-none md:flex md:flex-col md:flex-nowrap md:gap-1 ${onStage ? 'hidden' : ''}`}
         >
           {NAV.map(({ to, label, icon: NavIcon }) => (
             <Link
@@ -186,12 +193,12 @@ export function Layout({ exercises }: LayoutProps) {
               to={to}
               aria-current={to === current ? 'page' : undefined}
               title={collapsed ? label : undefined}
-              className={`inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium min-[420px]:px-2.5 hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+              className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1.5 text-[13px] font-medium min-[480px]:px-2.5 min-[480px]:text-sm md:text-sm hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
                 to === current ? 'bg-panel-2 text-fg' : 'text-fg-2'
               } ${collapsed ? 'md:justify-center md:px-0' : ''}`}
             >
               {/* The narrowest phones have no room for the icons beside three labels. */}
-              <span className="hidden min-[420px]:inline-flex">
+              <span className="hidden min-[480px]:inline-flex">
                 <NavIcon />
               </span>
               <span className={collapsed ? 'md:sr-only' : 'truncate'}>{label}</span>
@@ -201,10 +208,9 @@ export function Layout({ exercises }: LayoutProps) {
           <div className="ml-auto md:@container md:order-first md:mb-2 md:ml-0">
             <QuickRunButton
               exercises={exercises}
+              routines={routines}
               iconOnly={collapsed}
-              onStart={(picked) =>
-                void navigate({ to: '/session', search: { x: picked.map((exercise) => exercise.id).join(',') } })
-              }
+              onStart={(plan) => void navigate({ to: '/session', search: sessionSearch(plan) })}
             />
           </div>
         </nav>

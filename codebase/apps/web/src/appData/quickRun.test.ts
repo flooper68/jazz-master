@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES } from '../content'
 import {
+  planQuickRun,
+  sessionSearch,
   clampQuickRunCount,
   defaultQuickRunSettings,
   loadQuickRunSettings,
@@ -40,7 +42,7 @@ describe('pickQuickRun', () => {
   })
 
   it('draws only from the chosen areas, and no more than they hold', () => {
-    const picked = pickQuickRun(EXERCISES, { count: 5, areas: ['scales'] }, seeded(7))
+    const picked = pickQuickRun(EXERCISES, { count: 5, areas: ['scales'], routineId: null }, seeded(7))
     expect(picked.map((exercise) => exercise.area)).toEqual(['scales', 'scales', 'scales'])
   })
 })
@@ -57,9 +59,38 @@ describe('quick run settings', () => {
     expect(loadQuickRunSettings(EXERCISES, { getItem: () => '{nope' })).toEqual(defaults)
     expect(
       loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 2, areas: ['bagpipes'] }) }),
-    ).toEqual({ count: 2, areas: defaults.areas })
+    ).toEqual({ count: 2, areas: defaults.areas, routineId: null })
     expect(
-      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 4, areas: ['standards', 'scales'] }) }),
-    ).toEqual({ count: 4, areas: ['scales', 'standards'] })
+      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 4, areas: ['standards', 'scales'], routineId: 'r-1' }) }),
+    ).toEqual({ count: 4, areas: ['scales', 'standards'], routineId: 'r-1' })
+  })
+})
+
+describe('planQuickRun', () => {
+  const routine = {
+    id: 'r-1',
+    name: 'Warm-up',
+    items: [{ exerciseId: 'lines-ii-v-i-f-line' }, { exerciseId: 'gone-since' }, { exerciseId: 'scales-major-open-c' }],
+  }
+
+  it('plays the chosen routine as prepared — its order, not easier-first — skipping what is gone', () => {
+    const plan = planQuickRun(EXERCISES, { ...defaults, routineId: 'r-1' }, [routine], seeded(1))
+    expect(plan.routine).toBe(routine)
+    expect(plan.exercises.map((exercise) => exercise.id)).toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
+    expect(sessionSearch(plan)).toEqual({ x: 'lines-ii-v-i-f-line,scales-major-open-c', r: 'r-1' })
+  })
+
+  it('falls back to the random draw when no routine is chosen, or the chosen one is gone or empty', () => {
+    const emptied = { id: 'r-2', name: 'Emptied', items: [{ exerciseId: 'gone-since' }] }
+    for (const [settings, routines] of [
+      [defaults, [routine]],
+      [{ ...defaults, routineId: 'deleted' }, [routine]],
+      [{ ...defaults, routineId: 'r-2' }, [emptied]],
+    ] as const) {
+      const plan = planQuickRun(EXERCISES, settings, routines, seeded(3))
+      expect(plan.routine).toBeNull()
+      expect(plan.exercises).toHaveLength(3)
+      expect(sessionSearch(plan)).not.toHaveProperty('r')
+    }
   })
 })

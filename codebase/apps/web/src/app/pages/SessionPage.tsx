@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
-import { loadQuickRunSettings, pickQuickRun } from '../../appData/quickRun'
+import { loadQuickRunSettings, planQuickRun, sessionSearch } from '../../appData/quickRun'
 import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
@@ -10,6 +10,7 @@ import { CheckIcon } from '../../components/icons'
 import { useViewFocus } from '../../components/useViewFocus'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
+import { useRoutines } from '../useRoutines'
 import { STAGE_FRAME, UnsavedRunAlert, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
 
@@ -19,12 +20,13 @@ const BUTTON_SECONDARY =
   'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /**
- * A practice session (a quick run): the exercises named in the URL, played
- * straight through, then summed up — and rated — on one closing screen.
+ * A practice session — a quick run's random draw, or a practice routine: the
+ * exercises named in the URL, played straight through, then summed up — and
+ * rated — on one closing screen.
  */
 export default function SessionPage() {
   // Loose search so the page also renders inside Storybook's ad hoc router.
-  const { x } = useSearch({ strict: false }) as { x?: string }
+  const { x, r } = useSearch({ strict: false }) as { x?: string; r?: string }
   const ids = [...new Set((x ?? '').split(',').filter(Boolean))]
   const { byId, libraryPending } = useExerciseCatalog()
   // A draw that includes the user's own exercises waits for the library, rather than starting short and restarting.
@@ -34,21 +36,30 @@ export default function SessionPage() {
   if (exercises.length === 0) return <NotFoundPage />
 
   // Keyed on the draw so another quick run starts afresh.
-  return <SessionStage key={exercises.map((exercise) => exercise.id).join()} exercises={exercises} />
+  return <SessionStage key={exercises.map((exercise) => exercise.id).join()} exercises={exercises} routineId={r ?? null} />
 }
 
-function SessionStage({ exercises }: { exercises: Exercise[] }) {
+function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routineId: string | null }) {
   const navigate = useNavigate()
   const catalog = useExerciseCatalog().exercises
+  const { routines } = useRoutines()
+  // The routine's name arrives with the routines; until then (or if it is gone) the session is simply a routine.
+  const routineName = routineId === null ? null : (routines.find((routine) => routine.id === routineId)?.name ?? 'Routine')
+  const label = routineName ?? 'Quick run'
   const { save, unsaved } = useRunSaver()
   // The session's identity is minted once, when it mounts — not in render.
-  const [sessionId] = useState(() => crypto.randomUUID())
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
   const [index, setIndex] = useState(0)
   // The latest run of each step, for the closing summary; a step ended without playing has none.
   const [runs, setRuns] = useState<ReadonlyMap<number, ExerciseRun>>(new Map())
   function record(step: number, run: ExerciseRun): void {
     save(run)
     setRuns((current) => new Map(current).set(step, run))
+  }
+  function restart(): void {
+    setSessionId(crypto.randomUUID())
+    setRuns(new Map())
+    setIndex(0)
   }
   const done = index >= exercises.length
   const headingRef = useViewFocus<HTMLHeadingElement>(done ? 'done' : 'playing')
@@ -72,7 +83,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
                   tabIndex={-1}
                   className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
                 >
-                  Quick run complete
+                  {label} complete
                 </h1>
                 <p className="text-sm text-muted">
                   {runs.size} of {exercises.length} played ·{' '}
@@ -119,12 +130,13 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
               <button
                 type="button"
                 onClick={() => {
-                  const next = pickQuickRun(catalog, loadQuickRunSettings(catalog))
-                  void navigate({ to: '/session', search: { x: next.map((exercise) => exercise.id).join(',') } })
+                  // After a routine: the same routine again, from the top. After a draw: a new plan from the quick run settings.
+                  if (routineId !== null) return restart()
+                  void navigate({ to: '/session', search: sessionSearch(planQuickRun(catalog, loadQuickRunSettings(catalog), routines)) })
                 }}
                 className={BUTTON_SECONDARY}
               >
-                Another quick run
+                {routineId !== null ? 'Play it again' : 'Another quick run'}
               </button>
             </div>
           </div>
@@ -142,6 +154,8 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
         exercise={exercises[index]}
         session={{
           id: sessionId,
+          label,
+          endLabel: routineId !== null ? 'End routine' : 'End quick run',
           step: index + 1,
           total: exercises.length,
           onContinue: () => setIndex((current) => current + 1),

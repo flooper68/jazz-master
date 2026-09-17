@@ -32,6 +32,10 @@ const HEADING =
  */
 export interface RunnerSession {
   id: string
+  /** What the session is called on the stage: "Quick run", or the routine's name. */
+  label: string
+  /** The way out, in words: "End quick run", "End routine". */
+  endLabel: string
   /** One-based. */
   step: number
   total: number
@@ -162,7 +166,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
         <span className="flex items-baseline gap-3 text-xs text-muted">
           {session && (
             <span className="tabular-nums">
-              Quick run · {session.step} of {session.total}
+              {session.label} · {session.step} of {session.total}
             </span>
           )}
           <button
@@ -170,7 +174,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
             onClick={onExit}
             className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
           >
-            {session ? 'End quick run' : 'Back to exercises'}
+            {session ? session.endLabel : 'Back to exercises'}
           </button>
         </span>
       }

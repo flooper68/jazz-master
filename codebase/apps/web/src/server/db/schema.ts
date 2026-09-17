@@ -87,9 +87,34 @@ export const userExercises = pgTable(
   ],
 )
 
+export const practiceRoutines = pgTable(
+  'practice_routines',
+  {
+    id: uuid('id').primaryKey(),
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    // The routine whole (name, about, ordered items), like user_exercises.exercise.
+    routine: jsonb('routine').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('practice_routines_user_created_idx').on(
+      table.clerkUserId,
+      table.createdAt,
+    ),
+  ],
+)
+
 // Server-only Drizzle schema entrypoint.
 export const schema = {
   exerciseRuns,
+  practiceRoutines,
   userExercises,
   users,
 }
