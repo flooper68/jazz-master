@@ -8,11 +8,10 @@ import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { RatingInput } from '../../components/RatingInput'
 import { CheckIcon } from '../../components/icons'
 import { useViewFocus } from '../../components/useViewFocus'
-import { EXERCISES, type Exercise } from '../../content'
+import type { Exercise } from '../../content'
+import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { STAGE_FRAME, UnsavedRunAlert, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
-
-const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 
 const BUTTON_PRIMARY =
   'rounded-lg bg-cta px-3.5 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
@@ -27,7 +26,10 @@ export default function SessionPage() {
   // Loose search so the page also renders inside Storybook's ad hoc router.
   const { x } = useSearch({ strict: false }) as { x?: string }
   const ids = [...new Set((x ?? '').split(',').filter(Boolean))]
-  const exercises = ids.flatMap((id) => exerciseById.get(id) ?? [])
+  const { byId, libraryPending } = useExerciseCatalog()
+  // A draw that includes the user's own exercises waits for the library, rather than starting short and restarting.
+  if (libraryPending && ids.some(isLibraryExerciseId)) return <p className="p-6 text-sm text-muted" role="status">Loading your exercises…</p>
+  const exercises = ids.flatMap((id) => byId.get(id) ?? [])
 
   if (exercises.length === 0) return <NotFoundPage />
 
@@ -37,6 +39,7 @@ export default function SessionPage() {
 
 function SessionStage({ exercises }: { exercises: Exercise[] }) {
   const navigate = useNavigate()
+  const catalog = useExerciseCatalog().exercises
   const { save, unsaved } = useRunSaver()
   // The session's identity is minted once, when it mounts — not in render.
   const [sessionId] = useState(() => crypto.randomUUID())
@@ -116,7 +119,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
               <button
                 type="button"
                 onClick={() => {
-                  const next = pickQuickRun(EXERCISES, loadQuickRunSettings(EXERCISES))
+                  const next = pickQuickRun(catalog, loadQuickRunSettings(catalog))
                   void navigate({ to: '/session', search: { x: next.map((exercise) => exercise.id).join(',') } })
                 }}
                 className={BUTTON_SECONDARY}

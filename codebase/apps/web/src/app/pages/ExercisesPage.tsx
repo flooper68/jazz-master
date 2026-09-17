@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { dayLabel } from '../../appData/history'
@@ -6,13 +6,14 @@ import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ClickIcon, ClockIcon, GridIcon, RowsIcon } from '../../components/icons'
-import { EXERCISES, exerciseSeconds, type Exercise } from '../../content'
+import { exerciseSeconds, type Exercise, type ExerciseArea } from '../../content'
 import { useTRPC } from '../trpc'
+import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
 // Authored order is the order to learn them in, so grouping keeps it within each area.
-const areas = [...new Set(EXERCISES.map((exercise) => exercise.area))]
-const MAX_LEVEL = Math.max(...EXERCISES.map((exercise) => exercise.level), 3)
+/** Areas always read in this order; only those with something in them are shown. */
+const AREA_ORDER: readonly ExerciseArea[] = ['scales', 'arpeggios', 'chords', 'standards']
 
 type ListView = 'cards' | 'list'
 const VIEW_KEY = 'jazz-master.exercises-view'
@@ -38,6 +39,9 @@ export default function ExercisesPage() {
   // Decoration only: the list is complete without it, so failures stay silent.
   const { data } = useQuery(trpc.runs.list.queryOptions())
   const runs = data?.status === 'ok' ? data.runs : []
+  const { exercises: catalog } = useExerciseCatalog()
+  const areas = AREA_ORDER.filter((area) => catalog.some((exercise) => exercise.area === area))
+  const maxLevel = Math.max(...catalog.map((exercise) => exercise.level), 3)
   const [view, setView] = useState<ListView>(loadView)
   useEffect(() => {
     try {
@@ -76,7 +80,7 @@ export default function ExercisesPage() {
         </div>
       </div>
       {areas.map((area) => {
-        const exercises = EXERCISES.filter((exercise) => exercise.area === area)
+        const exercises = catalog.filter((exercise) => exercise.area === area)
         return (
           <section key={area} className="mt-7" aria-labelledby={`area-${area}`}>
             <div className="flex items-center gap-2">
@@ -99,6 +103,7 @@ export default function ExercisesPage() {
                   <Item
                     key={exercise.id}
                     exercise={exercise}
+                    maxLevel={maxLevel}
                     runs={runs.filter((run) => run.exerciseId === exercise.id)}
                   />
                 )
@@ -113,6 +118,8 @@ export default function ExercisesPage() {
 
 interface ItemProps {
   exercise: Exercise
+  /** The highest level on the page, so every row shows the same number of dots. */
+  maxLevel: number
   /** This exercise's runs, newest first. */
   runs: ExerciseRun[]
 }
@@ -134,10 +141,10 @@ function playedLine(runs: ExerciseRun[]): string {
   return `Played ${runs.length}× · last ${when}`
 }
 
-function LevelDots({ level }: { level: number }) {
+function LevelDots({ level, maxLevel }: { level: number; maxLevel: number }) {
   return (
     <span className="flex shrink-0 items-center gap-1" role="img" aria-label={`Level ${level}`}>
-      {Array.from({ length: MAX_LEVEL }, (_, index) => (
+      {Array.from({ length: maxLevel }, (_, index) => (
         <span key={index} className={`h-1.5 w-1.5 rounded-full ${index < level ? 'bg-fg' : 'bg-line-strong'}`} />
       ))}
     </span>
@@ -145,17 +152,21 @@ function LevelDots({ level }: { level: number }) {
 }
 
 /** The simple view: one line per exercise, no picture. */
-function ExerciseRow({ exercise, runs }: ItemProps) {
+function ExerciseRow({ exercise, maxLevel, runs }: ItemProps) {
   return (
     <li className="group relative flex items-center gap-4 px-3.5 py-2 first:rounded-t-2xl last:rounded-b-2xl hover:bg-panel-2/60">
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-medium text-fg">{exercise.title}</h3>
+        <h3 className="truncate font-medium text-fg">
+          {exercise.title}
+          {isLibraryExerciseId(exercise.id) && <YoursTag />}
+        </h3>
         <p className="mt-0.5 text-sm text-muted tabular-nums">
           ~{minutesOf(exercise)} min · {exercise.tempoBpm} BPM
           <span className="hidden sm:inline"> · {playedLine(runs)}</span>
         </p>
       </div>
-      <LevelDots level={exercise.level} />
+      {isLibraryExerciseId(exercise.id) && <DeleteExercise exercise={exercise} />}
+      <LevelDots level={exercise.level} maxLevel={maxLevel} />
       <Link
         to="/exercises/$exerciseId"
         params={{ exerciseId: exercise.id }}
@@ -168,7 +179,7 @@ function ExerciseRow({ exercise, runs }: ItemProps) {
   )
 }
 
-function ExerciseCard({ exercise, runs }: ItemProps) {
+function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
   return (
     <li className="group relative flex flex-col rounded-2xl border border-line bg-panel p-2 transition-shadow focus-within:border-line-strong hover:border-line-strong hover:shadow-lg hover:shadow-shade">
       <ExerciseThumb exercise={exercise} className="aspect-[5/2]" />
@@ -176,9 +187,10 @@ function ExerciseCard({ exercise, runs }: ItemProps) {
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-display text-[15px] leading-snug font-semibold tracking-tight text-fg">
             {exercise.title}
+            {isLibraryExerciseId(exercise.id) && <YoursTag />}
           </h3>
           <span className="mt-1.5">
-            <LevelDots level={exercise.level} />
+            <LevelDots level={exercise.level} maxLevel={maxLevel} />
           </span>
         </div>
         <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted tabular-nums">
@@ -190,6 +202,7 @@ function ExerciseCard({ exercise, runs }: ItemProps) {
           <p className="text-xs text-muted">
             {playedLine(runs)}
           </p>
+          {isLibraryExerciseId(exercise.id) && <DeleteExercise exercise={exercise} />}
           {/* The whole card is the target; the link stretches over it. */}
           <Link
             to="/exercises/$exerciseId"
@@ -202,5 +215,48 @@ function ExerciseCard({ exercise, runs }: ItemProps) {
         </div>
       </div>
     </li>
+  )
+}
+
+/** Marks an exercise as the user's own, beside the pack's. */
+function YoursTag() {
+  return <span className="ml-2 rounded-md border border-line px-1.5 py-0.5 align-middle font-sans text-[11px] font-medium text-muted">Yours</span>
+}
+
+/**
+ * Remove one of the user's own exercises. Two presses, the second within a
+ * few seconds: deleting is for good, and the whole card is otherwise a link.
+ */
+function DeleteExercise({ exercise }: { exercise: Exercise }) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const timer = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(timer)
+  }, [armed])
+  const remove = useMutation(
+    trpc.exercises.delete.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: trpc.exercises.list.queryKey() }),
+    }),
+  )
+  const failed = remove.isError || (remove.data !== undefined && remove.data.status !== 'ok')
+  return (
+    // Above the card's stretched link, so the press lands here.
+    <span className="relative z-10 shrink-0">
+      <button
+        type="button"
+        disabled={remove.isPending}
+        onClick={() => (armed ? remove.mutate({ exerciseId: exercise.id }) : setArmed(true))}
+        aria-label={armed ? `Delete ${exercise.title} for good` : `Delete ${exercise.title}`}
+        className={`cursor-pointer rounded-lg border px-2 py-1 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg disabled:cursor-not-allowed disabled:opacity-50 ${
+          armed ? 'border-danger-text text-danger-text' : 'border-line text-muted hover:text-fg'
+        }`}
+      >
+        {armed ? 'Delete for good?' : 'Delete'}
+      </button>
+      {failed && <span role="alert" className="ml-2 text-xs text-danger-text">Could not delete</span>}
+    </span>
   )
 }

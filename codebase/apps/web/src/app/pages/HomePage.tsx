@@ -6,12 +6,11 @@ import { loadQuickRunSettings, pickQuickRun } from '../../appData/quickRun'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ShuffleIcon } from '../../components/icons'
-import { EXERCISES, type Exercise } from '../../content'
+import type { Exercise } from '../../content'
+import { useExerciseCatalog } from '../useExerciseCatalog'
 import { useTRPC } from '../trpc'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
-const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
-const EXERCISE_IDS = EXERCISES.map((exercise) => exercise.id)
 
 const CARD = 'rounded-2xl border border-line bg-panel'
 const SECTION_TITLE = 'font-display text-base font-semibold tracking-tight'
@@ -26,10 +25,11 @@ export default function HomePage() {
   // Without the runs the page still stands: the numbers read zero and the pack is on offer.
   const runs = data?.status === 'ok' ? data.runs : []
   const failed = !isPending && data?.status !== 'ok'
-  const summary = summarizeRuns(runs, EXERCISE_IDS)
+  const { exercises, byId } = useExerciseCatalog()
+  const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
 
   function startQuickRun(): void {
-    const picked = pickQuickRun(EXERCISES, loadQuickRunSettings(EXERCISES))
+    const picked = pickQuickRun(exercises, loadQuickRunSettings(exercises))
     void navigate({ to: '/session', search: { x: picked.map((exercise) => exercise.id).join(',') } })
   }
 
@@ -83,8 +83,8 @@ export default function HomePage() {
       </dl>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-2">
-        <RecentRuns summary={summary} />
-        <NextUp summary={summary} />
+        <RecentRuns summary={summary} byId={byId} />
+        <NextUp summary={summary} byId={byId} />
       </div>
     </div>
   )
@@ -139,7 +139,7 @@ function WeekChart({ week }: { week: ActivityDay[] }) {
   )
 }
 
-function RecentRuns({ summary }: { summary: Dashboard }) {
+function RecentRuns({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<string, Exercise> }) {
   return (
     // min-w-0: a grid item otherwise grows to its longest unbroken title.
     <section aria-labelledby="home-recent" className="min-w-0">
@@ -160,11 +160,11 @@ function RecentRuns({ summary }: { summary: Dashboard }) {
       ) : (
         <ul className={`mt-3 divide-y divide-line ${CARD}`}>
           {summary.recent.map((run) => {
-            const exercise = exerciseById.get(run.exerciseId)
+            const exercise = byId.get(run.exerciseId)
             return (
               <li key={run.id} className="flex items-center gap-3 px-3.5 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-fg">{exercise?.title ?? 'An exercise no longer in the pack'}</p>
+                  <p className="truncate font-medium text-fg">{exercise?.title ?? 'An exercise that is no longer here'}</p>
                   <p className="mt-0.5 text-sm text-muted tabular-nums">
                     {dayLabel(new Date(run.startedAt), new Date())} · {run.tempoBpm} BPM
                     {run.sessionId && ' · quick run'}
@@ -187,13 +187,13 @@ function RecentRuns({ summary }: { summary: Dashboard }) {
 }
 
 /** What to pick up next: what last felt hard, then what has never been played. */
-function NextUp({ summary }: { summary: Dashboard }) {
+function NextUp({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<string, Exercise> }) {
   const hard = summary.hardest.flatMap(({ exerciseId, rating }) => {
-    const exercise = exerciseById.get(exerciseId)
+    const exercise = byId.get(exerciseId)
     return exercise ? [{ exercise, reason: `Felt ${rating}/10 last time` }] : []
   })
   const fresh = summary.unplayed.flatMap((exerciseId) => {
-    const exercise = exerciseById.get(exerciseId)
+    const exercise = byId.get(exerciseId)
     return exercise ? [{ exercise, reason: 'Not played yet' }] : []
   })
   const picks = [...hard, ...fresh].slice(0, 3)

@@ -3,15 +3,25 @@ import type { ExerciseRun } from '../appData/run'
 import type { RunRepository } from '../server/db/runs'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
+import type { ExerciseInput } from '../content/exerciseInput'
+import type { UserExerciseRepository } from '../server/db/userExercises'
+import { createMemoryUserExerciseRepository } from './memoryUserExercises'
 
 export const TEST_CLERK_USER_ID = 'user_test_123'
 
 const runs = new Map<string, Map<string, ExerciseRun>>()
 let runsRepositoryAvailable = true
+let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
 
 export function resetTrpcTestData() {
   runs.clear()
   runsRepositoryAvailable = true
+  userExercises = createMemoryUserExerciseRepository()
+}
+
+/** Put exercises in the test user's library; resolves to them as stored, ids included. */
+export function seedTrpcTestLibrary(exercises: ExerciseInput[]) {
+  return Promise.all(exercises.map((exercise) => userExercises.createExercise(TEST_CLERK_USER_ID, exercise)))
 }
 
 export function seedTrpcTestRuns(seedRuns: ExerciseRun[]) {
@@ -70,6 +80,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         runs: runsRepositoryAvailable ? runRepository : null,
+        userExercises,
         users: null,
       }),
   })

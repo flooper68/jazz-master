@@ -10,7 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { EXERCISES } from '../content'
+import { useExerciseCatalog } from '../app/useExerciseCatalog'
 import { HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -90,6 +90,7 @@ export function Layout() {
   }, [theme, toggleTheme])
 
   const navigate = useNavigate()
+  const { exercises } = useExerciseCatalog()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   // The player is a stage: the phone header drops its nav row there, and the
   // sidebar remembers a fold of its own for it (folded unless opened).
@@ -195,7 +196,7 @@ export function Layout() {
           {/* The primary action: first in the sidebar, above the links; at the end of the phone row. */}
           <div className="ml-auto md:@container md:order-first md:mb-2 md:ml-0">
             <QuickRunButton
-              exercises={EXERCISES}
+              exercises={exercises}
               iconOnly={collapsed}
               onStart={(picked) =>
                 void navigate({ to: '/session', search: { x: picked.map((exercise) => exercise.id).join(',') } })

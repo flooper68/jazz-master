@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   smallint,
   text,
@@ -63,8 +64,32 @@ export const exerciseRuns = pgTable(
   ],
 )
 
+// A user's own exercises, beside the pack that ships in code. The exercise is
+// stored whole: it is parsed against the library's schema on the way in and
+// again on the way out, so the columns here are only what queries need.
+export const userExercises = pgTable(
+  'user_exercises',
+  {
+    id: uuid('id').primaryKey(),
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    exercise: jsonb('exercise').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('user_exercises_user_created_idx').on(
+      table.clerkUserId,
+      table.createdAt,
+    ),
+  ],
+)
+
 // Server-only Drizzle schema entrypoint.
 export const schema = {
   exerciseRuns,
+  userExercises,
   users,
 }

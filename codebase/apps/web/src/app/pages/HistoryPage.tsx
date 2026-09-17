@@ -6,12 +6,11 @@ import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { RepeatIcon } from '../../components/icons'
-import { EXERCISES } from '../../content'
 import { formatSeconds } from '../../player/formatting'
 import { useTRPC } from '../trpc'
+import type { Exercise } from '../../content'
+import { useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_READING } from '../../components/pageFrame'
-
-const exerciseById = new Map(EXERCISES.map((exercise) => [exercise.id, exercise]))
 
 const LINK =
   'rounded-lg bg-cta px-2.5 py-1 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
@@ -35,6 +34,8 @@ export default function HistoryPage() {
 }
 
 function HistoryBody({ runs, loading, failed }: { runs: ExerciseRun[] | null; loading: boolean; failed: boolean }) {
+  // One catalog for the whole list, not one per row.
+  const { byId } = useExerciseCatalog()
   if (loading) {
     return <p className="mt-8 text-sm text-muted">Loading your runs…</p>
   }
@@ -73,7 +74,7 @@ function HistoryBody({ runs, loading, failed }: { runs: ExerciseRun[] | null; lo
           </h2>
           <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-panel">
             {day.runs.map((run) => (
-              <RunRow key={run.id} run={run} />
+              <RunRow key={run.id} run={run} exercise={byId.get(run.exerciseId)} />
             ))}
           </ul>
         </section>
@@ -91,15 +92,14 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function RunRow({ run }: { run: ExerciseRun }) {
-  const exercise = exerciseById.get(run.exerciseId)
+function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | undefined }) {
   const time = new Date(run.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
   return (
     <li className="flex items-center gap-3.5 px-3 py-2.5">
       {exercise && <ExerciseThumb exercise={exercise} className="hidden h-12 w-24 shrink-0 sm:block" />}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="font-medium text-fg">{exercise?.title ?? 'An exercise no longer in the pack'}</h3>
+          <h3 className="font-medium text-fg">{exercise?.title ?? 'An exercise that is no longer here'}</h3>
           {exercise && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
               {AREA_LABELS[exercise.area]}

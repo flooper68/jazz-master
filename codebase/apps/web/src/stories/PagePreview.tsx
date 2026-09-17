@@ -32,6 +32,8 @@ function fixtureLink(scenario: Scenario): TRPCLink<AppRouter> {
           currentRuns = [run, ...currentRuns.filter((item) => item.id !== run.id)]
           data = { status: 'ok', run }; break
         }
+        // The previews show the pack; the user's own library is empty here.
+        case 'exercises.list': data = { status: 'ok', exercises: [] }; break
         case 'health': data = { status: 'ok', time: new Date().toISOString() }; break
         default: throw new Error(`Missing Storybook fixture: ${op.path}`)
       }
