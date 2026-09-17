@@ -11,10 +11,12 @@ import { CloseIcon } from './icons'
 
 interface AboutPanelProps {
   exercise: Exercise
+  /** Semitones the shape has been slid from where it was written; the text below still describes the written key. */
+  transposedBy?: number
   onClose: () => void
 }
 
-export function AboutPanel({ exercise, onClose }: AboutPanelProps) {
+export function AboutPanel({ exercise, transposedBy = 0, onClose }: AboutPanelProps) {
   const shape = exerciseShape(exercise)
   const paragraphs = exercise.about ?? []
   return (
@@ -44,6 +46,7 @@ export function AboutPanel({ exercise, onClose }: AboutPanelProps) {
           />
           <figcaption className="mt-1 text-center text-xs text-muted">
             The shape on the neck · roots in colour
+            {transposedBy !== 0 && ` · moved ${Math.abs(transposedBy)} ${Math.abs(transposedBy) === 1 ? 'fret' : 'frets'} ${transposedBy > 0 ? 'up' : 'down'}; the text describes it as written`}
           </figcaption>
         </figure>
         <div className="mt-5 space-y-3 text-[15px] leading-relaxed text-fg-2">

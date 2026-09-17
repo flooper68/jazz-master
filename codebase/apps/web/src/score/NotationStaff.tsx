@@ -84,9 +84,11 @@ export function NotationStaff({ notes, layout, system, keySig, top, currentIndex
         />
       ))}
       <TrebleClef x={clefX} gLineY={yOfStep(32)} />
-      {sigGlyphs.map((glyph, i) => (
-        <Accidental key={i} kind={glyph.accidental} x={34 + i * 8} y={yOfStep(glyph.step)} />
-      ))}
+      <g data-key-signature>
+        {sigGlyphs.map((glyph, i) => (
+          <Accidental key={i} kind={glyph.accidental} x={34 + i * 8} y={yOfStep(glyph.step)} />
+        ))}
+      </g>
       {system.index === 0 && (
         <>
           <text

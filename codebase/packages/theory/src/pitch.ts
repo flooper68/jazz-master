@@ -140,3 +140,29 @@ export function keySignature(tonic: string): KeySignature | null {
   })
   return { tonic: note, accidentals, scale }
 }
+
+/**
+ * The major key a number of semitones away from another (`C` up 2 is `D`),
+ * named by the signature with the fewest accidentals: `Db` rather than `C#`,
+ * `B` rather than `Cb`. The six-accidental tie goes the way the starting key
+ * leans: sharp keys reach `F#`, flat keys and `C` reach `Gb`. Null for a
+ * tonic no standard signature spells.
+ */
+export function transposeMajorKey(tonic: string, semitones: number): string | null {
+  const from = keySignature(tonic)
+  if (!from) return null
+  const target = (((pitchClass(from.tonic) + semitones) % 12) + 12) % 12
+  if (target === pitchClass(from.tonic)) return tonic
+  const leansSharp = from.accidentals > 0
+  let best: string | null = null
+  for (const [name, accidentals] of Object.entries(MAJOR_KEY_ACCIDENTALS)) {
+    const note = parseNote(name)
+    if (!note || pitchClass(note) !== target) continue
+    const bestAccidentals = best === null ? Infinity : Math.abs(MAJOR_KEY_ACCIDENTALS[best])
+    const fewer = Math.abs(accidentals) < bestAccidentals
+    const tieBreak = Math.abs(accidentals) === bestAccidentals && accidentals > 0 === leansSharp
+    if (fewer || tieBreak) best = name
+  }
+  return best
+}
+

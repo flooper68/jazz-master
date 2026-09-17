@@ -361,6 +361,58 @@ describe('ExerciseRunner', () => {
     expect(JSON.parse(localStorage.getItem('jazz-master.player-prefs') ?? '{}')).toMatchObject({ zoom: 1.4 })
   })
 
+  it('transposes by sliding the shape: frets move, the key is renamed, and Reset brings the written key back', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    const frets = () => [...document.querySelectorAll('[data-note] text')].map((t) => t.textContent)
+    const readout = () => document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent
+    expect(frets()).toEqual(['3', '0', '2', '3', '0', '2'])
+    expect(document.querySelector('[data-key-signature]')?.children).toHaveLength(0)
+    expect(readout()).toBe('C')
+    // The lowest note is an open string, so the shape cannot go down.
+    expect(screen.getByRole('button', { name: 'Transpose down a semitone' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Transpose up a semitone' }))
+    await user.click(screen.getByRole('button', { name: 'Transpose up a semitone' }))
+    expect(frets()).toEqual(['5', '2', '4', '5', '2', '4'])
+    expect(readout()).toBe('D +2')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('in D major, +2')
+    // D major is signed with two sharps.
+    expect(document.querySelector('[data-key-signature]')?.children).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Back to the written key' }))
+    expect(frets()).toEqual(['3', '0', '2', '3', '0', '2'])
+    expect(readout()).toBe('C')
+    expect(screen.getByRole('button', { name: 'Back to the written key' })).toBeDisabled()
+  })
+
+  it('transposes from the keyboard and stops at the top of the neck', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    screen.getByRole('heading', { level: 1 }).focus()
+    await user.keyboard('ttt')
+    expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('E♭ +3')
+    // Said in words for a screen reader, which reads ♭ and − unreliably.
+    expect(document.querySelector('[data-transpose-readout] .sr-only')?.textContent).toBe('E flat major, 3 semitones up')
+    await user.keyboard('{Shift>}T{/Shift}')
+    expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('D +2')
+    await user.keyboard('tttttttttttttttt')
+    expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('B +11')
+    expect(screen.getByRole('button', { name: 'Transpose up a semitone' })).toBeDisabled()
+  })
+
+  it('plays the guitar along in the transposed key', async () => {
+    const user = userEvent.setup()
+    const audio = fakeAudio()
+    renderRunner({ audio })
+    await user.click(screen.getByRole('button', { name: 'Transpose up a semitone' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
+    await disableCountIn(user)
+    await user.click(screen.getByRole('button', { name: /^Play / }))
+    // The written line starts on C3 (m48); a semitone up it starts on D♭3.
+    await waitFor(() => expect(audio.log.find((entry) => entry.startsWith('note'))).toBe('note m49'))
+  })
+
   it('switches between tab, notation and both', async () => {
     const user = userEvent.setup()
     renderRunner()

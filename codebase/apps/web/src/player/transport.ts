@@ -84,6 +84,8 @@ export interface Transport {
   setClick(on: boolean): void
   setVoice(on: boolean): void
   setGuitar(guitar: VoiceId): void
+  /** Shift what the guitar plays by semitones, for an exercise slid along the neck. */
+  setTranspose(semitones: number): void
   dispose(): void
   readonly disposed: boolean
 }
@@ -138,6 +140,8 @@ export function createTransport({
   let timer: ReturnType<typeof setInterval> | null = null
   let scheduledUntil = 0
   let positionBeat = 0
+  // The notes keep their written frets; a slid shape only changes the pitch heard.
+  let transposeSemitones = 0
   // Bumped on every play/pause so a late resume() cannot revive a paused run.
   let generation = 0
 
@@ -179,7 +183,7 @@ export function createTransport({
 
   /** Get the guitar's recordings loading before they are needed. */
   function primeVoice(): void {
-    if (snapshot.voice) audio?.prime(pitches)
+    if (snapshot.voice) audio?.prime(pitches.map((pitch) => pitch + transposeSemitones))
   }
 
   function clearTimer(): void {
@@ -208,7 +212,7 @@ export function createTransport({
       for (const event of run.eventsBetween(scheduledUntil, horizon)) {
         if (event.kind === 'click' && snapshot.click) audio.click(event.time, event.accent)
         if (event.kind === 'note' && snapshot.voice) {
-          audio.pluck(event.time, event.midi, event.seconds, voiceGain)
+          audio.pluck(event.time, event.midi + transposeSemitones, event.seconds, voiceGain)
         }
       }
     }
@@ -378,6 +382,10 @@ export function createTransport({
     setGuitar(guitar) {
       emit({ guitar })
       audio?.setVoice(guitar)
+      primeVoice()
+    },
+    setTranspose(semitones) {
+      transposeSemitones = Number.isFinite(semitones) ? Math.round(semitones) : 0
       primeVoice()
     },
     get disposed() {

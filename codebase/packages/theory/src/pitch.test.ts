@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseNote } from './note'
-import { diatonicStep, keySignature, midiOf, spellMidi } from './pitch'
+import { parseNote, pitchClass } from './note'
+import { diatonicStep, keySignature, midiOf, spellMidi, transposeMajorKey } from './pitch'
 
 describe('spellMidi', () => {
   it('spells with sharps by default and with flats in flat keys', () => {
@@ -62,5 +62,57 @@ describe('keySignature', () => {
     expect(keySignature('D')?.scale).toContainEqual(parseNote('F#'))
     expect(keySignature('D')?.scale).toContainEqual(parseNote('C#'))
     expect(keySignature('D')?.tonic).toEqual(parseNote('D'))
+  })
+})
+
+describe('transposeMajorKey', () => {
+  it('walks C through all twelve keys, choosing the signature with the fewest accidentals', () => {
+    const keys = Array.from({ length: 12 }, (_, semitones) => transposeMajorKey('C', semitones))
+    expect(keys).toEqual(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'])
+  })
+
+  it('goes down as well as up, and wraps past the octave', () => {
+    expect(transposeMajorKey('F', -1)).toBe('E')
+    expect(transposeMajorKey('C', -3)).toBe('A')
+    expect(transposeMajorKey('G', 12)).toBe('G')
+    expect(transposeMajorKey('Bb', -14)).toBe('Ab')
+  })
+
+  it('settles the six-accidental tie the way the starting key leans', () => {
+    // Sharp keys land on F#, flat keys (and C) on Gb.
+    expect(transposeMajorKey('G', -1)).toBe('F#')
+    expect(transposeMajorKey('E', 2)).toBe('F#')
+    expect(transposeMajorKey('F', 1)).toBe('Gb')
+    expect(transposeMajorKey('Ab', -2)).toBe('Gb')
+  })
+
+  it('leaves a key alone at zero and comes back from a round trip', () => {
+    for (const key of ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb']) {
+      expect(transposeMajorKey(key, 0)).toBe(key)
+      expect(transposeMajorKey(key, 12)).toBe(key)
+    }
+    // Away from the F#/Gb tie a round trip lands where it started.
+    for (const key of ['C', 'G', 'D', 'A', 'E', 'F', 'Bb', 'Eb', 'Ab']) {
+      expect(transposeMajorKey(transposeMajorKey(key, 3)!, -3)).toBe(key)
+    }
+  })
+
+  it('lands on the right pitch class from every key by every distance', () => {
+    const tonics = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb']
+    for (const tonic of tonics) {
+      for (let semitones = -12; semitones <= 12; semitones += 1) {
+        const moved = transposeMajorKey(tonic, semitones)
+        const from = pitchClass(parseNote(tonic)!)
+        expect(keySignature(moved ?? '')).not.toBeNull()
+        expect(pitchClass(parseNote(moved!)!)).toBe((((from + semitones) % 12) + 12) % 12)
+        // Never more than six accidentals unless it is the key it started as.
+        if (moved !== tonic) expect(Math.abs(keySignature(moved!)!.accidentals)).toBeLessThanOrEqual(6)
+      }
+    }
+  })
+
+  it('has no answer for a tonic no standard signature spells', () => {
+    expect(transposeMajorKey('G#', 1)).toBeNull()
+    expect(transposeMajorKey('nope', 1)).toBeNull()
   })
 })

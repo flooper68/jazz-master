@@ -21,6 +21,8 @@ export const ChevronDownIcon = () => (
 )
 export const MinusIcon = () => <Icon><path d="M2.5 7.25h11v1.5h-11z" /></Icon>
 export const PlusIcon = () => <Icon><path d="M7.25 2.5h1.5v4.75h4.75v1.5H8.75v4.75h-1.5V8.75H2.5v-1.5h4.75z" /></Icon>
+export const ArrowUpIcon = () => <Icon><path d="M8 2.5 13 8l-1.1 1.1-3.15-3.4v7.8h-1.5V5.7L4.1 9.1 3 8z" /></Icon>
+export const ArrowDownIcon = () => <Icon><path d="M8 13.5 3 8l1.1-1.1 3.15 3.4V2.5h1.5v7.8l3.15-3.4L13 8z" /></Icon>
 export const ResetIcon = () => (
   <Icon>
     <path d="M8 2.5a5.5 5.5 0 1 1-5.2 3.7l1.4.5A4 4 0 1 0 8 4v2.2L4.5 3.3 8 .4z" />

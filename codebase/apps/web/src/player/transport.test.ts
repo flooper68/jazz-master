@@ -277,6 +277,25 @@ describe('createTransport', () => {
     expect(transport.getSnapshot().status).toBe('stopped')
   })
 
+  it('plays the line in the transposed key, from the next note scheduled, and primes those pitches', () => {
+    const { transport, log, advance } = harness()
+    transport.setCountIn(false)
+    transport.setVoice(true)
+    transport.setClick(false)
+    transport.setTranspose(2)
+    transport.play()
+    expect(log).toContain('prime 50,52,54,55')
+    advance(1.5)
+    transport.setTranspose(-1)
+    expect(log).toContain('prime 47,49,51,52')
+    advance(1)
+    expect(log.filter((entry) => entry.startsWith('note')).slice(0, 3)).toEqual([
+      'note 0.05 m50 1.00s',
+      'note 1.05 m52 1.00s',
+      'note 2.05 m51 1.00s',
+    ])
+  })
+
   it('tells the audio which guitar to use and primes its pitches when the voice is on', () => {
     const { transport, log } = harness()
     expect(transport.getSnapshot().guitar).toBe('jazz-sampled')

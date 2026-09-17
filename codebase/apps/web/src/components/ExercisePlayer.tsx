@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import type { RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import { VOICES } from '../audio/voices'
-import { DEFAULT_BEATS_PER_BAR, noteIndexAt, type Exercise } from '../content'
+import { clampTransposition, DEFAULT_BEATS_PER_BAR, noteIndexAt, transposeExercise, transposeRange, type Exercise } from '../content'
 import { formatBarBeat, formatSeconds } from '../player/formatting'
 import type { LoopRegion, TempoLadder } from '../player/plan'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
@@ -11,6 +11,8 @@ import { Score, type ScoreHandle } from '../score/Score'
 import { AboutPanel } from './AboutPanel'
 import { Select } from './ui/Select'
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
   BarIcon,
   BothIcon,
   ChevronLeftIcon,
@@ -103,6 +105,14 @@ export function ExercisePlayer({
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
   const [countingIn, setCountingIn] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
+  // Transposing slides the shape along the neck. It belongs to this sitting: every exercise opens as written.
+  const [requestedSemitones, setSemitones] = useState(0)
+  // One clamped value feeds the score, the guitar and the readout, so they can never disagree.
+  const semitones = clampTransposition(exercise, requestedSemitones)
+  useEffect(() => setSemitones(0), [exercise])
+  const transposable = useMemo(() => transposeRange(exercise), [exercise])
+  const shown = useMemo(() => transposeExercise(exercise, semitones), [exercise, semitones])
+  const transposeBy = (step: number) => setSemitones((current) => clampTransposition(exercise, current + step))
   // The About drawer waits behind its button; nothing opens on its own.
   const [aboutOpen, setAboutOpen] = useState(false)
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
@@ -127,6 +137,7 @@ export function ExercisePlayer({
   useEffect(() => transport.setVoice(prefs.voice), [transport, prefs.voice])
   useEffect(() => transport.setCountIn(prefs.countIn), [transport, prefs.countIn])
   useEffect(() => transport.setGuitar(prefs.guitar), [transport, prefs.guitar])
+  useEffect(() => transport.setTranspose(semitones), [transport, semitones])
 
   // The cursor follows the transport every frame; React state only changes
   // when something visible in the chrome changes (note, bar, tempo).
@@ -252,6 +263,8 @@ export function ExercisePlayer({
   function onKeyDown(event: React.KeyboardEvent): void {
     const target = event.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') return
+    // Cmd+T, Ctrl+L and friends belong to the browser.
+    if (event.metaKey || event.ctrlKey || event.altKey) return
     const handlers: Record<string, () => void> = {
       ' ': () => (playing ? transport.pause() : play()),
       Home: () => transport.stop(),
@@ -264,6 +277,8 @@ export function ExercisePlayer({
       '+': () => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP),
       '=': () => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP),
       '-': () => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP),
+      t: () => transposeBy(1),
+      T: () => transposeBy(-1),
       f: toggleFullscreen,
       i: () => setAboutOpen((open) => !open),
     }
@@ -303,7 +318,11 @@ export function ExercisePlayer({
           {exercise.title}{' '}
           <span className="ml-1 font-sans text-xs font-normal text-muted tabular-nums">
             {[
-              exercise.key && !exercise.title.includes(`${exercise.key} major`) ? `${exercise.key} major` : null,
+              semitones !== 0
+                ? `${shown.key ? `in ${keyLabel(shown.key)} major, ` : ''}${formatSemitones(semitones)}`
+                : exercise.key && !exercise.title.includes(`${exercise.key} major`)
+                  ? `${keyLabel(exercise.key)} major`
+                  : null,
               `${beatsPerBar}/4`,
               `${exercise.tempoBpm} BPM`,
             ]
@@ -322,9 +341,9 @@ export function ExercisePlayer({
       >
         <Score
           ref={scoreRef}
-          notes={exercise.notes}
+          notes={shown.notes}
           beatsPerBar={beatsPerBar}
-          keyName={exercise.key}
+          keyName={shown.key}
           view={prefs.view}
           currentIndex={started ? currentIndex : null}
           loop={snapshot.loop}
@@ -450,6 +469,46 @@ export function ExercisePlayer({
                   now {tempoNow}
                 </span>
               )}
+            </Group>
+            <Group label="Transpose">
+              <IconButton
+                onClick={() => transposeBy(-1)}
+                disabled={semitones <= transposable.min}
+                label="Transpose down a semitone"
+                data-tip={semitones <= transposable.min ? 'The shape is as low on the neck as it goes' : 'Slide the shape down a fret'}
+                shortcut="Shift+T"
+              >
+                <ArrowDownIcon />
+              </IconButton>
+              <span
+                className={`min-w-12 text-center text-xs font-semibold tabular-nums ${semitones === 0 ? 'text-muted' : 'text-accent-text'}`}
+                aria-live="polite"
+                data-tip="Transposition: the key the exercise sounds in, and how far the shape has moved"
+                data-transpose-readout
+              >
+                <span aria-hidden="true">
+                  {[shown.key ? keyLabel(shown.key) : null, semitones === 0 && shown.key ? null : formatSemitones(semitones)].filter(Boolean).join(' ')}
+                </span>
+                <span className="sr-only">{spokenTransposition(shown.key, semitones)}</span>
+              </span>
+              <IconButton
+                onClick={() => transposeBy(1)}
+                disabled={semitones >= transposable.max}
+                label="Transpose up a semitone"
+                data-tip={semitones >= transposable.max ? 'The shape is as high on the neck as it goes' : 'Slide the shape up a fret'}
+                shortcut="T"
+              >
+                <ArrowUpIcon />
+              </IconButton>
+              {/* Always there, so the row does not shift under the pointer on the first step. */}
+              <IconButton
+                onClick={() => setSemitones(0)}
+                disabled={semitones === 0}
+                label="Back to the written key"
+                data-tip={`Back to the written key${exercise.key ? `, ${keyLabel(exercise.key)} major` : ''}`}
+              >
+                <ResetIcon />
+              </IconButton>
             </Group>
             <Group label="Practice">
               <Menu
@@ -620,7 +679,7 @@ export function ExercisePlayer({
               data-about-backdrop
             />
             <div className="drawer-in fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px]">
-              <AboutPanel exercise={exercise} onClose={() => setAboutOpen(false)} />
+              <AboutPanel exercise={shown} transposedBy={semitones} onClose={() => setAboutOpen(false)} />
             </div>
           </>
         )}
@@ -703,6 +762,24 @@ function Menu({
       )}
     </div>
   )
+}
+
+/** A key as the UI writes it: `Bb` in code, `B♭` on screen. */
+function keyLabel(key: string): string {
+  return key.replace(/b/g, '♭').replace(/#/g, '♯')
+}
+
+/** `+2`, `−3`, `0`: a transposition with a real minus sign. */
+function formatSemitones(semitones: number): string {
+  return semitones > 0 ? `+${semitones}` : semitones < 0 ? `−${-semitones}` : '0'
+}
+
+/** The transposition as a screen reader should say it: glyphs and a bare minus are read unreliably. */
+function spokenTransposition(key: string | undefined, semitones: number): string {
+  const keyName = key ? `${key.replace('b', ' flat').replace('#', ' sharp')} major` : null
+  const distance =
+    semitones === 0 ? 'as written' : `${Math.abs(semitones)} semitone${Math.abs(semitones) === 1 ? '' : 's'} ${semitones > 0 ? 'up' : 'down'}`
+  return [keyName, distance].filter(Boolean).join(', ')
 }
 
 /** A cluster of related controls, separated from its neighbours by a rule. */

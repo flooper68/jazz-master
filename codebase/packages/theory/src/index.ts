@@ -14,6 +14,7 @@ export {
   midiOf,
   SHARP_ORDER,
   spellMidi,
+  transposeMajorKey,
   type AccidentalPreference,
   type KeySignature,
   type SpelledPitch,
