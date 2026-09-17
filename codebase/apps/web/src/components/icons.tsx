@@ -111,3 +111,21 @@ export const FullscreenIcon = ({ exit }: { exit: boolean }) => (
     )}
   </Icon>
 )
+export const ListIcon = () => (
+  <Icon size={16}><path d="M2 3h2v2H2zM6 3.25h8v1.5H6zM2 7h2v2H2zM6 7.25h8v1.5H6zM2 11h2v2H2zM6 11.25h8v1.5H6z" /></Icon>
+)
+export const HistoryIcon = () => (
+  <Icon size={16}><path d="M8 1.5a6.5 6.5 0 1 1-6.3 8.1l1.45-.37A5 5 0 1 0 4.3 4.6L6 6.3H1.5V1.8l1.74 1.74A6.48 6.48 0 0 1 8 1.5zm-.75 3h1.5v3.2l2.3 1.35-.76 1.3-3.04-1.8z" /></Icon>
+)
+export const ClockIcon = () => (
+  <Icon size={12}><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zm-.75 1.75h1.5v2.95l2.1 1.2-.75 1.3-2.85-1.65z" /></Icon>
+)
+export const SidebarIcon = () => (
+  <Icon size={16}><path d="M2 2.5h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm.5 1.5v8h3V4zm4.5 0v8h6.5V4z" /></Icon>
+)
+export const GridIcon = () => (
+  <Icon size={14}><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" /></Icon>
+)
+export const RowsIcon = () => (
+  <Icon size={14}><path d="M2 2.5h12v3H2zM2 6.5h12v3H2zM2 10.5h12v3H2z" /></Icon>
+)

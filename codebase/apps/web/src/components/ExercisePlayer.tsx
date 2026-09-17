@@ -292,7 +292,8 @@ export function ExercisePlayer({
       aria-label={`${exercise.title} player`}
     >
       {/* Same text column as the app header; the 1px is the panel's border. */}
-      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-[calc(0.5rem-1px)] pt-2 pb-1.5 md:px-[calc(2rem-1px)]">
+      {/* A div, not a header: the page has one banner, the shell's. */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-[calc(0.5rem-1px)] pt-2 pb-1.5 md:px-[calc(2rem-1px)]">
         {/* One line: the title, then what the title does not already say. */}
         <h1
           ref={headingRef}
@@ -311,7 +312,7 @@ export function ExercisePlayer({
           </span>
         </h1>
         {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
-      </header>
+      </div>
 
       {/* The scene: the score is the canvas; the chrome and the About drawer float over it. */}
       <div

@@ -21,12 +21,26 @@ describe('app router', () => {
     expect(screen.getByRole('heading', stageHeading)).toBeInTheDocument()
   })
 
+  it('renders the history at /history, reached from the navigation', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/')
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page')
+
+    await user.click(within(nav).getByRole('link', { name: 'History' }))
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'History' }),
+    ).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current')
+  })
+
   it('shows the app title in the persistent layout', async () => {
     await renderRoute('/')
     expect(screen.getByText('woodshed')).toBeInTheDocument()
   })
 
-  it.each(['/practice', '/history', '/profile', '/lessons/scales-major-open', '/exercises/no-such-exercise', '/no-such-page'])(
+  it.each(['/practice', '/profile', '/lessons/scales-major-open', '/exercises/no-such-exercise', '/no-such-page'])(
     'renders not found for %s',
     async (path) => {
       await renderRoute(path)

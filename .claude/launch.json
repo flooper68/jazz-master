@@ -27,6 +27,29 @@
         "dev"
       ],
       "port": 4321
+    },
+    {
+      "name": "storybook-only",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd codebase/apps/web && exec bunx storybook dev -p 6006 --no-open"
+      ],
+      "port": 6006
+    },
+    {
+      "name": "web-clerk",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://jazz_master:jazz_master@127.0.0.1:55432/jazz_master",
+        "DATABASE_URL=postgresql://jazz_master:jazz_master@127.0.0.1:55432/jazz_master",
+        "bun",
+        "run",
+        "--cwd",
+        "codebase",
+        "dev"
+      ],
+      "port": 4321
     }
   ]
 }

@@ -8,19 +8,28 @@ import { TRPCProvider } from '../app/trpc'
 import { Layout } from '../components/Layout'
 import ExercisesPage from '../app/pages/ExercisesPage'
 import ExercisePage from '../app/pages/ExercisePage'
+import HistoryPage from '../app/pages/HistoryPage'
 import NotFoundPage from '../app/pages/NotFoundPage'
+import type { ExerciseRun } from '../appData/run'
+import { runs } from './fixtures'
 
-export type Scenario = 'ready' | 'error'
+export type Scenario = 'ready' | 'empty' | 'error'
 
 /** In-memory transport: no HTTP fallback and no account/database access. */
 function fixtureLink(scenario: Scenario): TRPCLink<AppRouter> {
+  let currentRuns: ExerciseRun[] = scenario === 'empty' ? [] : structuredClone(runs)
   return () => ({ op }) => observable((observer) => {
     let data: unknown
     if (scenario === 'error') {
       data = { status: 'error', message: 'Demo service is unavailable. Please try again.' }
     } else {
       switch (op.path) {
-        case 'runs.save': data = { status: 'ok', run: op.input }; break
+        case 'runs.list': data = { status: 'ok', runs: currentRuns }; break
+        case 'runs.save': {
+          const run = op.input as ExerciseRun
+          currentRuns = [run, ...currentRuns.filter((item) => item.id !== run.id)]
+          data = { status: 'ok', run }; break
+        }
         case 'health': data = { status: 'ok', time: new Date().toISOString() }; break
         default: throw new Error(`Missing Storybook fixture: ${op.path}`)
       }
@@ -38,6 +47,7 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
     const routes = [
       createRoute({ getParentRoute: () => root, path: '/', component: ExercisesPage }),
       createRoute({ getParentRoute: () => root, path: '/exercises/$exerciseId', component: ExercisePage }),
+      createRoute({ getParentRoute: () => root, path: '/history', component: HistoryPage }),
       createRoute({ getParentRoute: () => root, path: '/not-found', component: NotFoundPage }),
     ]
     const router = createRouter({ routeTree: root.addChildren(routes), history: createMemoryHistory({ initialEntries: [path] }) })

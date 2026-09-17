@@ -14,6 +14,13 @@ export function resetTrpcTestData() {
   runsRepositoryAvailable = true
 }
 
+export function seedTrpcTestRuns(seedRuns: ExerciseRun[]) {
+  runs.set(
+    TEST_CLERK_USER_ID,
+    new Map(seedRuns.map((run) => [run.id, { ...run }])),
+  )
+}
+
 export function getTrpcTestRuns(): ExerciseRun[] {
   return listStoredRuns(TEST_CLERK_USER_ID)
 }

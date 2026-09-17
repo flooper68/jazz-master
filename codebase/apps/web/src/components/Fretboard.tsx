@@ -22,6 +22,8 @@ interface FretboardProps {
    * from assistive tech, so "Cmaj7 tones, frets 0–5" beats "Fretboard".
    */
   'aria-label'?: string
+  /** Sizing for the svg; the default fills the container's width. */
+  className?: string
 }
 
 const FRET_W = 56
@@ -44,6 +46,7 @@ export function Fretboard({
   highlights = [],
   fretRange = { min: 0, max: 12 },
   'aria-label': ariaLabel = 'Fretboard',
+  className,
 }: FretboardProps) {
   const { min, max } = fretRange
   const hasNut = min === 0
@@ -69,7 +72,8 @@ export function Fretboard({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      width="100%"
+      width={className ? undefined : '100%'}
+      className={className}
       role="img"
       aria-label={ariaLabel}
     >

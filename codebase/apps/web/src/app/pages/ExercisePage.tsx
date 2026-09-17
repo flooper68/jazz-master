@@ -47,9 +47,9 @@ function ExerciseStage({ exercise }: { exercise: Exercise }) {
   )
 
   // The player is a full-bleed stage: cancel the shell's page padding and
-  // take the viewport height below the header.
+  // take the viewport — below the phone header, beside the sidebar from md up.
   return (
-    <div className="-mx-4 -my-6 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col px-2 py-2 md:-mx-10 md:-my-10">
+    <div className="-mx-4 -my-6 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col px-2 py-2 md:-mx-10 md:-my-10 md:h-dvh">
       {unsaved && (
         <p role="alert" className="mb-2 px-2 text-sm text-danger-text md:px-8">
           This run was not saved.{' '}

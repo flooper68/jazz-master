@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import type { ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
+import { AREA_BADGE, AREA_LABELS } from './areaLabels'
 import { ExercisePlayer } from './ExercisePlayer'
+import { ExerciseThumb } from './ExerciseThumb'
+import { CheckIcon } from './icons'
 import { RatingInput } from './RatingInput'
 import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
 import { useViewFocus } from './useViewFocus'
@@ -70,22 +73,46 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, createAudio, now
 
   if (finished) {
     return (
-      <section className="px-2 py-4 md:px-8 md:py-8">
-        <div className="max-w-2xl">
-          <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
-            Exercise complete
-          </h1>
-          <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-panel">
-            <li className="flex items-baseline justify-between gap-4 p-4">
-              <span className="text-fg">{exercise.title}</span>
-              <span className="shrink-0 text-sm text-muted">Done today</span>
+      <section className="flex flex-1 items-start justify-center overflow-y-auto px-2 py-8 md:items-center md:px-8">
+        <div className="w-full max-w-lg">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
+            >
+              <CheckIcon />
+            </span>
+            <div>
+              <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
+                Exercise complete
+              </h1>
+              <p className="text-sm text-muted">
+                {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+            </div>
+          </div>
+
+          <ul className="mt-6 rounded-2xl border border-line bg-panel p-2.5">
+            <li className="flex items-center gap-4">
+              <ExerciseThumb exercise={exercise} className="h-16 w-32 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display font-semibold tracking-tight text-fg">{exercise.title}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
+                    {AREA_LABELS[exercise.area]}
+                  </span>
+                  Done today
+                </p>
+              </div>
             </li>
           </ul>
+
           {run && (
-            <div className="mt-6">
+            <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
               <RatingInput value={run.rating} onChange={rate} />
             </div>
           )}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" onClick={onExit} className={BUTTON_PRIMARY}>
               Back to exercises
