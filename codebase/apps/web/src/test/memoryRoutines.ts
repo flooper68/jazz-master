@@ -11,7 +11,18 @@ import {
 export function createMemoryRoutineRepository(): RoutineRepository {
   const rows: { rowId: string; clerkUserId: string; routine: RoutineInput }[] = []
   let next = 0
+  const started = new Set<string>()
   return {
+    async giveStarterRoutines(clerkUserId, starters) {
+      if (started.has(clerkUserId)) return false
+      started.add(clerkUserId)
+      if (rows.some((row) => row.clerkUserId === clerkUserId) || starters.length === 0) return false
+      for (const routine of starters) {
+        next += 1
+        rows.push({ rowId: `10000000-0000-4000-8000-${String(next).padStart(12, '0')}`, clerkUserId, routine })
+      }
+      return true
+    },
     async listRoutines(clerkUserId) {
       return rows.filter((row) => row.clerkUserId === clerkUserId).flatMap((row) => storedRoutine(row.rowId, row.routine) ?? [])
     },
@@ -20,6 +31,7 @@ export function createMemoryRoutineRepository(): RoutineRepository {
       next += 1
       const rowId = `10000000-0000-4000-8000-${String(next).padStart(12, '0')}`
       rows.push({ rowId, clerkUserId, routine })
+      started.add(clerkUserId)
       return { ...routine, id: rowId }
     },
     async updateRoutine(clerkUserId, routineId, routine) {

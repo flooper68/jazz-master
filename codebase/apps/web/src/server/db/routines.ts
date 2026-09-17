@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from 'drizzle-orm'
+import { and, asc, count, eq, isNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { routineInputSchema, type Routine, type RoutineInput } from '../../appData/routine'
 import {
@@ -28,6 +28,13 @@ export function isRoutineId(routineId: string): boolean {
 export interface RoutineRepository {
   /** Oldest first. */
   listRoutines(clerkUserId: string): Promise<Routine[]>
+  /**
+   * Give a user their starter routines, once: the first call for a user marks
+   * them as started and, if they have no routines yet, stores these. Every
+   * later call does nothing — also after the user deleted them all. True when
+   * routines were stored.
+   */
+  giveStarterRoutines(clerkUserId: string, starters: readonly RoutineInput[]): Promise<boolean>
   createRoutine(clerkUserId: string, routine: RoutineInput): Promise<Routine>
   /** The updated routine, or null when this user has no routine with that id. */
   updateRoutine(clerkUserId: string, routineId: string, routine: RoutineInput): Promise<Routine | null>
@@ -71,6 +78,49 @@ export function createRoutineRepository({
       }
     },
 
+    async giveStarterRoutines(clerkUserId, starters) {
+      const db = drizzle(connectionString, { schema })
+
+      try {
+        return await db.transaction(async (tx) => {
+          await tx
+            .insert(users)
+            .values({ clerkUserId })
+            .onConflictDoNothing()
+
+          // Claim the one-time mark. Two requests racing for it serialize on the
+          // row: the second finds it set and gets nothing back.
+          const claimed = await tx
+            .update(users)
+            .set({ starterRoutinesAt: new Date() })
+            .where(and(eq(users.clerkUserId, clerkUserId), isNull(users.starterRoutinesAt)))
+            .returning({ clerkUserId: users.clerkUserId })
+          if (claimed.length === 0) return false
+
+          const [{ total }] = await tx
+            .select({ total: count() })
+            .from(practiceRoutines)
+            .where(eq(practiceRoutines.clerkUserId, clerkUserId))
+          // Someone who already made routines keeps just those.
+          if (total > 0 || starters.length === 0) return false
+
+          // Spaced a millisecond apart so "oldest first" keeps the order they are written in.
+          const now = Date.now()
+          await tx.insert(practiceRoutines).values(
+            starters.map((routine, index) => ({
+              id: newId(),
+              clerkUserId,
+              routine,
+              createdAt: new Date(now + index),
+            })),
+          )
+          return true
+        })
+      } finally {
+        await db.$client.end()
+      }
+    },
+
     async createRoutine(clerkUserId, routine) {
       const db = drizzle(connectionString, { schema })
 
@@ -89,6 +139,11 @@ export function createRoutineRepository({
 
           const id = newId()
           await tx.insert(practiceRoutines).values({ id, clerkUserId, routine })
+          // Making a routine is starting: whoever makes their own first is never handed the starters later.
+          await tx
+            .update(users)
+            .set({ starterRoutinesAt: new Date() })
+            .where(and(eq(users.clerkUserId, clerkUserId), isNull(users.starterRoutinesAt)))
           return { ...routine, id }
         })
       } finally {

@@ -6,6 +6,7 @@ import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
 import { appRouter } from './router'
+import { STARTER_ROUTINES } from '../../content/starterRoutines'
 import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 
 const createCaller = createCallerFactory(appRouter)
@@ -551,7 +552,8 @@ describe('appRouter.routines', () => {
     expect(created).toMatchObject({ status: 'ok', routine })
     const id = created.status === 'ok' ? created.routine.id : ''
 
-    await expect(other.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
+    const theirs = await other.routines.list()
+    expect(theirs.status === 'ok' && theirs.routines.map((item) => item.id)).not.toContain(id)
     await expect(other.routines.update({ routineId: id, routine: { ...routine, name: 'Stolen' } })).resolves.toEqual({ status: 'not_found' })
 
     await expect(caller.routines.update({ routineId: id, routine: { ...routine, name: 'Warm-up II' } })).resolves.toMatchObject({
@@ -560,6 +562,26 @@ describe('appRouter.routines', () => {
     })
     await expect(caller.routines.delete({ routineId: id })).resolves.toEqual({ status: 'ok', deleted: true })
     await expect(caller.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
+  })
+
+  it('gives a new user the starter routines once — not again after they delete them all, and not to someone who made their own first', async () => {
+    const routines = createMemoryRoutineRepository()
+    const fresh = createCaller(createContext({ auth: { clerkUserId: 'user_new' }, routines, userExercises: null }))
+
+    const first = await fresh.routines.list()
+    const given = first.status === 'ok' ? first.routines : []
+    expect(given.map((item) => item.name)).toEqual(STARTER_ROUTINES.map((item) => item.name))
+    // Asking again gives the same routines, not a second set.
+    await expect(fresh.routines.list()).resolves.toEqual(first)
+
+    for (const item of given) await fresh.routines.delete({ routineId: item.id })
+    await expect(fresh.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
+
+    const maker = createCaller(createContext({ auth: { clerkUserId: 'user_maker' }, routines, userExercises: null }))
+    await maker.routines.create({ routine })
+    await expect(maker.routines.list()).resolves.toMatchObject({ status: 'ok', routines: [{ name: 'Warm-up' }] })
+    const theirs = await maker.routines.list()
+    expect(theirs.status === 'ok' && theirs.routines).toHaveLength(1)
   })
 
   it('answers a bad routine with its problems, not a transport error', async () => {

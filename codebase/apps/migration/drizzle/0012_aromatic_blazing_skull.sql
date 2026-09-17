@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "starter_routines_at" timestamp with time zone;

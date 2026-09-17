@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { describe, expect, it } from 'vitest'
+import { STARTER_ROUTINES } from '../../content/starterRoutines'
 import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 import { createMemoryUserExerciseRepository } from '../../test/memoryUserExercises'
 import type { RoutineRepository } from '../db/routines'
@@ -212,11 +213,21 @@ describe('practice routines over MCP', () => {
     const created = await mine.callTool({ name: 'create_routine', arguments: { routine: { name: 'Mine', items: [{ exerciseId: 'scales-major-open-c' }] } } })
     const id = (created.structuredContent as { routine: { id: string } }).routine.id
 
-    expect((await theirs.callTool({ name: 'list_routines', arguments: {} })).structuredContent).toEqual({ status: 'ok', routines: [] })
+    // They have their own starters, and nothing of mine.
+    const theirList = (await theirs.callTool({ name: 'list_routines', arguments: {} })).structuredContent as { routines: { id: string; name: string }[] }
+    expect(theirList.routines.map((routine) => routine.name)).not.toContain('Mine')
+    expect(theirList.routines.map((routine) => routine.id)).not.toContain(id)
     const hijack = await theirs.callTool({ name: 'update_routine', arguments: { routineId: id, routine: { name: 'Theirs now', items: [{ exerciseId: 'scales-major-open-c' }] } } })
     expect(hijack.structuredContent).toEqual({ status: 'not_found' })
     expect((await theirs.callTool({ name: 'delete_routine', arguments: { routineId: id } })).structuredContent).toEqual({ status: 'ok', deleted: false })
     expect((await mine.callTool({ name: 'list_routines', arguments: {} })).structuredContent).toMatchObject({ routines: [{ name: 'Mine' }] })
+  })
+
+  it('shows a new user their starter routines, so an agent has something to build on', async () => {
+    const client = await connect('user_new', createMemoryUserExerciseRepository())
+    const listed = (await client.callTool({ name: 'list_routines', arguments: {} })).structuredContent as { status: string; routines: { name: string }[] }
+    expect(listed.status).toBe('ok')
+    expect(listed.routines.map((routine) => routine.name)).toEqual(STARTER_ROUTINES.map((routine) => routine.name))
   })
 
   it('says unconfigured where there is no database', async () => {

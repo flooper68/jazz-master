@@ -1,5 +1,6 @@
 import { parseRoutineInput, type Routine } from '../../appData/routine'
 import { EXERCISES } from '../../content'
+import { STARTER_ROUTINES } from '../../content/starterRoutines'
 import { RoutineLimitError, type RoutineRepository } from '../db/routines'
 import type { UserExerciseRepository } from '../db/userExercises'
 
@@ -33,9 +34,15 @@ export interface RoutineStores {
   userExercises: UserExerciseRepository | null
 }
 
+/**
+ * The user's routines. The first time anyone asks — the app or an AI client —
+ * a user with none is given the starter routines, so neither door opens on
+ * an empty room; after that the list is exactly what the user has made of it.
+ */
 export async function listRoutines({ routines }: RoutineStores, clerkUserId: string): Promise<RoutineListResult> {
   if (!routines) return { status: 'unconfigured' }
   try {
+    await routines.giveStarterRoutines(clerkUserId, STARTER_ROUTINES)
     return { status: 'ok', routines: await routines.listRoutines(clerkUserId) }
   } catch {
     return { status: 'error', message: 'Routine read failed' }

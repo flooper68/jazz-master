@@ -14,6 +14,9 @@ import {
 
 export const users = pgTable('users', {
   clerkUserId: text('clerk_user_id').primaryKey(),
+  // When this user was given the starter routines (or found to have routines
+  // already); set once, so deleting them all does not bring them back.
+  starterRoutinesAt: timestamp('starter_routines_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,6 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { STARTER_ROUTINES } from '../../content/starterRoutines'
 import { renderRoute } from '../../test/renderRoute'
 import {
   getTrpcTestRoutines,
@@ -26,12 +27,24 @@ const warmUp = {
 }
 
 describe('RoutinesPage', () => {
-  it('invites a first routine, and creates one: a name, exercises added and put in order', async () => {
+  it('gives a new user the starter routines, ready to start and theirs to change', async () => {
+    await renderRoute('/routines')
+    for (const routine of STARTER_ROUTINES) {
+      expect(await screen.findByRole('listitem', { name: routine.name })).toBeInTheDocument()
+    }
+    const warmUpCard = within(screen.getByRole('listitem', { name: 'Open-position warm-up' }))
+    expect(warmUpCard.getByRole('button', { name: 'Start Open-position warm-up' })).toBeEnabled()
+    expect(warmUpCard.getByRole('button', { name: 'Edit Open-position warm-up' })).toBeInTheDocument()
+    expect(warmUpCard.getByRole('button', { name: 'Delete Open-position warm-up' })).toBeInTheDocument()
+    // They are stored, not just shown.
+    expect((await getTrpcTestRoutines()).map((routine) => routine.name)).toEqual(STARTER_ROUTINES.map((routine) => routine.name))
+  })
+
+  it('creates a routine: a name, exercises added and put in order', async () => {
     const user = userEvent.setup()
     await renderRoute('/routines')
-    expect(await screen.findByText('No routines yet')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'New routine' }))
+    await user.click(await screen.findByRole('button', { name: 'New routine' }))
     const editor = within(screen.getByRole('form', { name: 'New routine' }))
     const create = editor.getByRole('button', { name: 'Create routine' })
     expect(create).toBeDisabled()
@@ -49,7 +62,7 @@ describe('RoutinesPage', () => {
     await user.click(create)
     const card = within(await screen.findByRole('listitem', { name: 'ii–V–I workout' }))
     expect(card.getByText(/^2 exercises · ~\d+ min$/)).toBeInTheDocument()
-    expect((await getTrpcTestRoutines())[0]).toMatchObject({
+    expect((await getTrpcTestRoutines()).at(-1)).toMatchObject({
       name: 'ii–V–I workout',
       items: [{ exerciseId: 'lines-ii-v-i-f-arpeggios' }, { exerciseId: 'lines-ii-v-i-f-line' }],
     })
@@ -85,7 +98,7 @@ describe('RoutinesPage', () => {
     expect(screen.getByRole('button', { name: 'End routine' })).toBeInTheDocument()
   })
 
-  it('deletes with two presses', async () => {
+  it('deletes with two presses — and once everything is deleted, the starters do not come back', async () => {
     const user = userEvent.setup()
     await seedTrpcTestRoutines([warmUp])
     await renderRoute('/routines')
@@ -94,6 +107,10 @@ describe('RoutinesPage', () => {
     expect(await getTrpcTestRoutines()).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Delete Warm-up for good' }))
     await waitFor(async () => expect(await getTrpcTestRoutines()).toEqual([]))
+    expect(await screen.findByText('No routines yet')).toBeInTheDocument()
+
+    cleanup()
+    await renderRoute('/routines')
     expect(await screen.findByText('No routines yet')).toBeInTheDocument()
   })
 

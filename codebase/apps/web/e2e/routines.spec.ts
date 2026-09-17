@@ -2,7 +2,8 @@ import { expect, listStoredRuns, test } from './fixtures'
 
 test('a routine made in the app is stored, played in its order, and offered to quick run', async ({ page }) => {
   await page.goto('/app/routines')
-  await expect(page.getByText('No routines yet')).toBeVisible()
+  // A new user starts with the starter routines.
+  await expect(page.getByRole('listitem', { name: 'Open-position warm-up' })).toBeVisible()
 
   await page.getByRole('button', { name: 'New routine' }).click()
   const editor = page.getByRole('form', { name: 'New routine' })
