@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISES } from '../../content'
 import { renderRoute } from '../../test/renderRoute'
 import { resetTrpcTestData, seedTrpcTestRuns } from '../../test/trpcTestFetch'
@@ -8,6 +8,12 @@ import { resetTrpcTestData, seedTrpcTestRuns } from '../../test/trpcTestFetch'
 beforeEach(() => {
   resetTrpcTestData()
   localStorage.clear()
+  // No audio here: a preview runs its course silently, on the wall clock.
+  vi.stubGlobal('AudioContext', undefined)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 function card(title: string) {
@@ -71,6 +77,24 @@ describe('ExercisesPage', () => {
     unmount()
     await renderRoute('/exercises')
     expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
+  })
+
+  it('previews an exercise from the list, one at a time, without opening it', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/exercises')
+    const first = card('C major — open position').getByRole('button', { name: 'Preview C major — open position' })
+    const second = card('G major — open position').getByRole('button', { name: 'Preview G major — open position' })
+    expect(first).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(first)
+    expect(first).toHaveAttribute('aria-pressed', 'true')
+    await user.click(second)
+    expect(first).toHaveAttribute('aria-pressed', 'false')
+    expect(second).toHaveAttribute('aria-pressed', 'true')
+    await user.click(second)
+    expect(second).toHaveAttribute('aria-pressed', 'false')
+    // Still the list: the button is its own control, not part of the card's link.
+    expect(screen.getByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 
   describe('finding exercises', () => {

@@ -1,16 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { queryOfSearch, searchOfQuery } from '../../appData/exerciseSearch'
 import { dayLabel } from '../../appData/history'
 import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseFilter } from '../../components/ExerciseFilter'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
-import { ClickIcon, ClockIcon, GridIcon, RowsIcon } from '../../components/icons'
+import { ClickIcon, ClockIcon, GridIcon, PlayIcon, RowsIcon, StopIcon } from '../../components/icons'
+import { loadPlayerPrefs } from '../../components/playerPrefs'
 import { displayAccidentals } from '@jazz-master/theory'
 import { activeFilterCount, EVERYTHING, EXERCISE_AREAS, exerciseSeconds, filterExercises, homeLabel, type Exercise, type ExerciseQuery } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
+import { useExercisePreview } from '../../player/useExercisePreview'
 import { useTRPC } from '../trpc'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_WIDE } from '../../components/pageFrame'
@@ -61,7 +63,7 @@ export default function ExercisesPage() {
   const trpc = useTRPC()
   // Decoration only: the list is complete without it, so failures stay silent.
   const { data } = useQuery(trpc.runs.list.queryOptions())
-  const runs = data?.status === 'ok' ? data.runs : []
+  const runs = data?.status === 'ok' ? data.runs : NO_RUNS
   const { exercises: everything, libraryPending } = useExerciseCatalog()
   const [source, setSource] = useState<SourceFilter>(loadSource)
   useEffect(() => {
@@ -91,12 +93,15 @@ export default function ExercisesPage() {
   const areas = EXERCISE_AREAS.filter((area) => catalog.some((exercise) => exercise.area === area))
   const maxLevel = Math.max(...everything.map((exercise) => exercise.level), 3)
   // Grouped once: with a pack this size, filtering the runs again for every row adds up.
-  const runsOf = new Map<string, ExerciseRun[]>()
-  for (const run of runs) {
-    const ofExercise = runsOf.get(run.exerciseId)
-    if (ofExercise) ofExercise.push(run)
-    else runsOf.set(run.exerciseId, [run])
-  }
+  const runsOf = useMemo(() => {
+    const grouped = new Map<string, ExerciseRun[]>()
+    for (const run of runs) {
+      const ofExercise = grouped.get(run.exerciseId)
+      if (ofExercise) ofExercise.push(run)
+      else grouped.set(run.exerciseId, [run])
+    }
+    return grouped
+  }, [runs])
   const [view, setView] = useState<ListView>(loadView)
   useEffect(() => {
     try {
@@ -105,6 +110,9 @@ export default function ExercisesPage() {
       // Private mode or a full quota: the choice still holds for this page.
     }
   }, [view])
+  const { playingId, toggle } = useExercisePreview()
+  // The guitar chosen in the player, read at each press so a change there is heard here.
+  const onPreview = useCallback((exercise: Exercise) => toggle(exercise, loadPlayerPrefs().guitar), [toggle])
 
   return (
     <div className={PAGE_WIDE}>
@@ -192,6 +200,8 @@ export default function ExercisesPage() {
                     exercise={exercise}
                     maxLevel={maxLevel}
                     runs={runsOf.get(exercise.id) ?? NO_RUNS}
+                    previewing={playingId === exercise.id}
+                    onPreview={onPreview}
                   />
                 )
               })}
@@ -209,6 +219,9 @@ interface ItemProps {
   maxLevel: number
   /** This exercise's runs, newest first. */
   runs: ExerciseRun[]
+  /** Whether this exercise is the one being listened to. */
+  previewing: boolean
+  onPreview: (exercise: Exercise) => void
 }
 
 function minutesOf(exercise: Exercise): number {
@@ -238,8 +251,10 @@ function LevelDots({ level, maxLevel }: { level: number; maxLevel: number }) {
   )
 }
 
+// Both items are memoised: a preview starting or stopping redraws the two it touches, not every neck diagram on the page.
+
 /** The simple view: one line per exercise, no picture. */
-function ExerciseRow({ exercise, maxLevel, runs }: ItemProps) {
+const ExerciseRow = memo(function ExerciseRow({ exercise, maxLevel, runs, previewing, onPreview }: ItemProps) {
   return (
     <li className="group relative flex items-center gap-4 px-3.5 py-2 first:rounded-t-2xl last:rounded-b-2xl hover:bg-panel-2/60">
       <div className="min-w-0 flex-1">
@@ -255,6 +270,7 @@ function ExerciseRow({ exercise, maxLevel, runs }: ItemProps) {
       </div>
       {isLibraryExerciseId(exercise.id) && <DeleteExercise exercise={exercise} />}
       <LevelDots level={exercise.level} maxLevel={maxLevel} />
+      <PreviewButton exercise={exercise} previewing={previewing} onPreview={onPreview} />
       <Link
         to="/exercises/$exerciseId"
         params={{ exerciseId: exercise.id }}
@@ -265,9 +281,9 @@ function ExerciseRow({ exercise, maxLevel, runs }: ItemProps) {
       </Link>
     </li>
   )
-}
+})
 
-function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
+const ExerciseCard = memo(function ExerciseCard({ exercise, maxLevel, runs, previewing, onPreview }: ItemProps) {
   return (
     <li className="group relative flex flex-col rounded-2xl border border-line bg-panel p-2 transition-shadow focus-within:border-line-strong hover:border-line-strong hover:shadow-lg hover:shadow-shade">
       <ExerciseThumb exercise={exercise} className="aspect-[5/2]" />
@@ -288,10 +304,11 @@ function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
           {homeLabel(exercise)?.endsWith(' major') && <span>{displayAccidentals(homeLabel(exercise) ?? '')}</span>}
         </p>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-muted">
+          <p className="min-w-0 flex-1 truncate text-xs text-muted">
             {playedLine(runs)}
           </p>
           {isLibraryExerciseId(exercise.id) && <DeleteExercise exercise={exercise} />}
+          <PreviewButton exercise={exercise} previewing={previewing} onPreview={onPreview} />
           {/* The whole card is the target; the link stretches over it. */}
           <Link
             to="/exercises/$exerciseId"
@@ -304,6 +321,25 @@ function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
         </div>
       </div>
     </li>
+  )
+})
+
+/** Hear the exercise without leaving the list: once through, and the same button stops it. */
+function PreviewButton({ exercise, previewing, onPreview }: Pick<ItemProps, 'exercise' | 'previewing' | 'onPreview'>) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPreview(exercise)}
+      aria-pressed={previewing}
+      aria-label={`Preview ${exercise.title}`}
+      data-tip={previewing ? 'Stop preview' : 'Preview'}
+      // Above the card's stretched link, so the press lands here.
+      className={`relative z-10 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+        previewing ? 'border-line-strong bg-panel-2 text-accent-text' : 'border-line bg-panel text-muted hover:text-fg'
+      }`}
+    >
+      {previewing ? <StopIcon /> : <PlayIcon />}
+    </button>
   )
 }
 
