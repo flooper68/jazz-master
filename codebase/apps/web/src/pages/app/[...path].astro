@@ -6,5 +6,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 {/* Server-rendered catch-all: any /app/* deep link gets this shell directly,
     then the client-only island takes over routing. No SSR of practice routes. */}
 <BaseLayout>
+  {/* Pin the saved theme before first paint (key: THEME_KEY in components/theme.ts);
+      without one the tokens follow the system scheme. */}
+  <script is:inline slot="head">
+    try {
+      var theme = localStorage.getItem('jazz-master.theme')
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+    } catch (e) {}
+  </script>
   <AppShell client:only="react" />
 </BaseLayout>
