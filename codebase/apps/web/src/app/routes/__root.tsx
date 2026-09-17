@@ -1,17 +1,11 @@
 import { createRootRoute } from '@tanstack/react-router'
 import { Layout } from '../../components/Layout'
-import { HealthFooter } from '../HealthFooter'
 import ErrorPage from '../pages/ErrorPage'
 import NotFoundPage from '../pages/NotFoundPage'
 
 // oxlint-disable-next-line react/only-export-components -- TanStack root route files colocate the component with the Route export
 function RootComponent() {
-  return (
-    <>
-      <Layout />
-      <HealthFooter />
-    </>
-  )
+  return <Layout />
 }
 
 export const Route = createRootRoute({

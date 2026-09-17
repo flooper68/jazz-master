@@ -1,3 +1,4 @@
+import { DEFAULT_VOICE, isVoiceId, type VoiceId } from '../audio/voices'
 import type { ScoreView } from '../score/Score'
 
 /** Player preferences that outlive any one exercise: sound and view. */
@@ -6,6 +7,19 @@ export interface PlayerPrefs {
   voice: boolean
   countIn: boolean
   view: ScoreView
+  /** Which guitar plays the line along. */
+  guitar: VoiceId
+  /** Score magnification, 1 = engraved size. */
+  zoom: number
+}
+
+export const ZOOM_MIN = 0.8
+export const ZOOM_MAX = 2
+export const ZOOM_STEP = 0.1
+
+export function clampZoom(zoom: number): number {
+  if (!Number.isFinite(zoom)) return 1
+  return Math.round(Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX) * 10) / 10
 }
 
 export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
@@ -13,6 +27,8 @@ export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
   voice: false,
   countIn: true,
   view: 'both',
+  guitar: DEFAULT_VOICE,
+  zoom: 1.2,
 }
 
 export const PLAYER_PREFS_KEY = 'jazz-master.player-prefs'
@@ -30,6 +46,8 @@ export function loadPlayerPrefs(storage: Pick<Storage, 'getItem'> | null = safeS
       voice: typeof parsed.voice === 'boolean' ? parsed.voice : DEFAULT_PLAYER_PREFS.voice,
       countIn: typeof parsed.countIn === 'boolean' ? parsed.countIn : DEFAULT_PLAYER_PREFS.countIn,
       view: VIEWS.includes(parsed.view as ScoreView) ? (parsed.view as ScoreView) : DEFAULT_PLAYER_PREFS.view,
+      guitar: isVoiceId(parsed.guitar) ? parsed.guitar : DEFAULT_PLAYER_PREFS.guitar,
+      zoom: typeof parsed.zoom === 'number' ? clampZoom(parsed.zoom) : DEFAULT_PLAYER_PREFS.zoom,
     }
   } catch {
     return DEFAULT_PLAYER_PREFS

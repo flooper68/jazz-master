@@ -112,6 +112,27 @@ describe('Score', () => {
     ref.current!.moveCursor(1, false)
     const noteX = Number(container.querySelector('[data-note="1"] text')?.getAttribute('x'))
     expect(container.querySelector('[data-cursor]')?.getAttribute('transform')).toBe(`translate(${noteX} 0)`)
+    // A count-in walks the cursor in from the left of the beat.
+    ref.current!.moveCursor(1, false, 0.5)
+    const lead = Number(container.querySelector('[data-cursor]')?.getAttribute('transform')?.match(/translate\(([\d.]+)/)?.[1])
+    expect(lead).toBeLessThan(noteX)
+    expect(lead).toBeGreaterThan(0)
+  })
+
+  it('magnifies the whole score and wraps to what fits at that size', () => {
+    const { container, onSeek } = renderScore({ availableWidth: 840, view: 'tab', zoom: 2 })
+    // At 2× the same width holds half the bars: two lines instead of one.
+    expect(container.querySelectorAll('[data-system]')).toHaveLength(2)
+    const svg = container.querySelector('svg')!
+    expect(Number(svg.getAttribute('width'))).toBeLessThanOrEqual(840)
+    expect(Number(svg.getAttribute('width'))).toBeGreaterThan(700)
+    // Pointer positions are read in screen pixels, so a press maps through the zoom.
+    const surface = container.querySelector('[data-seek-surface]')!
+    surface.setPointerCapture = () => {}
+    surface.hasPointerCapture = () => false
+    const noteX = Number(container.querySelector('[data-note="1"] text')?.getAttribute('x'))
+    fireEvent.pointerDown(surface, { clientX: noteX * 2 + 1, clientY: 40, button: 0 })
+    expect(onSeek).toHaveBeenLastCalledWith(1)
   })
 
   it('wraps into lines that fit the width, each with its own rail, and puts the cursor on its line', () => {

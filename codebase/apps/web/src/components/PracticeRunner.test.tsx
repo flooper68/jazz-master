@@ -65,6 +65,12 @@ function fakeAudio() {
     cancelFrom() {
       log.push('cancel')
     },
+    setVoice(voice) {
+      log.push(`guitar ${voice}`)
+    },
+    prime(midis) {
+      log.push(`prime ${midis.length}`)
+    },
     dispose() {
       log.push('dispose')
     },
@@ -154,9 +160,8 @@ describe('PracticeRunner', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Fixture lesson' })).toHaveFocus()
     const steps = screen.getByRole('list', { name: 'Exercises' })
     expect(within(steps).getAllByRole('listitem')).toHaveLength(2)
-    expect(within(steps).getByText('1. C major — open position')).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByRole('heading', { level: 2, name: 'C major — open position' })).toBeInTheDocument()
-    expect(screen.getByText('C major · 4/4 · 60 BPM')).toBeInTheDocument()
+    expect(within(steps).getByRole('listitem', { name: '1. C major — open position' })).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('heading', { level: 2, name: 'C major — open position 4/4 · 60 BPM' })).toBeInTheDocument()
     expect(readout('Time left')).toBe('1:00')
     expect(readout('Position')).toBe('1.1')
     expect(screen.getByRole('img', { name: 'C major — open position score, 6 notes' })).toBeInTheDocument()
@@ -173,16 +178,25 @@ describe('PracticeRunner', () => {
     await play(user, 'C major — open position')
     expect(screen.getByRole('button', { name: 'Pause C major — open position' })).toBeInTheDocument()
     await advanceClock(100)
-    await waitFor(() => expect(audio.log[0]).toBe('click 0.05!'))
-    expect(screen.getByText('Counting in')).toBeInTheDocument()
+    await waitFor(() => expect(audio.log.find((entry) => entry.startsWith('click'))).toBe('click 0.05!'))
+    // During the count-in the cursor is walking in from the left of the first note.
+    const cursorX = () =>
+      Number(document.querySelector('[data-cursor]')?.getAttribute('transform')?.match(/translate\(([\d.]+)/)?.[1])
+    const firstNoteX = Number(document.querySelector('[data-note="0"] text')?.getAttribute('x'))
+    expect(cursorX()).toBeLessThan(firstNoteX)
+    await advanceClock(2_000)
+    const later = cursorX()
+    expect(later).toBeGreaterThan(6)
+    expect(later).toBeLessThan(firstNoteX)
 
     await user.click(screen.getByRole('button', { name: 'Pause C major — open position' }))
     expect(audio.log).toContain('silence')
     expect(screen.getByRole('button', { name: 'Play C major — open position' })).toBeInTheDocument()
 
     await next(user, 'C major — open position')
-    expect(screen.getByRole('heading', { level: 2, name: 'G major — open position' })).toHaveFocus()
-    expect(screen.getByText('2. G major — open position')).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('heading', { level: 2, name: /^G major — open position/ })).toHaveFocus()
+    expect(screen.getByRole('listitem', { name: '2. G major — open position' })).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('listitem', { name: '1. C major — open position (done)' })).toBeInTheDocument()
   })
 
   it('lets the player silence the click and play the line along, keeping the choice across exercises', async () => {
@@ -191,12 +205,16 @@ describe('PracticeRunner', () => {
     await disableCountIn(user)
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
     await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
-    expect(screen.getByRole('button', { name: 'Sound: guide' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sound: guitar' })).toBeInTheDocument()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Guitar' }), 'steel')
+    expect(audio.log.filter((entry) => entry.startsWith('guitar')).at(-1)).toBeUndefined()
 
     await play(user, 'C major — open position')
     await advanceClock(100)
     await waitFor(() => expect(audio.log).toContain('note m48'))
     expect(audio.log.filter((entry) => entry.startsWith('click'))).toEqual([])
+    // The chosen guitar reached the audio, primed for the exercise's six pitches.
+    expect(audio.log.slice(0, 2)).toEqual(['guitar steel', 'prime 6'])
 
     await next(user, 'C major — open position')
     await openMenu(user, 'Sound')
@@ -208,6 +226,7 @@ describe('PracticeRunner', () => {
       click: false,
       voice: true,
       countIn: false,
+      guitar: 'steel',
     })
   })
 
@@ -312,6 +331,23 @@ describe('PracticeRunner', () => {
     expect(screen.getByRole('button', { name: 'Tempo ramp: +10/2 → 100' })).toBeInTheDocument()
   })
 
+  it('magnifies the score from the View menu and remembers it', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    await openMenu(user, 'View')
+    const svg = document.querySelector('[data-score-scroller] svg')!
+    // The canvas keeps its width; the engraving inside it gets bigger (fewer units across).
+    const unitsAcross = () => Number(svg.getAttribute('viewBox')?.split(' ')[2])
+    const before = unitsAcross()
+    await user.click(screen.getByRole('button', { name: 'Larger score' }))
+    await user.click(screen.getByRole('button', { name: 'Larger score' }))
+    expect(screen.getByText('140%')).toBeInTheDocument()
+    expect(unitsAcross()).toBeLessThan(before)
+    expect(JSON.parse(localStorage.getItem('jazz-master.player-prefs') ?? '{}')).toMatchObject({ zoom: 1.4 })
+    await user.click(screen.getByRole('button', { name: '100%' }))
+    expect(screen.getByText('100%', { selector: 'span' })).toBeInTheDocument()
+  })
+
   it('switches between tab, notation and both', async () => {
     const user = userEvent.setup()
     renderRunner()
@@ -327,7 +363,7 @@ describe('PracticeRunner', () => {
   it('plays and pauses from the keyboard', async () => {
     const user = userEvent.setup()
     renderRunner()
-    screen.getByRole('heading', { level: 2, name: 'C major — open position' }).focus()
+    screen.getByRole('heading', { level: 2, name: /^C major — open position/ }).focus()
     await user.keyboard(' ')
     expect(screen.getByRole('button', { name: 'Pause C major — open position' })).toBeInTheDocument()
     await user.keyboard(' ')
@@ -348,7 +384,7 @@ describe('PracticeRunner', () => {
     expect(readout('Time left')).toBe('0:58')
 
     act(() => vi.advanceTimersByTime(58_500))
-    expect(screen.getByText('2. G major — open position')).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('listitem', { name: '2. G major — open position' })).toHaveAttribute('aria-current', 'step')
     vi.useRealTimers()
   })
 

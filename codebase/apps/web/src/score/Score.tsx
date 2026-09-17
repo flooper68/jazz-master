@@ -30,8 +30,12 @@ import { TabStaff } from './TabStaff'
 export type ScoreView = 'tab' | 'notation' | 'both'
 
 export interface ScoreHandle {
-  /** Move the cursor to a beat; with `follow`, keep its line centred in view. */
-  moveCursor(beat: number, follow: boolean): void
+  /**
+   * Move the cursor to a beat; with `follow`, keep its line centred in view.
+   * `approach` (1 → 0) walks it in from the left edge of the line to the
+   * beat — how the count-in shows itself.
+   */
+  moveCursor(beat: number, follow: boolean, approach?: number): void
 }
 
 export interface ScoreProps {
@@ -52,6 +56,8 @@ export interface ScoreProps {
   contentInset?: { top: number; bottom: number }
   /** Width to wrap lines to; measured from the container when omitted. */
   availableWidth?: number
+  /** Magnification of the whole score, 1 = engraved size. */
+  zoom?: number
 }
 
 const RAIL_HEIGHT = 22
@@ -115,24 +121,28 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     className = '',
     contentInset = { top: 8, bottom: 8 },
     availableWidth,
+    zoom = 1,
   },
   ref,
 ) {
   const keySig = useMemo(() => resolveKey(keyName), [keyName])
   const scrollRef = useRef<HTMLDivElement>(null)
   const containerWidth = useMeasuredWidth(scrollRef, availableWidth)
+  // The score is engraved at its natural size and magnified as a whole, so a
+  // zoomed line wraps to what fits at that magnification.
+  const unzoomedWidth = (containerWidth - 2 * SIDE_PAD) / zoom
   const layout = useMemo(
     () =>
       layoutScore(notes, {
         beatsPerBar,
         leftInset: view === 'tab' ? TAB_INSET : notationInset(keySig),
-        availableWidth: Math.max(containerWidth - 2 * SIDE_PAD, 120),
+        availableWidth: Math.max(unzoomedWidth, 120),
       }),
-    [notes, beatsPerBar, view, keySig, containerWidth],
+    [notes, beatsPerBar, view, keySig, unzoomedWidth],
   )
   const geometry = bands(view)
   const systemHeight = geometry.height
-  const svgWidth = Math.max(containerWidth - 2 * SIDE_PAD, layout.width)
+  const svgWidth = Math.max(unzoomedWidth, layout.width)
   const svgHeight = layout.systems.length * systemHeight
   const svgRef = useRef<SVGSVGElement>(null)
   const cursorRef = useRef<SVGGElement>(null)
@@ -143,10 +153,11 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
   useImperativeHandle(
     ref,
     () => ({
-      moveCursor(beat, follow) {
+      moveCursor(beat, follow, approach = 0) {
         const point = layout.xOfBeat(beat)
+        const x = point.x - Math.min(Math.max(approach, 0), 1) * (point.x - 6)
         const cursor = cursorRef.current
-        if (cursor) cursor.setAttribute('transform', `translate(${point.x} ${point.system * systemHeight})`)
+        if (cursor) cursor.setAttribute('transform', `translate(${x} ${point.system * systemHeight})`)
         const scroller = scrollRef.current
         if (!follow || !scroller) {
           followedSystem.current = null
@@ -158,17 +169,17 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
         const viewport = scroller.clientHeight
         if (viewport <= 0 || scroller.scrollHeight <= viewport) return
         const visibleCentre = contentInset.top + (viewport - contentInset.top - contentInset.bottom) / 2
-        const lineCentre = contentInset.top + (point.system + 0.5) * systemHeight
+        const lineCentre = contentInset.top + (point.system + 0.5) * systemHeight * zoom
         scroller.scrollTo({ top: Math.max(lineCentre - visibleCentre, 0), behavior: 'smooth' })
       },
     }),
-    [layout, systemHeight, contentInset.top, contentInset.bottom],
+    [layout, systemHeight, zoom, contentInset.top, contentInset.bottom],
   )
 
   function localPoint(event: PointerEvent<SVGElement>): { x: number; system: number } {
     const rect = svgRef.current?.getBoundingClientRect()
-    const x = event.clientX - (rect?.left ?? 0)
-    const y = event.clientY - (rect?.top ?? 0)
+    const x = (event.clientX - (rect?.left ?? 0)) / zoom
+    const y = (event.clientY - (rect?.top ?? 0)) / zoom
     const system = Math.min(Math.max(Math.floor(y / systemHeight), 0), layout.systems.length - 1)
     return { x, system }
   }
@@ -284,8 +295,8 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
         <svg
           ref={svgRef}
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          width={svgWidth}
-          height={svgHeight}
+          width={svgWidth * zoom}
+          height={svgHeight * zoom}
           role="img"
           aria-label={ariaLabel}
           className="block max-w-full select-none touch-none font-sans"

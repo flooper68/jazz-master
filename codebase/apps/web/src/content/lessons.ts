@@ -56,7 +56,8 @@ export const LESSONS: readonly Lesson[] = [
           { string: 5, fret: 0, beats: 0.5 },
           { string: 6, fret: 3, beats: 0.5 },
           { string: 6, fret: 1, beats: 0.5 },
-          { string: 6, fret: 0, beats: 0.5 },
+          // Held to the bar line: 34 eighths and a dotted half make five bars.
+          { string: 6, fret: 0, beats: 3 },
         ],
       },
       {
@@ -100,7 +101,8 @@ export const LESSONS: readonly Lesson[] = [
           { string: 5, fret: 0, beats: 0.5 },
           { string: 6, fret: 3, beats: 0.5 },
           { string: 6, fret: 2, beats: 0.5 },
-          { string: 6, fret: 0, beats: 0.5 },
+          // Held to the bar line: 34 eighths and a dotted half make five bars.
+          { string: 6, fret: 0, beats: 3 },
         ],
       },
       {
@@ -142,7 +144,8 @@ export const LESSONS: readonly Lesson[] = [
           { string: 5, fret: 0, beats: 0.5 },
           { string: 6, fret: 3, beats: 0.5 },
           { string: 6, fret: 1, beats: 0.5 },
-          { string: 6, fret: 0, beats: 0.5 },
+          // Held to the bar line: 32 eighths and a whole note make five bars.
+          { string: 6, fret: 0, beats: 4 },
         ],
       },
     ],

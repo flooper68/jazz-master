@@ -1,4 +1,6 @@
+import { midiAt } from '@jazz-master/theory'
 import { createPlayerAudio, type PlayerAudio } from '../audio/engine'
+import { DEFAULT_VOICE, type VoiceId } from '../audio/voices'
 import { passBeats, type TabNote } from '../content'
 import {
   createRun,
@@ -29,6 +31,8 @@ export interface TransportSnapshot {
   countIn: boolean
   click: boolean
   voice: boolean
+  /** Which guitar plays the line along. */
+  guitar: VoiceId
   /** Passes completed in the current run (or the last one, once finished). */
   pass: number
   /** True once a repeat target was reached; cleared by play, seek or stop. */
@@ -79,6 +83,7 @@ export interface Transport {
   setCountIn(on: boolean): void
   setClick(on: boolean): void
   setVoice(on: boolean): void
+  setGuitar(guitar: VoiceId): void
   dispose(): void
   readonly disposed: boolean
 }
@@ -108,6 +113,7 @@ export function createTransport({
 }: TransportOptions): Transport {
   const totalBeats = passBeats(notes)
   if (!(totalBeats > 0)) throw new Error('A transport needs an exercise with notes')
+  const pitches = [...new Set(notes.map((note) => midiAt(note.string, note.fret)))]
 
   let snapshot: TransportSnapshot = {
     status: 'stopped',
@@ -118,6 +124,7 @@ export function createTransport({
     countIn: true,
     click: true,
     voice: false,
+    guitar: DEFAULT_VOICE,
     pass: 0,
     finished: false,
     audioUnavailable: false,
@@ -163,10 +170,16 @@ export function createTransport({
     if (audio || audioFailed) return
     try {
       audio = createAudio()
+      audio.setVoice(snapshot.guitar)
     } catch {
       audioFailed = true
       emit({ audioUnavailable: true })
     }
+  }
+
+  /** Get the guitar's recordings loading before they are needed. */
+  function primeVoice(): void {
+    if (snapshot.voice) audio?.prime(pitches)
   }
 
   function clearTimer(): void {
@@ -237,6 +250,7 @@ export function createTransport({
   function play(): void {
     if (disposed || snapshot.status === 'playing') return
     ensureAudio()
+    primeVoice()
     const patch: Partial<TransportSnapshot> = { status: 'playing' }
     if (snapshot.finished) {
       positionBeat = region().startBeat
@@ -359,6 +373,12 @@ export function createTransport({
     },
     setVoice(on) {
       emit({ voice: on })
+      primeVoice()
+    },
+    setGuitar(guitar) {
+      emit({ guitar })
+      audio?.setVoice(guitar)
+      primeVoice()
     },
     get disposed() {
       return disposed

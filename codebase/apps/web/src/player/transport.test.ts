@@ -37,6 +37,12 @@ function harness(overrides: Partial<TransportOptions> = {}, audioAvailable = tru
     cancelFrom(time) {
       log.push(`cancel ${time.toFixed(2)}`)
     },
+    setVoice(voice) {
+      log.push(`guitar ${voice}`)
+    },
+    prime(midis) {
+      log.push(`prime ${midis.join(',')}`)
+    },
     dispose() {
       log.push('dispose')
     },
@@ -104,7 +110,8 @@ describe('createTransport', () => {
     expect(transport.position()).toMatchObject({ phase: 'playing', pass: 0 })
     expect(transport.position().beat).toBeCloseTo(0.05, 1)
     // Four count-in clicks then the first beat of the pass, on time.
-    expect(log.slice(0, 5)).toEqual(['click 0.05!', 'click 1.05', 'click 2.05', 'click 3.05', 'click 4.05!'])
+    const clicks = log.filter((entry) => entry.startsWith('click'))
+    expect(clicks.slice(0, 5)).toEqual(['click 0.05!', 'click 1.05', 'click 2.05', 'click 3.05', 'click 4.05!'])
 
     advance(2)
     expect(transport.position().beat).toBeCloseTo(2, 1)
@@ -233,11 +240,11 @@ describe('createTransport', () => {
     transport.setCountIn(false)
     transport.play()
     expect(transport.getSnapshot().status).toBe('playing')
-    expect(log).toEqual([])
+    expect(log).toEqual(['guitar jazz-sampled'])
     await Promise.resolve()
     await Promise.resolve()
     advance(0.1)
-    expect(log[0]).toBe('click 0.05!')
+    expect(log[1]).toBe('click 0.05!')
   })
 
   it('runs the cursor on the wall clock when audio cannot start', () => {
@@ -268,6 +275,19 @@ describe('createTransport', () => {
     expect(transport.disposed).toBe(true)
     transport.play()
     expect(transport.getSnapshot().status).toBe('stopped')
+  })
+
+  it('tells the audio which guitar to use and primes its pitches when the voice is on', () => {
+    const { transport, log } = harness()
+    expect(transport.getSnapshot().guitar).toBe('jazz-sampled')
+    transport.play()
+    expect(log[0]).toBe('guitar jazz-sampled')
+    expect(log.filter((entry) => entry.startsWith('prime'))).toEqual([])
+    transport.setVoice(true)
+    expect(log).toContain('prime 48,50,52,53')
+    transport.setGuitar('nylon')
+    expect(transport.getSnapshot().guitar).toBe('nylon')
+    expect(log.slice(-2)).toEqual(['guitar nylon', 'prime 48,50,52,53'])
   })
 
   it('clamps tempos to the playable range', () => {

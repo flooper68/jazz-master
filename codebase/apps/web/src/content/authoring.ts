@@ -17,13 +17,15 @@ import type { TabNote } from './types'
 /**
  * A scale played up through a fret window and back down, one note per eighth.
  * Notes are ordered by pitch, so the tab reads as the scale sounds; the top
- * note is not repeated at the turn.
+ * note is not repeated at the turn, and the final root is held to the end of
+ * its bar so the exercise closes on a bar line.
  */
 export function scaleTab(
   root: string,
   scale: ScaleType,
   window: FretRange,
   beats = 0.5,
+  beatsPerBar = 4,
 ): TabNote[] {
   const parsedRoot = parseNote(root)
   if (!parsedRoot) throw new Error(`Unparseable root "${root}"`)
@@ -31,5 +33,10 @@ export function scaleTab(
     .map(({ string, fret }) => ({ string, fret, beats }))
     .sort((a, b) => midiAt(a.string, a.fret) - midiAt(b.string, b.fret))
   const down = up.slice(0, -1).reverse()
-  return [...up, ...down]
+  const tab = [...up, ...down]
+  const total = tab.length * beats
+  const remainder = (beatsPerBar - (total % beatsPerBar)) % beatsPerBar
+  const last = tab[tab.length - 1]
+  tab[tab.length - 1] = { ...last, beats: last.beats + remainder }
+  return tab
 }

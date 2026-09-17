@@ -28,11 +28,13 @@ describe('LESSONS', () => {
   it('writes every scale exercise as a tab inside the open position, up and back down', () => {
     for (const exercise of scaleExercises) {
       expect(exercise.notes.length).toBeGreaterThan(8)
-      for (const note of exercise.notes) {
+      for (const note of exercise.notes.slice(0, -1)) {
         expect(note.fret).toBeGreaterThanOrEqual(0)
         expect(note.fret).toBeLessThanOrEqual(4)
         expect(note.beats).toBe(0.5)
       }
+      // The final root is held so the exercise ends on a bar line.
+      expect(passBeats(exercise.notes) % 4).toBe(0)
       // Symmetric around the top note: the way down mirrors the way up.
       const frets = exercise.notes.map((note) => `${note.string}/${note.fret}`)
       const top = (frets.length - 1) / 2

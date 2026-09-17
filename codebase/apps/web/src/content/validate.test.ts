@@ -9,8 +9,8 @@ function exercise(overrides: Partial<Exercise> = {}): Exercise {
     tempoBpm: 80,
     duration: { kind: 'minutes', minutes: 5 },
     notes: [
-      { string: 5, fret: 3, beats: 0.5 },
-      { string: 4, fret: 0, beats: 0.5 },
+      { string: 5, fret: 3, beats: 2 },
+      { string: 4, fret: 0, beats: 2 },
     ],
     ...overrides,
   }
@@ -60,8 +60,20 @@ describe('validateLessons', () => {
       'note 1: fret must be a non-negative integer, got -1',
       'note 2: fret must be a non-negative integer, got 2.5',
       'note 3: beats must be positive, got 0',
+      'exercise ends mid-bar: 1.5 beats in 4/4',
     ])
     expect(problems[0]).toMatchObject({ lessonId: 'lesson-1', exerciseId: 'ex-1' })
+  })
+
+  it('flags an exercise that ends in the middle of a bar', () => {
+    const problems = validateLessons([
+      lesson({ exercises: [exercise({ notes: [{ string: 5, fret: 3, beats: 1.5 }] })] }),
+    ])
+    expect(problems.map((p) => p.message)).toEqual(['exercise ends mid-bar: 1.5 beats in 4/4'])
+    const waltz = validateLessons([
+      lesson({ exercises: [exercise({ beatsPerBar: 3, notes: [{ string: 5, fret: 3, beats: 3 }] })] }),
+    ])
+    expect(waltz).toEqual([])
   })
 
   it('flags an exercise with no notes', () => {

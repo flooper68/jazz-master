@@ -20,6 +20,10 @@ export default defineConfig({
   session: { driver: sessionDrivers.memory() },
   integrations: [clerk(), react()],
   vite: {
+    // `astro build` re-optimizes dependencies into the Vite cache; sharing it
+    // with a running `astro dev` (the check gate beside the dev server) wipes
+    // the server's pre-bundled deps and every page 404s until a restart.
+    cacheDir: process.argv.includes('build') ? 'node_modules/.vite-build' : undefined,
     plugins: [
       // TanStack Router codegen for the /app/* SPA island (TASK-022). Route
       // files live under src/app/routes so Astro keeps sole ownership of

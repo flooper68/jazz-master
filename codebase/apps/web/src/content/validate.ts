@@ -1,5 +1,6 @@
 import { keySignature, STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
-import type { Exercise, Lesson, TabNote } from './types'
+import { passBeats } from './timeline'
+import { DEFAULT_BEATS_PER_BAR, type Exercise, type Lesson, type TabNote } from './types'
 
 /** One thing wrong with a lesson set; an empty result means valid. */
 export interface LessonProblem {
@@ -52,6 +53,11 @@ function exerciseProblems(lesson: Lesson, exercise: Exercise): LessonProblem[] {
     const message = noteProblem(note, index)
     if (message) problem(message)
   })
+  const beatsPerBar = exercise.beatsPerBar ?? DEFAULT_BEATS_PER_BAR
+  const total = passBeats(exercise.notes)
+  if (exercise.notes.length > 0 && beatsPerBar >= 1 && Math.abs(total % beatsPerBar) > 1e-9) {
+    problem(`exercise ends mid-bar: ${total} beats in ${beatsPerBar}/4`)
+  }
   return problems
 }
 

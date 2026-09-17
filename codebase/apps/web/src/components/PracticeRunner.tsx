@@ -3,6 +3,7 @@ import type { PracticeSession } from '../appData/session'
 import type { PlayerAudio } from '../audio/engine'
 import type { Lesson } from '../content'
 import { ExercisePlayer } from './ExercisePlayer'
+import { CheckIcon } from './icons'
 import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
 import { toSessionRecord, usePracticeRunner } from './usePracticeRunner'
 import { useViewFocus } from './useViewFocus'
@@ -19,7 +20,7 @@ const BUTTON_PRIMARY =
 const HEADING =
   'font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const STAGE_HEADING =
-  'font-display text-base font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+  'font-display text-base font-semibold tracking-tight focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-dashed focus-visible:outline-line-strong'
 
 interface PracticeRunnerProps {
   lesson: Lesson
@@ -107,26 +108,29 @@ export function PracticeRunner({
         <h1 ref={headingRef} tabIndex={-1} className={STAGE_HEADING}>
           {lesson.title}
         </h1>
-        <ol className="flex flex-wrap items-center gap-1.5 text-xs" aria-label="Exercises">
-        {lesson.exercises.map((item, index) => {
-          const status =
-            index < state.exerciseIndex ? 'done' : index === state.exerciseIndex ? 'current' : 'upcoming'
-          return (
-            <li
-              key={item.id}
-              aria-current={status === 'current' ? 'step' : undefined}
-              className={`rounded-full border px-2.5 py-0.5 ${
-                status === 'current'
-                  ? 'border-fg bg-fg text-panel'
-                  : status === 'done'
-                    ? 'border-line text-muted line-through'
-                    : 'border-line text-fg-2'
-              }`}
-            >
-              {index + 1}. {item.title}
-            </li>
-          )
-        })}
+        {/* One step per exercise; the current exercise's title is on the stage below. */}
+        <ol className="flex items-center gap-1 text-xs" aria-label="Exercises">
+          {lesson.exercises.map((item, index) => {
+            const status =
+              index < state.exerciseIndex ? 'done' : index === state.exerciseIndex ? 'current' : 'upcoming'
+            return (
+              <li
+                key={item.id}
+                aria-current={status === 'current' ? 'step' : undefined}
+                aria-label={`${index + 1}. ${item.title}${status === 'done' ? ' (done)' : ''}`}
+                title={item.title}
+                className={`inline-flex h-6 min-w-6 cursor-default items-center justify-center rounded-full border px-1.5 font-medium tabular-nums ${
+                  status === 'current'
+                    ? 'border-fg bg-fg text-panel'
+                    : status === 'done'
+                      ? 'border-line bg-panel-2 text-muted'
+                      : 'border-line text-fg-2'
+                }`}
+              >
+                {status === 'done' ? <CheckIcon /> : index + 1}
+              </li>
+            )
+          })}
         </ol>
         <button
           type="button"
