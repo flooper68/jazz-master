@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Badge, Button, Card, Checkbox, Radio, Select } from '../components/ui/Primitives'
+import { Badge, Button, Card, Checkbox, Radio } from '../components/ui/Primitives'
+import { Select } from '../components/ui/Select'
 
 const swatches: Record<string, readonly [name: string, className: string, note: string][]> = {
   Surfaces: [
@@ -134,10 +135,7 @@ function ThemePage() {
           <Card>
             <h3 className="text-sm font-medium text-muted">Fields</h3>
             <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-              <Select defaultValue="all">
-                <option value="all">All areas</option>
-                <option value="chords">Chords</option>
-              </Select>
+              <Select options={[{ value: 'all', label: 'All time' }, { value: '7d', label: 'Last 7 days' }, { value: '30d', label: 'Last 30 days' }]} value="all" onChange={() => {}} aria-label="Period" />
               <label className="flex items-center gap-2"><Radio name="theme-demo" defaultChecked /> Beginner</label>
               <label className="flex items-center gap-2"><Radio name="theme-demo" /> Intermediate</label>
               <label className="flex items-center gap-2"><Checkbox defaultChecked /> Chords &amp; voicings</label>

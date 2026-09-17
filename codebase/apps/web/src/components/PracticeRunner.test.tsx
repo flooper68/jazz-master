@@ -119,7 +119,7 @@ async function next(user: User, title: string) {
 }
 
 /** The advanced controls sit behind menus; open one by its label. */
-async function openMenu(user: User, label: 'Loop' | 'Repeat') {
+async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'Tempo ramp settings') {
   const button = screen.getByRole('button', { name: new RegExp(`^${label}: `) })
   if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
 }
@@ -234,7 +234,9 @@ describe('PracticeRunner', () => {
     await disableCountIn(user)
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
     await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Guitar' }), 'steel')
+    await user.click(screen.getByRole('combobox', { name: /^Guitar: / }))
+    await user.click(screen.getByRole('option', { name: 'Steel string (synth)' }))
+    expect(screen.getByRole('combobox', { name: 'Guitar: Steel string (synth)' })).toBeInTheDocument()
     expect(audio.log.filter((entry) => entry.startsWith('guitar')).at(-1)).toBeUndefined()
 
     await play(user, 'C major — open position')
@@ -348,10 +350,10 @@ describe('PracticeRunner', () => {
     expect(readout('Passes')).toBe('Pass 1 of 4')
     expect(screen.getByRole('button', { name: 'Repeat: 4×' })).toHaveAttribute('aria-expanded', 'true')
 
-    // The ramp is a plain toggle; its settings appear beside it while on.
-    expect(document.querySelector('[data-ramp-settings]')).toBeNull()
+    // The ramp is a direct toggle; its settings live in their own menu.
     await user.click(screen.getByRole('button', { name: 'Tempo ramp: off' }))
     expect(screen.getByRole('button', { name: 'Tempo ramp: +4/2 → 100' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: /^Tempo ramp settings: / }))
     expect(document.querySelector('[data-ramp-settings]')).not.toBeNull()
     await user.clear(screen.getByRole('spinbutton', { name: 'BPM per step' }))
     await user.type(screen.getByRole('spinbutton', { name: 'BPM per step' }), '10')

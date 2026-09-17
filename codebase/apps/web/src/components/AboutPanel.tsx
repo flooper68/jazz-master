@@ -31,7 +31,7 @@ export function AboutPanel({ exercise, intro = [], onClose }: AboutPanelProps) {
           type="button"
           onClick={onClose}
           aria-label="Close"
-          title="Close (I)"
+          data-tip="Close (I)"
           className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           <CloseIcon />

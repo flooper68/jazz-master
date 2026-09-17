@@ -83,6 +83,16 @@ export const ClearIcon = () => (
   <Icon><path d="M3.6 2.5 8 6.9l4.4-4.4 1.1 1.1L9.1 8l4.4 4.4-1.1 1.1L8 9.1l-4.4 4.4-1.1-1.1L6.9 8 2.5 3.6z" /></Icon>
 )
 export const NextIcon = () => <Icon><path d="M2.5 2.5 10 8l-7.5 5.5zM11 2.5h2.5v11H11z" /></Icon>
+export const GuitarPickIcon = () => (
+  <Icon>
+    <path d="M8 1.5c3.4 0 6 1.6 6 4.2 0 3.6-3.1 8.8-6 8.8S2 9.3 2 5.7c0-2.6 2.6-4.2 6-4.2zm0 1.5C5.4 3 3.5 4.1 3.5 5.7c0 2.9 2.6 7.3 4.5 7.3s4.5-4.4 4.5-7.3C12.5 4.1 10.6 3 8 3z" />
+  </Icon>
+)
+export const SlidersIcon = () => (
+  <Icon>
+    <path d="M2 4h6v1.5H2zM10.5 2.5h1.5v4.5h-1.5zM10 4h4v1.5h-4zM2 10.5h4V12H2zM6.5 9H8v4.5H6.5zM8 10.5h6V12H8z" />
+  </Icon>
+)
 export const InfoIcon = () => (
   <Icon>
     <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 1.5a5 5 0 1 0 0 10A5 5 0 0 0 8 3zm-.9 3.8h1.8V12H7.1zM8 4.3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import type { PlayerAudio } from '../audio/engine'
-import { VOICES, type VoiceId } from '../audio/voices'
+import { VOICES } from '../audio/voices'
 import { DEFAULT_BEATS_PER_BAR, noteIndexAt, type Exercise } from '../content'
 import { formatBarBeat, formatSeconds } from '../player/formatting'
 import type { LoopRegion, TempoLadder } from '../player/plan'
@@ -8,6 +8,7 @@ import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
 import { usePlayerTransport } from '../player/usePlayerTransport'
 import { Score, type ScoreHandle } from '../score/Score'
 import { AboutPanel } from './AboutPanel'
+import { Select } from './ui/Select'
 import {
   BarIcon,
   BothIcon,
@@ -18,7 +19,9 @@ import {
   CountInIcon,
   FullscreenIcon,
   GuitarIcon,
+  GuitarPickIcon,
   InfoIcon,
+  SlidersIcon,
   LoopEndIcon,
   LoopIcon,
   LoopStartIcon,
@@ -58,13 +61,18 @@ interface ExercisePlayerProps {
 }
 
 const REPEAT_CHOICES: Array<number | null> = [null, 2, 4, 8, 16]
+const GUITAR_OPTIONS = VOICES.map((voice) => ({
+  value: voice.id,
+  label: voice.label,
+  group: voice.kind === 'synth' ? 'Synthesized' : 'Sampled',
+}))
 const TEMPO_STEP = 4
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 // Base without a background: the "on" state sets its own, so neither wins by stylesheet order.
-const ICON_BASE = `inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line text-fg hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
+const ICON_BASE = `inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-line text-fg hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
 const ICON_BUTTON = `${ICON_BASE} bg-panel hover:bg-panel-2`
 const ICON_ON = `${ICON_BASE} border-fg bg-fg text-panel hover:border-fg`
-const PLAY_BUTTON = `inline-flex h-10 w-14 cursor-pointer items-center justify-center rounded-xl bg-cta text-cta-fg hover:bg-cta-hover ${FOCUS}`
+const PLAY_BUTTON = `inline-flex h-10 w-16 cursor-pointer items-center justify-center rounded-xl bg-cta text-cta-fg hover:bg-cta-hover ${FOCUS}`
 const FLOAT = 'rounded-2xl border border-line bg-panel/90 shadow-lg backdrop-blur-md'
 const TOGGLE_ON = 'border-fg bg-fg text-panel'
 const TOGGLE_OFF = 'border-line bg-panel text-fg-2 hover:border-line-strong'
@@ -110,7 +118,7 @@ export function ExercisePlayer({
   }
   const scoreRef = useRef<ScoreHandle>(null)
   const headingRef = useViewFocus<HTMLHeadingElement>(exercise.id, { focusOnMount: !isFirst })
-  const ids = { tempo: useId(), repeat: useId(), guitar: useId() }
+  const ids = { tempo: useId(), repeat: useId() }
 
   // Apply the shared preferences to this exercise's transport.
   useEffect(() => transport.setClick(prefs.click), [transport, prefs.click])
@@ -252,7 +260,7 @@ export function ExercisePlayer({
 
   return (
     <section
-      className="mt-2 flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-panel shadow-[0_1px_0_var(--c-line)]"
+      className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
       onKeyDown={onKeyDown}
       aria-label={`${exercise.title} player`}
     >
@@ -279,7 +287,7 @@ export function ExercisePlayer({
       {/* The scene: the score is the canvas; the chrome and the intro float over it. */}
       <div
         ref={stageRef}
-        className="relative m-1.5 mt-0 min-h-0 flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70 fullscreen:m-0 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
+        className="relative min-h-0 flex-1 overflow-hidden rounded-b-2xl border-t border-line bg-panel-2/60 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
         data-stage
       >
         <Score
@@ -294,7 +302,7 @@ export function ExercisePlayer({
           onSeek={(beat) => transport.seek(beat)}
           onLoopChange={setLoop}
           className="absolute inset-0"
-          contentInset={{ top: 16, bottom: 140 }}
+          contentInset={{ top: 16, bottom: 120 }}
           zoom={prefs.zoom}
           aria-label={`${exercise.title} ${prefs.view === 'both' ? 'score' : prefs.view === 'tab' ? 'tab' : 'notation'}, ${exercise.notes.length} notes${
             started && currentIndex !== null ? `, on note ${currentIndex + 1}` : ''
@@ -303,30 +311,48 @@ export function ExercisePlayer({
 
         {/* Everything floats in one bar at the bottom, icons only, grouped by job; menus open upward. */}
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
-          <div className={`${FLOAT} pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-2 px-3 py-2`}>
+          <div className={`${FLOAT} pointer-events-auto flex w-full flex-col items-stretch gap-1.5 px-3 py-2`}>
+            {/* Main lane: tempo left, transport dead centre (Play in the middle of the screen), readouts right. */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3" data-lane="main">
+            <div className="flex justify-start">
+            <Group label="Readouts">
+              <Readout
+                label="Position"
+                value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
+                data-tip="Bar and beat under the cursor"
+              />
+              <Readout label="Passes" value={passLabel} data-tip="Passes through the loop so far" live />
+              {secondsLeft !== null && (
+                <Readout label="Time left" value={formatSeconds(secondsLeft)} data-tip="Playing time left on this exercise" />
+              )}
+            </Group>
+            </div>
             <Group label="Transport">
-              <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home"><SkipBackIcon /></IconButton>
-              <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←"><ChevronLeftIcon /></IconButton>
+              <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home" className="h-9 w-9"><SkipBackIcon /></IconButton>
+              <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←" className="h-9 w-9"><ChevronLeftIcon /></IconButton>
               {playing ? (
                 <button
                   type="button"
                   onClick={() => transport.pause()}
                   aria-label={`Pause ${exercise.title}`}
-                  title="Pause (Space)"
+                  data-tip="Pause (Space)"
                   className={PLAY_BUTTON}
                 >
                   <PauseIcon />
                 </button>
               ) : (
-                <button type="button" onClick={play} aria-label={`Play ${exercise.title}`} title="Play (Space)" className={PLAY_BUTTON}>
+                <button type="button" onClick={play} aria-label={`Play ${exercise.title}`} data-tip="Play (Space)" className={PLAY_BUTTON}>
                   <PlayIcon />
                 </button>
               )}
-              <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→"><ChevronRightIcon /></IconButton>
+              <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→" className="h-9 w-9"><ChevronRightIcon /></IconButton>
+              <IconButton onClick={finish} label={`Next: finish ${exercise.title}`} data-tip="Finish this exercise and move to the next" className="h-9 w-9 border-line-strong">
+              <NextIcon />
+            </IconButton>
             </Group>
-
+            <div className="flex items-center justify-between gap-3">
             <Group label="Tempo">
-              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" title={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
+              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" data-tip={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
               <label htmlFor={ids.tempo} className="sr-only">
                 Tempo in BPM
               </label>
@@ -336,39 +362,67 @@ export function ExercisePlayer({
                 min={MIN_TEMPO}
                 max={MAX_TEMPO}
                 value={snapshot.tempoBpm}
-                title="Tempo in beats per minute"
+                data-tip="Tempo in beats per minute"
                 onChange={(event) => transport.setTempo(Number(event.target.value))}
-                className={`${FIELD} w-16 text-center font-display text-base font-semibold`}
+                className={`${FIELD} h-7 w-14 text-center font-display text-sm font-semibold`}
               />
-              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)} label="Faster" title={`Faster by ${TEMPO_STEP} BPM`} shortcut="+"><PlusIcon /></IconButton>
+              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)} label="Faster" data-tip={`Faster by ${TEMPO_STEP} BPM`} shortcut="+"><PlusIcon /></IconButton>
               {snapshot.tempoBpm !== exercise.tempoBpm && (
-                <IconButton onClick={() => transport.setTempo(exercise.tempoBpm)} label={`Reset to ${exercise.tempoBpm}`} title={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}><ResetIcon /></IconButton>
+                <IconButton onClick={() => transport.setTempo(exercise.tempoBpm)} label={`Reset to ${exercise.tempoBpm}`} data-tip={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}><ResetIcon /></IconButton>
               )}
               <IconButton
                 onClick={() => setLadder(snapshot.ladder ? null : {})}
                 pressed={snapshot.ladder !== null}
                 label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
-                title="Tempo ramp: raise the tempo every few passes, up to a target"
+                data-tip={`Tempo ramp ${snapshot.ladder ? `on: +${snapshot.ladder.stepBpm} BPM every ${snapshot.ladder.everyPasses} passes up to ${snapshot.ladder.toBpm}` : 'off'}. Raise the tempo every few passes`}
               >
                 <RampIcon />
               </IconButton>
-              {snapshot.ladder && (
-                <div className="flex items-center gap-1 text-xs text-fg-2" data-ramp-settings>
+              <Menu
+                id="ramp"
+                label="Tempo ramp settings"
+                icon={<SlidersIcon />}
+                value={snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}
+                badge={null}
+                data-tip="Tempo ramp settings: step, passes per step and target"
+                active={false}
+                open={openMenu === 'ramp'}
+                onToggle={toggleMenu}
+              >
+                <p className="text-xs text-muted">Raise the tempo by a step every few passes, up to a target.</p>
+                <div className="mt-2 flex items-center gap-1.5 text-sm text-fg-2" data-ramp-settings>
                   <span>+</span>
-                  <NumberField label="BPM per step" title="BPM added at each step" value={snapshot.ladder.stepBpm} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
+                  <NumberField label="BPM per step" data-tip="BPM added at each step" value={snapshot.ladder?.stepBpm ?? 4} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
                   <span>every</span>
-                  <NumberField label="Passes per step" title="Passes between steps" value={snapshot.ladder.everyPasses} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
-                  <span>→</span>
-                  <NumberField label="Target tempo" title="Tempo the ramp stops at" value={snapshot.ladder.toBpm} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
+                  <NumberField label="Passes per step" data-tip="Passes between steps" value={snapshot.ladder?.everyPasses ?? 2} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
+                  <span>passes →</span>
+                  <NumberField label="Target tempo" data-tip="Tempo the ramp stops at" value={snapshot.ladder?.toBpm ?? Math.min(snapshot.tempoBpm + 40, MAX_TEMPO)} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
                 </div>
-              )}
+                <p className="mt-2 text-[11px] text-muted">Changing a setting switches the ramp on.</p>
+              </Menu>
               {snapshot.ladder && tempoNow !== snapshot.tempoBpm && (
-                <span className="text-xs text-accent-text tabular-nums" title="Tempo of the current pass on the ramp">
+                <span className="text-xs text-accent-text tabular-nums" data-tip="Tempo of the current pass on the ramp">
                   now {tempoNow}
                 </span>
               )}
             </Group>
+              <button
+                type="button"
+                onClick={() => setAboutOpen((open) => !open)}
+                aria-pressed={aboutOpen}
+                aria-label="About this exercise"
+                data-tip="About this exercise: the theory and the shape on the neck (I)"
+                className={`${ICON_BASE} ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
+              >
+                <InfoIcon />
+              </button>
+            </div>
 
+
+
+            </div>
+            {/* Second lane: the rest, smaller, one click each. */}
+            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5" data-lane="more">
             <Group label="Practice">
               <Menu
                 id="loop"
@@ -376,14 +430,14 @@ export function ExercisePlayer({
                 icon={<LoopIcon />}
                 value={snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'whole'}
                 badge={snapshot.loop ? `${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : null}
-                title={`Loop: ${snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'the whole exercise'}. Loop a part for detailed practice`}
+                data-tip={`Loop: ${snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'the whole exercise'}. Loop a part for detailed practice`}
                 active={snapshot.loop !== null}
                 open={openMenu === 'loop'}
                 onToggle={toggleMenu}
               >
                 <p className="text-xs text-muted">Press or drag on the bar numbers above the score, or:</p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <button type="button" onClick={loopCurrentBar} title="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
+                  <button type="button" onClick={loopCurrentBar} data-tip="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
                     <BarIcon /> This bar
                   </button>
                   <button
@@ -391,7 +445,7 @@ export function ExercisePlayer({
                     onClick={() => markLoop('start')}
                     className={`${CHIP} ${TOGGLE_OFF}`}
                     aria-label="Set loop start at cursor"
-                    title="Start the loop at the cursor ([)"
+                    data-tip="Start the loop at the cursor ([)"
                   >
                     <LoopStartIcon /> Start here
                   </button>
@@ -400,7 +454,7 @@ export function ExercisePlayer({
                     onClick={() => markLoop('end')}
                     className={`${CHIP} ${TOGGLE_OFF}`}
                     aria-label="Set loop end at cursor"
-                    title="End the loop at the cursor (])"
+                    data-tip="End the loop at the cursor (])"
                   >
                     <LoopEndIcon /> End here
                   </button>
@@ -408,7 +462,7 @@ export function ExercisePlayer({
                     type="button"
                     onClick={() => setLoop(null)}
                     disabled={!snapshot.loop}
-                    title="Play the whole exercise again (⇧L)"
+                    data-tip="Play the whole exercise again (⇧L)"
                     className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
                   >
                     <ClearIcon /> Clear
@@ -422,7 +476,7 @@ export function ExercisePlayer({
                 icon={<RepeatIcon />}
                 value={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
                 badge={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
-                title={`Repeat: ${snapshot.repeat === null ? 'until you stop' : `${snapshot.repeat} passes`}. How many passes to play before stopping`}
+                data-tip={`Repeat: ${snapshot.repeat === null ? 'until you stop' : `${snapshot.repeat} passes`}. How many passes to play before stopping`}
                 active={snapshot.repeat !== null}
                 open={openMenu === 'repeat'}
                 onToggle={toggleMenu}
@@ -435,7 +489,7 @@ export function ExercisePlayer({
                       type="button"
                       onClick={() => transport.setRepeat(choice)}
                       aria-pressed={snapshot.repeat === choice}
-                      title={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
+                      data-tip={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
                       className={`${CHIP} ${snapshot.repeat === choice ? TOGGLE_ON : TOGGLE_OFF}`}
                     >
                       {choice === null ? '∞' : `${choice}×`}
@@ -451,7 +505,7 @@ export function ExercisePlayer({
                     max={99}
                     value={snapshot.repeat ?? ''}
                     placeholder="n"
-                    title="Any number of passes"
+                    data-tip="Any number of passes"
                     onChange={(event) =>
                       transport.setRepeat(event.target.value === '' ? null : Number(event.target.value))
                     }
@@ -462,25 +516,18 @@ export function ExercisePlayer({
             </Group>
 
             <Group label="Sound">
-              <Toggle label="Click" icon={<ClickIcon />} title="Click: metronome on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
-              <Toggle label="Count-in" icon={<CountInIcon />} title="Count-in: one bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
-              <Toggle label="Play along" icon={<GuitarIcon />} title="Play along: a guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
-              <label htmlFor={ids.guitar} className="sr-only">
-                Guitar
-              </label>
-              <select
-                id={ids.guitar}
+              <Toggle label="Click" icon={<ClickIcon />} data-tip="Click: metronome on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
+              <Toggle label="Count-in" icon={<CountInIcon />} data-tip="Count-in: one bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
+              <Toggle label="Play along" icon={<GuitarIcon />} data-tip="Play along: a guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
+              <Select
+                options={GUITAR_OPTIONS}
                 value={prefs.guitar}
-                title="Which guitar plays the line along. Sampled guitars load one note at a time from the web; the synth plays until each one arrives."
-                onChange={(event) => onPrefsChange({ ...prefs, guitar: event.target.value as VoiceId })}
-                className={`${FIELD} max-w-40 cursor-pointer text-xs`}
-              >
-                {VOICES.map((voice) => (
-                  <option key={voice.id} value={voice.id}>
-                    {voice.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(guitar) => onPrefsChange({ ...prefs, guitar })}
+                aria-label="Guitar"
+                data-tip="Guitar for playing along"
+                placement="above"
+                icon={<GuitarPickIcon />}
+              />
             </Group>
 
             <Group label="View">
@@ -498,9 +545,9 @@ export function ExercisePlayer({
                     role="radio"
                     aria-checked={prefs.view === choice}
                     aria-label={text}
-                    title={`${text}: ${description}`}
+                    data-tip={`${text}: ${description}`}
                     onClick={() => onPrefsChange({ ...prefs, view: choice })}
-                    className={`${prefs.view === choice ? ICON_ON : ICON_BUTTON} h-8 w-8`}
+                    className={prefs.view === choice ? ICON_ON : ICON_BUTTON}
                   >
                     {icon}
                   </button>
@@ -513,7 +560,7 @@ export function ExercisePlayer({
               >
                 <MinusIcon />
               </IconButton>
-              <span className="w-10 text-center text-xs font-semibold text-fg tabular-nums" aria-live="polite" title="Score magnification">
+              <span className="w-10 text-center text-xs font-semibold text-fg tabular-nums" aria-live="polite" data-tip="Score magnification">
                 {Math.round(prefs.zoom * 100)}%
               </span>
               <IconButton
@@ -526,38 +573,13 @@ export function ExercisePlayer({
             </Group>
 
             <Group label="Help">
-              <button
-                type="button"
-                onClick={() => setAboutOpen((open) => !open)}
-                aria-pressed={aboutOpen}
-                aria-label="About this exercise"
-                title="About this exercise: the theory and the shape on the neck (I)"
-                className={`${ICON_BASE} h-8 w-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
-              >
-                <InfoIcon />
-              </button>
               {fullscreenAvailable && (
                 <IconButton onClick={toggleFullscreen} pressed={fullscreen} label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} shortcut="F">
                   <FullscreenIcon exit={fullscreen} />
                 </IconButton>
               )}
             </Group>
-
-            <Group label="Readouts">
-              <Readout
-                label="Position"
-                value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
-                title="Bar and beat under the cursor"
-              />
-              <Readout label="Passes" value={passLabel} title="Passes through the loop so far" live />
-              {secondsLeft !== null && (
-                <Readout label="Time left" value={formatSeconds(secondsLeft)} title="Playing time left on this exercise" />
-              )}
-            </Group>
-
-            <IconButton onClick={finish} label={`Next: finish ${exercise.title}`} title="Finish this exercise and move to the next" className="h-10 w-10 border-line-strong">
-              <NextIcon />
-            </IconButton>
+            </div>
           </div>
         </div>
         {/* The intro is a drawer down the full height of the screen, sliding in
@@ -585,7 +607,7 @@ export function ExercisePlayer({
   )
 }
 
-type MenuId = 'loop' | 'repeat' | 'view'
+type MenuId = 'loop' | 'repeat' | 'ramp' | 'view'
 
 /** A labelled popover: the button shows the setting's current value, the panel holds its controls. */
 function Menu({
@@ -594,7 +616,7 @@ function Menu({
   icon,
   value,
   badge,
-  title,
+  'data-tip': tip,
   active,
   open,
   onToggle,
@@ -606,7 +628,7 @@ function Menu({
   value: string
   /** Tiny text on the button when there is a setting worth showing. */
   badge: string | null
-  title: string
+  'data-tip': string
   active: boolean
   open: boolean
   onToggle: (id: MenuId) => void
@@ -631,8 +653,8 @@ function Menu({
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={`${label}: ${value}`}
-        title={title}
-        className={`${ICON_BASE} relative h-8 w-8 ${open || active ? 'border-line-strong bg-panel-2' : 'bg-panel hover:bg-panel-2'} ${active ? 'text-accent-text' : ''}`}
+        data-tip={tip}
+        className={`${ICON_BASE} relative ${open || active ? 'border-line-strong bg-panel-2' : 'bg-panel hover:bg-panel-2'} ${active ? 'text-accent-text' : ''}`}
       >
         {icon}
         {badge && (
@@ -658,7 +680,7 @@ function Menu({
 /** A cluster of related controls, separated from its neighbours by a rule. */
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-line pl-3 first:border-l-0 first:pl-0">
+    <div role="group" aria-label={label} className="flex items-center gap-1 border-l border-line pl-2.5 first:border-l-0 first:pl-0">
       {children}
     </div>
   )
@@ -668,16 +690,16 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 function IconButton({
   onClick,
   label,
-  title,
+  'data-tip': tip,
   shortcut,
   pressed,
   disabled,
-  className = 'h-8 w-8',
+  className = '',
   children,
 }: {
   onClick: () => void
   label: string
-  title?: string
+  'data-tip'?: string
   shortcut?: string
   pressed?: boolean
   disabled?: boolean
@@ -691,7 +713,7 @@ function IconButton({
       aria-label={label}
       aria-pressed={pressed}
       disabled={disabled}
-      title={`${title ?? label}${shortcut ? ` (${shortcut})` : ''}`}
+      data-tip={`${tip ?? label}${shortcut ? ` (${shortcut})` : ''}`}
       className={`${ICON_BASE} ${className} ${pressed ? 'border-line-strong bg-panel-2 text-accent-text' : 'bg-panel hover:bg-panel-2'}`}
     >
       {children}
@@ -699,11 +721,11 @@ function IconButton({
   )
 }
 
-function Readout({ label, value, title, live = false }: { label: string; value: string; title: string; live?: boolean }) {
+function Readout({ label, value, 'data-tip': tip, live = false }: { label: string; value: string; 'data-tip': string; live?: boolean }) {
   return (
-    <p className="flex cursor-default flex-col leading-tight" aria-live={live ? 'polite' : undefined} title={title}>
-      <span className="text-[11px] font-medium tracking-wide text-muted uppercase">{label}</span>
-      <span className="font-display text-base font-semibold text-fg tabular-nums">{value}</span>
+    <p className="flex cursor-default flex-col leading-tight" aria-live={live ? 'polite' : undefined} data-tip={tip}>
+      <span className="text-[10px] font-medium tracking-wide text-muted uppercase">{label}</span>
+      <span className="font-display text-sm font-semibold text-fg tabular-nums">{value}</span>
     </p>
   )
 }
@@ -711,18 +733,18 @@ function Readout({ label, value, title, live = false }: { label: string; value: 
 function Toggle({
   label,
   icon,
-  title,
+  'data-tip': tip,
   checked,
   onChange,
 }: {
   label: string
   icon: ReactNode
-  title: string
+  'data-tip': string
   checked: boolean
   onChange: (on: boolean) => void
 }) {
   return (
-    <label className={`${checked ? ICON_ON : ICON_BUTTON} h-8 w-8`} title={title}>
+    <label className={checked ? ICON_ON : ICON_BUTTON} data-tip={tip}>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" aria-label={label} />
       <span className={checked ? 'text-accent' : 'text-muted'}>{icon}</span>
     </label>
@@ -732,14 +754,14 @@ function Toggle({
 /** A numeric field that keeps what is being typed and commits only whole, in-range values. */
 function NumberField({
   label,
-  title,
+  'data-tip': tip,
   value,
   min,
   max,
   onChange,
 }: {
   label: string
-  title: string
+  'data-tip': string
   value: number
   min: number
   max: number
@@ -755,7 +777,7 @@ function NumberField({
     <input
       type="number"
       aria-label={label}
-      title={title}
+      data-tip={tip}
       value={text}
       min={min}
       max={max}
@@ -765,7 +787,7 @@ function NumberField({
         if (event.target.value !== '' && Number.isInteger(next) && next >= min && next <= max) onChange(next)
       }}
       onBlur={() => setText(String(value))}
-      className={`${FIELD} w-14 text-center`}
+      className={`${FIELD} h-7 w-12 text-center text-xs`}
     />
   )
 }

@@ -19,10 +19,6 @@ export function Badge({ className = '', ...props }: ComponentProps<'span'>) {
   return <span className={`rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-medium text-fg-2 ${className}`} {...props} />
 }
 
-export function Select({ className = '', ...props }: ComponentProps<'select'>) {
-  return <select className={`rounded-lg border border-line-strong bg-field px-2.5 py-1.5 text-sm text-fg ${focus} ${className}`} {...props} />
-}
-
 export function Radio({ className = '', ...props }: Omit<ComponentProps<'input'>, 'type'>) {
   return <input type="radio" className={`accent-cta ${className}`} {...props} />
 }

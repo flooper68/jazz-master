@@ -28,6 +28,38 @@
 }
 
 /*
+ * Tooltips: any element with `data-tip` shows it above itself on hover or
+ * keyboard focus, after a short delay — quicker than the browser's own
+ * title tooltip, and the same in every browser.
+ */
+[data-tip] {
+  position: relative;
+}
+[data-tip]:not([aria-expanded='true']):hover::after,
+[data-tip]:not([aria-expanded='true']):focus-visible::after,
+[data-tip]:not([aria-expanded='true']):has(:focus-visible)::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: 22rem;
+  width: max-content;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--c-fg);
+  color: var(--c-panel);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  pointer-events: none;
+  animation: fade-in 120ms ease-out 150ms both;
+}
+
+/*
  * Woodshed theme tokens. Light is the default; dark follows the system
  * scheme or an explicit data-theme on any ancestor. Utilities are mapped
  * below with `@theme inline`, so `bg-panel`, `text-muted`, `border-line`,
