@@ -558,9 +558,9 @@ export function ExercisePlayer({
               aria-pressed={aboutOpen}
               aria-label="About this exercise"
               title="About this exercise: the theory and the shape on the neck (I)"
-              className={`${ICON_BUTTON} h-8 w-8 ${aboutOpen ? 'border-fg bg-panel-2' : ''}`}
+              className={`${CHIP} h-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
             >
-              <InfoIcon />
+              <InfoIcon /> About
             </button>
             {fullscreenAvailable && (
               <button
