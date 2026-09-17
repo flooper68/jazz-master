@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react'
+import type { RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import { VOICES } from '../audio/voices'
 import { DEFAULT_BEATS_PER_BAR, noteIndexAt, type Exercise } from '../content'
@@ -50,8 +51,11 @@ interface ExercisePlayerProps {
   exercise: Exercise
   prefs: PlayerPrefs
   onPrefsChange: (prefs: PlayerPrefs) => void
-  /** The timer ran out, the passes are done, or the player pressed Finish. */
-  onFinish: () => void
+  /**
+   * The timer ran out, the passes are done, or the player pressed Finish.
+   * Null when Play was never pressed: there was no run.
+   */
+  onFinish: (outcome: RunOutcome | null) => void
   /** The title is the page's heading; the runner moves focus to it. */
   headingRef?: Ref<HTMLHeadingElement>
   /** What sits at the far end of the title row — the way out. */
@@ -93,6 +97,7 @@ export function ExercisePlayer({
   const { transport, snapshot } = usePlayerTransport(exercise, { createAudio, now })
   const playing = snapshot.status === 'playing'
   const [started, setStarted] = useState(false)
+  const [ending, setEnding] = useState(false)
   const [currentIndex, setCurrentIndex] = useState<number | null>(null)
   const [barBeat, setBarBeat] = useState(() => formatBarBeat(0, beatsPerBar))
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
@@ -144,45 +149,73 @@ export function ExercisePlayer({
     return () => cancelAnimationFrame(frame)
   }, [transport, playing, exercise.notes, beatsPerBar])
 
-  // Clocked exercises: the timer counts playing time and ends the exercise.
+  // Playing time is counted for every exercise (it is what a run records);
+  // clocked exercises also show it as a timer, which ends the exercise.
   const totalSeconds = exercise.duration.kind === 'minutes' ? exercise.duration.minutes * 60 : null
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds)
   const playedRef = useRef(0)
-  const finishRef = useRef(onFinish)
-  finishRef.current = onFinish
+  const startedAtRef = useRef<number | null>(null)
   const expiredRef = useRef(false)
+  // Latest-value ref: the timer and the end-of-run effect report through it.
+  const reportRef = useRef<(completed: boolean) => void>(() => {})
+  reportRef.current = (completed) => {
+    if (startedAtRef.current === null) return onFinish(null)
+    const at = transport.position()
+    onFinish({
+      startedAt: new Date(startedAtRef.current).toISOString(),
+      durationSeconds: Math.round(playedRef.current),
+      tempoBpm: Math.round(at.tempoBpm),
+      passes: at.pass,
+      completed,
+    })
+  }
   useEffect(() => {
-    if (totalSeconds === null || !playing) return
+    if (!playing) return
     let last = Date.now()
-    const id = setInterval(() => {
+    const count = () => {
       const current = Date.now()
       playedRef.current += (current - last) / 1000
       last = current
+    }
+    const id = setInterval(() => {
+      count()
+      if (totalSeconds === null) return
       const left = Math.max(totalSeconds - playedRef.current, 0)
       setSecondsLeft((previous) => (Math.ceil(previous ?? 0) === Math.ceil(left) ? previous : left))
       if (left <= 0 && !expiredRef.current) {
         expiredRef.current = true
         transport.pause()
-        finishRef.current()
+        reportRef.current(true)
       }
     }, 250)
-    return () => clearInterval(id)
+    return () => {
+      count()
+      clearInterval(id)
+    }
   }, [playing, totalSeconds, transport])
+
+  // Finish: declared after the counting effect, so its cleanup has already
+  // added the last stretch of playing by the time this reports.
+  useEffect(() => {
+    if (ending && !playing) reportRef.current(false)
+  }, [ending, playing])
 
   // A repetitions exercise ends itself when its run finishes on the whole tab.
   const runFinished = snapshot.finished && snapshot.loop === null
   useEffect(() => {
-    if (runFinished && exercise.duration.kind === 'repetitions') finishRef.current()
+    if (runFinished && exercise.duration.kind === 'repetitions') reportRef.current(true)
   }, [runFinished, exercise.duration.kind])
 
   function play(): void {
+    startedAtRef.current ??= Date.now()
     setStarted(true)
     transport.play()
   }
 
   function finish(): void {
     transport.pause()
-    onFinish()
+    // Reported after the pause has settled, so the last stretch of playing is counted.
+    setEnding(true)
   }
 
   function seekBars(delta: number): void {

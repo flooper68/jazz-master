@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import type { ExerciseRun } from '../../appData/run'
 import type { StructuredLogger } from '../observability/logger'
+import { RunOwnerMismatchError, type RunRepository } from '../db/runs'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
@@ -355,3 +357,182 @@ describe('appRouter.users.ensure', () => {
     expect(calls).toBe(0)
   })
 })
+
+describe('appRouter.runs', () => {
+  it('reports unconfigured when no run repository is available', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        runs: null,
+      }),
+    )
+
+    await expect(caller.runs.list()).resolves.toEqual({
+      status: 'unconfigured',
+    })
+    await expect(caller.runs.save(runRecord())).resolves.toEqual({
+      status: 'unconfigured',
+    })
+  })
+
+  it('writes and reads runs for the authenticated user only', async () => {
+    const runs = createMemoryRunRepository()
+    const caller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_123' }, runs }),
+    )
+    const otherCaller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_456' }, runs }),
+    )
+    const run = runRecord()
+
+    await expect(caller.runs.save(run)).resolves.toEqual({
+      status: 'ok',
+      run,
+    })
+    await expect(caller.runs.list()).resolves.toEqual({
+      status: 'ok',
+      runs: [run],
+    })
+    await expect(otherCaller.runs.list()).resolves.toEqual({
+      status: 'ok',
+      runs: [],
+    })
+  })
+
+  it('updates a run in place when its rating arrives', async () => {
+    const runs = createMemoryRunRepository()
+    const caller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_123' }, runs }),
+    )
+    const run = runRecord()
+
+    await caller.runs.save(run)
+    await caller.runs.save({ ...run, rating: 8 })
+
+    await expect(caller.runs.list()).resolves.toEqual({
+      status: 'ok',
+      runs: [{ ...run, rating: 8 }],
+    })
+  })
+
+  it.each([0, 7, 11, 2.5])('rejects a rating of %s', async (rating) => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        runs: createMemoryRunRepository(),
+      }),
+    )
+
+    await expect(
+      caller.runs.save(runRecord({ rating })),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+  })
+
+  it('rejects attempts to overwrite another user run', async () => {
+    const runs = createMemoryRunRepository()
+    const run = runRecord()
+    const ownerCaller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_123' }, runs }),
+    )
+    const otherCaller = createCaller(
+      createContext({ auth: { clerkUserId: 'user_456' }, runs }),
+    )
+
+    await ownerCaller.runs.save(run)
+
+    await expect(otherCaller.runs.save(run)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'Run belongs to another user',
+    })
+  })
+
+  it('reports a failed write without leaking the cause', async () => {
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: 'user_123' },
+        runs: {
+          async listRuns() {
+            throw new Error('connection refused')
+          },
+          async saveRun() {
+            throw new Error('connection refused')
+          },
+        } satisfies RunRepository,
+      }),
+    )
+
+    await expect(caller.runs.save(runRecord())).resolves.toEqual({
+      status: 'error',
+      message: 'Run database write failed',
+    })
+    await expect(caller.runs.list()).resolves.toEqual({
+      status: 'error',
+      message: 'Run database read failed',
+    })
+  })
+
+  it('rejects unauthenticated run reads before the repository is called', async () => {
+    let calls = 0
+    const caller = createCaller(
+      createContext({
+        auth: { clerkUserId: null },
+        runs: {
+          async listRuns() {
+            calls += 1
+            return []
+          },
+          async saveRun(_clerkUserId, run) {
+            calls += 1
+            return run
+          },
+        } satisfies RunRepository,
+      }),
+    )
+
+    await expect(caller.runs.list()).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    })
+    expect(calls).toBe(0)
+  })
+})
+
+function createMemoryRunRepository(): RunRepository {
+  const stored = new Map<string, { clerkUserId: string; run: ExerciseRun }>()
+
+  return {
+    async listRuns(clerkUserId) {
+      return [...stored.values()]
+        .filter((entry) => entry.clerkUserId === clerkUserId)
+        .map((entry) => ({ ...entry.run }))
+        .sort(
+          (a, b) =>
+            new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf(),
+        )
+    },
+    async saveRun(clerkUserId, run) {
+      const existing = stored.get(run.id)
+
+      if (existing && existing.clerkUserId !== clerkUserId) {
+        throw new RunOwnerMismatchError()
+      }
+
+      stored.set(run.id, { clerkUserId, run: { ...run } })
+      return { ...run }
+    },
+  }
+}
+
+function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
+  return {
+    id: crypto.randomUUID(),
+    exerciseId: 'scales-major-open-c',
+    startedAt: '2026-09-17T10:00:00.000Z',
+    durationSeconds: 120,
+    tempoBpm: 60,
+    passes: 6,
+    completed: true,
+    rating: null,
+    ...overrides,
+  }
+}

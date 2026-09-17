@@ -80,3 +80,22 @@ export async function finishCurrentExercise(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^Play / }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
 }
+
+interface StoredRun {
+  id: string
+  exerciseId: string
+  completed: boolean
+  rating: number | null
+}
+
+/** The signed-in user's saved runs, read over the same tRPC wire the app uses. */
+export async function listStoredRuns(page: Page): Promise<StoredRun[]> {
+  const body = await page.evaluate(async () => {
+    const response = await fetch('/trpc/runs.list')
+    return (await response.json()) as {
+      result: { data: { status: string; runs?: StoredRun[] } }
+    }
+  })
+  expect(body.result.data.status).toBe('ok')
+  return body.result.data.runs ?? []
+}

@@ -4,6 +4,7 @@ import {
   createDatabaseSmokeClient,
   type DatabaseSmokeClient,
 } from '../db/smoke'
+import { createRunRepository, type RunRepository } from '../db/runs'
 import { createUserRepository, type UserRepository } from '../db/users'
 import {
   createNoopStructuredLogger,
@@ -17,6 +18,7 @@ interface CreateContextOptions {
   dbSmoke?: DatabaseSmokeClient | null
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
+  runs?: RunRepository | null
   users?: UserRepository | null
   hyperdrive?: HyperdriveConnection | null
 }
@@ -41,6 +43,10 @@ function hasClerkKeysOption(options: unknown): options is CreateContextOptions {
 
 function hasUsersOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'users' in options
+}
+
+function hasRunsOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'runs' in options
 }
 
 function hasContextOptions(options: unknown): options is CreateContextOptions {
@@ -99,6 +105,9 @@ export function createContext(options?: unknown) {
   const userRepository = hasUsersOption(options)
     ? options.users
     : createUserRepository({ hyperdrive })
+  const runRepository = hasRunsOption(options)
+    ? options.runs
+    : createRunRepository({ hyperdrive })
 
   return {
     auth,
@@ -106,6 +115,7 @@ export function createContext(options?: unknown) {
     dbSmoke,
     logger,
     requestMetadata,
+    runs: runRepository,
     users: userRepository,
   }
 }

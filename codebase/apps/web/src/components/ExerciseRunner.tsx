@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
+import type { ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
 import { ExercisePlayer } from './ExercisePlayer'
+import { RatingInput } from './RatingInput'
 import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
 import { useViewFocus } from './useViewFocus'
 
 /**
  * One exercise, start to finish: the practice stage (ExercisePlayer), then a
- * short summary. Player preferences (click, voice, view) outlive any one
- * exercise and live here.
+ * short summary where the run can be rated. A run exists once it reaches the
+ * summary having been played; every change to it (its arrival, its rating)
+ * is handed to the page to save. Player preferences (click, voice, view)
+ * outlive any one exercise and live here.
  */
 
 const BUTTON_PRIMARY =
@@ -20,6 +24,8 @@ const HEADING =
 
 interface ExerciseRunnerProps {
   exercise: Exercise
+  /** The run as it now stands — called when it reaches the summary, and again when rated. */
+  onRunChange: (run: ExerciseRun) => void
   onExit: () => void
   /** Test seam: the browser's Web Audio engine, swapped for a fake in jsdom. */
   createAudio?: () => PlayerAudio
@@ -27,8 +33,10 @@ interface ExerciseRunnerProps {
   now?: () => number
 }
 
-export function ExerciseRunner({ exercise, onExit, createAudio, now }: ExerciseRunnerProps) {
+export function ExerciseRunner({ exercise, onRunChange, onExit, createAudio, now }: ExerciseRunnerProps) {
   const [finished, setFinished] = useState(false)
+  // Null on the summary when Finish came before any Play: nothing to record or rate.
+  const [run, setRun] = useState<ExerciseRun | null>(null)
   // Play again is a fresh player: the key resets transport, timer and cursor.
   const [round, setRound] = useState(0)
   // Sound and view choices are remembered across exercises and reloads.
@@ -40,6 +48,25 @@ export function ExerciseRunner({ exercise, onExit, createAudio, now }: ExerciseR
     finished ? 'summary' : `stage-${round}`,
     { focusOnMount: true },
   )
+
+  function finish(outcome: RunOutcome | null): void {
+    const finishedRun = outcome && {
+      id: crypto.randomUUID(),
+      exerciseId: exercise.id,
+      ...outcome,
+      rating: null,
+    }
+    setRun(finishedRun)
+    setFinished(true)
+    if (finishedRun) onRunChange(finishedRun)
+  }
+
+  function rate(rating: number | null): void {
+    if (!run) return
+    const rated = { ...run, rating }
+    setRun(rated)
+    onRunChange(rated)
+  }
 
   if (finished) {
     return (
@@ -54,6 +81,11 @@ export function ExerciseRunner({ exercise, onExit, createAudio, now }: ExerciseR
               <span className="shrink-0 text-sm text-muted">Done today</span>
             </li>
           </ul>
+          {run && (
+            <div className="mt-6">
+              <RatingInput value={run.rating} onChange={rate} />
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" onClick={onExit} className={BUTTON_PRIMARY}>
               Back to exercises
@@ -80,7 +112,7 @@ export function ExerciseRunner({ exercise, onExit, createAudio, now }: ExerciseR
       exercise={exercise}
       prefs={prefs}
       onPrefsChange={setPrefs}
-      onFinish={() => setFinished(true)}
+      onFinish={finish}
       headingRef={headingRef}
       headerAction={
         <button

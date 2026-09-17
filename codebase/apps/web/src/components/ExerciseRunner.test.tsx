@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ExerciseRun } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
 import { ExerciseRunner } from './ExerciseRunner'
@@ -77,11 +78,13 @@ function fakeAudio() {
 
 function renderRunner({
   exercise = clocked,
+  onRunChange = vi.fn(),
   onExit = vi.fn(),
   audio = fakeAudio(),
   audioAvailable = true,
 }: {
   exercise?: Exercise
+  onRunChange?: (run: ExerciseRun) => void
   onExit?: () => void
   audio?: ReturnType<typeof fakeAudio>
   audioAvailable?: boolean
@@ -89,6 +92,7 @@ function renderRunner({
   const view = render(
     <ExerciseRunner
       exercise={exercise}
+      onRunChange={onRunChange}
       onExit={onExit}
       createAudio={() => {
         if (!audioAvailable) throw new Error('no audio')
@@ -97,7 +101,7 @@ function renderRunner({
       now={() => clock.ms}
     />,
   )
-  return { ...view, onExit, audio }
+  return { ...view, onRunChange, onExit, audio }
 }
 
 type User = ReturnType<typeof userEvent.setup>
@@ -395,7 +399,7 @@ describe('ExerciseRunner', () => {
 
   it('counts passes and ends when the target is reached', async () => {
     const user = userEvent.setup()
-    renderRunner({ exercise: counted })
+    const { onRunChange } = renderRunner({ exercise: counted })
     await disableCountIn(user)
 
     expect(readout('Passes')).toBe('Pass 1 of 2')
@@ -407,6 +411,10 @@ describe('ExerciseRunner', () => {
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toHaveFocus(),
+    )
+    expect(onRunChange).toHaveBeenCalledTimes(1)
+    expect(onRunChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ exerciseId: 'fx-2', tempoBpm: 120, passes: 2, completed: true, rating: null }),
     )
   })
 
@@ -435,12 +443,77 @@ describe('ExerciseRunner', () => {
     expect(onExit).toHaveBeenCalledTimes(1)
   })
 
-  it('leaves from the stage without finishing', async () => {
+  it('records the run when it reaches the summary: when, how long, how fast, and that it was cut short', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: 1_000 })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { onRunChange } = renderRunner()
+    await user.click(screen.getByRole('button', { name: 'Faster' }))
+
+    await play(user, 'C major — open position')
+    act(() => vi.advanceTimersByTime(30_000))
+    await finish(user, 'C major — open position')
+
+    expect(onRunChange).toHaveBeenCalledTimes(1)
+    const run = vi.mocked(onRunChange).mock.calls[0][0]
+    expect(run).toMatchObject({
+      exerciseId: 'fx-1',
+      tempoBpm: 64,
+      completed: false,
+      rating: null,
+    })
+    expect(run.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(new Date(run.startedAt).valueOf()).toBeGreaterThanOrEqual(1_000)
+    expect(run.durationSeconds).toBeGreaterThanOrEqual(30)
+    expect(run.durationSeconds).toBeLessThanOrEqual(31)
+    vi.useRealTimers()
+  })
+
+  it('takes an optional difficulty rating, 1 to 10 without 7, and sends the rated run again', async () => {
     const user = userEvent.setup()
-    const { onExit } = renderRunner()
+    const { onRunChange } = renderRunner()
+    await play(user, 'C major — open position')
+    await finish(user, 'C major — open position')
+
+    const rating = screen.getByRole('group', { name: /^How hard was it\?/ })
+    expect(within(rating).getAllByRole('button')).toHaveLength(10)
+    expect(within(rating).getByRole('button', { name: '7 out of 10' })).toBeDisabled()
+    await user.click(within(rating).getByRole('button', { name: '7 out of 10' }))
+    expect(onRunChange).toHaveBeenCalledTimes(1)
+
+    await user.click(within(rating).getByRole('button', { name: '8 out of 10' }))
+    expect(within(rating).getByRole('button', { name: '8 out of 10' })).toHaveAttribute('aria-pressed', 'true')
+    const [first, rated] = vi.mocked(onRunChange).mock.calls.map(([run]) => run)
+    expect(rated).toEqual({ ...first, rating: 8 })
+
+    // Pressing the chosen number again takes the rating back.
+    await user.click(within(rating).getByRole('button', { name: '8 out of 10' }))
+    expect(onRunChange).toHaveBeenLastCalledWith({ ...first, rating: null })
+
+    // Play again is a new run with its own identity.
+    await user.click(screen.getByRole('button', { name: 'Play again' }))
+    await play(user, 'C major — open position')
+    await finish(user, 'C major — open position')
+    const again = vi.mocked(onRunChange).mock.calls.at(-1)![0]
+    expect(again.id).not.toBe(first.id)
+    expect(again.rating).toBeNull()
+  })
+
+  it('records nothing, and asks nothing, when Finish comes before any Play', async () => {
+    const user = userEvent.setup()
+    const { onRunChange } = renderRunner()
+    await finish(user, 'C major — open position')
+    expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: /^How hard was it\?/ })).toBeNull()
+    expect(onRunChange).not.toHaveBeenCalled()
+  })
+
+  it('leaves from the stage without finishing, and records nothing', async () => {
+    const user = userEvent.setup()
+    const { onRunChange, onExit } = renderRunner()
     await play(user, 'C major — open position')
     await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
     expect(onExit).toHaveBeenCalledTimes(1)
+    expect(onRunChange).not.toHaveBeenCalled()
   })
 
   it('disposes the audio when the player unmounts', async () => {

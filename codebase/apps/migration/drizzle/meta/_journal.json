@@ -57,6 +57,13 @@
       "when": 1789590324546,
       "tag": "0007_wooden_mulholland_black",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789641506630,
+      "tag": "0008_clear_hairball",
+      "breakpoints": true
     }
   ]
 }

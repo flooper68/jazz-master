@@ -20,6 +20,7 @@ function fixtureLink(scenario: Scenario): TRPCLink<AppRouter> {
       data = { status: 'error', message: 'Demo service is unavailable. Please try again.' }
     } else {
       switch (op.path) {
+        case 'runs.save': data = { status: 'ok', run: op.input }; break
         case 'health': data = { status: 'ok', time: new Date().toISOString() }; break
         default: throw new Error(`Missing Storybook fixture: ${op.path}`)
       }

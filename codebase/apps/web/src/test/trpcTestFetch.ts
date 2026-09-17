@@ -1,8 +1,48 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
+import type { ExerciseRun } from '../appData/run'
+import type { RunRepository } from '../server/db/runs'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 
 export const TEST_CLERK_USER_ID = 'user_test_123'
+
+const runs = new Map<string, Map<string, ExerciseRun>>()
+let runsRepositoryAvailable = true
+
+export function resetTrpcTestData() {
+  runs.clear()
+  runsRepositoryAvailable = true
+}
+
+export function getTrpcTestRuns(): ExerciseRun[] {
+  return listStoredRuns(TEST_CLERK_USER_ID)
+}
+
+export function setTrpcTestRunsRepositoryAvailable(available: boolean) {
+  runsRepositoryAvailable = available
+}
+
+const runRepository = {
+  async listRuns(clerkUserId) {
+    return listStoredRuns(clerkUserId)
+  },
+
+  async saveRun(clerkUserId, run) {
+    const userRuns = runs.get(clerkUserId) ?? new Map()
+    userRuns.set(run.id, { ...run })
+    runs.set(clerkUserId, userRuns)
+    return { ...run }
+  },
+} satisfies RunRepository
+
+function listStoredRuns(clerkUserId: string): ExerciseRun[] {
+  return [...(runs.get(clerkUserId)?.values() ?? [])]
+    .map((run) => ({ ...run }))
+    .sort(
+      (a, b) =>
+        new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf(),
+    )
+}
 
 /**
  * In-process fetch for tests: serves tRPC requests through the real fetch
@@ -22,6 +62,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
     createContext: () =>
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
+        runs: runsRepositoryAvailable ? runRepository : null,
         users: null,
       }),
   })

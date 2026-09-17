@@ -1,5 +1,6 @@
 import { router } from './init'
 import { auth } from './routers/auth'
+import { runs } from './routers/runs'
 import { clerkKeys, dbSmoke, health } from './routers/system'
 import { users } from './routers/users'
 
@@ -10,6 +11,7 @@ export const appRouter = router({
   dbSmoke,
   clerkKeys,
   auth,
+  runs,
   users,
 })
 
