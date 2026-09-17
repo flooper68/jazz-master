@@ -119,7 +119,7 @@ async function next(user: User, title: string) {
 }
 
 /** The advanced controls sit behind menus; open one by its label. */
-async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'Tempo ramp' | 'Sound' | 'View') {
+async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'Sound' | 'View') {
   const button = screen.getByRole('button', { name: new RegExp(`^${label}: `) })
   if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
 }
@@ -351,11 +351,11 @@ describe('PracticeRunner', () => {
     expect(readout('Passes')).toBe('Pass 1 of 4')
     expect(screen.getByRole('button', { name: 'Repeat: 4×' })).toHaveAttribute('aria-expanded', 'true')
 
-    await openMenu(user, 'Tempo ramp')
-    expect(screen.getByRole('button', { name: 'Repeat: 4×' })).toHaveAttribute('aria-expanded', 'false')
-    await user.click(screen.getByRole('button', { name: 'Ramp off' }))
-    expect(screen.getByRole('button', { name: 'Ramp on' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Tempo ramp: +4/2 → 100' })).toBeInTheDocument()
+    // The ramp is a plain toggle; its settings appear beside it while on.
+    expect(document.querySelector('[data-ramp-settings]')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Tempo ramp: off' }))
+    expect(screen.getByRole('button', { name: 'Tempo ramp: +4/2 → 100' })).toHaveAttribute('aria-pressed', 'true')
+    expect(document.querySelector('[data-ramp-settings]')).not.toBeNull()
     await user.clear(screen.getByRole('spinbutton', { name: 'BPM per step' }))
     await user.type(screen.getByRole('spinbutton', { name: 'BPM per step' }), '10')
     expect(screen.getByRole('button', { name: 'Tempo ramp: +10/2 → 100' })).toBeInTheDocument()

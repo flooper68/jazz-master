@@ -480,39 +480,29 @@ export function ExercisePlayer({
               </div>
             </Menu>
 
-            <Menu
-              id="ramp"
-              label="Tempo ramp"
-              icon={<RampIcon />}
-              value={snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}
+            {/* Tempo ramp: a toggle, its settings inline while it is on. */}
+            <button
+              type="button"
+              onClick={() => setLadder(snapshot.ladder ? null : {})}
+              aria-pressed={snapshot.ladder !== null}
+              aria-label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
               title="Raise the tempo every few passes, up to a target"
-              active={snapshot.ladder !== null}
-              open={openMenu === 'ramp'}
-              onToggle={toggleMenu}
+              className={`${CHIP} ${snapshot.ladder ? 'border-line-strong bg-panel-2 text-fg' : TOGGLE_OFF}`}
             >
-              <p className="text-xs text-muted">Raise the tempo every few passes until a target.</p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setLadder(snapshot.ladder ? null : {})}
-                  aria-pressed={snapshot.ladder !== null}
-                  title={snapshot.ladder ? 'Switch the ramp off' : 'Switch the ramp on'}
-                  className={`${CHIP} ${snapshot.ladder ? TOGGLE_ON : TOGGLE_OFF}`}
-                >
-                  <RampIcon /> {snapshot.ladder ? 'Ramp on' : 'Ramp off'}
-                </button>
-                {snapshot.ladder && (
-                  <div className="flex items-center gap-1.5 text-sm text-fg-2">
-                    <span>+</span>
-                    <NumberField label="BPM per step" title="BPM added at each step" value={snapshot.ladder.stepBpm} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
-                    <span>every</span>
-                    <NumberField label="Passes per step" title="Passes between steps" value={snapshot.ladder.everyPasses} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
-                    <span>passes, up to</span>
-                    <NumberField label="Target tempo" title="Tempo the ramp stops at" value={snapshot.ladder.toBpm} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
-                  </div>
-                )}
+              <span className={snapshot.ladder ? 'text-accent-text' : 'text-muted'}><RampIcon /></span>
+              <span className="text-muted">Tempo ramp</span>
+              <span className={snapshot.ladder ? 'text-accent-text' : undefined}>{snapshot.ladder ? 'on' : 'off'}</span>
+            </button>
+            {snapshot.ladder && (
+              <div className="flex items-center gap-1 text-xs text-fg-2" data-ramp-settings>
+                <span>+</span>
+                <NumberField label="BPM per step" title="BPM added at each step" value={snapshot.ladder.stepBpm} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
+                <span>every</span>
+                <NumberField label="Passes per step" title="Passes between steps" value={snapshot.ladder.everyPasses} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
+                <span>passes →</span>
+                <NumberField label="Target tempo" title="Tempo the ramp stops at" value={snapshot.ladder.toBpm} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
               </div>
-            </Menu>
+            )}
 
             <Menu
               id="sound"
@@ -662,7 +652,7 @@ export function ExercisePlayer({
               onPointerDown={() => setAboutOpen(false)}
               data-about-backdrop
             />
-            <div className="drawer-in fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px] p-3">
+            <div className="drawer-in fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px]">
               <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
             </div>
           </>
@@ -678,7 +668,7 @@ export function ExercisePlayer({
   )
 }
 
-type MenuId = 'loop' | 'repeat' | 'ramp' | 'sound' | 'view'
+type MenuId = 'loop' | 'repeat' | 'sound' | 'view'
 
 /** A labelled popover: the button shows the setting's current value, the panel holds its controls. */
 function Menu({
@@ -810,7 +800,7 @@ function NumberField({
         if (event.target.value !== '' && Number.isInteger(next) && next >= min && next <= max) onChange(next)
       }}
       onBlur={() => setText(String(value))}
-      className={`${FIELD} w-16 text-center`}
+      className={`${FIELD} w-14 text-center`}
     />
   )
 }

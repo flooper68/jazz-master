@@ -22,7 +22,7 @@ export function AboutPanel({ exercise, intro = [], onClose }: AboutPanelProps) {
   return (
     <aside
       aria-label={`About ${exercise.title}`}
-      className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-panel/95 shadow-lg backdrop-blur-md"
+      className="flex h-full flex-col overflow-hidden border-l border-line bg-panel/95 shadow-lg backdrop-blur-md"
       data-about
     >
       <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-3">
