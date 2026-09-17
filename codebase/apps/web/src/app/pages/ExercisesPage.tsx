@@ -7,6 +7,7 @@ import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ClickIcon, ClockIcon, GridIcon, RowsIcon } from '../../components/icons'
 import { exerciseSeconds, type Exercise, type ExerciseArea } from '../../content'
+import { SourceTag } from '../../components/SourceTag'
 import { useTRPC } from '../trpc'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_WIDE } from '../../components/pageFrame'
@@ -17,6 +18,25 @@ const AREA_ORDER: readonly ExerciseArea[] = ['scales', 'arpeggios', 'chords', 's
 
 type ListView = 'cards' | 'list'
 const VIEW_KEY = 'jazz-master.exercises-view'
+
+/** Which exercises to show once the user has some of their own: everything, the pack that ships, or theirs. */
+type SourceFilter = 'all' | 'pack' | 'yours'
+const SOURCE_KEY = 'jazz-master.exercises-source'
+const SOURCES = [
+  { id: 'all', label: 'All' },
+  { id: 'pack', label: 'Built-in' },
+  { id: 'yours', label: 'Yours' },
+] as const
+
+/** The remembered filter; storage that is missing or broken means everything. */
+function loadSource(): SourceFilter {
+  try {
+    const stored = localStorage.getItem(SOURCE_KEY)
+    return stored === 'pack' || stored === 'yours' ? stored : 'all'
+  } catch {
+    return 'all'
+  }
+}
 const VIEWS = [
   { id: 'cards', label: 'Cards', icon: GridIcon },
   { id: 'list', label: 'List', icon: RowsIcon },
@@ -39,9 +59,26 @@ export default function ExercisesPage() {
   // Decoration only: the list is complete without it, so failures stay silent.
   const { data } = useQuery(trpc.runs.list.queryOptions())
   const runs = data?.status === 'ok' ? data.runs : []
-  const { exercises: catalog } = useExerciseCatalog()
+  const { exercises: everything, libraryPending } = useExerciseCatalog()
+  const [source, setSource] = useState<SourceFilter>(loadSource)
+  useEffect(() => {
+    try {
+      localStorage.setItem(SOURCE_KEY, source)
+    } catch {
+      // As with the view: the choice still holds for this page.
+    }
+  }, [source])
+  const hasOwn = everything.some((exercise) => isLibraryExerciseId(exercise.id))
+  // With nothing of the user's own there is nothing to filter, and a remembered "Yours" must not empty the page.
+  // What is remembered is the choice itself, not what it fell back to: it holds again once there is something to show.
+  const shownSource = hasOwn ? source : 'all'
+  // A remembered "Yours" waits for the library instead of flashing the whole pack first.
+  const waitingForOwn = libraryPending && source === 'yours'
+  const catalog = everything.filter(
+    (exercise) => shownSource === 'all' || isLibraryExerciseId(exercise.id) === (shownSource === 'yours'),
+  )
   const areas = AREA_ORDER.filter((area) => catalog.some((exercise) => exercise.area === area))
-  const maxLevel = Math.max(...catalog.map((exercise) => exercise.level), 3)
+  const maxLevel = Math.max(...everything.map((exercise) => exercise.level), 3)
   const [view, setView] = useState<ListView>(loadView)
   useEffect(() => {
     try {
@@ -61,25 +98,46 @@ export default function ExercisesPage() {
             guitar, and play.
           </p>
         </div>
-        <div role="radiogroup" aria-label="View" className="inline-flex rounded-lg border border-line bg-panel p-0.5">
-          {VIEWS.map(({ id, label, icon: ViewIcon }) => (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={view === id}
-              onClick={() => setView(id)}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
-                view === id ? 'bg-fg text-panel' : 'text-fg-2 hover:text-fg'
-              }`}
-            >
-              <ViewIcon />
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {hasOwn && (
+            <div role="radiogroup" aria-label="Show" className="inline-flex rounded-lg border border-line bg-panel p-0.5">
+              {SOURCES.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={shownSource === id}
+                  onClick={() => setSource(id)}
+                  className={`inline-flex cursor-pointer items-center rounded-md px-2.5 py-1 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+                    shownSource === id ? 'bg-fg text-panel' : 'text-fg-2 hover:text-fg'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          <div role="radiogroup" aria-label="View" className="inline-flex rounded-lg border border-line bg-panel p-0.5">
+            {VIEWS.map(({ id, label, icon: ViewIcon }) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={view === id}
+                onClick={() => setView(id)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+                  view === id ? 'bg-fg text-panel' : 'text-fg-2 hover:text-fg'
+                }`}
+              >
+                <ViewIcon />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      {areas.map((area) => {
+      {waitingForOwn && <p className="mt-7 text-sm text-muted" role="status">Loading your exercises…</p>}
+      {!waitingForOwn && areas.map((area) => {
         const exercises = catalog.filter((exercise) => exercise.area === area)
         return (
           <section key={area} className="mt-7" aria-labelledby={`area-${area}`}>
@@ -156,10 +214,11 @@ function ExerciseRow({ exercise, maxLevel, runs }: ItemProps) {
   return (
     <li className="group relative flex items-center gap-4 px-3.5 py-2 first:rounded-t-2xl last:rounded-b-2xl hover:bg-panel-2/60">
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-medium text-fg">
-          {exercise.title}
-          {isLibraryExerciseId(exercise.id) && <YoursTag />}
-        </h3>
+        {/* Beside the heading, not in it: the heading's name stays the title alone. */}
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="truncate font-medium text-fg">{exercise.title}</h3>
+          <SourceTag exerciseId={exercise.id} className="shrink-0" />
+        </div>
         <p className="mt-0.5 text-sm text-muted tabular-nums">
           ~{minutesOf(exercise)} min · {exercise.tempoBpm} BPM
           <span className="hidden sm:inline"> · {playedLine(runs)}</span>
@@ -187,13 +246,13 @@ function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-display text-[15px] leading-snug font-semibold tracking-tight text-fg">
             {exercise.title}
-            {isLibraryExerciseId(exercise.id) && <YoursTag />}
           </h3>
           <span className="mt-1.5">
             <LevelDots level={exercise.level} maxLevel={maxLevel} />
           </span>
         </div>
         <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted tabular-nums">
+          <SourceTag exerciseId={exercise.id} />
           <span className="inline-flex items-center gap-1"><ClockIcon />~{minutesOf(exercise)} min</span>
           <span className="inline-flex items-center gap-1"><ClickIcon />{exercise.tempoBpm} BPM</span>
           {exercise.key && <span>{exercise.key} major</span>}
@@ -216,11 +275,6 @@ function ExerciseCard({ exercise, maxLevel, runs }: ItemProps) {
       </div>
     </li>
   )
-}
-
-/** Marks an exercise as the user's own, beside the pack's. */
-function YoursTag() {
-  return <span className="ml-2 rounded-md border border-line px-1.5 py-0.5 align-middle font-sans text-[11px] font-medium text-muted">Yours</span>
 }
 
 /**

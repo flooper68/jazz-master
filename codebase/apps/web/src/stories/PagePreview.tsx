@@ -5,7 +5,7 @@ import { observable } from '@trpc/server/observable'
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from '@tanstack/react-router'
 import type { AppRouter } from '../server/trpc/router'
 import { TRPCProvider } from '../app/trpc'
-import { Layout } from '../components/Layout'
+import { RootLayout } from '../app/RootLayout'
 import ExercisesPage from '../app/pages/ExercisesPage'
 import HomePage from '../app/pages/HomePage'
 import ExercisePage from '../app/pages/ExercisePage'
@@ -47,7 +47,7 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
   const [environment] = useState(() => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity }, mutations: { retry: false } } })
     const client = createTRPCClient<AppRouter>({ links: [fixtureLink(scenario)] })
-    const root = createRootRoute({ component: Layout, notFoundComponent: NotFoundPage })
+    const root = createRootRoute({ component: RootLayout, notFoundComponent: NotFoundPage })
     const routes = [
       createRoute({ getParentRoute: () => root, path: '/', component: HomePage }),
       createRoute({ getParentRoute: () => root, path: '/exercises', component: ExercisesPage }),

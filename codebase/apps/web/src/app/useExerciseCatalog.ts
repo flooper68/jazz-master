@@ -1,14 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { EXERCISES, type Exercise } from '../content'
+
+// Re-exported for the pages, which think of it as part of the catalog.
+export { isLibraryExerciseId } from '../content'
 import { useTRPC } from './trpc'
-
-/** Ids of a user's own exercises start with this, so a pack id and a library id can never be confused. */
-export const LIBRARY_ID_PREFIX = 'user-'
-
-export function isLibraryExerciseId(exerciseId: string): boolean {
-  return exerciseId.startsWith(LIBRARY_ID_PREFIX)
-}
 
 export interface ExerciseCatalog {
   /** The pack that ships with the app, then the user's own exercises, oldest first. */

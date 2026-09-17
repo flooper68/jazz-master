@@ -9,6 +9,7 @@ import { RepeatIcon } from '../../components/icons'
 import { formatSeconds } from '../../player/formatting'
 import { useTRPC } from '../trpc'
 import type { Exercise } from '../../content'
+import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
 import { PAGE_READING } from '../../components/pageFrame'
 
@@ -105,6 +106,7 @@ function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | unde
               {AREA_LABELS[exercise.area]}
             </span>
           )}
+          {exercise && <SourceTag exerciseId={exercise.id} only="yours" />}
           {run.sessionId && (
             <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-fg-2">
               Quick run

@@ -10,7 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { useExerciseCatalog } from '../app/useExerciseCatalog'
+import type { Exercise } from '../content'
 import { HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -68,7 +68,12 @@ const NAV = [
 ] as const
 
 /** The app shell: brand, navigation and the account control beside (on phones, above) the page. */
-export function Layout() {
+interface LayoutProps {
+  /** What a quick run draws from: the pack, joined by the user's own exercises once the app has them. */
+  exercises: readonly Exercise[]
+}
+
+export function Layout({ exercises }: LayoutProps) {
   const usePlaywrightAccountStub =
     import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
   const { theme, toggleTheme } = useTheme()
@@ -90,7 +95,6 @@ export function Layout() {
   }, [theme, toggleTheme])
 
   const navigate = useNavigate()
-  const { exercises } = useExerciseCatalog()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   // The player is a stage: the phone header drops its nav row there, and the
   // sidebar remembers a fold of its own for it (folded unless opened).

@@ -9,6 +9,7 @@ import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
 import { usePlayerTransport } from '../player/usePlayerTransport'
 import { Score, type ScoreHandle } from '../score/Score'
 import { AboutPanel } from './AboutPanel'
+import { SourceTag } from './SourceTag'
 import { Select } from './ui/Select'
 import {
   ArrowDownIcon,
@@ -330,6 +331,7 @@ export function ExercisePlayer({
               .join(' · ')}
           </span>
         </h1>
+        <SourceTag exerciseId={exercise.id} only="yours" />
         {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
       </div>
 

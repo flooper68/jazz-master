@@ -1,5 +1,6 @@
 import { and, asc, count, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import { LIBRARY_ID_PREFIX } from '../../content/library'
 import { exerciseInputSchema, type ExerciseInput, type LibraryExercise } from '../../content/exerciseInput'
 import {
   readDatabaseUrl,
@@ -19,7 +20,7 @@ export class UserExerciseLimitError extends Error {
 }
 
 /** Ids of a user's exercises are namespaced, so they can never collide with the pack's. */
-export const USER_EXERCISE_ID_PREFIX = 'user-'
+export const USER_EXERCISE_ID_PREFIX = LIBRARY_ID_PREFIX
 
 export function userExerciseId(rowId: string): string {
   return `${USER_EXERCISE_ID_PREFIX}${rowId}`

@@ -7,6 +7,7 @@ import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ShuffleIcon } from '../../components/icons'
 import type { Exercise } from '../../content'
+import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
 import { useTRPC } from '../trpc'
 import { PAGE_WIDE } from '../../components/pageFrame'
@@ -232,6 +233,7 @@ function PickRow({ exercise, reason }: { exercise: Exercise; reason: string }) {
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
             {AREA_LABELS[exercise.area]}
           </span>
+          <SourceTag exerciseId={exercise.id} only="yours" />
           {reason}
         </p>
       </div>
