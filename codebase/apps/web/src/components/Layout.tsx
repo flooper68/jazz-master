@@ -107,7 +107,7 @@ export function Layout({ exercises, routines }: LayoutProps) {
   // Playing an exercise is still being in Exercises; a session belongs to no page.
   const current = pathname.endsWith('/history')
     ? '/history'
-    : pathname.endsWith('/routines')
+    : pathname.includes('/routines')
       ? '/routines'
       : pathname.includes('/exercises')
       ? '/exercises'

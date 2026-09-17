@@ -10,20 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SessionRouteImport } from './routes/session'
-import { Route as RoutinesRouteImport } from './routes/routines'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoutinesIndexRouteImport } from './routes/routines.index'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
+import { Route as RoutinesNewRouteImport } from './routes/routines.new'
 import { Route as ExercisesExerciseIdRouteImport } from './routes/exercises.$exerciseId'
+import { Route as RoutinesRoutineIdEditRouteImport } from './routes/routines.$routineId.edit'
 
 const SessionRoute = SessionRouteImport.update({
   id: '/session',
   path: '/session',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RoutinesRoute = RoutinesRouteImport.update({
-  id: '/routines',
-  path: '/routines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -36,9 +33,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoutinesIndexRoute = RoutinesIndexRouteImport.update({
+  id: '/routines/',
+  path: '/routines/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   id: '/exercises/',
   path: '/exercises/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoutinesNewRoute = RoutinesNewRouteImport.update({
+  id: '/routines/new',
+  path: '/routines/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExercisesExerciseIdRoute = ExercisesExerciseIdRouteImport.update({
@@ -46,66 +53,85 @@ const ExercisesExerciseIdRoute = ExercisesExerciseIdRouteImport.update({
   path: '/exercises/$exerciseId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoutinesRoutineIdEditRoute = RoutinesRoutineIdEditRouteImport.update({
+  id: '/routines/$routineId/edit',
+  path: '/routines/$routineId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
-  '/routines': typeof RoutinesRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/routines/new': typeof RoutinesNewRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/routines/': typeof RoutinesIndexRoute
+  '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
-  '/routines': typeof RoutinesRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/routines/new': typeof RoutinesNewRoute
   '/exercises': typeof ExercisesIndexRoute
+  '/routines': typeof RoutinesIndexRoute
+  '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
-  '/routines': typeof RoutinesRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/routines/new': typeof RoutinesNewRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/routines/': typeof RoutinesIndexRoute
+  '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/history'
-    | '/routines'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/routines/new'
     | '/exercises/'
+    | '/routines/'
+    | '/routines/$routineId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/history'
-    | '/routines'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/routines/new'
     | '/exercises'
+    | '/routines'
+    | '/routines/$routineId/edit'
   id:
     | '__root__'
     | '/'
     | '/history'
-    | '/routines'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/routines/new'
     | '/exercises/'
+    | '/routines/'
+    | '/routines/$routineId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HistoryRoute: typeof HistoryRoute
-  RoutinesRoute: typeof RoutinesRoute
   SessionRoute: typeof SessionRoute
   ExercisesExerciseIdRoute: typeof ExercisesExerciseIdRoute
+  RoutinesNewRoute: typeof RoutinesNewRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
+  RoutinesIndexRoute: typeof RoutinesIndexRoute
+  RoutinesRoutineIdEditRoute: typeof RoutinesRoutineIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,13 +141,6 @@ declare module '@tanstack/react-router' {
       path: '/session'
       fullPath: '/session'
       preLoaderRoute: typeof SessionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/routines': {
-      id: '/routines'
-      path: '/routines'
-      fullPath: '/routines'
-      preLoaderRoute: typeof RoutinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -138,11 +157,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/routines/': {
+      id: '/routines/'
+      path: '/routines'
+      fullPath: '/routines/'
+      preLoaderRoute: typeof RoutinesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/exercises/': {
       id: '/exercises/'
       path: '/exercises'
       fullPath: '/exercises/'
       preLoaderRoute: typeof ExercisesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/routines/new': {
+      id: '/routines/new'
+      path: '/routines/new'
+      fullPath: '/routines/new'
+      preLoaderRoute: typeof RoutinesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/$exerciseId': {
@@ -152,16 +185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesExerciseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/routines/$routineId/edit': {
+      id: '/routines/$routineId/edit'
+      path: '/routines/$routineId/edit'
+      fullPath: '/routines/$routineId/edit'
+      preLoaderRoute: typeof RoutinesRoutineIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HistoryRoute: HistoryRoute,
-  RoutinesRoute: RoutinesRoute,
   SessionRoute: SessionRoute,
   ExercisesExerciseIdRoute: ExercisesExerciseIdRoute,
+  RoutinesNewRoute: RoutinesNewRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
+  RoutinesIndexRoute: RoutinesIndexRoute,
+  RoutinesRoutineIdEditRoute: RoutinesRoutineIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

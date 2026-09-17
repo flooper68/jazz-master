@@ -8,6 +8,7 @@ import { TRPCProvider } from '../app/trpc'
 import { RootLayout } from '../app/RootLayout'
 import ExercisesPage from '../app/pages/ExercisesPage'
 import HomePage from '../app/pages/HomePage'
+import { EditRoutinePage, NewRoutinePage } from '../app/pages/RoutineEditorPage'
 import RoutinesPage from '../app/pages/RoutinesPage'
 import ExercisePage from '../app/pages/ExercisePage'
 import HistoryPage from '../app/pages/HistoryPage'
@@ -73,6 +74,8 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
       createRoute({ getParentRoute: () => root, path: '/exercises/$exerciseId', component: ExercisePage }),
       createRoute({ getParentRoute: () => root, path: '/history', component: HistoryPage }),
       createRoute({ getParentRoute: () => root, path: '/routines', component: RoutinesPage }),
+      createRoute({ getParentRoute: () => root, path: '/routines/new', component: NewRoutinePage }),
+      createRoute({ getParentRoute: () => root, path: '/routines/$routineId/edit', component: EditRoutinePage }),
       createRoute({ getParentRoute: () => root, path: '/session', component: SessionPage, validateSearch: (search: Record<string, unknown>): { x: string; r?: string } => ({ x: typeof search.x === 'string' ? search.x : '', ...(typeof search.r === 'string' ? { r: search.r } : {}) }) }),
       createRoute({ getParentRoute: () => root, path: '/not-found', component: NotFoundPage }),
     ]

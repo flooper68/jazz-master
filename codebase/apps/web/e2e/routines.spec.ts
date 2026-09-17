@@ -5,7 +5,8 @@ test('a routine made in the app is stored, played in its order, and offered to q
   // A new user starts with the starter routines.
   await expect(page.getByRole('listitem', { name: 'Open-position warm-up' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'New routine' }).click()
+  await page.getByRole('link', { name: 'New routine' }).click()
+  await expect(page).toHaveURL(/\/app\/routines\/new$/)
   const editor = page.getByRole('form', { name: 'New routine' })
   await editor.getByLabel('Name').fill('E2E warm-up')
   await editor.getByLabel('Exercise to add').selectOption({ label: 'Gm7 – C7 – Fmaj7 — a bebop line' })
