@@ -653,11 +653,19 @@ export function ExercisePlayer({
             </button>
           </div>
         </div>
-        {/* The intro is a drawer down the full height of the screen. */}
+        {/* The intro is a drawer down the full height of the screen, sliding in
+            over a light backdrop that closes it when pressed. */}
         {aboutOpen && (
-          <div className="fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px] p-3">
-            <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
-          </div>
+          <>
+            <div
+              className="fade-in fixed inset-0 z-10 bg-fg/15 backdrop-blur-[1px]"
+              onPointerDown={() => setAboutOpen(false)}
+              data-about-backdrop
+            />
+            <div className="drawer-in fixed inset-y-0 right-0 z-20 w-[38%] max-w-xl min-w-[320px] p-3">
+              <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
+            </div>
+          </>
         )}
       </div>
 

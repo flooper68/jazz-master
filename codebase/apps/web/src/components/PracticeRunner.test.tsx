@@ -190,6 +190,10 @@ describe('PracticeRunner', () => {
     expect(screen.queryByRole('complementary')).toBeNull()
     await user.click(screen.getByRole('button', { name: 'About this exercise' }))
     expect(screen.getByRole('complementary')).toBeInTheDocument()
+    // Pressing the backdrop closes it too.
+    await user.pointer({ keys: '[MouseLeft]', target: document.querySelector('[data-about-backdrop]')! })
+    expect(screen.queryByRole('complementary')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'About this exercise' }))
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     // The second exercise has no notes of its own and is not first: nothing to show.
