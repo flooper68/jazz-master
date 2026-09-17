@@ -21,7 +21,7 @@ describe('HistoryPage', () => {
   it('invites a first run when nothing was played', async () => {
     await renderRoute('/history')
     expect(await screen.findByText('Nothing played yet')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Pick an exercise' })).toHaveAttribute('href', expect.stringMatching(/^\/app\/?$/))
+    expect(screen.getByRole('link', { name: 'Pick an exercise' })).toHaveAttribute('href', '/app/exercises')
   })
 
   it('lists runs a day at a time with what was played, how it went, and a way back in', async () => {

@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { EXERCISES } from '../content'
-import { HistoryIcon, ListIcon, SidebarIcon } from './icons'
+import { HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
 import { QuickRunButton } from './QuickRunButton'
 import {
   clampSidebarWidth,
@@ -62,7 +62,8 @@ const USER_BUTTON_APPEARANCE = {
 } as const
 
 const NAV = [
-  { to: '/', label: 'Exercises', icon: ListIcon },
+  { to: '/', label: 'Home', icon: HomeIcon },
+  { to: '/exercises', label: 'Exercises', icon: ListIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
 
@@ -92,9 +93,15 @@ export function Layout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   // The player is a stage: the phone header drops its nav row there, and the
   // sidebar remembers a fold of its own for it (folded unless opened).
-  const onStage = pathname.includes('/exercises/') || pathname.endsWith('/session')
-  // Playing an exercise is still being in Exercises.
-  const current = pathname.endsWith('/history') ? '/history' : '/'
+  const onStage = /\/exercises\/[^/]+/.test(pathname) || pathname.endsWith('/session')
+  // Playing an exercise is still being in Exercises; a session belongs to no page.
+  const current = pathname.endsWith('/history')
+    ? '/history'
+    : pathname.includes('/exercises')
+      ? '/exercises'
+      : pathname.endsWith('/session')
+        ? null
+        : '/'
 
   const [sidebar, setSidebar] = useState<SidebarPrefs>(loadSidebarPrefs)
   useEffect(() => saveSidebarPrefs(sidebar), [sidebar])
@@ -174,7 +181,7 @@ export function Layout() {
               to={to}
               aria-current={to === current ? 'page' : undefined}
               title={collapsed ? label : undefined}
-              className={`inline-flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
+              className={`inline-flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium min-[420px]:px-3 hover:bg-panel-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg ${
                 to === current ? 'bg-panel-2 text-fg' : 'text-fg-2'
               } ${collapsed ? 'md:justify-center md:px-0' : ''}`}
             >

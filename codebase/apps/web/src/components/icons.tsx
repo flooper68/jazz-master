@@ -132,3 +132,6 @@ export const RowsIcon = () => (
 export const ShuffleIcon = () => (
   <Icon><path d="M11 2.6 14 5l-3 2.4V5.9H9.6L4.9 11.5H2V10h2.2l4.7-5.6H11zM2 4.5h2.9l1.6 1.9-1 1.2L4.2 6H2zM11 8.6l3 2.4-3 2.4v-1.9H8.9L7.6 10l1-1.2 1 1.2H11z" /></Icon>
 )
+export const HomeIcon = () => (
+  <Icon size={16}><path d="M8 1.6 14.5 7v7.4H9.75V10h-3.5v4.4H1.5V7zm0 1.95L3 7.7v5.2h1.75V8.5h6.5v4.4H13V7.7z" /></Icon>
+)

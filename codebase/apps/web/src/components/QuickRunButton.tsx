@@ -83,7 +83,8 @@ export function QuickRunButton({ exercises, onStart, iconOnly = false }: QuickRu
         }`}
       >
         <ShuffleIcon />
-        <span className={`truncate ${iconOnly ? 'md:sr-only' : ''}`}>Quick run</span>
+        {/* Three links share the phone row: there the icon speaks for itself. */}
+        <span className={`hidden truncate min-[420px]:inline ${iconOnly ? 'md:sr-only' : ''}`}>Quick run</span>
         {/* Only where the sidebar has been dragged wide enough for it (see the container in Layout). */}
         <span className={`ml-auto hidden font-normal whitespace-nowrap opacity-80 tabular-nums ${iconOnly ? '' : '@[15rem]:inline'}`}>
           {drawn} · ~{minutes} min

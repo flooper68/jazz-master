@@ -16,7 +16,7 @@ describe('Layout shell', () => {
     expect(screen.getByRole('main')).toHaveClass('min-w-0', 'flex-1')
   })
 
-  it('links the brand back to the exercise list', async () => {
+  it('links the brand back home', async () => {
     await renderRoute('/')
     expect(screen.getByRole('banner')).toContainElement(
       screen.getByRole('link', { name: 'woodshed' }),

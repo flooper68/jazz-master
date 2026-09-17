@@ -29,7 +29,7 @@ function ExerciseStage({ exercise }: { exercise: Exercise }) {
       <ExerciseRunner
         exercise={exercise}
         onRunChange={save}
-        onExit={() => void navigate({ to: '/' })}
+        onExit={() => void navigate({ to: '/exercises' })}
       />
     </div>
   )

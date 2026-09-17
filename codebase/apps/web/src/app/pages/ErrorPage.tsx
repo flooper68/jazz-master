@@ -19,7 +19,7 @@ export default function ErrorPage({ error }: { error: Error }) {
           to="/"
           className="underline hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
-          Back to the exercises
+          Back home
         </Link>
         .
       </p>

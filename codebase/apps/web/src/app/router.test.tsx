@@ -9,8 +9,13 @@ const exercise = EXERCISES[0]
 const stageHeading = { level: 1, name: new RegExp(`^${exercise.title}`) } as const
 
 describe('app router', () => {
-  it('renders the exercise list at the app root', async () => {
-    await renderRoute('/')
+  it('renders home at the app root and the exercise list at /exercises', async () => {
+    const { unmount } = await renderRoute('/')
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Home' }),
+    ).toBeInTheDocument()
+    unmount()
+    await renderRoute('/exercises')
     expect(
       screen.getByRole('heading', { level: 1, name: 'Exercises' }),
     ).toBeInTheDocument()
@@ -25,14 +30,14 @@ describe('app router', () => {
     const user = userEvent.setup()
     await renderRoute('/')
     const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(within(nav).getByRole('link', { name: 'History' }))
     expect(
       await screen.findByRole('heading', { level: 1, name: 'History' }),
     ).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page')
-    expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current')
+    expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current')
   })
 
   it('shows the app title in the persistent layout', async () => {
@@ -52,12 +57,14 @@ describe('app router', () => {
 
   it('navigates from the list into an exercise and back', async () => {
     const user = userEvent.setup()
-    await renderRoute('/')
+    await renderRoute('/exercises')
     const start = screen.getByRole('link', { name: `Start ${exercise.title}` })
     expect(start).toHaveAttribute('href', `/app/exercises/${exercise.id}`)
 
     await user.click(start)
     expect(await screen.findByRole('heading', stageHeading)).toHaveFocus()
+    // Playing an exercise is still being in Exercises.
+    expect(screen.getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
     expect(

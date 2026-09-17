@@ -42,6 +42,8 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
   page,
 }) => {
   await page.goto('/app')
+  await expect(page.getByRole('heading', { name: 'Home', level: 1 })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Exercises' }).click()
   await expect(
     page.getByRole('heading', { name: 'Exercises', level: 1 }),
   ).toBeVisible()

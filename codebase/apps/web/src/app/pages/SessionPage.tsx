@@ -110,7 +110,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
             </ol>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button type="button" onClick={() => void navigate({ to: '/' })} className={BUTTON_PRIMARY}>
+              <button type="button" onClick={() => void navigate({ to: '/exercises' })} className={BUTTON_PRIMARY}>
                 Back to exercises
               </button>
               <button
@@ -144,7 +144,7 @@ function SessionStage({ exercises }: { exercises: Exercise[] }) {
           onContinue: () => setIndex((current) => current + 1),
         }}
         onRunChange={(run) => record(index, run)}
-        onExit={() => void navigate({ to: '/' })}
+        onExit={() => void navigate({ to: '/exercises' })}
       />
     </div>
   )

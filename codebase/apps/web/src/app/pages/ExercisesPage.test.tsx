@@ -16,7 +16,7 @@ function card(title: string) {
 
 describe('ExercisesPage', () => {
   it('lists every exercise under its area with a link into the player', async () => {
-    await renderRoute('/')
+    await renderRoute('/exercises')
     for (const area of ['Scales', 'Arpeggios', 'Standards']) {
       expect(screen.getByRole('heading', { level: 2, name: area })).toBeInTheDocument()
     }
@@ -28,7 +28,7 @@ describe('ExercisesPage', () => {
   })
 
   it('shows level, length and tempo per exercise, the length read from the exercise itself', async () => {
-    await renderRoute('/')
+    await renderRoute('/exercises')
     const clocked = card('C major — open position')
     expect(clocked.getByRole('img', { name: 'Level 1' })).toBeInTheDocument()
     expect(clocked.getByText('~2 min')).toBeInTheDocument()
@@ -49,14 +49,14 @@ describe('ExercisesPage', () => {
       run('11111111-1111-4111-8111-111111111111', 'scales-major-open-c', at(0)),
       run('22222222-2222-4222-8222-222222222222', 'scales-major-open-c', at(3)),
     ])
-    await renderRoute('/')
+    await renderRoute('/exercises')
     expect(await card('C major — open position').findByText('Played 2× · last today')).toBeInTheDocument()
     expect(card('G major — open position').getByText('Not played yet')).toBeInTheDocument()
   })
 
   it('switches between cards and a plain list, and remembers the choice', async () => {
     const user = userEvent.setup()
-    const { unmount } = await renderRoute('/')
+    const { unmount } = await renderRoute('/exercises')
     const view = screen.getByRole('radiogroup', { name: 'View' })
     expect(within(view).getByRole('radio', { name: 'Cards' })).toBeChecked()
 
@@ -67,7 +67,7 @@ describe('ExercisesPage', () => {
     expect(card('C major — open position').getByText(/~2 min · 60 BPM/)).toBeInTheDocument()
 
     unmount()
-    await renderRoute('/')
+    await renderRoute('/exercises')
     expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
   })
 })

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { formatDuration } from '../../appData/dashboard'
 import { groupRunsByDay } from '../../appData/history'
 import type { ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
@@ -48,7 +49,7 @@ function HistoryBody({ runs, loading, failed }: { runs: ExerciseRun[] | null; lo
       <div className="mt-8 rounded-2xl border border-dashed border-line-strong p-8 text-center">
         <p className="font-medium text-fg">Nothing played yet</p>
         <p className="mt-1 text-sm text-muted">Finish an exercise and it shows up here.</p>
-        <Link to="/" className={`mt-4 inline-block ${LINK}`}>
+        <Link to="/exercises" className={`mt-4 inline-block ${LINK}`}>
           Pick an exercise
         </Link>
       </div>
@@ -143,10 +144,3 @@ function RunRow({ run }: { run: ExerciseRun }) {
   )
 }
 
-/** "12 min", "1 h 5 min" — history totals do not need seconds. */
-function formatDuration(totalSeconds: number): string {
-  const minutes = Math.round(totalSeconds / 60)
-  if (minutes < 1) return '<1 min'
-  if (minutes < 60) return `${minutes} min`
-  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
-}

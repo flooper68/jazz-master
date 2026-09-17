@@ -16,7 +16,7 @@ async function expectNoHorizontalOverflow(page: Page, path: string) {
 test('core pages fit a phone-width viewport without horizontal overflow', async ({
   page,
 }) => {
-  for (const path of ['/', '/app', '/app/exercises/scales-major-open-c']) {
+  for (const path of ['/', '/app', '/app/exercises', '/app/history', '/app/exercises/scales-major-open-c']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expectNoHorizontalOverflow(page, path)

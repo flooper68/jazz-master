@@ -7,6 +7,7 @@ import type { AppRouter } from '../server/trpc/router'
 import { TRPCProvider } from '../app/trpc'
 import { Layout } from '../components/Layout'
 import ExercisesPage from '../app/pages/ExercisesPage'
+import HomePage from '../app/pages/HomePage'
 import ExercisePage from '../app/pages/ExercisePage'
 import HistoryPage from '../app/pages/HistoryPage'
 import SessionPage from '../app/pages/SessionPage'
@@ -46,7 +47,8 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
     const client = createTRPCClient<AppRouter>({ links: [fixtureLink(scenario)] })
     const root = createRootRoute({ component: Layout, notFoundComponent: NotFoundPage })
     const routes = [
-      createRoute({ getParentRoute: () => root, path: '/', component: ExercisesPage }),
+      createRoute({ getParentRoute: () => root, path: '/', component: HomePage }),
+      createRoute({ getParentRoute: () => root, path: '/exercises', component: ExercisesPage }),
       createRoute({ getParentRoute: () => root, path: '/exercises/$exerciseId', component: ExercisePage }),
       createRoute({ getParentRoute: () => root, path: '/history', component: HistoryPage }),
       createRoute({ getParentRoute: () => root, path: '/session', component: SessionPage, validateSearch: (search: Record<string, unknown>) => ({ x: typeof search.x === 'string' ? search.x : '' }) }),
