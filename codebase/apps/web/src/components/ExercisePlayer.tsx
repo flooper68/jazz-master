@@ -313,7 +313,8 @@ export function ExercisePlayer({
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
           <div className={`${FLOAT} pointer-events-auto flex w-full flex-col items-stretch gap-1.5 px-3 py-2`}>
             {/* Main lane: tempo left, transport dead centre (Play in the middle of the screen), readouts right. */}
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3" data-lane="main">
+            {/* Equal side columns (minmax 0) so the transport, and Play, sit at the exact centre. */}
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3" data-lane="main">
             <div className="flex justify-start">
             <Group label="Readouts">
               <Readout
@@ -350,7 +351,7 @@ export function ExercisePlayer({
               <NextIcon />
             </IconButton>
             </Group>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <Group label="Tempo">
               <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" data-tip={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
               <label htmlFor={ids.tempo} className="sr-only">
