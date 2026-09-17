@@ -38,6 +38,15 @@
       "port": 6006
     },
     {
+      "name": "storybook-second",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd codebase/apps/web && exec bunx storybook dev -p 6007 --no-open"
+      ],
+      "port": 6007
+    },
+    {
       "name": "web-clerk",
       "runtimeExecutable": "env",
       "runtimeArgs": [

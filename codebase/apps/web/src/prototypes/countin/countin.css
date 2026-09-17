@@ -1,0 +1,290 @@
+/*
+ * Count-in prototype tokens. Scoped to `.ci`, so the prototypes redraw the
+ * app's own `--c-*` tokens (and every utility mapped from them) without
+ * touching the Woodshed theme in `src/index.css`. Dark follows the nearest
+ * `[data-theme='dark']` ancestor — in Storybook, the toolbar.
+ */
+.ci {
+  --c-canvas: #fbfaf8;
+  --c-panel: #ffffff;
+  --c-panel-2: #f1f0ec;
+  --c-field: #ffffff;
+  --c-fg: #0f0f14;
+  --c-fg-2: #3d3c44;
+  --c-muted: #6b6963;
+  --c-line: rgba(15, 15, 20, 0.1);
+  --c-line-strong: rgba(15, 15, 20, 0.28);
+  --c-cta: #0f0f14;
+  --c-cta-hover: #2b2b35;
+  --c-cta-fg: #ffffff;
+  --c-accent: #e69b4c;
+  --c-accent-hover: #d98a35;
+  --c-accent-text: #9a5613;
+  --c-on-accent: #2e1b08;
+  --c-warning-soft: #fbeedd;
+
+  /* Sharp, not soft: the only round things are the beats. */
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
+}
+
+[data-theme='dark'] .ci {
+  --c-canvas: #0f0f14;
+  --c-panel: #16161d;
+  --c-panel-2: #1f1f28;
+  --c-field: #1a1a22;
+  --c-fg: #f4f2ee;
+  --c-fg-2: #c9c6bf;
+  --c-muted: #9a978f;
+  --c-line: rgba(255, 255, 255, 0.1);
+  --c-line-strong: rgba(255, 255, 255, 0.28);
+  --c-cta: #f4f2ee;
+  --c-cta-hover: #dedbd4;
+  --c-cta-fg: #0f0f14;
+  --c-accent: #e69b4c;
+  --c-accent-hover: #f0ab62;
+  --c-accent-text: #e9a862;
+  --c-on-accent: #2e1b08;
+  --c-warning-soft: rgba(230, 155, 76, 0.16);
+}
+
+.ci {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+.ci-display {
+  font-family: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.035em;
+}
+.ci-num {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A count lands: the numeral swells for a moment, then settles. */
+@keyframes ci-land {
+  from {
+    transform: scale(1.18);
+  }
+}
+.ci-land {
+  animation: ci-land 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ci-land {
+    animation: none;
+  }
+}
+
+/* The assistant is thinking: the mark's four dots light in turn. */
+@keyframes ci-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.ci-think circle {
+  animation: ci-pulse 1s ease-in-out infinite;
+}
+.ci-think circle:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ci-think circle:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.ci-think circle:nth-child(4) {
+  animation-delay: 0.45s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ci-think circle {
+    animation: none;
+  }
+}
+
+/* Downbeat prototype: a dot of the hero mark lands on its beat. */
+@keyframes ci-land-big {
+  from {
+    transform: scale(1.28);
+  }
+}
+.ci-land-big {
+  animation: ci-land-big 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* A string is plucked: a standing wave that rings down to a line. */
+@keyframes ci-pluck {
+  0% {
+    transform: scaleY(1);
+    stroke: var(--c-accent);
+  }
+  18% {
+    transform: scaleY(-0.72);
+  }
+  36% {
+    transform: scaleY(0.46);
+  }
+  54% {
+    transform: scaleY(-0.26);
+    stroke: var(--c-line-strong);
+  }
+  72% {
+    transform: scaleY(0.12);
+  }
+  100% {
+    transform: scaleY(0.001);
+  }
+}
+.ci-string {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scaleY(0.001);
+  stroke: var(--c-line-strong);
+}
+.ci-string.ci-pluck {
+  animation: ci-pluck 900ms ease-out;
+}
+
+/* Sections arrive as they scroll in. */
+.ci-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ci-reveal[data-in='true'] {
+  opacity: 1;
+  transform: none;
+}
+.ci-rule {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-in='true'] > .ci-rule {
+  transform: scaleX(1);
+}
+
+/* Giant type drawn as an outline. */
+.ci-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--c-line-strong);
+}
+
+/* The ticker of styles. */
+@keyframes ci-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ci-marquee {
+  animation: ci-marquee 48s linear infinite;
+}
+
+/* The downbeat rings out. */
+@keyframes ci-ripple {
+  from {
+    transform: scale(0.15);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+.ci-ripple {
+  animation: ci-ripple 4.5s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+/* The downbeat swallows the screen: a circle opening from the amber dot. */
+.ci-wipe {
+  clip-path: circle(0 at var(--x, 50%) var(--y, 50%));
+  transition: clip-path 900ms cubic-bezier(0.7, 0, 0.2, 1);
+  pointer-events: none;
+}
+.ci-wipe[data-open='true'] {
+  clip-path: circle(160vmax at var(--x, 50%) var(--y, 50%));
+  pointer-events: auto;
+}
+.ci-wipe-late {
+  transition-delay: 160ms;
+}
+
+/* The ask is typed: an amber caret after the last letter. */
+@keyframes ci-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.ci-caret::after {
+  content: '';
+  display: inline-block;
+  width: 0.07em;
+  height: 0.85em;
+  margin-left: 0.08em;
+  vertical-align: -0.06em;
+  background: var(--c-accent);
+  animation: ci-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ci-land-big,
+  .ci-string.ci-pluck,
+  .ci-marquee,
+  .ci-ripple,
+  .ci-caret::after {
+    animation: none;
+  }
+  .ci-wipe,
+  .ci-rule {
+    transition: none;
+  }
+  .ci-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .ci-rule {
+    transform: none;
+  }
+}
+
+/* A line that draws itself once its section is in view (the path carries pathLength="1"). */
+.ci-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 2600ms cubic-bezier(0.4, 0, 0.2, 1) 300ms;
+}
+[data-in='true'] .ci-draw {
+  stroke-dashoffset: 0;
+}
+
+/* Your playing, heard: the bars of a take breathe. */
+@keyframes ci-wave {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.ci-wave > span {
+  transform-origin: center;
+  animation: ci-wave 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ci-draw {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+  .ci-wave > span {
+    animation: none;
+  }
+}
