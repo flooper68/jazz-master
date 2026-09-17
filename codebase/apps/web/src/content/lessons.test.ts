@@ -58,3 +58,14 @@ describe('LESSONS', () => {
     }
   })
 })
+
+describe('lesson text', () => {
+  it('gives every lesson an intro and every exercise its notes', () => {
+    for (const lesson of LESSONS) {
+      expect(lesson.intro?.length ?? 0).toBeGreaterThan(0)
+      for (const exercise of lesson.exercises) {
+        expect(exercise.about?.length ?? 0).toBeGreaterThan(0)
+      }
+    }
+  })
+})

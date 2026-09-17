@@ -1,0 +1,43 @@
+import { keySignature, midiAt, pitchClass, spellMidi, type FretRange, type GuitarString } from '@jazz-master/theory'
+import type { Exercise } from './types'
+
+/**
+ * The shape an exercise makes on the neck: every position it uses, labelled
+ * with its note name as the key spells it, roots marked. What a diagram in
+ * the lesson intro draws.
+ */
+
+export interface ShapePosition {
+  string: GuitarString
+  fret: number
+  label: string
+  role: 'root' | 'other'
+}
+
+export interface ExerciseShape {
+  positions: ShapePosition[]
+  fretRange: FretRange
+}
+
+export function exerciseShape(exercise: Exercise): ExerciseShape {
+  const key = exercise.key ? keySignature(exercise.key) : null
+  const rootPc = key ? pitchClass(key.tonic) : midiAt(exercise.notes[0].string, exercise.notes[0].fret) % 12
+  const seen = new Set<string>()
+  const positions: ShapePosition[] = []
+  for (const note of exercise.notes) {
+    const id = `${note.string}/${note.fret}`
+    if (seen.has(id)) continue
+    seen.add(id)
+    const midi = midiAt(note.string, note.fret)
+    const spelled = spellMidi(midi, key)
+    const label = spelled.letter + (spelled.accidental < 0 ? 'b'.repeat(-spelled.accidental) : '#'.repeat(spelled.accidental))
+    positions.push({ string: note.string, fret: note.fret, label, role: midi % 12 === rootPc ? 'root' : 'other' })
+  }
+  positions.sort((a, b) => b.string - a.string || a.fret - b.fret)
+  const frets = positions.map((position) => position.fret)
+  const lowest = Math.min(...frets)
+  const highest = Math.max(...frets)
+  const min = lowest <= 2 ? 0 : lowest - 1
+  const max = Math.max(highest + 1, min + 4)
+  return { positions, fretRange: { min, max } }
+}

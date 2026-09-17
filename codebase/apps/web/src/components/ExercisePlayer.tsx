@@ -7,6 +7,7 @@ import type { LoopRegion, TempoLadder } from '../player/plan'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
 import { usePlayerTransport } from '../player/usePlayerTransport'
 import { Score, type ScoreHandle } from '../score/Score'
+import { AboutPanel } from './AboutPanel'
 import {
   BarIcon,
   BothIcon,
@@ -18,6 +19,7 @@ import {
   CountInIcon,
   FullscreenIcon,
   GuitarIcon,
+  InfoIcon,
   LoopEndIcon,
   LoopIcon,
   LoopStartIcon,
@@ -47,6 +49,8 @@ import { useViewFocus } from './useViewFocus'
 interface ExercisePlayerProps {
   exercise: Exercise
   isFirst: boolean
+  /** The lesson intro, shown with the first exercise's notes. */
+  intro?: readonly string[]
   prefs: PlayerPrefs
   onPrefsChange: (prefs: PlayerPrefs) => void
   onBegin: () => void
@@ -69,6 +73,7 @@ const FIELD = `h-8 rounded-md border border-line bg-field px-2 text-sm text-fg t
 export function ExercisePlayer({
   exercise,
   isFirst,
+  intro,
   prefs,
   onPrefsChange,
   onBegin,
@@ -85,6 +90,9 @@ export function ExercisePlayer({
   const [tempoNow, setTempoNow] = useState(snapshot.tempoBpm)
   const [countingIn, setCountingIn] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
+  // The intro opens with the exercise and steps aside when playing starts.
+  const hasAbout = (isFirst && (intro?.length ?? 0) > 0) || (exercise.about?.length ?? 0) > 0
+  const [aboutOpen, setAboutOpen] = useState(hasAbout)
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
   const stageRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -221,9 +229,11 @@ export function ExercisePlayer({
       '=': () => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP),
       '-': () => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP),
       f: toggleFullscreen,
+      i: () => setAboutOpen((open) => !open),
     }
-    if (event.key === 'Escape' && openMenu) {
+    if (event.key === 'Escape' && (openMenu || aboutOpen)) {
       setOpenMenu(null)
+      setAboutOpen(false)
       return
     }
     const handler = handlers[event.key]
@@ -267,10 +277,10 @@ export function ExercisePlayer({
         </h2>
       </header>
 
-      {/* The scene: the score is the canvas, everything else floats over it. */}
+      {/* The scene: the score is the canvas; the chrome and the intro float over it. */}
       <div
         ref={stageRef}
-        className="relative m-1.5 mt-0 min-h-[420px] flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70 fullscreen:m-0 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
+        className="relative m-1.5 mt-0 min-h-0 flex-1 overflow-hidden rounded-xl border border-line bg-panel-2/70 fullscreen:m-0 fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-canvas"
         data-stage
       >
         <Score
@@ -542,6 +552,16 @@ export function ExercisePlayer({
               </p>
             </Menu>
 
+            <button
+              type="button"
+              onClick={() => setAboutOpen((open) => !open)}
+              aria-pressed={aboutOpen}
+              aria-label="About this exercise"
+              title="About this exercise: the theory and the shape on the neck (I)"
+              className={`${ICON_BUTTON} h-8 w-8 ${aboutOpen ? 'border-fg bg-panel-2' : ''}`}
+            >
+              <InfoIcon />
+            </button>
             {fullscreenAvailable && (
               <button
                 type="button"
@@ -633,6 +653,11 @@ export function ExercisePlayer({
             </button>
           </div>
         </div>
+        {aboutOpen && (
+          <div className="absolute top-3 right-3 bottom-32 w-[38%] max-w-xl min-w-[320px]">
+            <AboutPanel exercise={exercise} intro={isFirst ? intro : undefined} onClose={() => setAboutOpen(false)} />
+          </div>
+        )}
       </div>
 
       {snapshot.audioUnavailable && (

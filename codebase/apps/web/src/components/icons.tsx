@@ -83,6 +83,14 @@ export const ClearIcon = () => (
   <Icon><path d="M3.6 2.5 8 6.9l4.4-4.4 1.1 1.1L9.1 8l4.4 4.4-1.1 1.1L8 9.1l-4.4 4.4-1.1-1.1L6.9 8 2.5 3.6z" /></Icon>
 )
 export const NextIcon = () => <Icon><path d="M2.5 2.5 10 8l-7.5 5.5zM11 2.5h2.5v11H11z" /></Icon>
+export const InfoIcon = () => (
+  <Icon>
+    <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 1.5a5 5 0 1 0 0 10A5 5 0 0 0 8 3zm-.9 3.8h1.8V12H7.1zM8 4.3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+  </Icon>
+)
+export const CloseIcon = () => (
+  <Icon size={12}><path d="M3.6 2.5 8 6.9l4.4-4.4 1.1 1.1L9.1 8l4.4 4.4-1.1 1.1L8 9.1l-4.4 4.4-1.1-1.1L6.9 8 2.5 3.6z" /></Icon>
+)
 export const CheckIcon = () => <Icon size={12}><path d="M6.4 12.3 2 7.9l1.4-1.4 3 3 6.2-6.2L14 4.7z" /></Icon>
 export const FullscreenIcon = ({ exit }: { exit: boolean }) => (
   <Icon>

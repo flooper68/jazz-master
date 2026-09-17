@@ -14,11 +14,20 @@ export const LESSONS: readonly Lesson[] = [
     level: 1,
     prerequisites: [],
     estimatedMinutes: 6,
+    intro: [
+      'The major scale is the ruler everything else in jazz is measured against. Chord symbols, the modes, the ii–V–I — all of them are described as alterations of it, so knowing it under the fingers in every key is the first real investment.',
+      'The open position is the lowest place on the neck to play it: the four frets nearest the nut plus the open strings. It uses a different fingering in every key, which is exactly the point — the scale has to become a sound you find, not a shape you memorise.',
+      'Play each note with an even, singing tone and let the click carry the time. Say the note names as you go when the tempo allows; naming what you play is how the neck becomes a map.',
+    ],
     exercises: [
       {
         id: 'scales-major-open-c',
         title: 'C major — open position',
         key: 'C',
+        about: [
+          'C major has no sharps or flats, so every fretted note here is a natural. From the low E string climb to the high E and back, ending on the root held to the bar line.',
+          'Fingering: first finger on the first fret, second on the second, third on the third — one finger per fret, the fourth finger free for the fourth fret on the G string.',
+        ],
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -64,6 +73,9 @@ export const LESSONS: readonly Lesson[] = [
         id: 'scales-major-open-g',
         title: 'G major — open position',
         key: 'G',
+        about: [
+          'One sharp: F♯. Everything else is the same as C major, so listen for the one note that moves — the F on the low E, D and high E strings has stepped up a fret.',
+        ],
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -109,6 +121,9 @@ export const LESSONS: readonly Lesson[] = [
         id: 'scales-major-open-f',
         title: 'F major — open position',
         key: 'F',
+        about: [
+          'One flat: B♭. The B string is the trap — its open note is out of the key, so the scale takes the first fret there instead. F major is the first key where the open strings stop doing the work for you.',
+        ],
         tempoBpm: 60,
         duration: { kind: 'minutes', minutes: 2 },
         notes: [
@@ -157,11 +172,20 @@ export const LESSONS: readonly Lesson[] = [
     level: 2,
     prerequisites: ['scales-major-open'],
     estimatedMinutes: 8,
+    intro: [
+      'The ii–V–I is the most common chord movement in jazz: in F major that is Gm7 to C7 to Fmaj7. The bass moves down in fifths, the harmony leans forward twice and then lands, and most standards are built from chains of this one cadence.',
+      'Every chord in it comes from the F major scale, so the same seven notes fit all three — what changes is which of them feel like home. Lines that work outline the chord tones on the strong beats and use the rest of the scale, plus the odd chromatic note, to get between them.',
+      'Both exercises live in one position around the fifth to eighth frets. Learn the arpeggios first so the chord tones are in your hands, then the line, which is how those tones get connected in real playing.',
+    ],
     exercises: [
       {
         id: 'lines-ii-v-i-f-arpeggios',
         title: 'Gm7 – C7 – Fmaj7 — arpeggios up and down',
         key: 'F',
+        about: [
+          'Each bar arpeggiates one chord up to its ninth and back: Gm9, C9, then Fmaj9, landing on a whole-note F. Hear how the top note of each arpeggio — A, D, G — is the colour tone that makes the chord sound like jazz.',
+          'Keep the eighths even; the arpeggio is a scale skipping every other note, so any unevenness shows at once.',
+        ],
         tempoBpm: 80,
         duration: { kind: 'repetitions', count: 4 },
         notes: [
@@ -200,6 +224,10 @@ export const LESSONS: readonly Lesson[] = [
         id: 'lines-ii-v-i-f-line',
         title: 'Gm7 – C7 – Fmaj7 — a bebop line',
         key: 'F',
+        about: [
+          'A line in the bebop manner: up the Gm7 arpeggio, down the scale, then over C7 the third, fifth, seventh and root before the one chromatic note — A♭, the flat thirteenth of C7 — which slides down to A, the third of Fmaj7, on the downbeat.',
+          'That resolution is the whole lesson: a note outside the key placed a half step above its target lands the change. Play the line until the A♭ sounds inevitable rather than wrong.',
+        ],
         tempoBpm: 90,
         duration: { kind: 'repetitions', count: 4 },
         notes: [

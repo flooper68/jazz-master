@@ -35,6 +35,8 @@ export interface Exercise {
   key?: string
   /** Beats per bar; 4 unless the exercise says otherwise. */
   beatsPerBar?: number
+  /** What to know before playing this one, a paragraph per entry. */
+  about?: readonly string[]
 }
 
 export const DEFAULT_BEATS_PER_BAR = 4
@@ -52,4 +54,6 @@ export interface Lesson {
   prerequisites: readonly string[]
   estimatedMinutes: number
   exercises: readonly Exercise[]
+  /** The lesson's story — the theory, the history, why it matters — a paragraph per entry. */
+  intro?: readonly string[]
 }

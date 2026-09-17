@@ -149,6 +149,7 @@ export function PracticeRunner({
         key={exercise.id}
         exercise={exercise}
         isFirst={state.exerciseIndex === 0}
+        intro={lesson.intro}
         prefs={prefs}
         onPrefsChange={setPrefs}
         onBegin={beginExercise}

@@ -13,11 +13,13 @@ const lesson: Lesson = {
   level: 1,
   prerequisites: [],
   estimatedMinutes: 2,
+  intro: ['The major scale is the ruler.'],
   exercises: [
     {
       id: 'fx-1',
       title: 'C major — open position',
       key: 'C',
+      about: ['No sharps or flats here.'],
       tempoBpm: 60,
       duration: { kind: 'minutes', minutes: 1 },
       notes: [
@@ -169,6 +171,30 @@ describe('PracticeRunner', () => {
     expect(document.querySelector('[data-staff="tab"]')).not.toBeNull()
     expect(document.querySelector('[data-staff="notation"]')).not.toBeNull()
     expect(currentNote()).toBeNull()
+  })
+
+  it('opens with the lesson intro and the shape on the neck beside the score, and closes on demand', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    const about = screen.getByRole('complementary', { name: 'About C major — open position' })
+    expect(within(about).getByText('The major scale is the ruler.')).toBeInTheDocument()
+    expect(within(about).getByText('No sharps or flats here.')).toBeInTheDocument()
+    const neck = within(about).getByRole('img', { name: /on the neck, 6 positions, roots marked$/ })
+    expect(neck.querySelectorAll('[data-role="root"]')).toHaveLength(1)
+    expect(neck.querySelector('[data-string="5"][data-fret="3"]')?.textContent).toBe('C')
+
+    // It stays beside the score while playing, and closes from its own button.
+    await play(user, 'C major — open position')
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'About this exercise' }))
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    // The second exercise has no notes of its own and is not first: nothing to show.
+    await next(user, 'C major — open position')
+    expect(screen.queryByRole('complementary')).toBeNull()
   })
 
   it('counts in and clicks on Play, pauses, and silences on Next', async () => {
