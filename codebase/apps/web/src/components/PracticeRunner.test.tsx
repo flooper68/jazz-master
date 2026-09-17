@@ -119,13 +119,12 @@ async function next(user: User, title: string) {
 }
 
 /** The advanced controls sit behind menus; open one by its label. */
-async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'Sound' | 'View') {
+async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'View') {
   const button = screen.getByRole('button', { name: new RegExp(`^${label}: `) })
   if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
 }
 
 async function disableCountIn(user: User) {
-  await openMenu(user, 'Sound')
   await user.click(screen.getByRole('checkbox', { name: 'Count-in' }))
 }
 
@@ -235,7 +234,6 @@ describe('PracticeRunner', () => {
     await disableCountIn(user)
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
     await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
-    expect(screen.getByRole('button', { name: 'Sound: guitar' })).toBeInTheDocument()
     await user.selectOptions(screen.getByRole('combobox', { name: 'Guitar' }), 'steel')
     expect(audio.log.filter((entry) => entry.startsWith('guitar')).at(-1)).toBeUndefined()
 
@@ -247,7 +245,6 @@ describe('PracticeRunner', () => {
     expect(audio.log.slice(0, 2)).toEqual(['guitar steel', 'prime 6'])
 
     await next(user, 'C major — open position')
-    await openMenu(user, 'Sound')
     expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Play along' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Count-in' })).not.toBeChecked()

@@ -82,10 +82,7 @@ test('Play starts the timer, the click, and the cursor; Next advances', async ({
   await expect(page.getByText('2:00')).toBeVisible()
   await page.waitForTimeout(1_500)
   await expect(page.getByText('2:00')).toBeVisible()
-  // The sound settings sit behind a menu; the click is on by default.
-  await page.getByRole('button', { name: /^Sound: / }).click()
   await expect(page.getByRole('checkbox', { name: 'Click' })).toBeChecked()
-  await page.keyboard.press('Escape')
 
   await page.getByRole('button', { name: /^Play / }).click()
   await expect(page.getByText(/1:5\d/)).toBeVisible()

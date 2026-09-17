@@ -33,7 +33,6 @@ import {
   RepeatIcon,
   ResetIcon,
   SkipBackIcon,
-  SoundIcon,
   TabIcon,
 } from './icons'
 import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type PlayerPrefs } from './playerPrefs'
@@ -248,8 +247,6 @@ export function ExercisePlayer({
       : snapshot.finished
         ? `${snapshot.pass} of ${snapshot.repeat} passes`
         : `Pass ${Math.min(snapshot.pass + 1, snapshot.repeat)} of ${snapshot.repeat}`
-  const soundSummary =
-    [prefs.click && 'click', prefs.voice && 'guitar', prefs.countIn && 'count-in'].filter(Boolean).join(' · ') || 'silent'
 
   return (
     <section
@@ -504,43 +501,26 @@ export function ExercisePlayer({
               </div>
             )}
 
-            <Menu
-              id="sound"
-              label="Sound"
-              icon={<SoundIcon />}
-              value={soundSummary}
-              title="Click, guitar play-along and count-in"
-              active={false}
-              open={openMenu === 'sound'}
-              onToggle={toggleMenu}
+            {/* Sound: direct toggles, and the guitar beside the play-along one. */}
+            <Toggle label="Click" icon={<ClickIcon />} title="Metronome click on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
+            <Toggle label="Count-in" icon={<CountInIcon />} title="One bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
+            <Toggle label="Play along" icon={<GuitarIcon />} title="A guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
+            <label htmlFor={ids.guitar} className="sr-only">
+              Guitar
+            </label>
+            <select
+              id={ids.guitar}
+              value={prefs.guitar}
+              title="Which guitar plays the line along. Sampled guitars load one note at a time from the web; the synth plays until each one arrives."
+              onChange={(event) => onPrefsChange({ ...prefs, guitar: event.target.value as VoiceId })}
+              className={`${FIELD} max-w-44 cursor-pointer text-xs`}
             >
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Toggle label="Click" icon={<ClickIcon />} title="Metronome click on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
-                <Toggle label="Play along" icon={<GuitarIcon />} title="A guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
-                <Toggle label="Count-in" icon={<CountInIcon />} title="One bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <label htmlFor={ids.guitar} className="text-xs font-medium text-muted">
-                  Guitar
-                </label>
-                <select
-                  id={ids.guitar}
-                  value={prefs.guitar}
-                  title="Which guitar plays the line along"
-                  onChange={(event) => onPrefsChange({ ...prefs, guitar: event.target.value as VoiceId })}
-                  className={`${FIELD} cursor-pointer`}
-                >
-                  {VOICES.map((voice) => (
-                    <option key={voice.id} value={voice.id}>
-                      {voice.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p className="mt-2 max-w-64 text-[11px] text-muted">
-                Sampled guitars load one note at a time from the web; the synth plays until each one arrives.
-              </p>
-            </Menu>
+              {VOICES.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {voice.label}
+                </option>
+              ))}
+            </select>
 
             <button
               type="button"
@@ -668,7 +648,7 @@ export function ExercisePlayer({
   )
 }
 
-type MenuId = 'loop' | 'repeat' | 'sound' | 'view'
+type MenuId = 'loop' | 'repeat' | 'view'
 
 /** A labelled popover: the button shows the setting's current value, the panel holds its controls. */
 function Menu({
