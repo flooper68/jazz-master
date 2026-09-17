@@ -1,4 +1,4 @@
-import { Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   lazy,
   Suspense,
@@ -10,7 +10,9 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { EXERCISES } from '../content'
 import { HistoryIcon, ListIcon, SidebarIcon } from './icons'
+import { QuickRunButton } from './QuickRunButton'
 import {
   clampSidebarWidth,
   DEFAULT_SIDEBAR_PREFS,
@@ -86,10 +88,11 @@ export function Layout() {
     ]
   }, [theme, toggleTheme])
 
+  const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   // The player is a stage: the phone header drops its nav row there, and the
   // sidebar remembers a fold of its own for it (folded unless opened).
-  const onStage = pathname.includes('/exercises/')
+  const onStage = pathname.includes('/exercises/') || pathname.endsWith('/session')
   // Playing an exercise is still being in Exercises.
   const current = pathname.endsWith('/history') ? '/history' : '/'
 
@@ -175,10 +178,23 @@ export function Layout() {
                 to === current ? 'bg-panel-2 text-fg' : 'text-fg-2'
               } ${collapsed ? 'md:justify-center md:px-0' : ''}`}
             >
-              <NavIcon />
+              {/* The narrowest phones have no room for the icons beside three labels. */}
+              <span className="hidden min-[420px]:inline-flex">
+                <NavIcon />
+              </span>
               <span className={collapsed ? 'md:sr-only' : 'truncate'}>{label}</span>
             </Link>
           ))}
+          {/* The primary action: first in the sidebar, above the links; at the end of the phone row. */}
+          <div className="ml-auto md:@container md:order-first md:mb-3 md:ml-0">
+            <QuickRunButton
+              exercises={EXERCISES}
+              iconOnly={collapsed}
+              onStart={(picked) =>
+                void navigate({ to: '/session', search: { x: picked.map((exercise) => exercise.id).join(',') } })
+              }
+            />
+          </div>
         </nav>
         <div className={`ml-auto min-w-0 md:mt-auto md:ml-0 ${collapsed ? 'md:flex md:justify-center' : 'md:px-2'}`}>
           {usePlaywrightAccountStub ? (

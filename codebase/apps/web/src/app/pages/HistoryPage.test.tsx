@@ -26,8 +26,8 @@ describe('HistoryPage', () => {
 
   it('lists runs a day at a time with what was played, how it went, and a way back in', async () => {
     seedTrpcTestRuns([
-      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, rating: 8 },
-      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-g', startedAt: at(1, 18), durationSeconds: 45, tempoBpm: 60, passes: 1, completed: false, rating: null },
+      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, rating: 8, sessionId: '33333333-3333-4333-8333-333333333333' },
+      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-g', startedAt: at(1, 18), durationSeconds: 45, tempoBpm: 60, passes: 1, completed: false, rating: null, sessionId: null },
     ])
     await renderRoute('/history')
 
@@ -35,6 +35,7 @@ describe('HistoryPage', () => {
     const line = within(today.getByRole('listitem'))
     expect(line.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
     expect(line.getByText('Standards')).toBeInTheDocument()
+    expect(line.getByText('Quick run')).toBeInTheDocument()
     expect(line.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
     expect(line.getByLabelText('Felt 8 out of 10')).toBeInTheDocument()
     expect(line.getByRole('link', { name: 'Play Gm7 – C7 – Fmaj7 — a bebop line again' })).toHaveAttribute(
@@ -45,6 +46,7 @@ describe('HistoryPage', () => {
     const yesterday = within(within(screen.getByRole('region', { name: 'Yesterday' })).getByRole('listitem'))
     expect(yesterday.getByText(/0:45 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
     expect(yesterday.getByText('Not rated')).toBeInTheDocument()
+    expect(yesterday.queryByText('Quick run')).toBeNull()
 
     // The totals across everything listed.
     expect(screen.getByText('Runs').nextElementSibling).toHaveTextContent('2')

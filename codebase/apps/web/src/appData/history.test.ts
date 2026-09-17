@@ -14,6 +14,7 @@ function run(id: string, startedAt: Date): ExerciseRun {
     passes: 1,
     completed: true,
     rating: null,
+    sessionId: null,
   }
 }
 

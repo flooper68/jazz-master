@@ -533,6 +533,7 @@ function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
     passes: 6,
     completed: true,
     rating: null,
+    sessionId: null,
     ...overrides,
   }
 }

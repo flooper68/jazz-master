@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
@@ -82,5 +82,16 @@ describe('Layout shell', () => {
 
     fireEvent.doubleClick(edge)
     expect(edge).toHaveAttribute('aria-valuenow', '224')
+  })
+
+  it('starts a quick run of three random exercises from the navigation', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/history')
+    const nav = within(screen.getByRole('navigation', { name: 'Main' }))
+    await user.click(nav.getByRole('button', { name: 'Quick run: 3 random exercises, about 5 min' }))
+    expect(await screen.findByText('Quick run · 1 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'End quick run' })).toBeInTheDocument()
+    // On the stage the sidebar is folded: the button is its icon, the settings are away.
+    expect(screen.getByRole('banner')).toHaveAttribute('data-collapsed')
   })
 })

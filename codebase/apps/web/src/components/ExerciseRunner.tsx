@@ -25,18 +25,33 @@ const BUTTON_SECONDARY =
 const HEADING =
   'font-display text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
+/**
+ * Where this exercise sits in a practice session, and how to move on from it.
+ * In a session there is no summary per exercise: finishing moves straight on,
+ * and the session sums everything up (and takes the ratings) at its end.
+ */
+export interface RunnerSession {
+  id: string
+  /** One-based. */
+  step: number
+  total: number
+  onContinue: () => void
+}
+
 interface ExerciseRunnerProps {
   exercise: Exercise
   /** The run as it now stands — called when it reaches the summary, and again when rated. */
   onRunChange: (run: ExerciseRun) => void
   onExit: () => void
+  /** Set when the exercise is one step of a practice session (a quick run). */
+  session?: RunnerSession
   /** Test seam: the browser's Web Audio engine, swapped for a fake in jsdom. */
   createAudio?: () => PlayerAudio
   /** Test seam: the wall clock in ms, used when audio is unavailable. */
   now?: () => number
 }
 
-export function ExerciseRunner({ exercise, onRunChange, onExit, createAudio, now }: ExerciseRunnerProps) {
+export function ExerciseRunner({ exercise, onRunChange, onExit, session, createAudio, now }: ExerciseRunnerProps) {
   const [finished, setFinished] = useState(false)
   // Null on the summary when Finish came before any Play: nothing to record or rate.
   const [run, setRun] = useState<ExerciseRun | null>(null)
@@ -58,10 +73,12 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, createAudio, now
       exerciseId: exercise.id,
       ...outcome,
       rating: null,
+      sessionId: session?.id ?? null,
     }
+    if (finishedRun) onRunChange(finishedRun)
+    if (session) return session.onContinue()
     setRun(finishedRun)
     setFinished(true)
-    if (finishedRun) onRunChange(finishedRun)
   }
 
   function rate(rating: number | null): void {
@@ -142,13 +159,20 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, createAudio, now
       onFinish={finish}
       headingRef={headingRef}
       headerAction={
-        <button
-          type="button"
-          onClick={onExit}
-          className="text-xs text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-        >
-          Back to exercises
-        </button>
+        <span className="flex items-baseline gap-3 text-xs text-muted">
+          {session && (
+            <span className="tabular-nums">
+              Quick run · {session.step} of {session.total}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onExit}
+            className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+          >
+            {session ? 'End quick run' : 'Back to exercises'}
+          </button>
+        </span>
       }
       createAudio={createAudio}
       now={now}

@@ -484,6 +484,7 @@ describe('ExerciseRunner', () => {
     expect(within(rating).getByRole('button', { name: '8 out of 10' })).toHaveAttribute('aria-pressed', 'true')
     const [first, rated] = vi.mocked(onRunChange).mock.calls.map(([run]) => run)
     expect(rated).toEqual({ ...first, rating: 8 })
+    expect(first.sessionId).toBeNull()
 
     // Pressing the chosen number again takes the rating back.
     await user.click(within(rating).getByRole('button', { name: '8 out of 10' }))

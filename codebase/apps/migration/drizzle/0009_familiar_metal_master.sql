@@ -1,0 +1,1 @@
+ALTER TABLE "exercise_runs" ADD COLUMN "session_id" uuid;

@@ -9,6 +9,7 @@ import { Layout } from '../components/Layout'
 import ExercisesPage from '../app/pages/ExercisesPage'
 import ExercisePage from '../app/pages/ExercisePage'
 import HistoryPage from '../app/pages/HistoryPage'
+import SessionPage from '../app/pages/SessionPage'
 import NotFoundPage from '../app/pages/NotFoundPage'
 import type { ExerciseRun } from '../appData/run'
 import { runs } from './fixtures'
@@ -48,6 +49,7 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
       createRoute({ getParentRoute: () => root, path: '/', component: ExercisesPage }),
       createRoute({ getParentRoute: () => root, path: '/exercises/$exerciseId', component: ExercisePage }),
       createRoute({ getParentRoute: () => root, path: '/history', component: HistoryPage }),
+      createRoute({ getParentRoute: () => root, path: '/session', component: SessionPage, validateSearch: (search: Record<string, unknown>) => ({ x: typeof search.x === 'string' ? search.x : '' }) }),
       createRoute({ getParentRoute: () => root, path: '/not-found', component: NotFoundPage }),
     ]
     const router = createRouter({ routeTree: root.addChildren(routes), history: createMemoryHistory({ initialEntries: [path] }) })

@@ -29,6 +29,8 @@ export interface ExerciseRun {
   completed: boolean
   /** How hard it felt, if the player said. */
   rating: number | null
+  /** The practice session (a quick run) this run was part of; null when played on its own. */
+  sessionId: string | null
 }
 
 /** What the player knows about a run when it ends — everything but its identity and rating. */

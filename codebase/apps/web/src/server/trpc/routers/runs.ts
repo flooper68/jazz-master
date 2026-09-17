@@ -13,6 +13,7 @@ export const exerciseRunSchema = z.object({
   passes: z.number().int().min(0),
   completed: z.boolean(),
   rating: z.number().refine(isRating, 'rating must be 1–10 and not 7').nullable(),
+  sessionId: z.uuid().nullable(),
 })
 
 export const runListOutput = z.discriminatedUnion('status', [

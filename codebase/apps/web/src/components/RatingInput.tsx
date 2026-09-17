@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { RATING_MAX, RATING_MIN, RATING_SKIPPED } from '../appData/run'
 
 /**
@@ -20,14 +21,18 @@ function feel(rating: number): string {
 interface RatingInputProps {
   value: number | null
   onChange: (value: number | null) => void
+  /** What is being rated, for assistive tech, when several ratings share a screen. */
+  subject?: string
 }
 
-export function RatingInput({ value, onChange }: RatingInputProps) {
+export function RatingInput({ value, onChange, subject }: RatingInputProps) {
+  const labelId = useId()
   return (
-    <div role="group" aria-labelledby="rating-label">
+    <div role="group" aria-labelledby={labelId}>
       <div className="flex items-baseline justify-between gap-3">
-        <p id="rating-label" className="text-sm font-medium text-fg">
-          How hard was it? <span className="font-normal text-muted">Optional</span>
+        <p id={labelId} className="text-sm font-medium text-fg">
+          How hard was it?{subject && <span className="sr-only"> {subject}.</span>}{' '}
+          <span className="font-normal text-muted">Optional</span>
         </p>
         <p className="text-sm text-accent-text" aria-live="polite">
           {value === null ? '' : `${value}/10 · ${feel(value)}`}
@@ -43,7 +48,7 @@ export function RatingInput({ value, onChange }: RatingInputProps) {
               type="button"
               disabled={skipped}
               aria-pressed={chosen}
-              aria-label={`${rating} out of ${RATING_MAX}`}
+              aria-label={`${rating} out of ${RATING_MAX}${subject ? ` for ${subject}` : ''}`}
               onClick={() => onChange(chosen ? null : rating)}
               className={`${BASE} ${
                 chosen

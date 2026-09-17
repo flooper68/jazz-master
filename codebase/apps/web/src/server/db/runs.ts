@@ -90,6 +90,7 @@ export function createRunRepository({
             passes: run.passes,
             completed: run.completed,
             rating: run.rating,
+            sessionId: run.sessionId,
             updatedAt: new Date(),
           }
 
@@ -124,5 +125,6 @@ function serializeRun(row: typeof exerciseRuns.$inferSelect): ExerciseRun {
     passes: row.passes,
     completed: row.completed,
     rating: row.rating,
+    sessionId: row.sessionId,
   }
 }

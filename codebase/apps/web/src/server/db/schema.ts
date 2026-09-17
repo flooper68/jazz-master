@@ -36,6 +36,8 @@ export const exerciseRuns = pgTable(
     completed: boolean('completed').notNull(),
     // 1 (easy) to 10 (hard), never 7; null until the player says.
     rating: smallint('rating'),
+    // Groups the runs of one practice session (a quick run); no table of its own yet.
+    sessionId: uuid('session_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

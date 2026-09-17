@@ -64,6 +64,13 @@
       "when": 1789641506630,
       "tag": "0008_clear_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789647253801,
+      "tag": "0009_familiar_metal_master",
+      "breakpoints": true
     }
   ]
 }

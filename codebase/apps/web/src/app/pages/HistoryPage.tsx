@@ -103,6 +103,11 @@ function RunRow({ run }: { run: ExerciseRun }) {
               {AREA_LABELS[exercise.area]}
             </span>
           )}
+          {run.sessionId && (
+            <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-fg-2">
+              Quick run
+            </span>
+          )}
         </div>
         <p className="mt-1 text-sm text-muted tabular-nums">
           {time} · {formatSeconds(run.durationSeconds)} played · {run.tempoBpm} BPM ·{' '}
