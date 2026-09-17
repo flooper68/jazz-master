@@ -1,0 +1,16 @@
+---
+import { SignUp } from '@clerk/astro/components'
+import PublicShell from '../components/public/PublicShell.astro'
+import { clerkAuthRoutes } from '../server/auth/clerkRoutes'
+---
+
+<!--
+  Clerk's own form, kept as the way out for an account our screens cannot
+  serve yet (an unusual factor, a required field we do not ask for). Linked
+  from the custom screens as "Use the standard form"; not in any navigation.
+-->
+<PublicShell title="Sign up — Count-in" noindex>
+  <main class="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-5 py-12">
+    <SignUp routing="hash" signInUrl={clerkAuthRoutes.signIn} fallbackRedirectUrl={clerkAuthRoutes.appFallback} />
+  </main>
+</PublicShell>

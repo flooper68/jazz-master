@@ -5,10 +5,9 @@ interface Props {
   eyebrow: string
   heading: string
   body: string
-  resetNote?: string
 }
 
-const { eyebrow, heading, body, resetNote } = Astro.props
+const { eyebrow, heading, body } = Astro.props
 ---
 
 <main class="mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-5 py-12 sm:px-8 md:grid-cols-[0.9fr_1.1fr]">
@@ -24,7 +23,6 @@ const { eyebrow, heading, body, resetNote } = Astro.props
   <section class="auth-form-shell flex min-w-0 justify-center overflow-hidden rounded-xl border border-line bg-panel px-0 py-6 sm:px-8" aria-label="Authentication form">
     <div class="w-full min-w-0">
       <slot />
-      {resetNote && <p class="mx-auto mt-4 max-w-md text-center text-sm leading-6 text-muted">{resetNote}</p>}
     </div>
   </section>
 </main>

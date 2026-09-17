@@ -39,14 +39,12 @@ Keep stories beside components; page fixtures and providers live in
 `src/stories/`. Add meaningful states when introducing or changing reusable UI.
 Use the same components and CSS as the app. The page provider has a memory router
 and in-memory tRPC link, with no HTTP fallback; unknown procedures fail loudly.
-Each story gets fresh sample state. The Clerk user button is replaced only in
-Storybook's Vite build. Real application authentication remains unchanged.
+Each story gets fresh sample state. The sign-in, sign-up and account menu are our
+own components over Clerk's API; their stories run against an in-memory stand-in
+(`src/auth/fakeClerk.ts`), so nothing is sent anywhere.
 
-Public Astro components are prerendered under `/_storybook/previews/` and shown
-in sandboxed frames. Authentication stories intentionally show the production
-page shell with an inert form placeholder rather than live Clerk credentials.
-These demonstrate our layout, not Clerk's internal states. They are marked
-noindex, as is the Storybook manager.
+The public Astro header and footer are prerendered under `/_storybook/previews/`
+and shown in sandboxed frames. They are marked noindex, as is the Storybook manager.
 
 Practice playback intentionally uses the normal audio engine and external sample
 host after pressing Play. Record requests microphone permission only after the

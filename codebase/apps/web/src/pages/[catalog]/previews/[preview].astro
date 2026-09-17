@@ -1,39 +1,18 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
-import PublicShell from '../../../components/public/PublicShell.astro'
 import PublicHeader from '../../../components/public/PublicHeader.astro'
 import PublicFooter from '../../../components/public/PublicFooter.astro'
-import AuthPage from '../../../components/public/auth/AuthPage.astro'
 
 export const prerender = true
 
 // Static previews of the public Astro components, for the Storybook catalog.
-// The landing page is a React component and has a story of its own.
+// The landing page and the auth screens are React components with stories of their own.
 export function getStaticPaths() {
-  return ['sign-in', 'sign-up', 'header', 'footer'].map((preview) => ({ params: { catalog: '_storybook', preview } }))
+  return ['header', 'footer'].map((preview) => ({ params: { catalog: '_storybook', preview } }))
 }
 const { preview } = Astro.params
 const sections = { header: PublicHeader, footer: PublicFooter }
 const Section = sections[preview as keyof typeof sections]
-const signUp = preview === 'sign-up'
 ---
 
-{preview === 'sign-in' || signUp ? (
-  <PublicShell noindex>
-    <AuthPage
-      eyebrow={signUp ? 'Practice smart' : 'Welcome back'}
-      heading={signUp ? 'Describe your goal. Then just play.' : 'Welcome back. Your next step is waiting.'}
-      body={signUp ? 'Create an account so Count-in can keep your plan, your history and your next step, wherever you pick up your instrument.' : 'Sign in and pick up where you left off. Nothing to decide: we count you in, you play.'}
-      resetNote={signUp ? undefined : 'Need to reset your password? Start inside the Clerk sign-in form here; the recovery steps stay app-hosted on /sign-in.'}
-    >
-      <div class="mx-auto max-w-sm space-y-5 px-6 py-4">
-        <h2 class="font-display text-xl font-semibold">{signUp ? 'Create your account' : 'Sign in to Count-in'}</h2>
-        <p class="text-sm text-muted">Storybook preview. The live app renders the Clerk form here.</p>
-        <label class="block text-sm font-medium">Email address<input type="email" disabled placeholder="you@example.com" class="mt-2 block w-full rounded-md border border-line-strong bg-field px-3 py-2" /></label>
-        <button disabled class="w-full rounded-md bg-cta px-4 py-2 text-sm font-medium text-cta-fg opacity-60">Continue</button>
-      </div>
-    </AuthPage>
-  </PublicShell>
-) : (
-  <BaseLayout noindex><div class="min-h-screen bg-canvas text-fg">{Section && <Section />}</div></BaseLayout>
-)}
+<BaseLayout noindex><div class="min-h-screen bg-canvas text-fg">{Section && <Section />}</div></BaseLayout>

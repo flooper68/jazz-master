@@ -1,6 +1,5 @@
 ---
-import { SignIn } from '@clerk/astro/components'
-import { clerkAuthRoutes } from '../../../server/auth/clerkRoutes'
+import { SignInFlow } from '../../../auth/SignInFlow'
 import PublicShell from '../PublicShell.astro'
 import AuthPage from './AuthPage.astro'
 ---
@@ -10,18 +9,7 @@ import AuthPage from './AuthPage.astro'
     eyebrow="Welcome back"
     heading="Welcome back. Your next step is waiting."
     body="Sign in and pick up where you left off. Nothing to decide: we count you in, you play."
-    resetNote="Need to reset your password? Start inside the Clerk sign-in form here; the recovery steps stay app-hosted on /sign-in."
   >
-    <SignIn
-      routing="path"
-      path={clerkAuthRoutes.signIn}
-      signUpUrl={clerkAuthRoutes.signUp}
-      fallbackRedirectUrl={clerkAuthRoutes.appFallback}
-      appearance={{
-        variables: {
-          colorPrimary: '#18181b',
-        },
-      }}
-    />
+    <SignInFlow client:only="react" />
   </AuthPage>
 </PublicShell>

@@ -1,6 +1,5 @@
 ---
-import { SignUp } from '@clerk/astro/components'
-import { clerkAuthRoutes } from '../../../server/auth/clerkRoutes'
+import { SignUpFlow } from '../../../auth/SignUpFlow'
 import PublicShell from '../PublicShell.astro'
 import AuthPage from './AuthPage.astro'
 ---
@@ -11,16 +10,6 @@ import AuthPage from './AuthPage.astro'
     heading="Describe your goal. Then just play."
     body="Create an account so Count-in can keep your plan, your history and your next step, wherever you pick up your instrument."
   >
-    <SignUp
-      routing="path"
-      path={clerkAuthRoutes.signUp}
-      signInUrl={clerkAuthRoutes.signIn}
-      fallbackRedirectUrl={clerkAuthRoutes.appFallback}
-      appearance={{
-        variables: {
-          colorPrimary: '#18181b',
-        },
-      }}
-    />
+    <SignUpFlow client:only="react" />
   </AuthPage>
 </PublicShell>

@@ -16,12 +16,6 @@ const config: StorybookConfig = {
     config.cacheDir = fileURLToPath(new URL('../node_modules/.cache/storybook-vite', import.meta.url))
     config.base = './'
     config.server = { ...config.server, proxy: { '/_storybook/previews': 'http://localhost:4321' } }
-    config.resolve = {
-      ...config.resolve,
-      alias: {
-        '@clerk/astro/react': fileURLToPath(new URL('../src/stories/ClerkPreview.tsx', import.meta.url)),
-      },
-    }
     return config
   },
 }

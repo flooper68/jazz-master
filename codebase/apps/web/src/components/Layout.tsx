@@ -1,10 +1,8 @@
+import { AccountMenu } from '../auth/AccountMenu'
 import { Lockup, Mark } from './Brand'
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
-  lazy,
-  Suspense,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -26,43 +24,7 @@ import {
   SIDEBAR_STEP,
   type SidebarPrefs,
 } from './sidebarPrefs'
-import { useTheme, type Theme } from './theme'
-
-const ClerkUserButton = lazy(async () => {
-  const clerk = await import('@clerk/astro/react')
-  return { default: clerk.UserButton }
-})
-
-// Clerk mounts menu icons into its own DOM, outside React: plain SVG markup,
-// drawn like icons.tsx (16px, currentColor). The icon shows the theme on offer.
-const THEME_ICON_SVG: Record<Theme, string> = {
-  light:
-    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M7.25 1h1.5v2.5h-1.5zM7.25 12.5h1.5V15h-1.5zM1 7.25h2.5v1.5H1zM12.5 7.25H15v1.5h-2.5zM2.5 3.6l1.1-1.1 1.8 1.8-1.1 1.1zM10.6 11.7l1.1-1.1 1.8 1.8-1.1 1.1zM2.5 12.4l1.8-1.8 1.1 1.1-1.8 1.8zM10.6 4.3l1.8-1.8 1.1 1.1-1.8 1.8z"/></svg>',
-  dark:
-    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M6.2 1.6a6.5 6.5 0 1 0 8.2 8.2A5.5 5.5 0 0 1 6.2 1.6z"/></svg>',
-}
-
-// With the name shown: avatar first, the name after it in the theme's own
-// colour, cut short rather than pushing the sidebar wider. A constant, so
-// Clerk does not see a new appearance on every render.
-const USER_BUTTON_APPEARANCE = {
-  elements: {
-    rootBox: { maxWidth: '100%' },
-    userButtonTrigger: { maxWidth: '100%' },
-    userButtonBox: { flexDirection: 'row-reverse', maxWidth: '100%', gap: '0.625rem' },
-    userButtonOuterIdentifier: {
-      color: 'var(--c-fg)',
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      paddingLeft: 0,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-      // The phone top bar has no room for it.
-      '@media (max-width: 767px)': { display: 'none' },
-    },
-  },
-} as const
+import { useTheme } from './theme'
 
 const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -83,23 +45,6 @@ export function Layout({ exercises, routines }: LayoutProps) {
   const usePlaywrightAccountStub =
     import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
   const { theme, toggleTheme } = useTheme()
-  // The theme toggle lives in the account menu, between Clerk's own items.
-  const menuItems = useMemo(() => {
-    const offered: Theme = theme === 'dark' ? 'light' : 'dark'
-    return [
-      {
-        label: offered === 'dark' ? 'Dark theme' : 'Light theme',
-        onClick: toggleTheme,
-        mountIcon: (el: HTMLDivElement) => {
-          el.innerHTML = THEME_ICON_SVG[offered]
-        },
-        unmountIcon: (el?: HTMLDivElement) => {
-          if (el) el.innerHTML = ''
-        },
-      },
-    ]
-  }, [theme, toggleTheme])
-
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   // The player is a stage: the phone header drops its nav row there, and the
@@ -221,16 +166,7 @@ export function Layout({ exercises, routines }: LayoutProps) {
           {usePlaywrightAccountStub ? (
             <span className={`text-xs font-medium text-muted ${collapsed ? 'md:sr-only' : ''}`}>Test account</span>
           ) : (
-            <Suspense fallback={null}>
-              {/* Clerk reads these props once, at mount: remount so the theme label
-                  and the name follow the theme and the fold. */}
-              <ClerkUserButton
-                key={`${theme}-${collapsed}`}
-                customMenuItems={menuItems}
-                showName={!collapsed}
-                appearance={USER_BUTTON_APPEARANCE}
-              />
-            </Suspense>
+            <AccountMenu theme={theme} onToggleTheme={toggleTheme} showName={!collapsed} />
           )}
         </div>
         {!collapsed && (
