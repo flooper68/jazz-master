@@ -18,6 +18,9 @@ export default defineConfig({
   // Worker binding-free; it is per-isolate and non-persistent, so if sessions
   // are ever actually adopted, switch to sessionDrivers.cloudflareKVBinding().
   session: { driver: sessionDrivers.memory() },
+  // The dev toolbar floats over the bottom of the page, where the practice
+  // stage keeps its transport; it would sit on the Play button.
+  devToolbar: { enabled: false },
   integrations: [clerk(), react()],
   vite: {
     // `astro build` re-optimizes dependencies into the Vite cache; sharing it

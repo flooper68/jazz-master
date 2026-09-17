@@ -45,6 +45,23 @@ describe('layoutScore', () => {
     expect(layout.beatOfPoint(layout.systems[0].bars[1].x + 2, 0)).toBe(4)
   })
 
+  it('glides the cursor over the gap after a bar line', () => {
+    // Beat 3 → 4 crosses from bar 1 into bar 2 on the same line.
+    const atThree = layout.cursorXOfBeat(3)
+    const atFour = layout.cursorXOfBeat(4)
+    expect(atThree).toEqual(layout.xOfBeat(3))
+    expect(atFour).toEqual(layout.xOfBeat(4))
+    // Halfway through the last beat the cursor is halfway across, gap included.
+    expect(layout.cursorXOfBeat(3.5).x).toBeCloseTo((atThree.x + atFour.x) / 2)
+    expect(layout.cursorXOfBeat(3.5).x).toBeGreaterThan(layout.xOfBeat(3.5).x)
+    // Earlier beats are untouched.
+    expect(layout.cursorXOfBeat(1.25)).toEqual(layout.xOfBeat(1.25))
+    // At a line break there is no gap to glide over; the cursor stays on its line.
+    const wrapped = layoutScore(notes, { beatsPerBar: 4, leftInset: 40, beatWidth: 50, availableWidth: 640 })
+    expect(wrapped.cursorXOfBeat(7.5)).toEqual(wrapped.xOfBeat(7.5))
+    expect(wrapped.cursorXOfBeat(7.5).system).toBe(0)
+  })
+
   it('finds the sounding note for a beat', () => {
     expect(layout.noteIndexAtBeat(0)).toBe(0)
     expect(layout.noteIndexAtBeat(1.2)).toBe(1)

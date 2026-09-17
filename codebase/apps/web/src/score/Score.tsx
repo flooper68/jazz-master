@@ -154,7 +154,7 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
     ref,
     () => ({
       moveCursor(beat, follow, approach = 0) {
-        const point = layout.xOfBeat(beat)
+        const point = layout.cursorXOfBeat(beat)
         const x = point.x - Math.min(Math.max(approach, 0), 1) * (point.x - 6)
         const cursor = cursorRef.current
         if (cursor) cursor.setAttribute('transform', `translate(${x} ${point.system * systemHeight})`)

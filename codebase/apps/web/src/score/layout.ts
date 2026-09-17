@@ -49,6 +49,12 @@ export interface ScoreLayout {
   noteSystem: number[]
   systems: SystemLayout[]
   xOfBeat(beat: number): ScorePoint
+  /**
+   * Where the playback cursor sits at a beat: as xOfBeat, except that the
+   * last beat of a bar stretches over the gap after the bar line, so the
+   * cursor glides into the next bar instead of leaping the gap.
+   */
+  cursorXOfBeat(beat: number): ScorePoint
   /** The beat under an x within a system, clamped to the system's bars. */
   beatOfPoint(x: number, system: number): number
   /** Index of the note sounding at a beat (the last onset at or before it), or null before the first. */
@@ -100,6 +106,17 @@ export function layoutScore(
     const system = systemOf(bar)
     const localBar = bar - system * barsPerSystem
     return { x: barLocalX(localBar) + NOTE_LEAD + (clamped - bar * beatsPerBar) * beatWidth, system }
+  }
+
+  const cursorXOfBeat = (beat: number): ScorePoint => {
+    const clamped = Math.min(Math.max(beat, 0), totalBeats)
+    const bar = Math.min(Math.floor(clamped / beatsPerBar), barCount - 1)
+    const lastBeatStart = bar * beatsPerBar + beatsPerBar - 1
+    const isLastBarOfSystem = (bar + 1) % barsPerSystem === 0 || bar === barCount - 1
+    if (clamped < lastBeatStart || isLastBarOfSystem) return xOfBeat(clamped)
+    const start = xOfBeat(lastBeatStart)
+    const span = beatWidth + BAR_GAP + NOTE_LEAD
+    return { x: start.x + (clamped - lastBeatStart) * span, system: start.system }
   }
 
   const systems: SystemLayout[] = Array.from({ length: systemCount }, (_, index) => {
@@ -157,6 +174,7 @@ export function layoutScore(
     noteSystem,
     systems,
     xOfBeat,
+    cursorXOfBeat,
     beatOfPoint,
     noteIndexAtBeat,
   }
