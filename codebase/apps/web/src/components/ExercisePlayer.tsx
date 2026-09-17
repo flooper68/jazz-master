@@ -342,46 +342,60 @@ export function ExercisePlayer({
         {/* Everything floats in one bar at the bottom, icons only, grouped by job; menus open upward. */}
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
           <div className={`${FLOAT} pointer-events-auto flex w-full flex-col items-stretch gap-1.5 px-3 py-2`}>
-            {/* Main lane: tempo left, transport dead centre (Play in the middle of the screen), readouts right. */}
+            {/* Main lane: readouts left, transport dead centre (Play in the middle of the screen), About right. */}
             {/* Equal side columns (minmax 0) so the transport, and Play, sit at the exact centre. */}
             <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3" data-lane="main">
-            <div className="flex justify-start">
-            <Group label="Readouts">
-              <Readout
-                label="Position"
-                value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
-                data-tip="Bar and beat under the cursor"
-              />
-              <Readout label="Passes" value={passLabel} data-tip="Passes through the loop so far" live />
-              {secondsLeft !== null && (
-                <Readout label="Time left" value={formatSeconds(secondsLeft)} data-tip="Playing time left on this exercise" />
-              )}
-            </Group>
-            </div>
-            <Group label="Transport">
-              <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home" className="h-9 w-9"><SkipBackIcon /></IconButton>
-              <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←" className="h-9 w-9"><ChevronLeftIcon /></IconButton>
-              {playing ? (
+              <div className="flex justify-start">
+                <Group label="Readouts">
+                  <Readout
+                    label="Position"
+                    value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
+                    data-tip="Bar and beat under the cursor"
+                  />
+                  <Readout label="Passes" value={passLabel} data-tip="Passes through the loop so far" live />
+                  {secondsLeft !== null && (
+                    <Readout label="Time left" value={formatSeconds(secondsLeft)} data-tip="Playing time left on this exercise" />
+                  )}
+                </Group>
+              </div>
+              <Group label="Transport">
+                <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home" className="h-9 w-9"><SkipBackIcon /></IconButton>
+                <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←" className="h-9 w-9"><ChevronLeftIcon /></IconButton>
+                {playing ? (
+                  <button
+                    type="button"
+                    onClick={() => transport.pause()}
+                    aria-label={`Pause ${exercise.title}`}
+                    data-tip="Pause (Space)"
+                    className={PLAY_BUTTON}
+                  >
+                    <PauseIcon />
+                  </button>
+                ) : (
+                  <button type="button" onClick={play} aria-label={`Play ${exercise.title}`} data-tip="Play (Space)" className={PLAY_BUTTON}>
+                    <PlayIcon />
+                  </button>
+                )}
+                <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→" className="h-9 w-9"><ChevronRightIcon /></IconButton>
+                <IconButton onClick={finish} label={`Finish ${exercise.title}`} data-tip="Finish this exercise" className="h-9 w-9 border-line-strong">
+                  <NextIcon />
+                </IconButton>
+              </Group>
+              <div className="flex min-w-0 justify-end">
                 <button
                   type="button"
-                  onClick={() => transport.pause()}
-                  aria-label={`Pause ${exercise.title}`}
-                  data-tip="Pause (Space)"
-                  className={PLAY_BUTTON}
+                  onClick={() => setAboutOpen((open) => !open)}
+                  aria-pressed={aboutOpen}
+                  aria-label="About this exercise"
+                  data-tip="About this exercise: the theory and the shape on the neck (I)"
+                  className={`${ICON_BASE} h-10 w-10 rounded-xl ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
                 >
-                  <PauseIcon />
+                  <InfoIcon size={20} />
                 </button>
-              ) : (
-                <button type="button" onClick={play} aria-label={`Play ${exercise.title}`} data-tip="Play (Space)" className={PLAY_BUTTON}>
-                  <PlayIcon />
-                </button>
-              )}
-              <IconButton onClick={() => seekBars(1)} label="Next bar" shortcut="→" className="h-9 w-9"><ChevronRightIcon /></IconButton>
-              <IconButton onClick={finish} label={`Finish ${exercise.title}`} data-tip="Finish this exercise" className="h-9 w-9 border-line-strong">
-              <NextIcon />
-            </IconButton>
-            </Group>
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+              </div>
+            </div>
+            {/* Second lane: tempo first, then the rest, smaller, one click each. */}
+            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5" data-lane="more">
             <Group label="Tempo">
               <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" data-tip={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
               <label htmlFor={ids.tempo} className="sr-only">
@@ -437,23 +451,6 @@ export function ExercisePlayer({
                 </span>
               )}
             </Group>
-              <button
-                type="button"
-                onClick={() => setAboutOpen((open) => !open)}
-                aria-pressed={aboutOpen}
-                aria-label="About this exercise"
-                data-tip="About this exercise: the theory and the shape on the neck (I)"
-                className={`${ICON_BASE} h-10 w-10 rounded-xl ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
-              >
-                <InfoIcon size={20} />
-              </button>
-            </div>
-
-
-
-            </div>
-            {/* Second lane: the rest, smaller, one click each. */}
-            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5" data-lane="more">
             <Group label="Practice">
               <Menu
                 id="loop"

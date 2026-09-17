@@ -348,13 +348,16 @@ describe('ExerciseRunner', () => {
     const user = userEvent.setup()
     renderRunner()
     const svg = document.querySelector('[data-score-scroller] svg')!
-    // The canvas keeps its width; the engraving inside it gets bigger (fewer units across).
-    const unitsAcross = () => Number(svg.getAttribute('viewBox')?.split(' ')[2])
-    const before = unitsAcross()
+    // The engraving gets bigger: two neighbouring notes sit further apart on screen.
+    const noteGapPx = () => {
+      const [a, b] = [...svg.querySelectorAll('[data-note] text')].map((t) => Number(t.getAttribute('x')))
+      return (b - a) * (Number(svg.getAttribute('width')) / Number(svg.getAttribute('viewBox')?.split(' ')[2]))
+    }
+    const before = noteGapPx()
     await user.click(screen.getByRole('button', { name: 'Larger score' }))
     await user.click(screen.getByRole('button', { name: 'Larger score' }))
     expect(screen.getByText('140%')).toBeInTheDocument()
-    expect(unitsAcross()).toBeLessThan(before)
+    expect(noteGapPx()).toBeGreaterThan(before)
     expect(JSON.parse(localStorage.getItem('jazz-master.player-prefs') ?? '{}')).toMatchObject({ zoom: 1.4 })
   })
 

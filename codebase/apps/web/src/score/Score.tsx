@@ -142,7 +142,8 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
   )
   const geometry = bands(view)
   const systemHeight = geometry.height
-  const svgWidth = Math.max(unzoomedWidth, layout.width)
+  // A lone line keeps its own width so the canvas can centre it; wrapped lines fill the width.
+  const svgWidth = layout.systems.length === 1 ? layout.width : Math.max(unzoomedWidth, layout.width)
   const svgHeight = layout.systems.length * systemHeight
   const svgRef = useRef<SVGSVGElement>(null)
   const cursorRef = useRef<SVGGElement>(null)
@@ -288,8 +289,9 @@ export const Score = forwardRef<ScoreHandle, ScoreProps>(function Score(
       className={`overflow-x-hidden overflow-y-auto overscroll-contain ${className}`}
       data-score-scroller
     >
+      {/* Music shorter than the canvas sits just above its middle (the 2:3 spacers); taller music starts at the top. */}
       <div
-        className="flex min-h-full flex-col items-center"
+        className="flex min-h-full flex-col items-center before:flex-2 after:flex-3"
         style={{ padding: `${contentInset.top}px ${SIDE_PAD}px ${contentInset.bottom}px` }}
       >
         <svg

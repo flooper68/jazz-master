@@ -119,6 +119,15 @@ describe('Score', () => {
     expect(lead).toBeGreaterThan(0)
   })
 
+  it('keeps a lone line at its own width, leaving the canvas room to centre it', () => {
+    const { container } = renderScore({ availableWidth: 2400, view: 'tab' })
+    expect(container.querySelectorAll('[data-system]')).toHaveLength(1)
+    const svg = container.querySelector('svg')!
+    // Narrower than the canvas inside its side padding, and exactly as wide as its own drawing.
+    expect(Number(svg.getAttribute('width'))).toBeLessThan((2400 - 48) / 2)
+    expect(svg.getAttribute('viewBox')?.split(' ')[2]).toBe(svg.getAttribute('width'))
+  })
+
   it('magnifies the whole score and wraps to what fits at that size', () => {
     const { container, onSeek } = renderScore({ availableWidth: 840, view: 'tab', zoom: 2 })
     // At 2× the same width holds half the bars: two lines instead of one.
