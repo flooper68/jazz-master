@@ -60,7 +60,10 @@ interface ExercisePlayerProps {
 const REPEAT_CHOICES: Array<number | null> = [null, 2, 4, 8, 16]
 const TEMPO_STEP = 4
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
-const ICON_BUTTON = `inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-panel text-fg hover:border-line-strong hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
+// Base without a background: the "on" state sets its own, so neither wins by stylesheet order.
+const ICON_BASE = `inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line text-fg hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
+const ICON_BUTTON = `${ICON_BASE} bg-panel hover:bg-panel-2`
+const ICON_ON = `${ICON_BASE} border-fg bg-fg text-panel hover:border-fg`
 const PLAY_BUTTON = `inline-flex h-10 w-14 cursor-pointer items-center justify-center rounded-xl bg-cta text-cta-fg hover:bg-cta-hover ${FOCUS}`
 const FLOAT = 'rounded-2xl border border-line bg-panel/90 shadow-lg backdrop-blur-md'
 const TOGGLE_ON = 'border-fg bg-fg text-panel'
@@ -497,7 +500,7 @@ export function ExercisePlayer({
                     aria-label={text}
                     title={`${text}: ${description}`}
                     onClick={() => onPrefsChange({ ...prefs, view: choice })}
-                    className={`${ICON_BUTTON} h-8 w-8 ${prefs.view === choice ? TOGGLE_ON : ''}`}
+                    className={`${prefs.view === choice ? ICON_ON : ICON_BUTTON} h-8 w-8`}
                   >
                     {icon}
                   </button>
@@ -529,7 +532,7 @@ export function ExercisePlayer({
                 aria-pressed={aboutOpen}
                 aria-label="About this exercise"
                 title="About this exercise: the theory and the shape on the neck (I)"
-                className={`${ICON_BUTTON} h-8 w-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
+                className={`${ICON_BASE} h-8 w-8 ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
               >
                 <InfoIcon />
               </button>
@@ -629,7 +632,7 @@ function Menu({
         aria-controls={panelId}
         aria-label={`${label}: ${value}`}
         title={title}
-        className={`${ICON_BUTTON} relative h-8 w-8 ${open || active ? 'border-line-strong bg-panel-2' : ''} ${active ? 'text-accent-text' : ''}`}
+        className={`${ICON_BASE} relative h-8 w-8 ${open || active ? 'border-line-strong bg-panel-2' : 'bg-panel hover:bg-panel-2'} ${active ? 'text-accent-text' : ''}`}
       >
         {icon}
         {badge && (
@@ -689,7 +692,7 @@ function IconButton({
       aria-pressed={pressed}
       disabled={disabled}
       title={`${title ?? label}${shortcut ? ` (${shortcut})` : ''}`}
-      className={`${ICON_BUTTON} ${className} ${pressed ? 'border-line-strong bg-panel-2 text-accent-text' : ''}`}
+      className={`${ICON_BASE} ${className} ${pressed ? 'border-line-strong bg-panel-2 text-accent-text' : 'bg-panel hover:bg-panel-2'}`}
     >
       {children}
     </button>
@@ -719,7 +722,7 @@ function Toggle({
   onChange: (on: boolean) => void
 }) {
   return (
-    <label className={`${ICON_BUTTON} h-8 w-8 ${checked ? TOGGLE_ON : ''}`} title={title}>
+    <label className={`${checked ? ICON_ON : ICON_BUTTON} h-8 w-8`} title={title}>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" aria-label={label} />
       <span className={checked ? 'text-accent' : 'text-muted'}>{icon}</span>
     </label>
