@@ -100,11 +100,19 @@ describe('ExercisesPage', () => {
   describe('finding exercises', () => {
     const shown = () => screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
 
+    /** Pick an option in one of the filter's selects. */
+    async function pick(user: ReturnType<typeof userEvent.setup>, category: string, option: RegExp) {
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      await user.click(find.getByRole('combobox', { name: category }))
+      await user.click(screen.getByRole('option', { name: option }))
+    }
+
     it('narrows to a style, brings the fundamentals along, and leaves them out when asked', async () => {
       const user = userEvent.setup()
       await renderRoute('/exercises')
       const find = within(screen.getByRole('search', { name: 'Find exercises' }))
-      await user.click(find.getByRole('button', { name: /^Blues/ }))
+      await pick(user, 'Style', /^Blues ·/)
+      expect(find.getByRole('combobox', { name: 'Style' })).toHaveTextContent(/^Blues · \d+$/)
 
       expect(shown()).toContain('A blues scale — box 1')
       expect(shown()).not.toContain('Ode to Joy')
@@ -116,29 +124,46 @@ describe('ExercisesPage', () => {
       expect(shown()).toContain('A blues scale — box 1')
     })
 
-    it('offers the children of a family once the family is chosen', async () => {
+    it('offers a family and its children in one list, the child named with its family', async () => {
       const user = userEvent.setup()
       await renderRoute('/exercises')
       const find = within(screen.getByRole('search', { name: 'Find exercises' }))
-      expect(find.queryByRole('button', { name: /^Bebop/ })).toBeNull()
-      await user.click(find.getByRole('button', { name: /^Jazz/ }))
-      await user.click(find.getByRole('button', { name: /^Bebop/ }))
+      await pick(user, 'Style', /^Jazz › Bebop/)
       await user.click(find.getByRole('checkbox', { name: /Fundamentals too/ }))
-      // Jazz or bebop is still all of jazz: choices in one facet widen.
+      expect(shown()).toContain('Gm7 – C7 – Fmaj7 — a bebop line')
+      expect(shown()).not.toContain('A bossa study')
+      // The family is all of its children.
+      await pick(user, 'Style', /^Jazz ·/)
       expect(shown()).toContain('A bossa study')
+      expect(shown()).toContain('Gm7 – C7 – Fmaj7 — a bebop line')
+    })
+
+    it('says how many exercises each option would show, and leaves out an option that would show none', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises?area=chords')
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      await user.click(find.getByRole('combobox', { name: 'Voicing' }))
+      const offered = screen.getAllByRole('option').map((option) => option.textContent)
+      expect(offered[0]).toBe('Any voicing')
+      expect(offered).toContain(`Open chords · ${EXERCISES.filter((exercise) => exercise.voicings?.includes('open')).length}`)
+      await user.keyboard('{Escape}')
+      // Nothing in the chords area swings sixteenths, so the feel list does not offer it.
+      await user.click(find.getByRole('combobox', { name: 'Feel' }))
+      expect(screen.queryByRole('option', { name: /Swung sixteenths/ })).toBeNull()
     })
 
     it('reads the filter from the URL, and writes it back', async () => {
       const user = userEvent.setup()
       const { router } = await renderRoute('/exercises?ctx=rhythm-changes&level=4')
       expect(shown()).toEqual(['Rhythm changes in B♭ — the A section'])
-      // Arriving with something chosen behind the button opens the panel.
       const find = within(screen.getByRole('search', { name: 'Find exercises' }))
-      expect(find.getByRole('button', { name: /^Filters/ })).toHaveAttribute('aria-expanded', 'true')
-      expect(find.getByRole('button', { name: /^Rhythm changes/ })).toHaveAttribute('aria-pressed', 'true')
+      expect(find.getByRole('combobox', { name: 'Harmony' })).toHaveTextContent(/^Rhythm changes/)
+      expect(find.getByRole('combobox', { name: 'Level' })).toHaveTextContent(/^Level 4/)
 
-      await user.click(find.getByRole('button', { name: 'Remove Level 4' }))
+      await pick(user, 'Level', /^Any level$/)
       expect(router.state.location.search).toEqual({ ctx: 'rhythm-changes' })
+      await user.click(find.getByRole('button', { name: 'Clear filters' }))
+      expect(router.state.location.search).toEqual({})
     })
 
     it('searches, says when nothing matches, and clears', async () => {

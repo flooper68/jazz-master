@@ -2,26 +2,27 @@ import { useEffect, useId, useRef, useState } from 'react'
 import {
   activeFilterCount,
   EVERYTHING,
-  EXERCISE_FACETS,
+  EXERCISE_AREAS,
+  EXERCISE_CONTEXTS,
+  EXERCISE_FEELS,
+  EXERCISE_POSITIONS,
   EXERCISE_STYLES,
+  EXERCISE_TECHNIQUES,
+  EXERCISE_VOICINGS,
   facetCounts,
-  STYLE_FAMILIES,
   styleFamily,
-  toggleFacetValue,
   type Exercise,
   type ExerciseFacet,
   type ExercisePosition,
   type ExerciseQuery,
+  type ExerciseStyle,
   type FacetOptions,
 } from '../content'
 import { AREA_LABELS } from './areaLabels'
 import { CONTEXT_LABELS, FEEL_LABELS, STYLE_LABELS, TECHNIQUE_LABELS, VOICING_LABELS } from './facetLabels'
-import { CloseIcon, SlidersIcon } from './icons'
+import { Select, type SelectOption } from './ui/Select'
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
-const CHIP = `inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${FOCUS}`
-const CHIP_OFF = 'border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg'
-const CHIP_ON = 'border-fg bg-fg text-panel'
 
 const POSITION_LABELS: Record<ExercisePosition, string> = {
   open: 'Open position',
@@ -31,13 +32,16 @@ const POSITION_LABELS: Record<ExercisePosition, string> = {
   shifting: 'Along the neck',
 }
 
-/** What an option of a facet is called on the page. */
+/** What an option of a facet is called on the page. A child style carries its family: `Jazz › Bebop`. */
 function optionLabel(facet: ExerciseFacet, value: string | number): string {
   switch (facet) {
     case 'areas':
       return AREA_LABELS[value as FacetOptions['areas'][number]]
-    case 'styles':
-      return STYLE_LABELS[value as FacetOptions['styles'][number]]
+    case 'styles': {
+      const style = value as ExerciseStyle
+      const family = styleFamily(style)
+      return family === style ? STYLE_LABELS[style] : `${STYLE_LABELS[family]} › ${STYLE_LABELS[style]}`
+    }
     case 'contexts':
       return CONTEXT_LABELS[value as FacetOptions['contexts'][number]]
     case 'techniques':
@@ -53,16 +57,31 @@ function optionLabel(facet: ExerciseFacet, value: string | number): string {
   }
 }
 
-/** The facets behind the Filters button, in the order they read; style has its own row above. */
-const PANEL_FACETS: readonly { facet: Exclude<ExerciseFacet, 'styles'>; legend: string }[] = [
-  { facet: 'areas', legend: 'Area' },
-  { facet: 'levels', legend: 'Level' },
-  { facet: 'contexts', legend: 'Harmony' },
-  { facet: 'techniques', legend: 'Technique' },
-  { facet: 'feels', legend: 'Feel' },
-  { facet: 'voicings', legend: 'Voicing' },
-  { facet: 'positions', legend: 'On the neck' },
+/** The order a facet's options read: its vocabulary's; levels count up. */
+const ORDER: { [Facet in Exclude<ExerciseFacet, 'levels'>]: readonly string[] } = {
+  areas: EXERCISE_AREAS,
+  styles: EXERCISE_STYLES,
+  contexts: EXERCISE_CONTEXTS,
+  techniques: EXERCISE_TECHNIQUES,
+  feels: EXERCISE_FEELS,
+  voicings: EXERCISE_VOICINGS,
+  positions: EXERCISE_POSITIONS,
+}
+
+/** One select per category, in the order they read across the row. */
+const CATEGORIES: readonly { facet: ExerciseFacet; label: string; any: string }[] = [
+  { facet: 'styles', label: 'Style', any: 'Any style' },
+  { facet: 'areas', label: 'Area', any: 'Any area' },
+  { facet: 'levels', label: 'Level', any: 'Any level' },
+  { facet: 'contexts', label: 'Harmony', any: 'Any harmony' },
+  { facet: 'techniques', label: 'Technique', any: 'Any technique' },
+  { facet: 'feels', label: 'Feel', any: 'Any feel' },
+  { facet: 'voicings', label: 'Voicing', any: 'Any voicing' },
+  { facet: 'positions', label: 'On the neck', any: 'Anywhere on the neck' },
 ]
+
+/** The select's value for nothing chosen. */
+const ANY = ''
 
 interface ExerciseFilterProps {
   /** Everything there is to find; counts are read from it. */
@@ -75,28 +94,14 @@ interface ExerciseFilterProps {
 const SEARCH_SETTLES_MS = 250
 
 /**
- * Finding exercises: a search box, the styles of music, and the rest of the
- * facets behind a button. Every option says how many exercises it would
- * show, and one that would show none is not offered.
+ * Finding exercises: a search box and a select per category — style, area,
+ * level, harmony, technique, feel, voicing, where on the neck. One choice
+ * per category; every option says how many exercises it would show, and
+ * one that would show none is not offered.
  */
 export function ExerciseFilter({ exercises, query, onChange }: ExerciseFilterProps) {
-  const ids = { search: useId(), panel: useId(), style: useId() }
+  const ids = { search: useId() }
   const counts = facetCounts(exercises, query)
-  const panelFacets = PANEL_FACETS
-  const chosenInPanel = panelFacets.reduce((total, { facet }) => total + query[facet].length, 0)
-  // Open from the start when the URL arrives with something chosen in it.
-  const [open, setOpen] = useState(chosenInPanel > 0)
-
-  // A chosen style stays in the row even when the rest of the query has emptied it, so it can be switched off there.
-  const families = STYLE_FAMILIES.filter((family) => counts.styles.has(family) || query.styles.includes(family))
-  // The children of every family in play: one chosen itself, or through one of its children.
-  const familiesInPlay = new Set(query.styles.map(styleFamily))
-  const children = EXERCISE_STYLES.filter(
-    (style) => style.includes('/') && familiesInPlay.has(styleFamily(style)) && (counts.styles.has(style) || query.styles.includes(style)),
-  )
-  const active = EXERCISE_FACETS.flatMap((facet) =>
-    (query[facet] as readonly (string | number)[]).map((value) => ({ facet, value })),
-  )
 
   // What is typed is held here and handed on once it settles: the owner of the query may keep it in the URL, and
   // browsers refuse a history entry rewritten on every keystroke. A text changed from outside — cleared, or a
@@ -117,69 +122,66 @@ export function ExerciseFilter({ exercises, query, onChange }: ExerciseFilterPro
     return () => clearTimeout(timer)
   }, [typed])
 
-  function toggle(facet: ExerciseFacet, value: string | number) {
-    onChange(toggleFacetValue(query, facet, value as never))
+  function optionsOf(facet: ExerciseFacet, any: string): SelectOption<string>[] {
+    const count = counts[facet] as ReadonlyMap<string | number, number>
+    const chosen = query[facet] as readonly (string | number)[]
+    const values: readonly (string | number)[] =
+      facet === 'levels' ? [...count.keys()].map(Number).sort((a, b) => a - b) : ORDER[facet]
+    return [
+      { value: ANY, label: any },
+      // A chosen value stays on offer even when the rest of the query has emptied it, so it can be switched off here.
+      ...values
+        .filter((value) => (count.get(value) ?? 0) > 0 || chosen.includes(value))
+        .map((value) => ({ value: String(value), label: `${optionLabel(facet, value)} · ${count.get(value) ?? 0}` })),
+    ]
   }
 
-  function chips(facet: ExerciseFacet, values: readonly (string | number)[]) {
-    const chosen = query[facet] as readonly (string | number)[]
-    return values.map((value) => {
-      const count = (counts[facet] as ReadonlyMap<string | number, number>).get(value) ?? 0
-      return (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={chosen.includes(value)}
-          aria-label={`${optionLabel(facet, value)}, ${count} ${count === 1 ? 'exercise' : 'exercises'}`}
-          onClick={() => toggle(facet, value)}
-          className={`${CHIP} ${chosen.includes(value) ? CHIP_ON : CHIP_OFF}`}
-        >
-          {optionLabel(facet, value)}
-          <span aria-hidden="true" className="tabular-nums opacity-60">{count}</span>
-        </button>
-      )
-    })
+  function choose(facet: ExerciseFacet, value: string) {
+    const next = value === ANY ? [] : [facet === 'levels' ? Number(value) : value]
+    onChange({ ...query, [facet]: next })
   }
 
   return (
     <div role="search" aria-label="Find exercises">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="min-w-0 flex-1 basis-56">
-          <label htmlFor={ids.search} className="sr-only">Search exercises</label>
-          <input
-            id={ids.search}
-            type="search"
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            // Inside a form — the routine editor — Enter here would submit it; searching is not saving.
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.preventDefault()
-            }}
-            placeholder="Search — dorian, ii–V–I, bends…"
-            className="w-full rounded-lg border border-line bg-field px-2.5 py-1.5 text-sm text-fg placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-fg"
-          />
-        </div>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={ids.panel}
-          onClick={() => setOpen((current) => !current)}
-          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong ${FOCUS}`}
-        >
-          <SlidersIcon />
-          Filters
-          {chosenInPanel > 0 && <span className="rounded-full bg-fg px-1.5 text-[11px] text-panel tabular-nums">{chosenInPanel}</span>}
-        </button>
+      <label htmlFor={ids.search} className="sr-only">Search exercises</label>
+      <input
+        id={ids.search}
+        type="search"
+        value={typed}
+        onChange={(event) => setTyped(event.target.value)}
+        // Inside a form — the routine editor — Enter here would submit it; searching is not saving.
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.preventDefault()
+        }}
+        placeholder="Search — dorian, ii–V–I, bends…"
+        className="w-full rounded-lg border border-line bg-field px-2.5 py-1.5 text-sm text-fg placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-fg"
+      />
+
+      <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
+        {CATEGORIES.map(({ facet, label, any }) => {
+          const options = optionsOf(facet, any)
+          // A category with nothing to choose from is not shown: the rest of the query has emptied it.
+          if (options.length === 1) return null
+          const chosen = query[facet] as readonly (string | number)[]
+          return (
+            <div key={facet} className="min-w-0 grow basis-40">
+              <span aria-hidden="true" className="mb-0.5 block text-[11px] font-medium text-muted">{label}</span>
+              <Select
+                options={options}
+                value={chosen.length > 0 ? String(chosen[0]) : ANY}
+                onChange={(value) => choose(facet, value)}
+                aria-label={label}
+                compact
+              />
+            </div>
+          )
+        })}
       </div>
 
-      {families.length > 0 && (
-        // A group, not a fieldset: a legend names form controls, and these are toggle buttons.
-        <div role="group" aria-labelledby={ids.style} className="mt-2.5">
-          <span id={ids.style} className="sr-only">Style</span>
-          <div className="flex flex-wrap items-center gap-1.5">{chips('styles', families)}</div>
-          {children.length > 0 && <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-3">{chips('styles', children)}</div>}
+      {(query.styles.length > 0 || activeFilterCount(query) > 0) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
           {query.styles.length > 0 && (
-            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-fg-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-fg-2">
               <input
                 type="checkbox"
                 checked={query.fundamentals}
@@ -189,46 +191,15 @@ export function ExerciseFilter({ exercises, query, onChange }: ExerciseFilterPro
               Fundamentals too — the scales and drills every style is built on
             </label>
           )}
-        </div>
-      )}
-
-      <div id={ids.panel} hidden={!open} className="mt-3 space-y-3 rounded-2xl border border-line bg-panel p-3.5">
-        {panelFacets.map(({ facet, legend }) => {
-          const values = [...counts[facet].keys()]
-          // A chosen value stays on offer even when the rest of the query has emptied it, so it can be switched off here.
-          const offered = [...values, ...(query[facet] as readonly (string | number)[]).filter((value) => !values.includes(value as never))]
-          if (offered.length === 0) return null
-          return (
-            <div key={facet} role="group" aria-labelledby={`${ids.panel}-${facet}`}>
-              <span id={`${ids.panel}-${facet}`} className="text-xs font-medium text-muted">{legend}</span>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">{chips(facet, offered)}</div>
-            </div>
-          )
-        })}
-      </div>
-
-      {activeFilterCount(query) > 0 && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-muted">Showing</span>
-          {active.map(({ facet, value }) => (
+          {activeFilterCount(query) > 0 && (
             <button
-              key={`${facet}-${value}`}
               type="button"
-              onClick={() => toggle(facet, value)}
-              aria-label={`Remove ${optionLabel(facet, value)}`}
-              className={`${CHIP} ${CHIP_OFF} py-0.5`}
+              onClick={() => onChange(EVERYTHING)}
+              className={`cursor-pointer rounded px-1 text-muted underline underline-offset-2 hover:text-fg ${FOCUS}`}
             >
-              {optionLabel(facet, value)}
-              <CloseIcon />
+              Clear filters
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => onChange(EVERYTHING)}
-            className={`cursor-pointer rounded px-1 text-muted underline underline-offset-2 hover:text-fg ${FOCUS}`}
-          >
-            Clear all
-          </button>
+          )}
         </div>
       )}
     </div>
