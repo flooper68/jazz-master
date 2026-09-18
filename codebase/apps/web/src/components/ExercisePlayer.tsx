@@ -42,6 +42,7 @@ import {
   SkipBackIcon,
   TabIcon,
 } from './icons'
+import { keyLabel } from './facetLabels'
 import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type PlayerPrefs } from './playerPrefs'
 
 /**
@@ -797,10 +798,6 @@ function Menu({
 }
 
 /** A key as the UI writes it: `Bb` in code, `B♭` on screen. */
-function keyLabel(key: string): string {
-  return key.replace(/b/g, '♭').replace(/#/g, '♯')
-}
-
 /** `+2`, `−3`, `0`: a transposition with a real minus sign. */
 function formatSemitones(semitones: number): string {
   return semitones > 0 ? `+${semitones}` : semitones < 0 ? `−${-semitones}` : '0'

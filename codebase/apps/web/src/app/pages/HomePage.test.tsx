@@ -25,16 +25,23 @@ const stat = (label: string) => screen.getByText(label).nextElementSibling as HT
 
 describe('HomePage', () => {
   it('stands empty before the first run, with the pack on offer', async () => {
+    const user = userEvent.setup()
     await renderRoute('/')
     const session = within(screen.getByRole('region', { name: 'Next session' }))
     // Until the runs are in, the card offers nothing rather than a plan that knows nothing.
     expect(session.getByText('Working out what to practise…')).toBeInTheDocument()
     expect(session.getByRole('button', { name: 'Play' })).toBeDisabled()
 
-    // Nothing played, so every slot of the next session is new — and it still has one.
-    expect(await session.findAllByText('New — not played yet')).toHaveLength(5)
-    expect(session.getAllByRole('listitem')).toHaveLength(5)
+    // Then it says how much there is, and nothing else to read before starting.
+    expect(await session.findByText('5 exercises, put together from what you have played.')).toBeInTheDocument()
     expect(session.getByRole('button', { name: 'Play' })).toBeEnabled()
+    expect(session.queryByRole('listitem')).toBeNull()
+
+    // The plan itself is a press away: nothing played, so every slot is new.
+    await user.click(session.getByRole('button', { name: 'What\u2019s in it' }))
+    const plan = within(screen.getByRole('dialog', { name: 'Next session' }))
+    expect(plan.getAllByRole('listitem')).toHaveLength(5)
+    expect(plan.getAllByText('New — not played yet')).toHaveLength(5)
     expect(await screen.findByText('Nothing played yet — your runs show up here.')).toBeInTheDocument()
     expect(stat('Streak')).toHaveTextContent('0 days')
     expect(stat('Felt this week')).toHaveTextContent('—')
@@ -84,13 +91,15 @@ describe('HomePage', () => {
     expect(within(picks[1]).getByText('Not played yet')).toBeInTheDocument()
 
     // Yesterday's scale is due back today and leads the session, at its own
-    // tempo; the rest of the slots are the pack's new items. Each says why.
+    // tempo; the rest of the slots are the pack's new items. Each says why —
+    // behind What's in it, so the card itself stays an answer and a Play.
     const session = within(screen.getByRole('region', { name: 'Next session' }))
-    const slots = session.getAllByRole('listitem')
+    await userEvent.setup().click(session.getByRole('button', { name: 'What\u2019s in it' }))
+    const slots = within(screen.getByRole('dialog', { name: 'Next session' })).getAllByRole('listitem')
     expect(slots).toHaveLength(5)
     expect(slots[0]).toHaveTextContent('C major — open position')
     expect(slots[0]).toHaveTextContent('Due today · at its tempo, 60 BPM')
-    expect(session.getAllByText('New — not played yet')).toHaveLength(4)
+    expect(slots.filter((slot) => slot.textContent?.includes('New — not played yet'))).toHaveLength(4)
   })
 
   it('plays the next session from the card, at the tempos it planned', async () => {

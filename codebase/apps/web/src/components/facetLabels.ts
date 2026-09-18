@@ -91,3 +91,8 @@ export const VOICING_LABELS: Record<ExerciseVoicing, string> = {
   quartal: 'Quartal',
   'double-stop': 'Double-stops',
 }
+
+/** A key as it is read, not as it is written in code: `Bb` → `B♭`, `F#` → `F♯`. */
+export function keyLabel(key: string): string {
+  return key.replace(/b/g, '♭').replace(/#/g, '♯')
+}

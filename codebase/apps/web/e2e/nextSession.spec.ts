@@ -6,17 +6,27 @@ import { expect, listStoredRuns, test } from './fixtures'
  * Every test here starts as a fresh user, so the plan begins as all-new.
  */
 
-/** The card's slots as the user reads them: "<title><reason>". */
+/** The plan as the user reads it, behind What's in it: "<title> <reason>" per slot. */
 async function slots(page: import('@playwright/test').Page): Promise<string[]> {
   const card = page.getByRole('region', { name: 'Next session' })
-  await expect(card.getByRole('listitem').first()).toBeVisible()
-  return (await card.getByRole('listitem').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim())
+  await expect(card.getByRole('button', { name: /^What/ })).toBeVisible()
+  await card.getByRole('button', { name: /^What/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Next session' })
+  await expect(dialog.getByRole('listitem').first()).toBeVisible()
+  const read = await dialog.getByRole('listitem').allInnerTexts()
+  await dialog.getByRole('button', { name: 'Close' }).click()
+  await expect(dialog).toBeHidden()
+  return read.map((text) => text.replace(/\s+/g, ' ').trim())
 }
 
 test('home offers a next session with a reason per slot, and one Play starts it', async ({ page }) => {
   await page.goto('/app/')
   const card = page.getByRole('region', { name: 'Next session' })
   await expect(card.getByRole('heading', { level: 2, name: 'Next session' })).toBeVisible()
+
+  // The card is the answer and a Play; the plan itself is a press away.
+  await expect(card.getByText('5 exercises, put together from what you have played.')).toBeVisible()
+  await expect(card.getByRole('listitem')).toHaveCount(0)
 
   const first = await slots(page)
   expect(first).toHaveLength(5)
@@ -37,7 +47,12 @@ test('home offers a next session with a reason per slot, and one Play starts it'
     return (await response.json()) as { result: { structuredContent: { status: string; slots: { title: string; reason: string }[] } } }
   })
   expect(answer.result.structuredContent.status).toBe('ok')
-  expect(answer.result.structuredContent.slots.map((slot) => `${slot.title} ${slot.reason}`)).toEqual(first)
+  // The dialog says more about each exercise than the tool does, so compare what they share.
+  for (const [index, slot] of answer.result.structuredContent.slots.entries()) {
+    expect(first[index]).toContain(slot.title)
+    expect(first[index]).toContain(slot.reason)
+  }
+  expect(answer.result.structuredContent.slots).toHaveLength(first.length)
 
   // One Play starts the session the card described.
   await card.getByRole('button', { name: 'Play' }).click()
@@ -71,6 +86,8 @@ test('a session is answered on four buttons, and the plan takes the answer', asy
   // Back home the plan has read the answer: the exercise is no longer new.
   await page.getByRole('link', { name: 'Home' }).first().click()
   const card = page.getByRole('region', { name: 'Next session' })
-  await expect(card.getByRole('listitem').first()).toBeVisible()
-  await expect(card.getByRole('listitem').filter({ hasText: 'C major — open position' }).filter({ hasText: 'New — not played yet' })).toHaveCount(0)
+  await card.getByRole('button', { name: /^What/ }).click()
+  const plan = page.getByRole('dialog', { name: 'Next session' })
+  await expect(plan.getByRole('listitem').first()).toBeVisible()
+  await expect(plan.getByRole('listitem').filter({ hasText: 'C major — open position' }).filter({ hasText: 'New — not played yet' })).toHaveCount(0)
 })

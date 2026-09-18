@@ -23,7 +23,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'The home page’s answer to “what should I practise?”: a session worked out from the run history, never empty, with the reason each exercise is there — overdue, due today, new, ahead of schedule — in the scheduler’s own words. One Play starts it at the planned tempos.',
+          'The home page’s answer to “what should I practise?”: how much there is and one Play, so nothing has to be read before starting. “What’s in it” opens the plan — the exercises in playing order, each with the scheduler’s reason for being there (overdue, due today, new, ahead of schedule) in its own words. A routine named as next replaces the generated session and is simply the list the user made.',
       },
     },
   },
