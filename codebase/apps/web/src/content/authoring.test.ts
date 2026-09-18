@@ -8,6 +8,7 @@ import {
   phrase,
   placeIn,
   scaleRun,
+  pickThenStrike,
   sequenceRun,
   shape,
   strum,
@@ -181,6 +182,17 @@ describe('chords', () => {
     ])
     expect(() => shape('x3201')).toThrow(/six strings/)
     expect(() => shape('x3201y')).toThrow(/Unreadable fret/)
+  })
+
+  it('picks a shape string by string and then strikes it to the bar line', () => {
+    const openD = pickThenStrike('xx0232')
+    expect(openD.map((note) => `${note.string}/${note.fret}:${note.beats}`)).toEqual(['4/0:0.5', '3/2:0.5', '2/3:0.5', '1/2:0.5', '4/0:2'])
+    expect(openD.at(-1)?.above).toEqual([{ string: 3, fret: 2 }, { string: 2, fret: 3 }, { string: 1, fret: 2 }])
+    expect(passBeats(openD) % 4).toBe(0)
+    // Three strings in 3/4: an eighth each, and the chord holds the rest.
+    expect(passBeats(pickThenStrike('x324xx', 3)) % 3).toBe(0)
+    // Three strings in 4/4 would leave two and a half beats, which is why the shells are written in 3/4.
+    expect(() => pickThenStrike('x324xx')).toThrow(/cannot draw/)
   })
 
   it('strums named shapes, a beat each unless told, repeating and holding as asked', () => {

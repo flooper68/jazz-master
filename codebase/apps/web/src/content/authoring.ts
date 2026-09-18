@@ -357,6 +357,21 @@ export function shape(box: string): StringFret[] {
 }
 
 /**
+ * A chord the way it is taught: every string picked from the bass up, one to
+ * an eighth, then the whole shape struck and held to the bar line. A buzz or
+ * a string muted by a stray finger is heard in the picking, which a strum
+ * would hide; the strum is what the picking was for.
+ */
+export function pickThenStrike(box: string, beatsPerBar = 4, beats = 0.5): TabNote[] {
+  const positions = shape(box)
+  const held = beatsPerBar - positions.length * beats
+  if (!DRAWABLE_BEATS.some((length) => Math.abs(length - held) < 1e-9)) {
+    throw new Error(`Picking "${box}" leaves ${held} beats for the chord, which the score cannot draw`)
+  }
+  return [...positions.map(({ string, fret }) => ({ string, fret, beats })), chordOf(positions, held)]
+}
+
+/**
  * A progression strummed from named shapes: `C G:2 Am:2 | F*4`, one strum a
  * beat unless told, `:beats` for a longer one, `*times` to strike it again.
  * Bar lines are for the reader. Each name looks up its shape in `shapes`.

@@ -277,6 +277,38 @@ const THROUGH_CHANGES: readonly Exercise[] = [
       { min: 5, max: 9 },
     ),
   },
+  {
+    // Moved here from the chords area: harmony played as a single line is an arpeggio exercise, whatever it outlines.
+    id: 'chords-guide-tones-ii-v-i',
+    title: 'Dm7 – G7 – Cmaj7 — guide tones',
+    area: 'arpeggios',
+    level: 2,
+    key: 'C',
+    styles: ['jazz'],
+    contexts: ['major-ii-V-I'],
+    about: [
+      'The third and seventh of each chord, as half notes: C and F over Dm7, B and F over G7, B and E over Cmaj7. These two notes say what a chord is; everything else can be left to the rest of the band.',
+      'Notice how little moves. C slides down to B, then F slides down to E — two half steps carry the whole progression. A solo built on these notes cannot help sounding like the changes.',
+    ],
+    tempoBpm: 80,
+    duration: FOUR_PASSES,
+    notes: phrase('C4:2 F4:2 | B3:2 F4:2 | B3:2 E4:2 | E4:4', { min: 5, max: 9 }),
+  },
+  {
+    id: 'chords-guide-tones-cycle',
+    title: 'Guide tones around the cycle of dominants',
+    area: 'arpeggios',
+    level: 3,
+    styles: ['jazz'],
+    contexts: ['cycle-of-fourths'],
+    about: [
+      'C7, F7, B♭7, E♭7, A♭7, D♭7, two guide tones to the bar, lower voice first. When dominant chords move round the cycle, the third of one chord falls a half step to become the seventh of the next, and the seventh falls a half step to become the third. The pair just sinks, a fret at a time.',
+      'This is the mechanism under every chain of ii–Vs. Hear it once and you will hear it in every standard.',
+    ],
+    tempoBpm: 84,
+    duration: FOUR_PASSES,
+    notes: phrase('E4:2 Bb4:2 | Eb4:2 A4:2 | D4:2 Ab4:2 | Db4:2 G4:2 | C4:2 Gb4:2 | B3:2 F4:2 | Bb3:4', { min: 5, max: 9 }),
+  },
 ]
 
 const COLOURS: readonly Exercise[] = [

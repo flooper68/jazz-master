@@ -491,4 +491,27 @@ export const LINES_AFTER_BEBOP_LINE: readonly Exercise[] = [
     duration: FOUR_PASSES,
     notes: phrase('E4:1 G4:1 A4 G4 E4:1 | D4:1 E4 D4 C4:2 | E4:1 G4:1 C5 A4 G4:1 | E4 D4 C4:3', BOX_ONE),
   },
+  {
+    // Moved here from the chords area: a bass line is a line, played one note at a time.
+    id: 'chords-walking-bass-blues',
+    title: 'Walking bass through an F blues',
+    area: 'lines',
+    level: 3,
+    key: 'F',
+    styles: ['jazz/blues', 'jazz/swing'],
+    contexts: ['jazz-blues'],
+    about: [
+      'A quarter note on every beat, outlining each chord of a twelve-bar jazz blues and arriving at the next root by a half step. Guitarists who can walk a bass line understand harmony from the bottom, and are most of the way to accompanying themselves.',
+      'The recipe for a bar: root on one, chord tones on two and three, and on four a note a half step above or below where you are going.',
+      'Play it against the comping exercise in the chords area: the same twelve bars, from the two ends of the band.',
+    ],
+    tempoBpm: 108,
+    duration: { kind: 'repetitions', count: 2 },
+    notes: phrase(
+      'F2:1 A2:1 C3:1 B2:1 | Bb2:1 D3:1 F3:1 Gb3:1 | F3:1 Eb3:1 D3:1 C3:1 | F2:1 G2:1 A2:1 B2:1 | ' +
+        'Bb2:1 D3:1 F3:1 D3:1 | B2:1 D3:1 F3:1 Ab3:1 | F3:1 A3:1 F3:1 Eb3:1 | D3:1 F#3:1 A3:1 Ab3:1 | ' +
+        'G3:1 F3:1 D3:1 Db3:1 | C3:1 E3:1 G3:1 Gb3:1 | F3:1 A3:1 D3:1 F#3:1 | G2:1 Bb2:1 C3:1 Gb2:1',
+      { min: 0, max: 4 },
+    ),
+  },
 ]

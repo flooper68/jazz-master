@@ -7,6 +7,7 @@ const find = (id: string) => EXERCISES.find((exercise) => exercise.id === id) ??
 const strummed = find('chords-strum-c-g-am-f')
 const boomChick = find('chords-boom-chick-g-c-d')
 const drop2 = find('chords-drop-2-ii-v-i')
+const pickThenStrum = find('chords-open-chords')
 const meta = { title: 'Components/Score', component: Score,
   args: { notes: line.notes, beatsPerBar: 4, keyName: line.key, view: 'both', currentIndex: 5, loop: null, cursorVisible: false, onSeek: fn(), onLoopChange: fn(), 'aria-label': line.title },
   argTypes: { view: { control: 'inline-radio', options: ['tab', 'notation', 'both'] } },
@@ -23,3 +24,4 @@ export const Arpeggios: Story = { args: { notes: arpeggios.notes, 'aria-label': 
 export const Chords: Story = { args: { notes: strummed.notes, keyName: strummed.key, 'aria-label': strummed.title, currentIndex: 5 } }
 export const BassAndChord: Story = { args: { notes: boomChick.notes, keyName: boomChick.key, 'aria-label': boomChick.title, currentIndex: 1 } }
 export const Drop2Chords: Story = { args: { notes: drop2.notes, keyName: drop2.key, 'aria-label': drop2.title, currentIndex: 2 } }
+export const PickedThenStrummed: Story = { args: { notes: pickThenStrum.notes, keyName: pickThenStrum.key, 'aria-label': pickThenStrum.title, currentIndex: 5 } }

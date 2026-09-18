@@ -83,10 +83,14 @@ describe('the pack as a library', () => {
     expect(EXERCISES.filter((exercise) => !exercise.styles?.length).length).toBeGreaterThan(20)
   })
 
-  it('plays chords as chords in the chords area, and nowhere else', () => {
+  it('plays chords as chords in the chords area, and nowhere else — the area is what its name says', () => {
     const strummed = EXERCISES.filter((exercise) => exercise.notes.some(isChord))
     expect(strummed.length).toBeGreaterThanOrEqual(10)
     for (const exercise of strummed) expect({ id: exercise.id, area: exercise.area }).toEqual({ id: exercise.id, area: 'chords' })
+    // And the converse: nothing sits in the chords area that is really a line. Harmony as a single line belongs to arpeggios or lines.
+    for (const exercise of EXERCISES.filter((candidate) => candidate.area === 'chords')) {
+      expect({ id: exercise.id, strikesAChord: exercise.notes.some(isChord) }).toEqual({ id: exercise.id, strikesAChord: true })
+    }
     // Every voicing kind a chord can be labelled with is somewhere played whole.
     const voicings = new Set(strummed.flatMap((exercise) => exercise.voicings ?? []))
     expect([...voicings].sort()).toEqual(['barre', 'drop-2', 'open', 'power', 'quartal', 'shell'])
