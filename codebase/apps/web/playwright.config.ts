@@ -30,6 +30,14 @@ export default defineConfig({
       ASTRO_DEV_BACKGROUND: '1',
       PLAYWRIGHT_TEST_AUTH: '1',
       PUBLIC_PLAYWRIGHT_TEST_AUTH: '1',
+      // The dev database listens on 55432, which is what .claude/launch.json
+      // hands the dev server. wrangler.jsonc's own localConnectionString still
+      // says 5432, so without this every storage-backed spec talked to whatever
+      // else answers there and failed on the credentials.
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE:
+        process.env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE ??
+        'postgresql://jazz_master:jazz_master@127.0.0.1:55432/jazz_master',
+      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://jazz_master:jazz_master@127.0.0.1:55432/jazz_master',
     },
   },
 })
