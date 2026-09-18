@@ -2,15 +2,18 @@ import {
   LIBRARY_TOOL_DESCRIPTORS,
   builtinExerciseSummaries,
   nextSessionAnswer,
+  runsAnswer,
   toolArgument as argument,
   type AgentToolDescriptor,
   type LibraryToolName,
 } from '../../agentTools/descriptors'
 import { EXERCISES } from '../../content'
+import type { GoalRepository } from '../db/goals'
 import type { RoutineRepository } from '../db/routines'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
+import { exerciseState, listGoals, saveGoal, savePath, savePriority } from '../library/goals'
 import { deleteRoutine, listRoutines, saveRoutine } from '../library/routines'
 
 /**
@@ -27,6 +30,7 @@ export interface McpToolContext {
   userExercises: UserExerciseRepository | null
   routines: RoutineRepository | null
   runs: RunRepository | null
+  goals: GoalRepository | null
 }
 
 export interface McpToolResult {
@@ -92,6 +96,54 @@ const CALLS: Record<LibraryToolName, McpToolCall> = {
     if (typeof routineId !== 'string') return text({ status: 'invalid', problems: ['routineId: give the id of the routine to delete'] }, true)
     const result = await deleteRoutine(context, context.clerkUserId, routineId)
     return text(result, result.status !== 'ok')
+  },
+
+  async list_goals(_args, context) {
+    const result = await listGoals(context, context.clerkUserId)
+    return text(result, result.status !== 'ok')
+  },
+
+  async set_goal(args, context) {
+    const result = await saveGoal(context, context.clerkUserId, argument(args, 'goalId'), argument(args, 'goal'))
+    return text(result, result.status !== 'ok')
+  },
+
+  async set_path(args, context) {
+    const result = await savePath(context, context.clerkUserId, argument(args, 'goalId'), argument(args, 'stages'))
+    return text(result, result.status !== 'ok')
+  },
+
+  async set_priority(args, context) {
+    const result = await savePriority(
+      context,
+      context.clerkUserId,
+      argument(args, 'exerciseId'),
+      argument(args, 'priority'),
+      argument(args, 'targetOverrideBpm'),
+    )
+    return text(result, result.status !== 'ok')
+  },
+
+  async get_exercise_state(_args, context) {
+    const result = await exerciseState(context, context.clerkUserId)
+    return text(result, result.status !== 'ok')
+  },
+
+  async list_runs(args, { clerkUserId, runs }) {
+    if (!runs) return text({ status: 'unconfigured' }, true)
+    try {
+      const limit = argument(args, 'limit')
+      const offset = argument(args, 'offset')
+      return text(
+        runsAnswer(
+          await runs.listRuns(clerkUserId),
+          typeof limit === 'number' ? limit : undefined,
+          typeof offset === 'number' ? offset : undefined,
+        ),
+      )
+    } catch {
+      return text({ status: 'error', message: 'Run database read failed' }, true)
+    }
   },
 }
 

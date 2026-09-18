@@ -3,6 +3,11 @@ import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { recoveryState } from '../appData/recovery'
 import { planNextSession, planSeed } from '../appData/nextSession'
+import { exhaustion } from '../appData/expansion'
+import { goalInputSchema, PRIORITIES, type ExercisePriority, type Goal } from '../appData/goal'
+import type { ExerciseState } from '../appData/memory'
+import { pathsProgress } from '../appData/path'
+import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
 import { MOST_ROUTINE_ITEMS, routineInputSchema } from '../appData/routine'
 import type { ExerciseRun } from '../appData/run'
 import { EXERCISES, type Exercise } from '../content'
@@ -48,14 +53,26 @@ export function builtinExerciseSummaries() {
  * into days, so a user well away from UTC can get a plan that differs from the
  * page. The tool says so; a timezone argument is the fix when it matters.
  */
-export function nextSessionAnswer(runs: readonly ExerciseRun[], catalog: readonly Exercise[]) {
+export function nextSessionAnswer(
+  runs: readonly ExerciseRun[],
+  catalog: readonly Exercise[],
+  goals: readonly Goal[] = [],
+  priorities: readonly ExercisePriority[] = [],
+) {
+  // The same inputs the home card assembles from, so a tool and the page can
+  // never describe two different sessions.
+  const targets = resolveTargets(catalog, goals, priorities)
+  const state = foldRuns(runs, catalog, undefined, targets)
   const { slots } = planNextSession({
-    state: foldRuns(runs, catalog),
+    state,
     catalog,
     seed: planSeed(runs),
     costs: exerciseCosts(runs, catalog),
     lastRunEnded: lastRunEnded(runs),
     recovering: recoveryState(runs).recovering,
+    targets,
+    paths: pathsProgress(goals, state, undefined, mutedIds(priorities)),
+    priorities: priorityMap(priorities),
   })
   return {
     status: 'ok' as const,
@@ -68,6 +85,79 @@ export function nextSessionAnswer(runs: readonly ExerciseRun[], catalog: readonl
       reason: slot.reason,
     })),
   }
+}
+
+/**
+ * What list_goals answers with: every goal, its path, and how far along each
+ * stage is — worked out by the same pure functions the home card uses, so a
+ * model and the page never disagree about what is open.
+ */
+export function goalsAnswer(
+  goals: readonly Goal[],
+  priorities: readonly ExercisePriority[],
+  state: ReadonlyMap<string, ExerciseState>,
+) {
+  const progress = new Map(
+    pathsProgress(goals, state, undefined, mutedIds(priorities)).map((path) => [path.goal.id, path]),
+  )
+  return {
+    status: 'ok' as const,
+    goals: goals.map((goal) => ({
+      ...goal,
+      solidity: progress.get(goal.id)?.solidity ?? null,
+      openStages: progress.get(goal.id)?.openStages ?? null,
+    })),
+    priorities,
+  }
+}
+
+/**
+ * What get_exercise_state answers with: the fold, flattened, plus whether the
+ * paths have run out today and what the app would offer to add.
+ */
+export function exerciseStateAnswer(
+  runs: readonly ExerciseRun[],
+  catalog: readonly Exercise[],
+  goals: readonly Goal[],
+  priorities: readonly ExercisePriority[],
+  today: Date = new Date(),
+) {
+  const targets = resolveTargets(catalog, goals, priorities)
+  const state = foldRuns(runs, catalog, undefined, targets)
+  const paths = pathsProgress(goals, state, undefined, mutedIds(priorities))
+  const { exhausted, expansion } = exhaustion(paths, state, catalog, today)
+  return {
+    status: 'ok' as const,
+    exercises: catalog.flatMap((exercise) => {
+      const found = state.get(exercise.id)
+      if (!found) return []
+      return [
+        {
+          exerciseId: exercise.id,
+          title: exercise.title,
+          band: found.band,
+          interval: found.interval,
+          due: found.due,
+          bestTempo: found.bestTempo,
+          margin: found.margin,
+          nextTempo: found.nextTempo,
+          targetTempoBpm: targets.get(exercise.id) ?? exercise.tempoBpm,
+          lastReview: found.lastReview,
+          feel: found.feel,
+        },
+      ]
+    }),
+    exhausted,
+    expansion,
+  }
+}
+
+/** What list_runs answers with: the user's own runs, newest first, a page at a time. */
+export function runsAnswer(runs: readonly ExerciseRun[], limit = 50, offset = 0) {
+  const page = Math.min(Math.max(Math.trunc(limit), 1), 200)
+  const from = Math.max(Math.trunc(offset), 0)
+  const ordered = [...runs].sort((a, b) => (a.startedAt < b.startedAt ? 1 : a.startedAt > b.startedAt ? -1 : 0))
+  return { status: 'ok' as const, total: ordered.length, runs: ordered.slice(from, from + page) }
 }
 
 export function objectSchema(properties: Record<string, unknown>, required: string[]): Record<string, unknown> {
@@ -116,6 +206,19 @@ const ROUTINE_FORMAT = [
 const exerciseArgument = { exercise: z.toJSONSchema(exerciseInputSchema, { io: 'input' }) }
 const routineArgument = { routine: z.toJSONSchema(routineInputSchema, { io: 'input' }) }
 const routineIdArgument = { routineId: { type: 'string', description: 'The `id` of a routine from list_routines.' } }
+const goalArgument = { goal: z.toJSONSchema(goalInputSchema, { io: 'input' }) }
+const goalIdArgument = { goalId: { type: 'string', description: 'The `id` of a goal from list_goals.' } }
+
+/** What a model needs to know to write a path that the scheduler can actually run. */
+const PATH_FORMAT = [
+  'A goal is something the user wants to be able to do; its `stages` are how the practice gets there.',
+  'Each stage is an ordered list of `{ exerciseId, targetTempoBpm }`, and the target is what counts as',
+  'having that exercise *for this goal* — it replaces the tempo the exercise is written at wherever the',
+  'schedule asks how fast is fast enough. Stage 1 is what the user starts on; a later stage opens only',
+  'once the one before it is mostly solid, so put the groundwork first and the payoff last. An exercise',
+  'belongs to one stage of one path — never repeat an id. Use ids from list_builtin_exercises and',
+  'list_exercises.',
+].join(' ')
 
 export type LibraryToolName =
   | 'get_next_session'
@@ -127,6 +230,12 @@ export type LibraryToolName =
   | 'create_routine'
   | 'update_routine'
   | 'delete_routine'
+  | 'list_goals'
+  | 'set_goal'
+  | 'set_path'
+  | 'set_priority'
+  | 'get_exercise_state'
+  | 'list_runs'
 
 /** The library and routine tools, in the order a client lists them. */
 export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: LibraryToolName })[] = [
@@ -195,5 +304,67 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     description: "Delete one of the signed-in user's practice routines for good. The exercises in it are not touched. Only do this when the user asked for it.",
     inputSchema: objectSchema(routineIdArgument, ['routineId']),
     annotations: REPLACES,
+  },
+  {
+    name: 'list_goals',
+    title: 'List my goals and paths',
+    description:
+      "List the signed-in user's goals, oldest first: each one's id, title, status, weight and its whole path of stages, plus how solid each stage is and which stages are open. Also returns what the user has said about single exercises (pinned, boosted, muted, and any tempo override). Call it before changing a goal, and to avoid making one that already exists.",
+    inputSchema: objectSchema({}, []),
+    annotations: READS_USER_TEXT,
+  },
+  {
+    name: 'set_goal',
+    title: 'Create or replace a goal',
+    description: `Create a goal with its path, or replace one whole by passing its \`goalId\`. Replacing takes the goal as given — to add or reorder a stage, send the full new list of stages. Returns the stored goal with its id, or the problems to fix. ${PATH_FORMAT}`,
+    inputSchema: objectSchema({ goalId: { ...goalIdArgument.goalId, description: 'Omit to create; pass the id of an existing goal to replace it.' }, ...goalArgument }, ['goal']),
+    annotations: REPLACES,
+  },
+  {
+    name: 'set_path',
+    title: 'Replace a goal\u2019s stages',
+    description: `Replace the stages of an existing goal, leaving its title, status and weight alone — the usual way to extend a path the user has outgrown, or to accept an expansion the app offered. Send the full new list of stages. Returns the stored goal, or \`not_found\` when the user has no goal with that id. ${PATH_FORMAT}`,
+    inputSchema: objectSchema(
+      { ...goalIdArgument, stages: z.toJSONSchema(goalInputSchema, { io: 'input' }).properties?.stages ?? { type: 'array' } },
+      ['goalId', 'stages'],
+    ),
+    annotations: REPLACES,
+  },
+  {
+    name: 'set_priority',
+    title: 'Pin, boost or mute an exercise',
+    description:
+      "Say something about one exercise, over and above what any path says. `pinned` keeps it at the front of every session; `boosted` moves it up among items in the same state; `muted` takes it out of the practice altogether. `targetOverrideBpm` judges it against that tempo instead of the path's or its own. Pass `priority: null` and `targetOverrideBpm: null` to clear what was said. Only mute when the user asked.",
+    inputSchema: objectSchema(
+      {
+        exerciseId: { type: 'string', description: 'A pack id or a library id.' },
+        priority: { type: ['string', 'null'], enum: [...PRIORITIES, null], description: 'null clears it.' },
+        targetOverrideBpm: { type: ['integer', 'null'], description: 'null leaves the tempo to the path or the exercise.' },
+      },
+      ['exerciseId', 'priority'],
+    ),
+    annotations: REPLACES,
+  },
+  {
+    name: 'get_exercise_state',
+    title: 'What the scheduler knows about each exercise',
+    description:
+      "What the scheduler has worked out about every exercise from the signed-in user's runs: its band (new, stuck, hard, fine, easy), the days between reviews, the day it is next due, the fastest it has been played, how that compares with the tempo it is judged against, and how it last felt. Also says whether the user's paths have run out for today and what stage the app would offer to add. Nothing is stored and calling it changes nothing.",
+    inputSchema: objectSchema({}, []),
+    annotations: READS_USER_TEXT,
+  },
+  {
+    name: 'list_runs',
+    title: 'List my practice runs',
+    description:
+      "List the signed-in user's own practice runs, newest first: which exercise, when, how long, at what tempo, whether it was played through, how it went and how it felt. Paged — pass `limit` and `offset`. Use it to answer questions about what somebody has actually been doing, rather than guessing from the plan.",
+    inputSchema: objectSchema(
+      {
+        limit: { type: 'integer', description: 'How many runs to return, 1 to 200. Defaults to 50.' },
+        offset: { type: 'integer', description: 'How many to skip, for paging. Defaults to 0.' },
+      },
+      [],
+    ),
+    annotations: READS_USER_TEXT,
   },
 ]

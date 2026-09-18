@@ -141,8 +141,8 @@ function foldExercise(
   exercise: Exercise,
   runs: readonly ExerciseRun[],
   constants: PlanConstants,
+  target: number,
 ): ExerciseState {
-  const target = exercise.tempoBpm
   const days = reviewDays(runs)
   if (days.length === 0) {
     return { band: 'new', interval: 0, due: null, bestTempo: null, margin: null, nextTempo: target, lastReview: null, feel: null }
@@ -235,6 +235,13 @@ export function foldRuns(
   runs: readonly ExerciseRun[],
   catalog: readonly Exercise[],
   constants: PlanConstants = PLAN_CONSTANTS,
+  /**
+   * What each exercise is judged against (appData/targets): a path's target, or
+   * the user's own override, or — when nothing says otherwise — the tempo it is
+   * written at. Resolved at fold time, never stored, so moving a target changes
+   * what `solid` means from the next fold on without rewriting one run.
+   */
+  targets?: ReadonlyMap<string, number>,
 ): Map<string, ExerciseState> {
   const byExercise = new Map<string, ExerciseRun[]>()
   for (const run of runs) {
@@ -243,6 +250,9 @@ export function foldRuns(
     else byExercise.set(run.exerciseId, [run])
   }
   return new Map(
-    catalog.map((exercise) => [exercise.id, foldExercise(exercise, byExercise.get(exercise.id) ?? [], constants)]),
+    catalog.map((exercise) => [
+      exercise.id,
+      foldExercise(exercise, byExercise.get(exercise.id) ?? [], constants, targets?.get(exercise.id) ?? exercise.tempoBpm),
+    ]),
   )
 }

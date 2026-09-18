@@ -14,8 +14,10 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoutinesIndexRouteImport } from './routes/routines.index'
+import { Route as GoalsIndexRouteImport } from './routes/goals.index'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as RoutinesNewRouteImport } from './routes/routines.new'
+import { Route as GoalsGoalIdRouteImport } from './routes/goals.$goalId'
 import { Route as ExercisesExerciseIdRouteImport } from './routes/exercises.$exerciseId'
 import { Route as RoutinesRoutineIdEditRouteImport } from './routes/routines.$routineId.edit'
 
@@ -44,6 +46,11 @@ const RoutinesIndexRoute = RoutinesIndexRouteImport.update({
   path: '/routines/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoalsIndexRoute = GoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   id: '/exercises/',
   path: '/exercises/',
@@ -52,6 +59,11 @@ const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
 const RoutinesNewRoute = RoutinesNewRouteImport.update({
   id: '/routines/new',
   path: '/routines/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoalsGoalIdRoute = GoalsGoalIdRouteImport.update({
+  id: '/goals/$goalId',
+  path: '/goals/$goalId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExercisesExerciseIdRoute = ExercisesExerciseIdRouteImport.update({
@@ -71,8 +83,10 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/routines/new': typeof RoutinesNewRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/goals/': typeof GoalsIndexRoute
   '/routines/': typeof RoutinesIndexRoute
   '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
@@ -82,8 +96,10 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/routines/new': typeof RoutinesNewRoute
   '/exercises': typeof ExercisesIndexRoute
+  '/goals': typeof GoalsIndexRoute
   '/routines': typeof RoutinesIndexRoute
   '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
@@ -94,8 +110,10 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/routines/new': typeof RoutinesNewRoute
   '/exercises/': typeof ExercisesIndexRoute
+  '/goals/': typeof GoalsIndexRoute
   '/routines/': typeof RoutinesIndexRoute
   '/routines/$routineId/edit': typeof RoutinesRoutineIdEditRoute
 }
@@ -107,8 +125,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/goals/$goalId'
     | '/routines/new'
     | '/exercises/'
+    | '/goals/'
     | '/routines/'
     | '/routines/$routineId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -118,8 +138,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/goals/$goalId'
     | '/routines/new'
     | '/exercises'
+    | '/goals'
     | '/routines'
     | '/routines/$routineId/edit'
   id:
@@ -129,8 +151,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/session'
     | '/exercises/$exerciseId'
+    | '/goals/$goalId'
     | '/routines/new'
     | '/exercises/'
+    | '/goals/'
     | '/routines/'
     | '/routines/$routineId/edit'
   fileRoutesById: FileRoutesById
@@ -141,8 +165,10 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   SessionRoute: typeof SessionRoute
   ExercisesExerciseIdRoute: typeof ExercisesExerciseIdRoute
+  GoalsGoalIdRoute: typeof GoalsGoalIdRoute
   RoutinesNewRoute: typeof RoutinesNewRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
+  GoalsIndexRoute: typeof GoalsIndexRoute
   RoutinesIndexRoute: typeof RoutinesIndexRoute
   RoutinesRoutineIdEditRoute: typeof RoutinesRoutineIdEditRoute
 }
@@ -184,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoutinesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/goals/': {
+      id: '/goals/'
+      path: '/goals'
+      fullPath: '/goals/'
+      preLoaderRoute: typeof GoalsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/exercises/': {
       id: '/exercises/'
       path: '/exercises'
@@ -196,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/routines/new'
       fullPath: '/routines/new'
       preLoaderRoute: typeof RoutinesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goals/$goalId': {
+      id: '/goals/$goalId'
+      path: '/goals/$goalId'
+      fullPath: '/goals/$goalId'
+      preLoaderRoute: typeof GoalsGoalIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/$exerciseId': {
@@ -221,8 +261,10 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   SessionRoute: SessionRoute,
   ExercisesExerciseIdRoute: ExercisesExerciseIdRoute,
+  GoalsGoalIdRoute: GoalsGoalIdRoute,
   RoutinesNewRoute: RoutinesNewRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
+  GoalsIndexRoute: GoalsIndexRoute,
   RoutinesIndexRoute: RoutinesIndexRoute,
   RoutinesRoutineIdEditRoute: RoutinesRoutineIdEditRoute,
 }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Exercise } from '../content'
 import { exerciseCost, exerciseCosts } from './cost'
+import type { ExercisePriority, Goal } from './goal'
+import { pathsProgress } from './path'
+import { priorityMap, resolveTargets } from './targets'
 import { foldRuns } from './memory'
 import { FIRST_SEED, planNextSession, planSeed, type NextSession, type PlanInput } from './nextSession'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
@@ -587,5 +590,159 @@ describe('a recovery session', () => {
     on(true)
     const after = [...foldRuns(runs, catalog).values()].map((item) => ({ due: item.due, interval: item.interval }))
     expect(after).toEqual(before)
+  })
+})
+
+/**
+ * Paths, priorities and weights: what a goal does to a session. The stage
+ * arithmetic itself lives in path.test.ts; these are the assembler's end of it.
+ */
+describe('a session with goals in it', () => {
+  function goalOf(id: string, stages: string[][], { weight = 1, targetTempoBpm = 100 } = {}): Goal {
+    return {
+      id,
+      title: id,
+      status: 'active',
+      weight,
+      stages: stages.map((ids) => ({ items: ids.map((exerciseId) => ({ exerciseId, targetTempoBpm })) })),
+    }
+  }
+
+  function solid(id: string): ExerciseRun[] {
+    return [run(id, '2026-04-01'), run(id, '2026-04-02')]
+  }
+
+  function planned(
+    runs: readonly ExerciseRun[],
+    catalog: readonly Exercise[],
+    goals: readonly Goal[],
+    priorities: readonly ExercisePriority[] = [],
+    extra: Partial<PlanInput> = {},
+  ): NextSession {
+    const targets = resolveTargets(catalog, goals, priorities)
+    const state = foldRuns(runs, catalog, undefined, targets)
+    return planNextSession({
+      state,
+      catalog,
+      seed: 'seed',
+      budgetSeconds: 60 * 60,
+      costs: exerciseCosts(runs, catalog),
+      today: new Date('2026-04-10T08:00:00'),
+      lastRunEnded: null,
+      constants: WORK_ONLY,
+      targets,
+      paths: pathsProgress(goals, state),
+      priorities: priorityMap(priorities),
+      ...extra,
+    })
+  }
+
+  it('introduces only what the open stages hold', () => {
+    const catalog = ['a', 'b', 'c', 'd'].map((id) => exercise(id))
+    const goal = goalOf('g1', [['a', 'b'], ['c', 'd']])
+    // Nothing played, so stage 1 is open and stage 2 is not.
+    expect(ids(planned([], catalog, [goal])).sort()).toEqual(['a', 'b'])
+  })
+
+  it('keeps reviewing what the user already started, whatever stage it sits in', () => {
+    // `d` belongs to a closed stage but has been played — a gate that swallowed
+    // it would drop work the user had already begun.
+    const catalog = ['a', 'b', 'c', 'd'].map((id) => exercise(id))
+    const goal = goalOf('g1', [['a', 'b'], ['c', 'd']])
+    const runs = [run('d', '2026-04-01', { difficulty: 'again' })]
+    expect(ids(planned(runs, catalog, [goal]))).toContain('d')
+  })
+
+  it('offers the whole pack when no goal is active, exactly as before', () => {
+    const catalog = ['a', 'b', 'c'].map((id) => exercise(id))
+    expect(ids(planned([], catalog, [])).sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('puts a pinned exercise first and never offers a muted one', () => {
+    const catalog = ['wall', 'pet', 'hated'].map((id) => exercise(id))
+    const runs = [
+      run('wall', '2026-04-01', { tempoBpm: 70 }),
+      ...solid('pet'),
+      run('hated', '2026-04-01', { tempoBpm: 70 }),
+    ]
+    const priorities: ExercisePriority[] = [
+      { exerciseId: 'pet', priority: 'pinned', targetOverrideBpm: null },
+      { exerciseId: 'hated', priority: 'muted', targetOverrideBpm: null },
+    ]
+    const session = planned(runs, catalog, [], priorities)
+    expect(session.work[0].exercise.id).toBe('pet')
+    expect(ids(session)).not.toContain('hated')
+  })
+
+  it('splits the work between two goals rather than finishing one first', () => {
+    const light = ['l1', 'l2', 'l3', 'l4'].map((id) => exercise(id))
+    const heavy = ['h1', 'h2', 'h3', 'h4'].map((id) => exercise(id))
+    const catalog = [...heavy, ...light]
+    const goals = [
+      goalOf('heavy', [heavy.map((item) => item.id)], { weight: 2 }),
+      goalOf('light', [light.map((item) => item.id)], { weight: 1 }),
+    ]
+    const first = ids(planned([], catalog, goals)).slice(0, 6)
+    // Both goals are represented early, and the heavier one more often.
+    expect(first.filter((id) => id.startsWith('h')).length).toBeGreaterThan(0)
+    expect(first.filter((id) => id.startsWith('l')).length).toBeGreaterThan(0)
+    expect(first.filter((id) => id.startsWith('h')).length).toBeGreaterThan(
+      first.filter((id) => id.startsWith('l')).length,
+    )
+  })
+
+  it('moves a boosted exercise up among the others in its state', () => {
+    // Three items in the same state and the same catalog order; only the boost
+    // separates them, and it does not jump the ones that are actually overdue.
+    const catalog = ['first', 'second', 'third'].map((id) => exercise(id))
+    const runs = catalog.map((item) => run(item.id, '2026-04-01', { tempoBpm: 70 }))
+    const plain = ids(planned(runs, catalog, []))
+    expect(plain).toEqual(['first', 'second', 'third'])
+
+    const boosted = ids(
+      planned(runs, catalog, [], [{ exerciseId: 'third', priority: 'boosted', targetOverrideBpm: null }]),
+    )
+    expect(boosted[0]).toBe('third')
+  })
+
+  it('gives a half-weight goal half a share, rather than rounding it up to a whole one', () => {
+    const half = ['h1', 'h2', 'h3', 'h4'].map((id) => exercise(id))
+    const full = ['f1', 'f2', 'f3', 'f4'].map((id) => exercise(id))
+    const catalog = [...half, ...full]
+    const goals = [
+      goalOf('half', [half.map((item) => item.id)], { weight: 0.5 }),
+      goalOf('full', [full.map((item) => item.id)], { weight: 1 }),
+    ]
+    const first = ids(planned([], catalog, goals)).slice(0, 6)
+    // Rounding a weight to the nearest whole made 0.5 and 1 identical; the
+    // lighter goal has to take genuinely fewer slots than the heavier one.
+    expect(first.filter((id) => id.startsWith('h')).length).toBeLessThan(
+      first.filter((id) => id.startsWith('f')).length,
+    )
+  })
+
+  it('does not let the pack at large push an overdue goal item down the session', () => {
+    // The pack is not a goal, so it follows the goals rather than being dealt
+    // alongside them — otherwise an item not due for a week takes the place of
+    // one that is overdue.
+    const goalItems = ['g1', 'g2', 'g3'].map((id) => exercise(id))
+    const strays = ['p1', 'p2', 'p3'].map((id) => exercise(id))
+    const catalog = [...goalItems, ...strays]
+    const goals = [
+      goalOf('g', [goalItems.map((item) => item.id)]),
+      goalOf('other', [['p1']]),
+    ]
+    // Everything in the goal is overdue; the strays have never been played.
+    const runs = goalItems.map((item) => run(item.id, '2026-04-01', { tempoBpm: 70 }))
+    const first = ids(planned(runs, catalog, goals)).slice(0, 3)
+    expect(first.filter((id) => id.startsWith('g')).length).toBeGreaterThan(1)
+  })
+
+  it('says the target the path asks for, not the tempo the exercise is written at', () => {
+    const catalog = [exercise('a', 100)]
+    const goal = goalOf('g1', [['a']], { targetTempoBpm: 140 })
+    const runs = [run('a', '2026-04-01', { tempoBpm: 100 })]
+    const session = planned(runs, catalog, [goal])
+    expect(session.slots[0].reason).toContain('of 140 BPM')
   })
 })

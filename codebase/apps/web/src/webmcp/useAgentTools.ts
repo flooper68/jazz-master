@@ -27,7 +27,15 @@ export function useAgentTools(): void {
     return registerPageTools([
       ...libraryPageTools({
         client,
-        refresh: (list) => queryClient.invalidateQueries({ queryKey: list === 'exercises' ? trpc.exercises.list.queryKey() : trpc.routines.list.queryKey() }),
+        refresh: (list) =>
+          queryClient.invalidateQueries({
+            queryKey:
+              list === 'exercises'
+                ? trpc.exercises.list.queryKey()
+                : list === 'goals'
+                  ? trpc.goals.list.queryKey()
+                  : trpc.routines.list.queryKey(),
+          }),
         confirm: agentConfirm.ask,
       }),
       ...uiPageTools({

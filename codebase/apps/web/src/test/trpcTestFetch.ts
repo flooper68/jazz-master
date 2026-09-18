@@ -5,9 +5,11 @@ import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 import type { ExerciseInput } from '../content/exerciseInput'
 import type { RoutineInput } from '../appData/routine'
+import type { GoalRepository } from '../server/db/goals'
 import type { NoteRepository } from '../server/db/notes'
 import type { RoutineRepository } from '../server/db/routines'
 import type { UserExerciseRepository } from '../server/db/userExercises'
+import { createMemoryGoalRepository } from './memoryGoals'
 import { createMemoryNoteRepository } from './memoryNotes'
 import { createMemoryRoutineRepository } from './memoryRoutines'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
@@ -20,6 +22,7 @@ let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
 let routines: RoutineRepository = createMemoryRoutineRepository()
 let routinesRepositoryAvailable = true
 let notes: NoteRepository = createMemoryNoteRepository()
+let goals: GoalRepository = createMemoryGoalRepository()
 
 export function resetTrpcTestData() {
   runs.clear()
@@ -28,6 +31,12 @@ export function resetTrpcTestData() {
   routines = createMemoryRoutineRepository()
   routinesRepositoryAvailable = true
   notes = createMemoryNoteRepository()
+  goals = createMemoryGoalRepository()
+}
+
+/** Give the test user a goal; resolves to it as stored, id included. */
+export async function seedTrpcTestGoal(goal: Parameters<GoalRepository['createGoal']>[1]) {
+  return goals.createGoal(TEST_CLERK_USER_ID, goal)
 }
 
 /** The notes the test user has written, for asserting what a page saved. */
@@ -112,6 +121,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         runs: runsRepositoryAvailable ? runRepository : null,
+        goals,
         notes,
         routines: routinesRepositoryAvailable ? routines : null,
         userExercises,

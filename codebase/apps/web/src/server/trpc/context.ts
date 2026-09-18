@@ -4,6 +4,7 @@ import {
   createDatabaseSmokeClient,
   type DatabaseSmokeClient,
 } from '../db/smoke'
+import { createGoalRepository, type GoalRepository } from '../db/goals'
 import { createNoteRepository, type NoteRepository } from '../db/notes'
 import { createRunRepository, type RunRepository } from '../db/runs'
 import { createRoutineRepository, type RoutineRepository } from '../db/routines'
@@ -28,6 +29,7 @@ interface CreateContextOptions {
   dbSmoke?: DatabaseSmokeClient | null
   logger?: StructuredLogger
   requestMetadata?: RequestLogMetadata | null
+  goals?: GoalRepository | null
   notes?: NoteRepository | null
   runs?: RunRepository | null
   routines?: RoutineRepository | null
@@ -69,6 +71,10 @@ function hasRunsOption(options: unknown): options is CreateContextOptions {
 
 function hasNotesOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'notes' in options
+}
+
+function hasGoalsOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'goals' in options
 }
 
 function hasRoutinesOption(options: unknown): options is CreateContextOptions {
@@ -145,6 +151,9 @@ export function createContext(options?: unknown) {
   const noteRepository = hasNotesOption(options)
     ? options.notes
     : createNoteRepository({ hyperdrive })
+  const goalRepository = hasGoalsOption(options)
+    ? options.goals
+    : createGoalRepository({ hyperdrive })
   const userExerciseRepository = hasUserExercisesOption(options)
     ? options.userExercises
     : createUserExerciseRepository({ hyperdrive })
@@ -161,6 +170,7 @@ export function createContext(options?: unknown) {
     dbSmoke,
     logger,
     requestMetadata,
+    goals: goalRepository ?? null,
     notes: noteRepository ?? null,
     routines: routineRepository ?? null,
     runs: runRepository,

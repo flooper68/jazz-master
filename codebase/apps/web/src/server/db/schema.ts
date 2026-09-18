@@ -151,6 +151,46 @@ export const practiceRoutines = pgTable(
   ],
 )
 
+// A goal and the path to it, stored whole like a routine: the JSON is parsed
+// against appData/goal's schema on the way in and again on the way out, so the
+// columns here are only what queries need.
+export const goals = pgTable(
+  'goals',
+  {
+    id: uuid('id').primaryKey(),
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    goal: jsonb('goal').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('goals_user_created_idx').on(table.clerkUserId, table.createdAt)],
+)
+
+// What the user has said about one exercise, over and above what any path says:
+// keep it in front of me, push it up, never show it again — and what tempo to
+// judge it against. Keyed by owner and exercise together, so scoping is
+// structural rather than a predicate every query has to remember.
+export const exercisePriorities = pgTable(
+  'exercise_priorities',
+  {
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    exerciseId: text('exercise_id').notNull(),
+    priority: text('priority').notNull(),
+    targetOverrideBpm: integer('target_override_bpm'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.clerkUserId, table.exerciseId] }),
+    check('exercise_priorities_priority_check', sql`${table.priority} in ('pinned', 'boosted', 'muted')`),
+    check('exercise_priorities_target_check', sql`${table.targetOverrideBpm} is null or ${table.targetOverrideBpm} > 0`),
+  ],
+)
+
 // People who asked to join the beta from the public landing page. Not users:
 // nobody here has an account yet, so nothing references the users table.
 export const waitlistSignups = pgTable('waitlist_signups', {
@@ -166,7 +206,9 @@ export const waitlistSignups = pgTable('waitlist_signups', {
 
 // Server-only Drizzle schema entrypoint.
 export const schema = {
+  exercisePriorities,
   exerciseRuns,
+  goals,
   practiceRoutines,
   sessionNotes,
   userExercises,

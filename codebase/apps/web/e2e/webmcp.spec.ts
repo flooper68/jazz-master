@@ -75,3 +75,43 @@ test('an agent in the browser makes a routine, starts it, plays it, and deletes 
   expect(await allowed).toEqual({ status: 'ok', deleted: true })
   await expect(page.getByRole('listitem', { name: 'E2E — from the assistant' })).toHaveCount(0)
 })
+
+test('an agent writes a goal with a path, and the practice runs it stage by stage', async ({ page }) => {
+  await page.goto('/app/goals')
+  await expect(page.getByRole('heading', { level: 1, name: 'Goals' })).toBeVisible()
+  await expect.poll(() => toolNames(page)).toContain('set_goal')
+
+  // The owner's own dogfood, done by the agent's side of the wire: a goal with
+  // three stages, written the way Claude Code writes one over MCP.
+  const made = await callTool(page, 'set_goal', {
+    goal: {
+      title: 'Play a blues in F',
+      stages: [
+        { title: 'The shapes', items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 60 }] },
+        { title: 'The line', items: [{ exerciseId: 'lines-ii-v-i-f-line', targetTempoBpm: 90 }] },
+        { title: 'Together', items: [{ exerciseId: 'scales-major-open-g', targetTempoBpm: 90 }] },
+      ],
+    },
+  })
+  expect(made.status).toBe('ok')
+
+  // Only the first stage is open, so only its items are offered.
+  const listed = (await callTool(page, 'list_goals')) as { goals: { openStages: number[] }[] }
+  expect(listed.goals[0].openStages).toEqual([0])
+  const session = (await callTool(page, 'get_next_session')) as { slots: { exerciseId: string }[] }
+  const offered = session.slots.map((slot) => slot.exerciseId)
+  expect(offered).toContain('scales-major-open-c')
+  expect(offered).not.toContain('lines-ii-v-i-f-line')
+
+  // The page agrees with the tools about what is open.
+  await page.reload()
+  await expect(page.getByText('The shapes · 0%')).toBeVisible()
+  await expect(page.getByText('The line · locked')).toBeVisible()
+
+  // What the scheduler knows is offered whole, judged against the path's target.
+  const state = (await callTool(page, 'get_exercise_state')) as {
+    exercises: { exerciseId: string; targetTempoBpm: number; band: string }[]
+  }
+  const scale = state.exercises.find((item) => item.exerciseId === 'scales-major-open-c')
+  expect(scale).toMatchObject({ band: 'new', targetTempoBpm: 60 })
+})

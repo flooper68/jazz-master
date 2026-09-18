@@ -77,6 +77,8 @@ export interface PlanConstants {
   badDaysBeforeRecovery: number
   /** A bad run older than this is history, not a state to be recovered from. */
   badDayStaleAfterDays: number
+  /** How many exercises a suggested stage holds: enough to be a stage, few enough to accept. */
+  expansionStageItems: number
   /** What a recovery session does: less of it, fewer walls, this many loved items, nothing new. */
   recoveryBudgetFactor: number
   recoveryStuckLimit: number
@@ -114,6 +116,7 @@ export const PLAN_CONSTANTS: PlanConstants = {
   badDayCompletionRate: 0.5,
   badDaysBeforeRecovery: 2,
   badDayStaleAfterDays: 7,
+  expansionStageItems: 4,
   recoveryBudgetFactor: 0.6,
   recoveryStuckLimit: 1,
   recoveryLovedItems: 2,

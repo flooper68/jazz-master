@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { exerciseCosts, lastRunEnded } from '../appData/cost'
+import type { Stage } from '../appData/goal'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
+import { pathsProgress } from '../appData/path'
 import { recoveryState } from '../appData/recovery'
+import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
+import { exhaustion } from '../appData/expansion'
 import { chosenRoutine, routinePlan, sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
 import { useToday } from './useToday'
+import { useGoals } from './useGoals'
 import { useRoutines } from './useRoutines'
 import { useTRPC } from './trpc'
 
@@ -25,6 +30,10 @@ export interface NextSessionResult {
   pending: boolean
   /** The runs could not be read; the plan stands, but it knows nothing of the history. */
   failed: boolean
+  /** Every open stage of every path has been played today (appData/expansion). */
+  exhausted?: boolean
+  /** The stage the app offers to add when a path has run out; null when the pack has nothing that fits. */
+  expansion?: Stage | null
 }
 
 export function useNextSession(): NextSessionResult {
@@ -33,6 +42,7 @@ export function useNextSession(): NextSessionResult {
   const runs = data?.status === 'ok' ? data.runs : null
   const { exercises } = useExerciseCatalog()
   const { routines } = useRoutines()
+  const { goals, priorities } = useGoals()
   // One day for the whole app, so two cards cannot straddle midnight.
   const today = useToday()
   const settings = useQuickRunSettings()
@@ -42,8 +52,14 @@ export function useNextSession(): NextSessionResult {
     const costs = exerciseCosts(history, exercises)
     const routine = chosenRoutine(settings, routines, exercises)
     if (routine) return { plan: routinePlan(routine, exercises, costs), pending: isPending, failed: false }
+
+    // What each exercise is judged against comes before the fold: a path's
+    // target is what `solid` means for it, and the fold owns that word.
+    const targets = resolveTargets(exercises, goals, priorities)
+    const state = foldRuns(history, exercises, undefined, targets)
+    const paths = pathsProgress(goals, state, undefined, mutedIds(priorities))
     const plan = planNextSession({
-      state: foldRuns(history, exercises),
+      state,
       catalog: exercises,
       seed: planSeed(history),
       budgetSeconds: sessionBudgetSeconds(settings),
@@ -51,7 +67,15 @@ export function useNextSession(): NextSessionResult {
       today,
       lastRunEnded: lastRunEnded(history),
       recovering: recoveryState(history, today).recovering,
+      targets,
+      paths,
+      priorities: priorityMap(priorities),
     })
-    return { plan: { ...plan, routine: null }, pending: isPending, failed: !isPending && runs === null }
-  }, [settings, routines, exercises, runs, isPending, today])
+    return {
+      plan: { ...plan, routine: null },
+      pending: isPending,
+      failed: !isPending && runs === null,
+      ...exhaustion(paths, state, exercises, today),
+    }
+  }, [settings, routines, exercises, runs, isPending, today, goals, priorities])
 }

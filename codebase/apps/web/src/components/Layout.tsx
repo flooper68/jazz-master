@@ -10,7 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import type { Exercise } from '../content'
-import { HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
+import { GoalIcon, HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
 
 import type { Routine } from '../appData/routine'
 import { QuickRunButton } from './QuickRunButton'
@@ -30,6 +30,7 @@ const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/exercises', label: 'Exercises', icon: ListIcon },
   { to: '/routines', label: 'Routines', icon: RoutineIcon },
+  { to: '/goals', label: 'Goals', icon: GoalIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
 

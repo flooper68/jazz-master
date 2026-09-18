@@ -174,3 +174,129 @@ describe('the library tools in the browser', () => {
     expect(await setUp({ client: offline }).call('list_routines')).toMatchObject({ status: 'error' })
   })
 })
+
+describe('goals and paths through the page’s own tools', () => {
+  it('writes a path, reads it back with its stages, and keeps closed stages out of the plan', async () => {
+    const { call } = setUp()
+    const made = (await call('set_goal', {
+      goal: {
+        title: 'Play a blues in F',
+        stages: [
+          { title: 'The shapes', items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 90 }] },
+          { title: 'The line', items: [{ exerciseId: 'lines-ii-v-i-f-line', targetTempoBpm: 120 }] },
+        ],
+      },
+    })) as { status: string; goal: { id: string } }
+    expect(made.status).toBe('ok')
+
+    const listed = (await call('list_goals')) as {
+      status: string
+      goals: { id: string; title: string; openStages: number[] | null }[]
+    }
+    expect(listed.status).toBe('ok')
+    expect(listed.goals).toHaveLength(1)
+    // Nothing played yet, so only the first stage is open.
+    expect(listed.goals[0].openStages).toEqual([0])
+
+    // And the plan offers only what that stage holds.
+    const session = (await call('get_next_session')) as unknown as { slots: { exerciseId: string }[] }
+    const offered = session.slots.map((slot) => slot.exerciseId)
+    expect(offered).toContain('scales-major-open-c')
+    expect(offered).not.toContain('lines-ii-v-i-f-line')
+  })
+
+  it('judges an exercise against the tempo its path asks for', async () => {
+    const { call } = setUp()
+    await call('set_goal', {
+      goal: { title: 'Fast', stages: [{ items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 200 }] }] },
+    })
+    const state = (await call('get_exercise_state')) as {
+      status: string
+      exercises: { exerciseId: string; targetTempoBpm: number }[]
+    }
+    expect(state.status).toBe('ok')
+    // Written at 60; the path wants 200, and that is what it is judged against.
+    expect(state.exercises.find((item) => item.exerciseId === 'scales-major-open-c')?.targetTempoBpm).toBe(200)
+  })
+
+  it('replaces a path without disturbing the goal it belongs to', async () => {
+    const { call } = setUp()
+    const made = (await call('set_goal', {
+      goal: {
+        title: 'Play a blues in F',
+        weight: 3,
+        stages: [{ items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 90 }] }],
+      },
+    })) as { status: string; goal: { id: string } }
+
+    const changed = (await call('set_path', {
+      goalId: made.goal.id,
+      stages: [{ items: [{ exerciseId: 'lines-ii-v-i-f-line', targetTempoBpm: 130 }] }],
+    })) as { status: string; goal: { title: string; weight: number; stages: { items: { exerciseId: string }[] }[] } }
+
+    expect(changed.status).toBe('ok')
+    expect(changed.goal.stages[0].items[0].exerciseId).toBe('lines-ii-v-i-f-line')
+    // The rest of the goal is untouched.
+    expect(changed.goal.title).toBe('Play a blues in F')
+    expect(changed.goal.weight).toBe(3)
+  })
+
+  it('refuses a path naming an exercise that does not exist, and says which', async () => {
+    const { call } = setUp()
+    const refused = (await call('set_goal', {
+      goal: { title: 'Nonsense', stages: [{ items: [{ exerciseId: 'no-such-thing', targetTempoBpm: 90 }] }] },
+    })) as { status: string; problems: string[] }
+    expect(refused.status).toBe('invalid')
+    expect(refused.problems[0]).toContain('no-such-thing')
+  })
+
+  it('pins an exercise, and takes a muted one out of the practice', async () => {
+    const { call } = setUp()
+    expect(await call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'pinned' })).toMatchObject({
+      status: 'ok',
+      priority: { exerciseId: 'scales-major-open-c', priority: 'pinned' },
+    })
+
+    // Muting takes it out of every session, so the user is asked first — and
+    // the default seam answers yes.
+    await call('set_priority', { exerciseId: 'lines-ii-v-i-f-line', priority: 'muted' })
+    const session = (await call('get_next_session')) as unknown as { slots: { exerciseId: string }[] }
+    expect(session.slots.map((slot) => slot.exerciseId)).not.toContain('lines-ii-v-i-f-line')
+  })
+
+  it('will not mute behind the user’s back', async () => {
+    const { call, deps } = setUp({ confirm: vi.fn(async () => false) })
+    expect(await call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })).toMatchObject({
+      status: 'refused',
+    })
+    expect(vi.mocked(deps.confirm).mock.lastCall?.[0].question).toContain('mute')
+  })
+
+  it('lists the runs a user has actually played, newest first and paged', async () => {
+    const days = [2, 1, 0].map((daysAgo) => {
+      const date = new Date(Date.now() - daysAgo * 86_400_000)
+      date.setHours(10, 0, 0, 0)
+      return date
+    })
+    seedTrpcTestRuns(
+      days.map((date, index) => ({
+        id: `1111111${index}-1111-4111-8111-111111111111`,
+        exerciseId: 'scales-major-open-c',
+        startedAt: date.toISOString(),
+        durationSeconds: 120,
+        tempoBpm: 60,
+        passes: 4,
+        completed: true,
+        difficulty: 'good' as const,
+        feel: null,
+        sessionId: null,
+      })),
+    )
+    const { call } = setUp()
+    const listed = (await call('list_runs', { limit: 2 })) as unknown as { total: number; runs: { startedAt: string }[] }
+    expect(listed.total).toBe(3)
+    expect(listed.runs).toHaveLength(2)
+    // Newest first.
+    expect(new Date(listed.runs[0].startedAt).valueOf()).toBeGreaterThan(new Date(listed.runs[1].startedAt).valueOf())
+  })
+})

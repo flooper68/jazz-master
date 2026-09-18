@@ -6,6 +6,7 @@ import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 import { createMemoryUserExerciseRepository } from '../../test/memoryUserExercises'
 import type { RoutineRepository } from '../db/routines'
 import type { RunRepository } from '../db/runs'
+import { createMemoryGoalRepository } from '../../test/memoryGoals'
 import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { handleMcpRequest, MCP_PROTOCOL_VERSIONS } from './protocol'
@@ -31,10 +32,11 @@ async function connect(
   userExercises: UserExerciseRepository | null,
   routines: RoutineRepository | null = createMemoryRoutineRepository(),
   runs: RunRepository | null = createMemoryRunRepository(),
+  goals = createMemoryGoalRepository(),
 ) {
   const client = new Client({ name: 'test-client', version: '0.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL('https://jazz.test/mcp'), {
-    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, routines, runs }),
+    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, routines, runs, goals }),
   })
   await client.connect(transport)
   return client
@@ -43,7 +45,13 @@ async function connect(
 function post(body: unknown, raw = false) {
   return handleMcpRequest(
     new Request('https://jazz.test/mcp', { method: 'POST', body: raw ? (body as string) : JSON.stringify(body) }),
-    { clerkUserId: 'user_123', userExercises: createMemoryUserExerciseRepository(), routines: createMemoryRoutineRepository(), runs: createMemoryRunRepository() },
+    {
+      clerkUserId: 'user_123',
+      userExercises: createMemoryUserExerciseRepository(),
+      routines: createMemoryRoutineRepository(),
+      runs: createMemoryRunRepository(),
+      goals: createMemoryGoalRepository(),
+    },
   )
 }
 
@@ -62,6 +70,12 @@ describe('the MCP server, through the official client', () => {
       'create_routine',
       'update_routine',
       'delete_routine',
+      'list_goals',
+      'set_goal',
+      'set_path',
+      'set_priority',
+      'get_exercise_state',
+      'list_runs',
     ])
     const createRoutine = tools.find((tool) => tool.name === 'create_routine')!
     expect(createRoutine.inputSchema).toMatchObject({ type: 'object', required: ['routine'] })
@@ -116,7 +130,7 @@ describe('the MCP server, on the wire', () => {
 
   it('accepts notifications silently, and refuses streams and sessions it does not have', async () => {
     expect((await post({ jsonrpc: '2.0', method: 'notifications/initialized' })).status).toBe(202)
-    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null })
+    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null, goals: null })
     expect(get.status).toBe(405)
     expect(get.headers.get('allow')).toBe('POST')
   })
@@ -135,7 +149,7 @@ describe('the MCP server, on the wire', () => {
     // The library turns repository failures into results; a throw past it is simulated by a context that is not an object.
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'list_exercises', arguments: {} } }) }),
-      null as unknown as { clerkUserId: string; userExercises: typeof broken; routines: null; runs: null },
+      null as unknown as { clerkUserId: string; userExercises: typeof broken; routines: null; runs: null; goals: null },
     )
     expect(await response.json()).toEqual({ jsonrpc: '2.0', id: 9, error: { code: -32603, message: 'Internal error' } })
   })
@@ -143,7 +157,7 @@ describe('the MCP server, on the wire', () => {
   it('refuses a body by its declared size before reading it', async () => {
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', headers: { 'content-length': '999999' }, body: '{}' }),
-      { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null },
+      { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null, goals: null },
     )
     expect(response.status).toBe(413)
   })

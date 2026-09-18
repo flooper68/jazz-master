@@ -3,6 +3,7 @@ import type { ExerciseRun } from '../../appData/run'
 import type { StructuredLogger } from '../observability/logger'
 import type { RunRepository } from '../db/runs'
 import { LONGEST_NOTE } from '../../appData/note'
+import { createMemoryGoalRepository } from '../../test/memoryGoals'
 import { createMemoryNoteRepository } from '../../test/memoryNotes'
 import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserRepository } from '../db/users'
@@ -732,5 +733,120 @@ describe('session notes over tRPC', () => {
     await expect(caller.notes.save({ sessionId: 'not-a-uuid', text: 'hello' })).rejects.toMatchObject({
       code: 'BAD_REQUEST',
     })
+  })
+})
+
+describe('goals and paths over tRPC', () => {
+  const path = {
+    title: 'Play a blues in F',
+    stages: [{ items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 120 }] }],
+  }
+
+  it('reports unconfigured rather than failing when there is no database', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals: null }))
+
+    await expect(caller.goals.list()).resolves.toEqual({ status: 'unconfigured' })
+    await expect(caller.goals.create(path)).resolves.toEqual({ status: 'unconfigured' })
+  })
+
+  it('refuses a signed-out caller', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: null }, goals: createMemoryGoalRepository() }))
+
+    await expect(caller.goals.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+    await expect(caller.goals.create(path)).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+
+  it('writes and reads goals for the authenticated user only', async () => {
+    const goals = createMemoryGoalRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, goals }))
+
+    const made = await caller.goals.create(path)
+    expect(made).toMatchObject({ status: 'ok', goal: { title: 'Play a blues in F', status: 'active', weight: 1 } })
+
+    await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', goals: [{ title: 'Play a blues in F' }] })
+    await expect(otherCaller.goals.list()).resolves.toMatchObject({ status: 'ok', goals: [] })
+  })
+
+  it('will not let one user change or delete another user’s goal', async () => {
+    const goals = createMemoryGoalRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, goals }))
+    const made = await caller.goals.create(path)
+    const goalId = made.status === 'ok' ? made.goal.id : ''
+
+    // The same answer as an id that never existed, so the reply never tells one
+    // user that another's goal is there.
+    await expect(otherCaller.goals.update({ goalId, goal: { ...path, title: 'Mine now' } })).resolves.toEqual({
+      status: 'not_found',
+    })
+    await expect(otherCaller.goals.delete({ goalId })).resolves.toEqual({ status: 'ok', deleted: false })
+
+    await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', goals: [{ title: 'Play a blues in F' }] })
+  })
+
+  it('keeps one user’s priorities from another', async () => {
+    const goals = createMemoryGoalRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, goals }))
+
+    await caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'pinned', targetOverrideBpm: 70 })
+    await otherCaller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'muted', targetOverrideBpm: null })
+
+    await expect(caller.goals.list()).resolves.toMatchObject({
+      status: 'ok',
+      priorities: [{ exerciseId: 'scales-major-open-c', priority: 'pinned', targetOverrideBpm: 70 }],
+    })
+    await expect(otherCaller.goals.list()).resolves.toMatchObject({
+      status: 'ok',
+      priorities: [{ exerciseId: 'scales-major-open-c', priority: 'muted' }],
+    })
+  })
+
+  it('clears a priority when nothing is left to say about the exercise', async () => {
+    const goals = createMemoryGoalRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
+
+    await caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'boosted', targetOverrideBpm: null })
+    await expect(
+      caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: null, targetOverrideBpm: null }),
+    ).resolves.toEqual({ status: 'ok', priority: null })
+    await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', priorities: [] })
+  })
+
+  it('refuses a path with no stages, and a priority outside the three', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals: createMemoryGoalRepository() }))
+
+    await expect(caller.goals.create({ title: 'Nothing', stages: [] })).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      caller.goals.setPriority({ exerciseId: 'a', priority: 'beloved' as 'pinned', targetOverrideBpm: null }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+  })
+
+  it('holds the app to the same path rules an assistant is held to', async () => {
+    // The app's own door used to check the shape and nothing else, so it could
+    // store a path naming exercises that do not exist, or the same exercise in
+    // two stages — which the fold cannot represent, since it keeps one state
+    // per exercise. Both doors go through the library now.
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals: createMemoryGoalRepository() }))
+
+    const unknown = await caller.goals.create({
+      title: 'Made up',
+      stages: [{ items: [{ exerciseId: 'no-such-exercise', targetTempoBpm: 100 }] }],
+    })
+    expect(unknown).toMatchObject({ status: 'invalid' })
+    if (unknown.status === 'invalid') expect(unknown.problems[0]).toContain('no-such-exercise')
+
+    const twice = await caller.goals.create({
+      title: 'Twice',
+      stages: [
+        { items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 100 }] },
+        { items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 140 }] },
+      ],
+    })
+    expect(twice).toMatchObject({ status: 'invalid' })
+    if (twice.status === 'invalid') expect(twice.problems[0]).toContain('already in this path')
+
+    await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', goals: [] })
   })
 })

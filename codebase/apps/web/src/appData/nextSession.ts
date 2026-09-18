@@ -1,6 +1,9 @@
 import { homeLabel, type Exercise } from '../content'
 import { exerciseCost } from './cost'
+import type { ExercisePriority } from './goal'
 import { dayKey, daysBetween, type ExerciseState } from './memory'
+import type { PathProgress } from './path'
+import { eligibleNewIds, goalOfExercise } from './path'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
 
 /**
@@ -62,6 +65,18 @@ export interface PlanInput {
   /** When the last run ended; inside the skip window the warm-up is left out. */
   lastRunEnded?: Date | null
   /**
+   * What each exercise is judged against (appData/targets). Absent means every
+   * exercise is judged against the tempo it is written at.
+   */
+  targets?: ReadonlyMap<string, number>
+  /**
+   * The active paths and how far along they are (appData/path). With none, the
+   * whole pack is one implicit path and nothing below changes.
+   */
+  paths?: readonly PathProgress[]
+  /** What the user has said about single exercises, by id (appData/targets). */
+  priorities?: ReadonlyMap<string, ExercisePriority>
+  /**
    * Two bad days behind the user (appData/recovery): the session backs off —
    * shorter, at most one wall, something loved in it, nothing new to learn.
    * It never moves a due date; what is owed is still owed, just less of it in
@@ -88,17 +103,20 @@ function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`
 }
 
-/** How fast it is being asked for, against what it is written at. */
-function tempoNote(state: ExerciseState, exercise: Exercise): string {
-  if (state.band === 'stuck') return `taken down to ${state.nextTempo} of ${exercise.tempoBpm} BPM`
+/**
+ * How fast it is being asked for, against what it is being judged against —
+ * which is the path's target where a path has one, not the written tempo.
+ */
+function tempoNote(state: ExerciseState, target: number): string {
+  if (state.band === 'stuck') return `taken down to ${state.nextTempo} of ${target} BPM`
   if (state.bestTempo === null) return `at ${state.nextTempo} BPM`
-  if (state.margin !== null && state.margin < 0) return `at ${state.nextTempo} of ${exercise.tempoBpm} BPM`
-  return `at its tempo, ${exercise.tempoBpm} BPM`
+  if (state.margin !== null && state.margin < 0) return `at ${state.nextTempo} of ${target} BPM`
+  return `at its tempo, ${target} BPM`
 }
 
-function reasonFor(state: ExerciseState, exercise: Exercise, today: string): string {
+function reasonFor(state: ExerciseState, target: number, today: string): string {
   if (state.band === 'new') return 'New — not played yet'
-  const note = tempoNote(state, exercise)
+  const note = tempoNote(state, target)
   const over = state.due === null ? 0 : daysBetween(state.due, today)
   // Stuck comes back every day, but a session drawn after today's run can still
   // reach one ahead of its next day — so only say "today" when it is owed today.
@@ -118,6 +136,10 @@ interface Candidate {
   over: number
   /** What it is expected to take, in seconds. */
   cost: number
+  /** The tempo it is judged against — a path's, an override's, or its own. */
+  target: number
+  /** What the user said about this one: pinned first, muted never, boosted early. */
+  priority: ExercisePriority['priority'] | null
 }
 
 /**
@@ -150,6 +172,63 @@ function home(exercise: Exercise): string {
   return exercise.tonic ?? exercise.key ?? 'C'
 }
 
+/**
+ * Several active goals, one session. Each path's items are dealt out in turn, a
+ * heavier path dealing more per round, so a session of two goals is not the
+ * first goal until it runs out. Order within a path is untouched — this only
+ * interleaves what is already sorted, so overdue still comes before new inside
+ * every goal.
+ *
+ * **Only goals are interleaved.** Exercises belonging to no path — the pack at
+ * large — follow behind in the order they already had. Dealing them as a peer
+ * queue would let an item that is not due for a week displace one that is
+ * overdue, which is the opposite of what the ordering is for.
+ *
+ * A weight below one is a real share, not a rounding to one: the credit carried
+ * between rounds is what makes a weight of 0.5 deal every other round.
+ */
+function shareByWeight(ordered: readonly Candidate[], owner: ReadonlyMap<string, PathProgress>): Candidate[] {
+  interface Queue {
+    weight: number
+    credit: number
+    items: Candidate[]
+  }
+  const queues = new Map<string, Queue>()
+  const unowned: Candidate[] = []
+  for (const candidate of ordered) {
+    const path = owner.get(candidate.exercise.id)
+    if (!path) {
+      unowned.push(candidate)
+      continue
+    }
+    const queue = queues.get(path.goal.id)
+    if (queue) queue.items.push(candidate)
+    // The weight is read once, here, rather than from whatever is left in the
+    // queue later — a queue that empties would have nothing left to read it from.
+    else queues.set(path.goal.id, { weight: path.goal.weight, credit: 0, items: [candidate] })
+  }
+  // One goal, or none: nothing to share, and the order stands as it was.
+  if (queues.size <= 1) return [...ordered]
+
+  const shared: Candidate[] = []
+  let left = [...queues.values()].reduce((sum, queue) => sum + queue.items.length, 0)
+  while (left > 0) {
+    let dealt = 0
+    for (const queue of queues.values()) {
+      queue.credit += queue.weight
+      while (queue.credit >= 1 && queue.items.length > 0) {
+        shared.push(queue.items.shift() as Candidate)
+        queue.credit -= 1
+        dealt += 1
+        left -= 1
+      }
+    }
+    // Nothing dealt anywhere this round: stop rather than spin.
+    if (dealt === 0) break
+  }
+  return [...shared, ...unowned]
+}
+
 /** Numbers first, in the order given; the first that differs decides. */
 function by(...values: number[]): number {
   return values.find((value) => value !== 0) ?? 0
@@ -177,9 +256,21 @@ export function planNextSession(input: PlanInput): NextSession {
   const today = input.today ?? new Date()
   const day = dayKey(today)
 
+  const paths = input.paths ?? []
+  // With active paths, a stage that has not opened yet withholds its items from
+  // being *introduced*; anything already played stays due on its own schedule.
+  const eligible = paths.length > 0 ? eligibleNewIds(paths) : null
+  const owner = goalOfExercise(paths)
+
   const candidates: Candidate[] = input.catalog.flatMap((exercise, rank) => {
     const found = input.state.get(exercise.id)
     if (!found) return []
+    const priority = input.priorities?.get(exercise.id)?.priority ?? null
+    // Muted is the one answer that removes an exercise from the practice
+    // altogether: not offered, not counted, not come back to.
+    if (priority === 'muted') return []
+    // A new item behind a closed stage is not offered yet.
+    if (found.band === 'new' && eligible !== null && !eligible.has(exercise.id)) return []
     return [
       {
         exercise,
@@ -187,12 +278,17 @@ export function planNextSession(input: PlanInput): NextSession {
         rank,
         over: found.due === null ? 0 : daysBetween(found.due, day),
         cost: input.costs?.get(exercise.id) ?? exerciseCost(exercise, [], constants),
+        target: input.targets?.get(exercise.id) ?? exercise.tempoBpm,
+        priority,
       },
     ]
   })
 
   const isDue = (candidate: Candidate) => candidate.state.due !== null && candidate.over >= 0
-  const mostOverdue = (a: Candidate, b: Candidate) => b.over - a.over || a.rank - b.rank
+  // Pinned rises above everything in its group; boosted rises within its band.
+  // Both are the user overruling the schedule, which is their right.
+  const chosen = (candidate: Candidate) => (candidate.priority === 'pinned' ? 2 : candidate.priority === 'boosted' ? 1 : 0)
+  const mostOverdue = (a: Candidate, b: Candidate) => by(chosen(b) - chosen(a), b.over - a.over, a.rank - b.rank)
 
   // Among the work, something loved comes first: the same wall is easier to
   // walk at when the session has already gone well (§8).
@@ -203,15 +299,30 @@ export function planNextSession(input: PlanInput): NextSession {
     .filter((candidate) => isDue(candidate) && candidate.state.band !== 'stuck' && candidate.state.band !== 'hard')
     .sort(mostOverdue)
   // Nothing new on a recovery day: learning something is the opposite of a rest.
+  // Otherwise new items come from the lowest open stage of each path, which is
+  // what `eligible` already left in, and in catalog order within that.
   const fresh = recovering
     ? []
-    : candidates.filter((candidate) => candidate.state.band === 'new').sort((a, b) => a.rank - b.rank)
+    : candidates
+        .filter((candidate) => candidate.state.band === 'new')
+        .sort((a, b) => by(chosen(b) - chosen(a), a.rank - b.rank))
   // Not due yet: soonest first, and the seed decides between two that come back on the same day.
   const ahead = candidates
     .filter((candidate) => candidate.state.due !== null && candidate.over < 0)
     .sort((a, b) => b.over - a.over || seeded(`${input.seed}:${a.exercise.id}`) - seeded(`${input.seed}:${b.exercise.id}`))
 
-  const ordered = [...due, ...maintenance, ...fresh, ...ahead]
+  // Several goals share the work by weight: interleaved so the heavier path
+  // gets more of the session without the lighter one waiting for it to finish.
+  const shared = shareByWeight([...due, ...maintenance, ...fresh, ...ahead], owner)
+  // Pinned means first, and first across the whole order rather than first
+  // among its own kind: a solid item the user asked to keep in front of them
+  // would otherwise sit behind every wall. This runs *after* the weight share,
+  // which would otherwise deal ordinary items of a heavy goal ahead of a light
+  // goal's pinned one — and `ordered[0]` anchors both ends of the arc.
+  const ordered = [
+    ...shared.filter((candidate) => candidate.priority === 'pinned'),
+    ...shared.filter((candidate) => candidate.priority !== 'pinned'),
+  ]
   const taken = new Set<string>()
 
   // Dessert chooses first. Both ends want the same thing — something loved —
@@ -243,10 +354,10 @@ export function planNextSession(input: PlanInput): NextSession {
     exercise: candidate.exercise,
     tempoBpm: candidate.state.nextTempo,
     reason: recovering && loved(candidate)
-      ? `Taking it easy — one you love, ${tempoNote(candidate.state, candidate.exercise)}`
+      ? `Taking it easy — one you love, ${tempoNote(candidate.state, candidate.target)}`
       : recovering
-        ? `Taking it easy · ${reasonFor(candidate.state, candidate.exercise, day)}`
-        : reasonFor(candidate.state, candidate.exercise, day),
+        ? `Taking it easy · ${reasonFor(candidate.state, candidate.target, day)}`
+        : reasonFor(candidate.state, candidate.target, day),
   }))
   const dessertSlots = dessert ? [dessertSlot(dessert)] : []
   const planned = [warmUp, ...work, dessert].reduce((sum, candidate) => sum + (candidate?.cost ?? 0), 0)
@@ -427,7 +538,7 @@ function fillWork(
 }
 
 function warmUpSlot(candidate: Candidate, constants: PlanConstants): SessionSlot {
-  const target = candidate.exercise.tempoBpm
+  const target = candidate.target
   const tempoBpm = Math.round(target * constants.warmUpTempoFactor)
   const key = homeLabel(candidate.exercise)
   return {
@@ -441,7 +552,7 @@ function dessertSlot(candidate: Candidate): SessionSlot {
   // A solid item's next tempo is its target already; a loved one that is still
   // work keeps the tempo the fold asked for rather than being forced up to it.
   const tempoBpm = candidate.state.nextTempo
-  const note = tempoNote(candidate.state, candidate.exercise)
+  const note = tempoNote(candidate.state, candidate.target)
   return {
     exercise: candidate.exercise,
     tempoBpm,
