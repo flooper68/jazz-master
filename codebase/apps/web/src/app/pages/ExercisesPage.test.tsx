@@ -142,14 +142,51 @@ describe('ExercisesPage', () => {
       const user = userEvent.setup()
       await renderRoute('/exercises?area=chords')
       const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      // Voicing describes chord shapes, so it joins the row once the area is chords.
       await user.click(find.getByRole('combobox', { name: 'Voicing' }))
       const offered = screen.getAllByRole('option').map((option) => option.textContent)
       expect(offered[0]).toBe('Any voicing')
       expect(offered).toContain(`Open chords · ${EXERCISES.filter((exercise) => exercise.voicings?.includes('open')).length}`)
-      await user.keyboard('{Escape}')
-      // Nothing in the chords area swings sixteenths, so the feel list does not offer it.
-      await user.click(find.getByRole('combobox', { name: 'Feel' }))
-      expect(screen.queryByRole('option', { name: /Swung sixteenths/ })).toBeNull()
+    })
+
+    it('keeps the row short: voicing only under chords, and the rest of the vocabulary typed for', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises')
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      for (const category of ['Style', 'Area', 'Level']) {
+        expect(find.getByRole('combobox', { name: category })).toBeInTheDocument()
+      }
+      for (const category of ['Voicing', 'Harmony', 'Technique', 'Feel', 'On the neck']) {
+        expect(find.queryByRole('combobox', { name: category })).toBeNull()
+      }
+      await pick(user, 'Area', /^Chords ·/)
+      expect(find.getByRole('combobox', { name: 'Voicing' })).toBeInTheDocument()
+    })
+
+    it('offers the categories what is typed matches, and choosing one makes it a chip', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises')
+      const find = within(screen.getByRole('search', { name: 'Find exercises' }))
+      const search = find.getByRole('combobox', { name: 'Search exercises' })
+      await user.type(search, 'strum')
+      const suggestion = await screen.findByRole('option', { name: /Technique.*Strumming/ })
+      await user.click(suggestion)
+
+      // The label is a chip now, and the text it was typed into has done its work.
+      expect(search).toHaveValue('')
+      expect(shown()).toContain('Open chords — picked string by string, then strummed')
+      expect(shown()).not.toContain('Ode to Joy')
+      await user.click(find.getByRole('button', { name: 'Remove Technique: Strumming' }))
+      expect(shown()).toContain('Ode to Joy')
+    })
+
+    it('does not offer a category already chosen, nor one with a select of its own', async () => {
+      const user = userEvent.setup()
+      await renderRoute('/exercises?area=chords&voicing=open')
+      const search = within(screen.getByRole('search', { name: 'Find exercises' })).getByRole('combobox', { name: 'Search exercises' })
+      // Voicing has a select under chords, so typing a voicing's name offers no category.
+      await user.type(search, 'open chords')
+      expect(screen.queryByRole('listbox', { name: /Categories/ })).toBeNull()
     })
 
     it('reads the filter from the URL, and writes it back', async () => {
@@ -157,11 +194,11 @@ describe('ExercisesPage', () => {
       const { router } = await renderRoute('/exercises?ctx=rhythm-changes&level=4')
       expect(shown()).toEqual(['Rhythm changes in B♭ — the A section'])
       const find = within(screen.getByRole('search', { name: 'Find exercises' }))
-      expect(find.getByRole('combobox', { name: 'Harmony' })).toHaveTextContent(/^Rhythm changes/)
       expect(find.getByRole('combobox', { name: 'Level' })).toHaveTextContent(/^Level 4/)
-
-      await pick(user, 'Level', /^Any level$/)
-      expect(router.state.location.search).toEqual({ ctx: 'rhythm-changes' })
+      // Harmony has no select: what the URL chose shows as a chip, so it can still be taken off.
+      await user.click(find.getByRole('button', { name: 'Remove Harmony: Rhythm changes' }))
+      // Written back as text; the router parsed the arriving URL's `4` as a number, and both are read the same way.
+      expect(router.state.location.search).toEqual({ level: '4' })
       await user.click(find.getByRole('button', { name: 'Clear filters' }))
       expect(router.state.location.search).toEqual({})
     })
@@ -169,7 +206,7 @@ describe('ExercisesPage', () => {
     it('searches, says when nothing matches, and clears', async () => {
       const user = userEvent.setup()
       await renderRoute('/exercises')
-      const search = screen.getByRole('searchbox', { name: 'Search exercises' })
+      const search = screen.getByRole('combobox', { name: 'Search exercises' })
       await user.type(search, 'dorian')
       // The list follows once the typing settles.
       await waitFor(() => expect(shown()).not.toContain('Ode to Joy'))

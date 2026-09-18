@@ -105,7 +105,7 @@ describe('the new routine page', () => {
     await user.type(editor.getByLabelText('Name'), 'Modes')
     await user.click(editor.getByRole('button', { name: 'Add' }))
 
-    await user.type(editor.getByRole('searchbox', { name: 'Search exercises' }), 'dorian{Enter}')
+    await user.type(editor.getByRole('combobox', { name: 'Search exercises' }), 'dorian{Enter}')
     const offered = () => within(editor.getByLabelText('Exercise to add')).getAllByRole('option').map((option) => option.textContent)
     await waitFor(() => expect(offered()).not.toContain('Ode to Joy'))
     expect(offered()).toContain('D Dorian — fifth position')
