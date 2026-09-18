@@ -6,7 +6,6 @@ import {
   integer,
   jsonb,
   pgTable,
-  smallint,
   text,
   timestamp,
   uuid,
@@ -38,8 +37,8 @@ export const exerciseRuns = pgTable(
     tempoBpm: integer('tempo_bpm').notNull(),
     passes: integer('passes').notNull(),
     completed: boolean('completed').notNull(),
-    // 1 (easy) to 10 (hard), never 7; null until the player says.
-    rating: smallint('rating'),
+    // How it went — 'again', 'hard', 'good' or 'easy'; null until the player says.
+    difficulty: text('difficulty'),
     // Groups the runs of one practice session (a quick run); no table of its own yet.
     sessionId: uuid('session_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -61,8 +60,8 @@ export const exerciseRuns = pgTable(
     check('exercise_runs_tempo_bpm_check', sql`${table.tempoBpm} > 0`),
     check('exercise_runs_passes_check', sql`${table.passes} >= 0`),
     check(
-      'exercise_runs_rating_check',
-      sql`${table.rating} between 1 and 10 and ${table.rating} <> 7`,
+      'exercise_runs_difficulty_check',
+      sql`${table.difficulty} in ('again', 'hard', 'good', 'easy')`,
     ),
   ],
 )

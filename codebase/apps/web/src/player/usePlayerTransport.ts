@@ -4,6 +4,8 @@ import { DEFAULT_BEATS_PER_BAR, type Exercise } from '../content'
 import { createTransport, type Transport, type TransportSnapshot } from './transport'
 
 interface PlayerTransportOptions {
+  /** What to start at, when a plan asked for something other than the written tempo. */
+  startTempoBpm?: number
   createAudio?: () => PlayerAudio
   now?: () => number
 }
@@ -18,13 +20,13 @@ interface PlayerTransportOptions {
  */
 export function usePlayerTransport(
   exercise: Exercise,
-  { createAudio, now }: PlayerTransportOptions = {},
+  { startTempoBpm, createAudio, now }: PlayerTransportOptions = {},
 ): { transport: Transport; snapshot: TransportSnapshot } {
   const create = () =>
     createTransport({
       notes: exercise.notes,
       beatsPerBar: exercise.beatsPerBar ?? DEFAULT_BEATS_PER_BAR,
-      tempoBpm: exercise.tempoBpm,
+      tempoBpm: startTempoBpm ?? exercise.tempoBpm,
       repeat: exercise.duration.kind === 'repetitions' ? exercise.duration.count : null,
       createAudio,
       now,

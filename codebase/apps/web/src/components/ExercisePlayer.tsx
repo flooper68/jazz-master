@@ -60,6 +60,8 @@ interface ExercisePlayerProps {
    * Null when Play was never pressed: there was no run.
    */
   onFinish: (outcome: RunOutcome | null) => void
+  /** Where to start the tempo — the scheduler's, when a session planned one. */
+  startTempoBpm?: number
   /** The title is the page's heading; the runner moves focus to it. */
   headingRef?: Ref<HTMLHeadingElement>
   /** What sits at the far end of the title row — the way out. */
@@ -92,13 +94,14 @@ export function ExercisePlayer({
   prefs,
   onPrefsChange,
   onFinish,
+  startTempoBpm,
   headingRef,
   headerAction,
   createAudio,
   now,
 }: ExercisePlayerProps) {
   const beatsPerBar = exercise.beatsPerBar ?? DEFAULT_BEATS_PER_BAR
-  const { transport, snapshot } = usePlayerTransport(exercise, { createAudio, now })
+  const { transport, snapshot } = usePlayerTransport(exercise, { startTempoBpm, createAudio, now })
   const playing = snapshot.status === 'playing'
   const [started, setStarted] = useState(false)
   const [ending, setEnding] = useState(false)

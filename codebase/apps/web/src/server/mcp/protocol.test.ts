@@ -5,6 +5,8 @@ import { STARTER_ROUTINES } from '../../content/starterRoutines'
 import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 import { createMemoryUserExerciseRepository } from '../../test/memoryUserExercises'
 import type { RoutineRepository } from '../db/routines'
+import type { RunRepository } from '../db/runs'
+import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { handleMcpRequest, MCP_PROTOCOL_VERSIONS } from './protocol'
 
@@ -28,10 +30,11 @@ async function connect(
   clerkUserId: string,
   userExercises: UserExerciseRepository | null,
   routines: RoutineRepository | null = createMemoryRoutineRepository(),
+  runs: RunRepository | null = createMemoryRunRepository(),
 ) {
   const client = new Client({ name: 'test-client', version: '0.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL('https://jazz.test/mcp'), {
-    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, routines }),
+    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, routines, runs }),
   })
   await client.connect(transport)
   return client
@@ -40,7 +43,7 @@ async function connect(
 function post(body: unknown, raw = false) {
   return handleMcpRequest(
     new Request('https://jazz.test/mcp', { method: 'POST', body: raw ? (body as string) : JSON.stringify(body) }),
-    { clerkUserId: 'user_123', userExercises: createMemoryUserExerciseRepository(), routines: createMemoryRoutineRepository() },
+    { clerkUserId: 'user_123', userExercises: createMemoryUserExerciseRepository(), routines: createMemoryRoutineRepository(), runs: createMemoryRunRepository() },
   )
 }
 
@@ -50,6 +53,7 @@ describe('the MCP server, through the official client', () => {
     expect(client.getServerVersion()).toMatchObject({ name: 'jazz-master' })
     const { tools } = await client.listTools()
     expect(tools.map((tool) => tool.name)).toEqual([
+      'get_next_session',
       'list_exercises',
       'validate_exercise',
       'create_exercise',
@@ -112,7 +116,7 @@ describe('the MCP server, on the wire', () => {
 
   it('accepts notifications silently, and refuses streams and sessions it does not have', async () => {
     expect((await post({ jsonrpc: '2.0', method: 'notifications/initialized' })).status).toBe(202)
-    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, routines: null })
+    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null })
     expect(get.status).toBe(405)
     expect(get.headers.get('allow')).toBe('POST')
   })
@@ -131,7 +135,7 @@ describe('the MCP server, on the wire', () => {
     // The library turns repository failures into results; a throw past it is simulated by a context that is not an object.
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'list_exercises', arguments: {} } }) }),
-      null as unknown as { clerkUserId: string; userExercises: typeof broken; routines: null },
+      null as unknown as { clerkUserId: string; userExercises: typeof broken; routines: null; runs: null },
     )
     expect(await response.json()).toEqual({ jsonrpc: '2.0', id: 9, error: { code: -32603, message: 'Internal error' } })
   })
@@ -139,7 +143,7 @@ describe('the MCP server, on the wire', () => {
   it('refuses a body by its declared size before reading it', async () => {
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', headers: { 'content-length': '999999' }, body: '{}' }),
-      { clerkUserId: 'user_123', userExercises: null, routines: null },
+      { clerkUserId: 'user_123', userExercises: null, routines: null, runs: null },
     )
     expect(response.status).toBe(413)
   })
@@ -182,6 +186,61 @@ describe('exercise labels over MCP', () => {
     const refused = await client.callTool({ name: 'validate_exercise', arguments: { exercise: { ...line, styles: ['bagpipes'] } } })
     expect(refused.isError).toBe(true)
     expect(JSON.stringify(refused.structuredContent)).toContain('styles.0')
+  })
+})
+
+describe('the next session over MCP', () => {
+  it('answers with the slots the app shows, each at its tempo and with its reason', async () => {
+    const runs = createMemoryRunRepository()
+    const yesterday = new Date(Date.now() - 86_400_000)
+    yesterday.setHours(10, 0, 0, 0)
+    await runs.saveRun('user_123', {
+      id: '11111111-1111-4111-8111-111111111111',
+      exerciseId: 'scales-major-open-c',
+      startedAt: yesterday.toISOString(),
+      durationSeconds: 120,
+      tempoBpm: 60,
+      passes: 4,
+      completed: true,
+      difficulty: 'good',
+      sessionId: null,
+    })
+    const client = await connect('user_123', createMemoryUserExerciseRepository(), createMemoryRoutineRepository(), runs)
+
+    const answer = await client.callTool({ name: 'get_next_session', arguments: {} })
+    expect(answer.isError).toBeFalsy()
+    const { slots } = answer.structuredContent as { slots: { exerciseId: string; tempoBpm: number; reason: string }[] }
+    expect(slots).toHaveLength(5)
+    expect(slots[0]).toMatchObject({ exerciseId: 'scales-major-open-c', tempoBpm: 60, reason: 'Due today · at its tempo, 60 BPM' })
+    for (const slot of slots) expect(slot.reason.length).toBeGreaterThan(0)
+  })
+
+  it('keeps one user\u2019s history from another', async () => {
+    const runs = createMemoryRunRepository()
+    await runs.saveRun('user_123', {
+      id: '22222222-2222-4222-8222-222222222222',
+      exerciseId: 'scales-major-open-c',
+      startedAt: new Date().toISOString(),
+      durationSeconds: 120,
+      tempoBpm: 60,
+      passes: 4,
+      completed: true,
+      difficulty: 'again',
+      sessionId: null,
+    })
+    const theirs = await connect('user_456', createMemoryUserExerciseRepository(), createMemoryRoutineRepository(), runs)
+    const { slots } = (await theirs.callTool({ name: 'get_next_session', arguments: {} })).structuredContent as {
+      slots: { reason: string }[]
+    }
+    // A fresh account has played nothing, so every slot is new.
+    expect(slots.every((slot) => slot.reason === 'New \u2014 not played yet')).toBe(true)
+  })
+
+  it('says so when no run database is configured', async () => {
+    const client = await connect('user_123', createMemoryUserExerciseRepository(), createMemoryRoutineRepository(), null)
+    const answer = await client.callTool({ name: 'get_next_session', arguments: {} })
+    expect(answer.isError).toBe(true)
+    expect(answer.structuredContent).toEqual({ status: 'unconfigured' })
   })
 })
 

@@ -58,15 +58,17 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
   await expect(summary).toBeFocused()
   await expect(page.getByText(FIRST_EXERCISE)).toBeVisible()
 
-  await expect(page.getByRole('button', { name: '7 out of 10' })).toBeDisabled()
+  for (const answer of ['Again', 'Hard', 'Good', 'Easy']) {
+    await expect(page.getByRole('button', { name: answer, exact: true })).toHaveAttribute('aria-pressed', 'false')
+  }
   await Promise.all([
-    // Two saves are in play — the run arriving, then its rating; wait for the rated one.
+    // Two saves are in play — the run arriving, then its answer; wait for the answered one.
     page.waitForResponse(
       (response) =>
         response.url().includes('runs.save') &&
-        (response.request().postData() ?? '').includes('"rating":6'),
+        (response.request().postData() ?? '').includes('"difficulty":"good"'),
     ),
-    page.getByRole('button', { name: '6 out of 10' }).click(),
+    page.getByRole('button', { name: 'Good', exact: true }).click(),
   ])
   await expect(page.getByRole('alert')).toHaveCount(0)
 
@@ -80,13 +82,13 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
   expect(runs[0]).toMatchObject({
     exerciseId: 'scales-major-open-c',
     completed: false,
-    rating: 6,
+    difficulty: 'good',
   })
 })
 
 test('a run left from the stage is not stored', async ({ page }) => {
   await page.goto('/app/exercises/scales-major-open-c')
-  await page.getByRole('button', { name: /^Play / }).click()
+  await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Exercises' }).click()
   await expect(
     page.getByRole('heading', { name: 'Exercises', level: 1 }),
@@ -102,7 +104,7 @@ test('Play starts the timer, the click, and the cursor; Play again starts over',
   await expect(page.getByText('2:00')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Click' })).toBeChecked()
 
-  await page.getByRole('button', { name: /^Play / }).click()
+  await page.getByRole('button', { name: /^Play C major/ }).click()
   await expect(page.getByText(/1:5\d/)).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
   // The cursor is on the tab and moves with the clock (after the count-in).

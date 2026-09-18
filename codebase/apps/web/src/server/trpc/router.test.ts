@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { ExerciseRun } from '../../appData/run'
 import type { StructuredLogger } from '../observability/logger'
-import { RunOwnerMismatchError, type RunRepository } from '../db/runs'
+import type { RunRepository } from '../db/runs'
+import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
@@ -404,7 +405,7 @@ describe('appRouter.runs', () => {
     })
   })
 
-  it('updates a run in place when its rating arrives', async () => {
+  it('updates a run in place when its answer arrives', async () => {
     const runs = createMemoryRunRepository()
     const caller = createCaller(
       createContext({ auth: { clerkUserId: 'user_123' }, runs }),
@@ -412,15 +413,15 @@ describe('appRouter.runs', () => {
     const run = runRecord()
 
     await caller.runs.save(run)
-    await caller.runs.save({ ...run, rating: 8 })
+    await caller.runs.save({ ...run, difficulty: 'hard' })
 
     await expect(caller.runs.list()).resolves.toEqual({
       status: 'ok',
-      runs: [{ ...run, rating: 8 }],
+      runs: [{ ...run, difficulty: 'hard' }],
     })
   })
 
-  it.each([0, 7, 11, 2.5])('rejects a rating of %s', async (rating) => {
+  it.each(['', 'fine', 7, 'Easy'])('rejects a difficulty of %s', async (difficulty) => {
     const caller = createCaller(
       createContext({
         auth: { clerkUserId: 'user_123' },
@@ -429,7 +430,8 @@ describe('appRouter.runs', () => {
     )
 
     await expect(
-      caller.runs.save(runRecord({ rating })),
+      // A difficulty outside the four is exactly what the schema is for.
+      caller.runs.save(runRecord({ difficulty } as Partial<ExerciseRun>)),
     ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
   })
 
@@ -502,32 +504,6 @@ describe('appRouter.runs', () => {
   })
 })
 
-function createMemoryRunRepository(): RunRepository {
-  const stored = new Map<string, { clerkUserId: string; run: ExerciseRun }>()
-
-  return {
-    async listRuns(clerkUserId) {
-      return [...stored.values()]
-        .filter((entry) => entry.clerkUserId === clerkUserId)
-        .map((entry) => ({ ...entry.run }))
-        .sort(
-          (a, b) =>
-            new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf(),
-        )
-    },
-    async saveRun(clerkUserId, run) {
-      const existing = stored.get(run.id)
-
-      if (existing && existing.clerkUserId !== clerkUserId) {
-        throw new RunOwnerMismatchError()
-      }
-
-      stored.set(run.id, { clerkUserId, run: { ...run } })
-      return { ...run }
-    },
-  }
-}
-
 function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
   return {
     id: crypto.randomUUID(),
@@ -537,7 +513,7 @@ function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
     tempoBpm: 60,
     passes: 6,
     completed: true,
-    rating: null,
+    difficulty: null,
     sessionId: null,
     ...overrides,
   }

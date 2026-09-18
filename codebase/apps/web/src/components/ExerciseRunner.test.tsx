@@ -470,7 +470,7 @@ describe('ExerciseRunner', () => {
     )
     expect(onRunChange).toHaveBeenCalledTimes(1)
     expect(onRunChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ exerciseId: 'fx-2', tempoBpm: 120, passes: 2, completed: true, rating: null }),
+      expect.objectContaining({ exerciseId: 'fx-2', tempoBpm: 120, passes: 2, completed: true, difficulty: null }),
     )
   })
 
@@ -515,7 +515,7 @@ describe('ExerciseRunner', () => {
       exerciseId: 'fx-1',
       tempoBpm: 64,
       completed: false,
-      rating: null,
+      difficulty: null,
     })
     expect(run.id).toMatch(/^[0-9a-f-]{36}$/)
     expect(new Date(run.startedAt).valueOf()).toBeGreaterThanOrEqual(1_000)
@@ -524,27 +524,27 @@ describe('ExerciseRunner', () => {
     vi.useRealTimers()
   })
 
-  it('takes an optional difficulty rating, 1 to 10 without 7, and sends the rated run again', async () => {
+  it('takes an optional answer — Again, Hard, Good or Easy — and sends the answered run again', async () => {
     const user = userEvent.setup()
     const { onRunChange } = renderRunner()
     await play(user, 'C major — open position')
     await finish(user, 'C major — open position')
 
-    const rating = screen.getByRole('group', { name: /^How hard was it\?/ })
-    expect(within(rating).getAllByRole('button')).toHaveLength(10)
-    expect(within(rating).getByRole('button', { name: '7 out of 10' })).toBeDisabled()
-    await user.click(within(rating).getByRole('button', { name: '7 out of 10' }))
+    const answer = screen.getByRole('group', { name: /^How did it go\?/ })
+    // The four, hardest first, and nothing chosen for the player.
+    expect(within(answer).getAllByRole('button').map((button) => button.textContent)).toEqual(['Again', 'Hard', 'Good', 'Easy'])
+    for (const button of within(answer).getAllByRole('button')) expect(button).toHaveAttribute('aria-pressed', 'false')
     expect(onRunChange).toHaveBeenCalledTimes(1)
 
-    await user.click(within(rating).getByRole('button', { name: '8 out of 10' }))
-    expect(within(rating).getByRole('button', { name: '8 out of 10' })).toHaveAttribute('aria-pressed', 'true')
-    const [first, rated] = vi.mocked(onRunChange).mock.calls.map(([run]) => run)
-    expect(rated).toEqual({ ...first, rating: 8 })
+    await user.click(within(answer).getByRole('button', { name: 'Hard' }))
+    expect(within(answer).getByRole('button', { name: 'Hard' })).toHaveAttribute('aria-pressed', 'true')
+    const [first, answered] = vi.mocked(onRunChange).mock.calls.map(([run]) => run)
+    expect(answered).toEqual({ ...first, difficulty: 'hard' })
     expect(first.sessionId).toBeNull()
 
-    // Pressing the chosen number again takes the rating back.
-    await user.click(within(rating).getByRole('button', { name: '8 out of 10' }))
-    expect(onRunChange).toHaveBeenLastCalledWith({ ...first, rating: null })
+    // Pressing the chosen answer again takes it back.
+    await user.click(within(answer).getByRole('button', { name: 'Hard' }))
+    expect(onRunChange).toHaveBeenLastCalledWith({ ...first, difficulty: null })
 
     // Play again is a new run with its own identity.
     await user.click(screen.getByRole('button', { name: 'Play again' }))
@@ -552,7 +552,7 @@ describe('ExerciseRunner', () => {
     await finish(user, 'C major — open position')
     const again = vi.mocked(onRunChange).mock.calls.at(-1)![0]
     expect(again.id).not.toBe(first.id)
-    expect(again.rating).toBeNull()
+    expect(again.difficulty).toBeNull()
   })
 
   it('records nothing, and asks nothing, when Finish comes before any Play', async () => {
@@ -560,7 +560,7 @@ describe('ExerciseRunner', () => {
     const { onRunChange } = renderRunner()
     await finish(user, 'C major — open position')
     expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: /^How hard was it\?/ })).toBeNull()
+    expect(screen.queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
     expect(onRunChange).not.toHaveBeenCalled()
   })
 

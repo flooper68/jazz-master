@@ -1,16 +1,30 @@
-/** Difficulty as the player felt it, 1 (easy) to 10 (hard). Seven is not on offer: it is the non-answer. */
-export const RATING_MIN = 1
-export const RATING_MAX = 10
-export const RATING_SKIPPED = 7
+/**
+ * How the run went, said in one tap on the summary — Anki's four, in the same
+ * order: Again (it fell apart), Hard, Good, Easy. There is no safe middle to
+ * hide in, and no default: an unanswered run is `null`.
+ */
+export type Difficulty = 'again' | 'hard' | 'good' | 'easy'
 
-export function isRating(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= RATING_MIN &&
-    value <= RATING_MAX &&
-    value !== RATING_SKIPPED
-  )
+/** Hardest first, which is the order the summary shows them in. */
+export const DIFFICULTIES: readonly Difficulty[] = ['again', 'hard', 'good', 'easy']
+
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  again: 'Again',
+  hard: 'Hard',
+  good: 'Good',
+  easy: 'Easy',
+}
+
+/** What each answer means, said back once it is chosen. */
+export const DIFFICULTY_MEANINGS: Record<Difficulty, string> = {
+  again: 'It fell apart — back tomorrow',
+  hard: 'Got through it, barely',
+  good: 'Clean, with effort',
+  easy: 'Comfortable, room to spare',
+}
+
+export function isDifficulty(value: unknown): value is Difficulty {
+  return typeof value === 'string' && (DIFFICULTIES as readonly string[]).includes(value)
 }
 
 /** One played-through run of one exercise, recorded when it reaches the summary. */
@@ -27,13 +41,13 @@ export interface ExerciseRun {
   passes: number
   /** True when the timer ran out or the passes were done; false when ended early with Finish. */
   completed: boolean
-  /** How hard it felt, if the player said. */
-  rating: number | null
+  /** How it went, if the player said. */
+  difficulty: Difficulty | null
   /** The practice session (a quick run) this run was part of; null when played on its own. */
   sessionId: string | null
 }
 
-/** What the player knows about a run when it ends — everything but its identity and rating. */
+/** What the player knows about a run when it ends — everything but its identity and difficulty. */
 export type RunOutcome = Pick<
   ExerciseRun,
   'startedAt' | 'durationSeconds' | 'tempoBpm' | 'passes' | 'completed'

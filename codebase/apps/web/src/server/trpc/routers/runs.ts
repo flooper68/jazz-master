@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { isRating } from '../../../appData/run'
+import { DIFFICULTIES } from '../../../appData/run'
 import { RunOwnerMismatchError } from '../../db/runs'
 import { protectedProcedure, router } from '../init'
 
@@ -12,7 +12,7 @@ export const exerciseRunSchema = z.object({
   tempoBpm: z.number().int().min(1),
   passes: z.number().int().min(0),
   completed: z.boolean(),
-  rating: z.number().refine(isRating, 'rating must be 1–10 and not 7').nullable(),
+  difficulty: z.enum(DIFFICULTIES).nullable(),
   sessionId: z.uuid().nullable(),
 })
 

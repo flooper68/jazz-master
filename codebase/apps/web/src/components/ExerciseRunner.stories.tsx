@@ -5,7 +5,7 @@ import { EXERCISES } from '../content'
 const meta = { title: 'Components/ExerciseRunner', component: ExerciseRunner,
   render: (args) => <div className="flex h-[640px] flex-col"><ExerciseRunner key={args.exercise.id} {...args} /></div>,
   args: { exercise: EXERCISES[0], onRunChange: fn(), onExit: fn() },
-  parameters: { docs: { description: { component: 'One exercise, start to finish: the exercise as a tab, click at tempo with a cursor on the current note, timer or pass counter, then the summary with its optional difficulty rating. Saving the run and leaving are local Storybook actions; the click plays through Web Audio once Play is pressed.' } } },
+  parameters: { docs: { description: { component: 'One exercise, start to finish: the exercise as a tab, click at tempo with a cursor on the current note, timer or pass counter, then the summary where the run is answered Again, Hard, Good or Easy. Saving the run and leaving are local Storybook actions; the click plays through Web Audio once Play is pressed.' } } },
 } satisfies Meta<typeof ExerciseRunner>
 export default meta
 type Story = StoryObj<typeof meta>

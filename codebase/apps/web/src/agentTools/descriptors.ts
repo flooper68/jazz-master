@@ -1,6 +1,9 @@
 import { z } from 'zod'
+import { foldRuns } from '../appData/memory'
+import { planNextSession, planSeed } from '../appData/nextSession'
 import { MOST_ROUTINE_ITEMS, routineInputSchema } from '../appData/routine'
-import { EXERCISES } from '../content'
+import type { ExerciseRun } from '../appData/run'
+import { EXERCISES, type Exercise } from '../content'
 import { HIGHEST_FRET, NOTE_LENGTHS_IN_BEATS, exerciseInputSchema } from '../content/exerciseInput'
 
 /**
@@ -30,6 +33,32 @@ export function builtinExerciseSummaries() {
   return EXERCISES.map(({ id, title, area, level, key, tonic, tempoBpm, styles, contexts, techniques, feel, voicings, series }) => ({
     id, title, area, level, key, tonic, tempoBpm, styles, contexts, techniques, feel, voicings, series,
   }))
+}
+
+/**
+ * What get_next_session answers with, through either door: the slots the home
+ * card shows, in the same order and with the same reasons, worked out from the
+ * same pure functions.
+ *
+ * Days are counted in the runtime's own timezone. In the browser (WebMCP) that
+ * is the user's, so the answer matches the page exactly. On the `/mcp` server
+ * it is the worker's — UTC — which shifts both today and the grouping of runs
+ * into days, so a user well away from UTC can get a plan that differs from the
+ * page. The tool says so; a timezone argument is the fix when it matters.
+ */
+export function nextSessionAnswer(runs: readonly ExerciseRun[], catalog: readonly Exercise[]) {
+  const { slots } = planNextSession(foldRuns(runs, catalog), catalog, planSeed(runs))
+  return {
+    status: 'ok' as const,
+    slots: slots.map((slot) => ({
+      exerciseId: slot.exercise.id,
+      title: slot.exercise.title,
+      area: slot.exercise.area,
+      tempoBpm: slot.tempoBpm,
+      targetTempoBpm: slot.exercise.tempoBpm,
+      reason: slot.reason,
+    })),
+  }
 }
 
 export function objectSchema(properties: Record<string, unknown>, required: string[]): Record<string, unknown> {
@@ -80,6 +109,7 @@ const routineArgument = { routine: z.toJSONSchema(routineInputSchema, { io: 'inp
 const routineIdArgument = { routineId: { type: 'string', description: 'The `id` of a routine from list_routines.' } }
 
 export type LibraryToolName =
+  | 'get_next_session'
   | 'list_exercises'
   | 'validate_exercise'
   | 'create_exercise'
@@ -91,6 +121,14 @@ export type LibraryToolName =
 
 /** The library and routine tools, in the order a client lists them. */
 export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: LibraryToolName })[] = [
+  {
+    name: 'get_next_session',
+    title: 'What to practise next',
+    description:
+      "What Count-in would have the signed-in user practise now: the exercises of their next session, in playing order, each with the tempo to start at and the reason it is there (overdue, due today, new, ahead of schedule). It is worked out from their run history by the same code the app's home page uses. Nothing is stored and calling it changes nothing. Note on days: the scheduler counts calendar days, and over this server they are counted in UTC — a user in another timezone may see a slightly different plan in the app itself.",
+    inputSchema: objectSchema({}, []),
+    annotations: READS_USER_TEXT,
+  },
   {
     name: 'list_exercises',
     title: 'List my exercises',

@@ -1,11 +1,14 @@
 import {
   LIBRARY_TOOL_DESCRIPTORS,
   builtinExerciseSummaries,
+  nextSessionAnswer,
   toolArgument as argument,
   type AgentToolDescriptor,
   type LibraryToolName,
 } from '../../agentTools/descriptors'
+import { EXERCISES } from '../../content'
 import type { RoutineRepository } from '../db/routines'
+import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
 import { deleteRoutine, listRoutines, saveRoutine } from '../library/routines'
@@ -23,6 +26,7 @@ export interface McpToolContext {
   clerkUserId: string
   userExercises: UserExerciseRepository | null
   routines: RoutineRepository | null
+  runs: RunRepository | null
 }
 
 export interface McpToolResult {
@@ -43,6 +47,17 @@ interface McpTool extends AgentToolDescriptor {
 }
 
 const CALLS: Record<LibraryToolName, McpToolCall> = {
+  async get_next_session(_args, { clerkUserId, userExercises, runs }) {
+    if (!runs) return text({ status: 'unconfigured' }, true)
+    try {
+      // The user's own exercises are part of what can be practised; without them the pack still plans.
+      const library = await listLibrary(userExercises, clerkUserId)
+      const catalog = library.status === 'ok' ? [...EXERCISES, ...library.exercises] : EXERCISES
+      return text(nextSessionAnswer(await runs.listRuns(clerkUserId), catalog))
+    } catch {
+      return text({ status: 'error', message: 'Run database read failed' }, true)
+    }
+  },
   async list_exercises(_args, { clerkUserId, userExercises }) {
     const result = await listLibrary(userExercises, clerkUserId)
     return text(result, result.status !== 'ok')

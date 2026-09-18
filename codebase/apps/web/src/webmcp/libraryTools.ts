@@ -1,5 +1,6 @@
 import { TRPCClientError, type TRPCClient } from '@trpc/client'
-import { LIBRARY_TOOL_DESCRIPTORS, builtinExerciseSummaries, toolArgument, type LibraryToolName } from '../agentTools/descriptors'
+import { LIBRARY_TOOL_DESCRIPTORS, builtinExerciseSummaries, nextSessionAnswer, toolArgument, type LibraryToolName } from '../agentTools/descriptors'
+import { EXERCISES } from '../content'
 import { parseExerciseInput } from '../content/exerciseInput'
 import type { AppRouter } from '../server/trpc/router'
 import type { AgentConfirm } from './agentConfirm'
@@ -40,6 +41,13 @@ async function routineName(client: LibraryToolDeps['client'], routineId: string)
 
 function executors({ client, refresh, confirm }: LibraryToolDeps): Record<LibraryToolName, Execute> {
   return {
+    async get_next_session() {
+      const listed = await client.runs.list.query()
+      if (listed.status !== 'ok') return listed
+      const library = await client.exercises.list.query()
+      const catalog = library.status === 'ok' ? [...EXERCISES, ...library.exercises] : EXERCISES
+      return nextSessionAnswer(listed.runs, catalog)
+    },
     list_exercises: () => client.exercises.list.query(),
     async validate_exercise(args) {
       const parsed = parseExerciseInput(toolArgument(args, 'exercise'))

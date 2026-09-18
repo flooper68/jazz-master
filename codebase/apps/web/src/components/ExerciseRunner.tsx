@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ExerciseRun, RunOutcome } from '../appData/run'
+import type { Difficulty, ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
 import { AREA_BADGE, AREA_LABELS } from './areaLabels'
@@ -13,7 +13,7 @@ import { useViewFocus } from './useViewFocus'
 /**
  * One exercise, start to finish: the practice stage (ExercisePlayer), then a
  * short summary where the run can be rated. A run exists once it reaches the
- * summary having been played; every change to it (its arrival, its rating)
+ * summary having been played; every change to it (its arrival, its answer)
  * is handed to the page to save. Player preferences (click, voice, view)
  * outlive any one exercise and live here.
  */
@@ -28,7 +28,7 @@ const HEADING =
 /**
  * Where this exercise sits in a practice session, and how to move on from it.
  * In a session there is no summary per exercise: finishing moves straight on,
- * and the session sums everything up (and takes the ratings) at its end.
+ * and the session sums everything up (and takes the answers) at its end.
  */
 export interface RunnerSession {
   id: string
@@ -49,13 +49,15 @@ interface ExerciseRunnerProps {
   onExit: () => void
   /** Set when the exercise is one step of a practice session (a quick run). */
   session?: RunnerSession
+  /** What the session's plan asked this exercise to be played at; the written tempo otherwise. */
+  startTempoBpm?: number
   /** Test seam: the browser's Web Audio engine, swapped for a fake in jsdom. */
   createAudio?: () => PlayerAudio
   /** Test seam: the wall clock in ms, used when audio is unavailable. */
   now?: () => number
 }
 
-export function ExerciseRunner({ exercise, onRunChange, onExit, session, createAudio, now }: ExerciseRunnerProps) {
+export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTempoBpm, createAudio, now }: ExerciseRunnerProps) {
   const [finished, setFinished] = useState(false)
   // Null on the summary when Finish came before any Play: nothing to record or rate.
   const [run, setRun] = useState<ExerciseRun | null>(null)
@@ -76,7 +78,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
       id: crypto.randomUUID(),
       exerciseId: exercise.id,
       ...outcome,
-      rating: null,
+      difficulty: null,
       sessionId: session?.id ?? null,
     }
     if (finishedRun) onRunChange(finishedRun)
@@ -85,9 +87,9 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
     setFinished(true)
   }
 
-  function rate(rating: number | null): void {
+  function rate(difficulty: Difficulty | null): void {
     if (!run) return
-    const rated = { ...run, rating }
+    const rated = { ...run, difficulty }
     setRun(rated)
     onRunChange(rated)
   }
@@ -130,7 +132,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
 
           {run && (
             <div className="mt-3 rounded-2xl border border-line bg-panel p-3.5">
-              <RatingInput value={run.rating} onChange={rate} />
+              <RatingInput value={run.difficulty} onChange={rate} />
             </div>
           )}
 
@@ -161,6 +163,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, createA
       prefs={prefs}
       onPrefsChange={setPrefs}
       onFinish={finish}
+      startTempoBpm={startTempoBpm}
       headingRef={headingRef}
       // On its own an exercise needs no way out in the header — the navigation
       // is right there; a session says where it stands and how to end it.

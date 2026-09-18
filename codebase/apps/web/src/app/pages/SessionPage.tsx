@@ -1,7 +1,7 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
-import { loadQuickRunSettings, planQuickRun, sessionSearch } from '../../appData/quickRun'
-import type { ExerciseRun } from '../../appData/run'
+import { parseSessionSearch, sessionSearch } from '../../appData/quickRun'
+import type { Difficulty, ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
@@ -10,6 +10,7 @@ import { CheckIcon } from '../../components/icons'
 import { useViewFocus } from '../../components/useViewFocus'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
+import { useNextSession } from '../useNextSession'
 import { useRoutines } from '../useRoutines'
 import { STAGE_FRAME, UnsavedRunAlert, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
@@ -20,32 +21,43 @@ const BUTTON_SECONDARY =
   'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 /**
- * A practice session — a quick run's random draw, or a practice routine: the
- * exercises named in the URL, played straight through, then summed up — and
- * rated — on one closing screen.
+ * A practice session — the scheduler's next session, or a practice routine:
+ * the exercises named in the URL, each at the tempo the URL asked for, played
+ * straight through, then summed up — and answered — on one closing screen.
  */
 export default function SessionPage() {
   // Loose search so the page also renders inside Storybook's ad hoc router.
   const { x, r } = useSearch({ strict: false }) as { x?: string; r?: string }
-  const ids = [...new Set((x ?? '').split(',').filter(Boolean))]
+  const planned = parseSessionSearch(x)
   const { byId, libraryPending } = useExerciseCatalog()
-  // A draw that includes the user's own exercises waits for the library, rather than starting short and restarting.
-  if (libraryPending && ids.some(isLibraryExerciseId)) return <p className="p-6 text-sm text-muted" role="status">Loading your exercises…</p>
-  const exercises = ids.flatMap((id) => byId.get(id) ?? [])
+  // A plan that includes the user's own exercises waits for the library, rather than starting short and restarting.
+  if (libraryPending && planned.some((item) => isLibraryExerciseId(item.exerciseId)))
+    return <p className="p-6 text-sm text-muted" role="status">Loading your exercises…</p>
+  const steps = planned.flatMap((item) => {
+    const exercise = byId.get(item.exerciseId)
+    // A tempo the URL did not name, or one for an exercise since deleted, falls back to what is written.
+    return exercise ? [{ exercise, tempoBpm: item.tempoBpm ?? exercise.tempoBpm }] : []
+  })
 
-  if (exercises.length === 0) return <NotFoundPage />
+  if (steps.length === 0) return <NotFoundPage />
 
-  // Keyed on the draw so another quick run starts afresh.
-  return <SessionStage key={exercises.map((exercise) => exercise.id).join()} exercises={exercises} routineId={r ?? null} />
+  // Keyed on the plan so another session starts afresh.
+  return <SessionStage key={steps.map((step) => `${step.exercise.id}@${step.tempoBpm}`).join()} steps={steps} routineId={r ?? null} />
 }
 
-function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routineId: string | null }) {
+/** One exercise of the session, at the tempo the plan asked for. */
+interface SessionStep {
+  exercise: Exercise
+  tempoBpm: number
+}
+
+function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: string | null }) {
   const navigate = useNavigate()
-  const catalog = useExerciseCatalog().exercises
   const { routines } = useRoutines()
+  const { plan } = useNextSession()
   // The routine's name arrives with the routines; until then (or if it is gone) the session is simply a routine.
   const routineName = routineId === null ? null : (routines.find((routine) => routine.id === routineId)?.name ?? 'Routine')
-  const label = routineName ?? 'Quick run'
+  const label = routineName ?? 'Next session'
   const { save, unsaved } = useRunSaver()
   // The session's identity is minted once, when it mounts — not in render.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
@@ -61,7 +73,7 @@ function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routine
     setRuns(new Map())
     setIndex(0)
   }
-  const done = index >= exercises.length
+  const done = index >= steps.length
   const headingRef = useViewFocus<HTMLHeadingElement>(done ? 'done' : 'playing')
 
   if (done) {
@@ -86,14 +98,14 @@ function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routine
                   {label} complete
                 </h1>
                 <p className="text-sm text-muted">
-                  {runs.size} of {exercises.length} played ·{' '}
+                  {runs.size} of {steps.length} played ·{' '}
                   {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
             </div>
 
             <ol className="mt-5 space-y-2.5">
-              {exercises.map((exercise, step) => {
+              {steps.map(({ exercise }, step) => {
                 const run = runs.get(step)
                 return (
                   <li key={exercise.id} className="rounded-2xl border border-line bg-panel p-2">
@@ -112,9 +124,9 @@ function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routine
                     {run && (
                       <div className="mt-3 border-t border-line px-1.5 pt-3 pb-1">
                         <RatingInput
-                          value={run.rating}
+                          value={run.difficulty}
                           subject={exercise.title}
-                          onChange={(rating) => record(step, { ...run, rating })}
+                          onChange={(difficulty: Difficulty | null) => record(step, { ...run, difficulty })}
                         />
                       </div>
                     )}
@@ -130,13 +142,13 @@ function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routine
               <button
                 type="button"
                 onClick={() => {
-                  // After a routine: the same routine again, from the top. After a draw: a new plan from the quick run settings.
+                  // After a routine: the same routine again, from the top. Otherwise: whatever the scheduler says now.
                   if (routineId !== null) return restart()
-                  void navigate({ to: '/session', search: sessionSearch(planQuickRun(catalog, loadQuickRunSettings(catalog), routines)) })
+                  void navigate({ to: '/session', search: sessionSearch(plan) })
                 }}
                 className={BUTTON_SECONDARY}
               >
-                {routineId !== null ? 'Play it again' : 'Another quick run'}
+                {routineId !== null ? 'Play it again' : 'What now?'}
               </button>
             </div>
           </div>
@@ -151,13 +163,14 @@ function SessionStage({ exercises, routineId }: { exercises: Exercise[]; routine
       {/* Keyed on the step so each exercise gets a fresh runner. */}
       <ExerciseRunner
         key={index}
-        exercise={exercises[index]}
+        exercise={steps[index].exercise}
+        startTempoBpm={steps[index].tempoBpm}
         session={{
           id: sessionId,
           label,
-          endLabel: routineId !== null ? 'End routine' : 'End quick run',
+          endLabel: routineId !== null ? 'End routine' : 'End session',
           step: index + 1,
-          total: exercises.length,
+          total: steps.length,
           onContinue: () => setIndex((current) => current + 1),
         }}
         onRunChange={(run) => record(index, run)}

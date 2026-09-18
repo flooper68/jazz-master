@@ -11,7 +11,7 @@ import {
 } from 'react'
 import type { Exercise } from '../content'
 import { HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
-import { sessionSearch } from '../appData/quickRun'
+
 import type { Routine } from '../appData/routine'
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -35,13 +35,16 @@ const NAV = [
 
 /** The app shell: brand, navigation and the account control beside (on phones, above) the page. */
 interface LayoutProps {
-  /** What a quick run draws from: the pack, joined by the user's own exercises once the app has them. */
+  /** The catalog: the pack, joined by the user's own exercises once the app has them. */
   exercises: readonly Exercise[]
-  /** The user's practice routines, which a quick run can play instead. */
+  /** The user's practice routines, one of which can be named as what to play next. */
   routines: readonly Routine[]
+  /** What Play offers, worked out by the page. */
+  next: { label: string; count: number; seconds: number; routineId: string | null }
+  onStartNext: () => void
 }
 
-export function Layout({ exercises, routines }: LayoutProps) {
+export function Layout({ exercises, routines, next, onStartNext }: LayoutProps) {
   const usePlaywrightAccountStub =
     import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
   const { theme, toggleTheme } = useTheme()
@@ -157,8 +160,9 @@ export function Layout({ exercises, routines }: LayoutProps) {
             <QuickRunButton
               exercises={exercises}
               routines={routines}
+              next={next}
               iconOnly={collapsed}
-              onStart={(plan) => void navigate({ to: '/session', search: sessionSearch(plan) })}
+              onStart={onStartNext}
             />
           </div>
         </nav>

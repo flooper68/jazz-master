@@ -13,7 +13,7 @@ function run(id: string, startedAt: Date): ExerciseRun {
     tempoBpm: 60,
     passes: 1,
     completed: true,
-    rating: null,
+    difficulty: null,
     sessionId: null,
   }
 }

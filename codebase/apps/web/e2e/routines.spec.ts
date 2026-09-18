@@ -1,6 +1,6 @@
 import { expect, listStoredRuns, test } from './fixtures'
 
-test('a routine made in the app is stored, played in its order, and offered to quick run', async ({ page }) => {
+test('a routine made in the app is stored, played in its order, and offered as what to play next', async ({ page }) => {
   await page.goto('/app/routines')
   // A new user starts with the starter routines.
   await expect(page.getByRole('listitem', { name: 'Open-position warm-up' })).toBeVisible()
@@ -20,24 +20,23 @@ test('a routine made in the app is stored, played in its order, and offered to q
   await page.reload()
   await expect(page.getByRole('listitem', { name: 'E2E warm-up' })).toBeVisible()
 
-  // Quick run offers it as what to play.
-  await page.getByRole('button', { name: 'Quick run settings' }).click()
-  await page.getByRole('dialog', { name: 'Quick run settings' }).getByRole('radio', { name: /^E2E warm-up/ }).check()
-  await page.getByRole('button', { name: /^Quick run: E2E warm-up, 2 exercises/ }).click()
+  // It can be named as what to play instead of the next session.
+  await page.getByRole('button', { name: 'What to play next' }).click()
+  await page.getByRole('dialog', { name: 'What to play next' }).getByRole('radio', { name: /^E2E warm-up/ }).check()
+  await page.getByRole('button', { name: /^Play E2E warm-up: 2 exercises/ }).click()
 
   // The routine's order, not easier-first: the line comes before the scale.
   await expect(page.getByText('E2E warm-up · 1 of 2')).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toBeVisible()
-  await page.getByRole('button', { name: /^Play / }).click()
+  await page.getByRole('button', { name: /^Play Gm7/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
   await expect(page.getByText('E2E warm-up · 2 of 2')).toBeVisible()
-  await page.getByRole('button', { name: /^Play / }).click()
-  await Promise.all([
-    page.waitForResponse((response) => response.url().includes('runs.save')),
-    page.getByRole('button', { name: /^Finish / }).click(),
-  ])
+  await page.getByRole('button', { name: /^Play C major/ }).click()
+  await page.getByRole('button', { name: /^Finish / }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E warm-up complete' })).toBeVisible()
 
-  const runs = await listStoredRuns(page)
-  expect(runs.map((run) => run.exerciseId).sort()).toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
+  // Both runs are saved through one serialized queue; wait for the store, not for a response.
+  await expect
+    .poll(async () => (await listStoredRuns(page)).map((run) => run.exerciseId).sort())
+    .toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
 })

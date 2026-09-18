@@ -50,7 +50,7 @@ test('an agent in the browser makes a routine, starts it, plays it, and deletes 
   // Started by the agent: the session comes up, and with it the player's tools.
   expect((await callTool(page, 'start_routine', { routineId })).status).toBe('ok')
   await expect(page).toHaveURL(/\/app\/session\?/)
-  await expect(page.getByRole('button', { name: /^Play / })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Play .+ — / })).toBeVisible()
   await expect.poll(() => toolNames(page)).toContain('player_play')
 
   expect((await callTool(page, 'player_set_tempo', { bpm: 96 })).status).toBe('ok')

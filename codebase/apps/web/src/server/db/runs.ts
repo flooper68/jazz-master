@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import type { ExerciseRun } from '../../appData/run'
+import { isDifficulty, type ExerciseRun } from '../../appData/run'
 import {
   readDatabaseUrl,
   resolveDatabaseConnectionString,
@@ -17,7 +17,7 @@ export class RunOwnerMismatchError extends Error {
 
 export interface RunRepository {
   listRuns(clerkUserId: string): Promise<ExerciseRun[]>
-  /** Insert the run, or update it in place — the rating arrives after the run does. */
+  /** Insert the run, or update it in place — the answer arrives after the run does. */
   saveRun(clerkUserId: string, run: ExerciseRun): Promise<ExerciseRun>
 }
 
@@ -89,7 +89,7 @@ export function createRunRepository({
             tempoBpm: run.tempoBpm,
             passes: run.passes,
             completed: run.completed,
-            rating: run.rating,
+            difficulty: run.difficulty,
             sessionId: run.sessionId,
             updatedAt: new Date(),
           }
@@ -124,7 +124,7 @@ function serializeRun(row: typeof exerciseRuns.$inferSelect): ExerciseRun {
     tempoBpm: row.tempoBpm,
     passes: row.passes,
     completed: row.completed,
-    rating: row.rating,
+    difficulty: isDifficulty(row.difficulty) ? row.difficulty : null,
     sessionId: row.sessionId,
   }
 }

@@ -1,26 +1,19 @@
 import { useId } from 'react'
-import { RATING_MAX, RATING_MIN, RATING_SKIPPED } from '../appData/run'
+import { DIFFICULTIES, DIFFICULTY_LABELS, DIFFICULTY_MEANINGS, type Difficulty } from '../appData/run'
 
 /**
- * How hard the exercise felt, 1 (easy) to 10 (hard). Optional: pressing the
- * chosen number again clears it. Seven is shown but not on offer — it is the
- * answer people give when they have not decided.
+ * How it went, in one tap: Again · Hard · Good · Easy. Anki's four, in the
+ * same order, with no safe middle to hide in and nothing chosen for you — the
+ * answer is what moves the exercise's next review and its tempo. Optional:
+ * pressing the chosen answer again clears it.
  */
 
-const VALUES = Array.from({ length: RATING_MAX - RATING_MIN + 1 }, (_, index) => RATING_MIN + index)
 const BASE =
-  'inline-flex h-8 items-center justify-center rounded-lg border text-sm font-medium tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
-
-/** What the number means, said back once it is chosen. */
-function feel(rating: number): string {
-  if (rating <= 3) return 'Comfortable'
-  if (rating <= 6) return 'Working on it'
-  return 'A real stretch'
-}
+  'inline-flex h-9 items-center justify-center rounded-lg border px-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 interface RatingInputProps {
-  value: number | null
-  onChange: (value: number | null) => void
+  value: Difficulty | null
+  onChange: (value: Difficulty | null) => void
   /** What is being rated, for assistive tech, when several ratings share a screen. */
   subject?: string
 }
@@ -31,42 +24,34 @@ export function RatingInput({ value, onChange, subject }: RatingInputProps) {
     <div role="group" aria-labelledby={labelId}>
       <div className="flex items-baseline justify-between gap-3">
         <p id={labelId} className="text-sm font-medium text-fg">
-          How hard was it?{subject && <span className="sr-only"> {subject}.</span>}{' '}
+          How did it go?{subject && <span className="sr-only"> {subject}.</span>}{' '}
           <span className="font-normal text-muted">Optional</span>
         </p>
         <p className="text-sm text-accent-text" aria-live="polite">
-          {value === null ? '' : `${value}/10 · ${feel(value)}`}
+          {value === null ? '' : DIFFICULTY_MEANINGS[value]}
         </p>
       </div>
-      <div className="mt-2.5 grid grid-cols-5 gap-1 sm:grid-cols-10">
-        {VALUES.map((rating) => {
-          const chosen = rating === value
-          const skipped = rating === RATING_SKIPPED
+      <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+        {DIFFICULTIES.map((difficulty) => {
+          const chosen = difficulty === value
           return (
             <button
-              key={rating}
+              key={difficulty}
               type="button"
-              disabled={skipped}
               aria-pressed={chosen}
-              aria-label={`${rating} out of ${RATING_MAX}${subject ? ` for ${subject}` : ''}`}
-              onClick={() => onChange(chosen ? null : rating)}
-              className={`${BASE} ${
+              aria-label={`${DIFFICULTY_LABELS[difficulty]}${subject ? ` for ${subject}` : ''}`}
+              onClick={() => onChange(chosen ? null : difficulty)}
+              className={`${BASE} cursor-pointer ${
                 chosen
                   ? 'border-accent bg-accent text-on-accent'
-                  : skipped
-                    ? 'cursor-not-allowed border-line bg-panel-2 text-muted opacity-50'
-                    : 'cursor-pointer border-line bg-panel text-fg hover:border-line-strong'
+                  : 'border-line bg-panel text-fg hover:border-line-strong'
               }`}
             >
-              {rating}
+              {DIFFICULTY_LABELS[difficulty]}
             </button>
           )
         })}
       </div>
-      <p className="mt-2 hidden justify-between text-xs text-muted sm:flex" aria-hidden="true">
-        <span>Easy</span>
-        <span>Hard</span>
-      </p>
     </div>
   )
 }

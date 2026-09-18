@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { objectSchema } from '../agentTools/descriptors'
-import { routineExercises, sessionSearch } from '../appData/quickRun'
+import { routineExercises, routinePlan, sessionSearch } from '../appData/quickRun'
 import type { Routine } from '../appData/routine'
 import type { Exercise } from '../content'
 import type { AgentConfirm } from './agentConfirm'
@@ -128,7 +128,7 @@ export function uiPageTools({ location, go, exercises, routines, player, confirm
         const playable = routineExercises(routine, await exercises())
         if (playable.length === 0) return { status: 'empty', message: 'None of the exercises in this routine exist any more.' }
         if (!(await mayLeave(signal))) return STAYED
-        await go({ session: sessionSearch({ exercises: playable, routine }) })
+        await go({ session: sessionSearch(routinePlan(routine, playable)) })
         return { status: 'ok', routine: { id: routine.id, name: routine.name }, exerciseIds: playable.map((exercise) => exercise.id) }
       },
     },

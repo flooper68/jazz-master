@@ -1,4 +1,4 @@
-import type { ExerciseRun } from './run'
+import { DIFFICULTIES, type Difficulty, type ExerciseRun } from './run'
 
 /** One local calendar day of the activity strip. */
 export interface ActivityDay {
@@ -17,19 +17,20 @@ export interface Dashboard {
   weekRuns: number
   /** Consecutive days with a run, ending today — or yesterday, so a streak is not lost before today's practice. */
   streakDays: number
-  /** Mean rating of the last seven days' rated runs; null when none were rated. */
-  weekRating: number | null
+  /** How the last seven days' answered runs mostly went; null when none were answered. */
+  weekDifficulty: Difficulty | null
   /** The last seven days, oldest first, today last. */
   week: ActivityDay[]
   /** Newest first. */
   recent: ExerciseRun[]
-  /** Exercises whose latest rated run felt hard (8 and up), hardest first. */
-  hardest: Array<{ exerciseId: string; rating: number }>
+  /** Exercises whose latest answered run went badly, worst first. */
+  hardest: Array<{ exerciseId: string; difficulty: Difficulty }>
   /** Ids from the pack with no run at all, in pack order. */
   unplayed: string[]
 }
 
-const HARD_FROM = 8
+/** The answers that mean an exercise is still work, hardest first. */
+const UNFINISHED: readonly Difficulty[] = ['again', 'hard']
 
 function dayKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -58,7 +59,7 @@ export function summarizeRuns(
   })
   const weekByDay = new Map(week.map((day) => [day.day, day]))
   const playedDays = new Set<string>()
-  const weekRatings: number[] = []
+  const weekDifficulties: Difficulty[] = []
   for (const run of sorted) {
     const key = dayKey(new Date(run.startedAt))
     playedDays.add(key)
@@ -66,7 +67,7 @@ export function summarizeRuns(
     if (!day) continue
     day.seconds += run.durationSeconds
     day.runs += 1
-    if (run.rating !== null) weekRatings.push(run.rating)
+    if (run.difficulty !== null) weekDifficulties.push(run.difficulty)
   }
 
   // Count back from today; a quiet today does not break yesterday's streak.
@@ -77,16 +78,16 @@ export function summarizeRuns(
     cursor += 1
   }
 
-  // Sorted newest first, so the first rated run seen per exercise is its latest.
-  const latestRating = new Map<string, number>()
+  // Sorted newest first, so the first answered run seen per exercise is its latest.
+  const latest = new Map<string, Difficulty>()
   for (const run of sorted) {
-    if (run.rating !== null && !latestRating.has(run.exerciseId)) latestRating.set(run.exerciseId, run.rating)
+    if (run.difficulty !== null && !latest.has(run.exerciseId)) latest.set(run.exerciseId, run.difficulty)
   }
   const inPack = new Set(exerciseIds)
-  const hardest = [...latestRating]
-    .filter(([exerciseId, rating]) => rating >= HARD_FROM && inPack.has(exerciseId))
-    .map(([exerciseId, rating]) => ({ exerciseId, rating }))
-    .sort((a, b) => b.rating - a.rating)
+  const hardest = [...latest]
+    .filter(([exerciseId, difficulty]) => UNFINISHED.includes(difficulty) && inPack.has(exerciseId))
+    .map(([exerciseId, difficulty]) => ({ exerciseId, difficulty }))
+    .sort((a, b) => DIFFICULTIES.indexOf(a.difficulty) - DIFFICULTIES.indexOf(b.difficulty))
 
   const played = new Set(sorted.map((run) => run.exerciseId))
   return {
@@ -95,15 +96,21 @@ export function summarizeRuns(
     weekSeconds: week.reduce((sum, day) => sum + day.seconds, 0),
     weekRuns: week.reduce((sum, day) => sum + day.runs, 0),
     streakDays,
-    weekRating:
-      weekRatings.length === 0
-        ? null
-        : Math.round((weekRatings.reduce((sum, rating) => sum + rating, 0) / weekRatings.length) * 10) / 10,
+    weekDifficulty: commonest(weekDifficulties),
     week,
     recent: sorted.slice(0, 4),
     hardest,
     unplayed: exerciseIds.filter((id) => !played.has(id)),
   }
+}
+
+/** The week in one word: the answer given most often, the harder one when two tie. */
+function commonest(difficulties: readonly Difficulty[]): Difficulty | null {
+  if (difficulties.length === 0) return null
+  const counts = new Map<Difficulty, number>()
+  for (const difficulty of difficulties) counts.set(difficulty, (counts.get(difficulty) ?? 0) + 1)
+  // DIFFICULTIES runs hardest first, so a tie falls to the harder answer.
+  return DIFFICULTIES.reduce((best, difficulty) => ((counts.get(difficulty) ?? 0) > (counts.get(best) ?? 0) ? difficulty : best))
 }
 
 /** "12 min", "1 h 5 min" — totals do not need seconds. */

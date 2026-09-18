@@ -3,14 +3,15 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { formatDuration, summarizeRuns, type ActivityDay, type Dashboard } from '../../appData/dashboard'
 import { firstPicks } from '../../appData/firstPicks'
 import { dayLabel } from '../../appData/history'
-import { loadQuickRunSettings, planQuickRun, sessionSearch } from '../../appData/quickRun'
+import { sessionSearch } from '../../appData/quickRun'
+import { DIFFICULTY_LABELS } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
-import { ShuffleIcon } from '../../components/icons'
+import { NextSessionCard } from '../../components/NextSessionCard'
 import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
-import { useRoutines } from '../useRoutines'
+import { useNextSession } from '../useNextSession'
 import { useTRPC } from '../trpc'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
@@ -29,13 +30,8 @@ export default function HomePage() {
   const runs = data?.status === 'ok' ? data.runs : []
   const failed = !isPending && data?.status !== 'ok'
   const { exercises, byId } = useExerciseCatalog()
-  const { routines } = useRoutines()
+  const { plan, pending: planPending, failed: planFailed } = useNextSession()
   const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
-
-  function startQuickRun(): void {
-    // The same plan the navigation's button would start: the chosen routine, or a random draw.
-    void navigate({ to: '/session', search: sessionSearch(planQuickRun(exercises, loadQuickRunSettings(exercises), routines)) })
-  }
 
   return (
     <div className={PAGE_WIDE}>
@@ -51,22 +47,12 @@ export default function HomePage() {
       )}
 
       <div className="mt-5 grid gap-3 lg:grid-cols-3">
-        <section className="rounded-2xl bg-accent p-4 text-on-accent lg:col-span-1" aria-labelledby="home-quick-run">
-          <h2 id="home-quick-run" className="font-display text-lg font-bold tracking-tight">
-            {summary.totalRuns === 0 ? 'Start with a quick run' : 'Ready for today?'}
-          </h2>
-          <p className="mt-1 text-sm opacity-90">
-            A few random exercises, easier first, played straight through. Rate them at the end.
-          </p>
-          <button
-            type="button"
-            onClick={startQuickRun}
-            className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-on-accent px-3 py-1.5 text-sm font-semibold text-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent"
-          >
-            <ShuffleIcon />
-            Start a quick run
-          </button>
-        </section>
+        <NextSessionCard
+          plan={plan}
+          pending={planPending}
+          failed={planFailed}
+          onStart={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
+        />
 
         <section className={`${CARD} min-w-0 p-4 lg:col-span-2`} aria-labelledby="home-week">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -82,7 +68,7 @@ export default function HomePage() {
       <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="This week" value={formatDuration(summary.weekSeconds)} note={`${summary.weekRuns} ${summary.weekRuns === 1 ? 'run' : 'runs'}`} />
         <Stat label="Streak" value={`${summary.streakDays} ${summary.streakDays === 1 ? 'day' : 'days'}`} note={summary.streakDays === 0 ? 'Play today to start one' : 'Keep it going'} />
-        <Stat label="Felt this week" value={summary.weekRating === null ? '—' : `${summary.weekRating}/10`} note={summary.weekRating === null ? 'No ratings yet' : 'Average difficulty'} />
+        <Stat label="Felt this week" value={summary.weekDifficulty === null ? '—' : DIFFICULTY_LABELS[summary.weekDifficulty]} note={summary.weekDifficulty === null ? 'Nothing answered yet' : 'How it mostly went'} />
         <Stat label="All time" value={formatDuration(summary.totalSeconds)} note={`${summary.totalRuns} ${summary.totalRuns === 1 ? 'run' : 'runs'}`} />
       </dl>
 
@@ -174,11 +160,11 @@ function RecentRuns({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<s
                     {run.sessionId && ' · quick run'}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm text-muted tabular-nums">
-                  {run.rating === null ? 'Not rated' : (
-                    <span aria-label={`Felt ${run.rating} out of 10`}>
-                      <span className="font-display text-lg font-bold text-fg">{run.rating}</span>/10
-                    </span>
+                <span className="shrink-0 text-sm text-muted">
+                  {run.difficulty === null ? (
+                    'Not answered'
+                  ) : (
+                    <span className="font-display font-bold text-fg">{DIFFICULTY_LABELS[run.difficulty]}</span>
                   )}
                 </span>
               </li>
@@ -192,9 +178,9 @@ function RecentRuns({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<s
 
 /** What to pick up next: what last felt hard, then what has never been played. */
 function NextUp({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<string, Exercise> }) {
-  const hard = summary.hardest.flatMap(({ exerciseId, rating }) => {
+  const hard = summary.hardest.flatMap(({ exerciseId, difficulty }) => {
     const exercise = byId.get(exerciseId)
-    return exercise ? [{ exercise, reason: `Felt ${rating}/10 last time` }] : []
+    return exercise ? [{ exercise, reason: difficulty === 'again' ? 'It fell apart last time' : 'Felt hard last time' }] : []
   })
   const fresh = firstPicks(summary.unplayed.flatMap((exerciseId) => byId.get(exerciseId) ?? [])).map((exercise) => ({
     exercise,

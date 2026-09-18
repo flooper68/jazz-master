@@ -77,7 +77,8 @@ export type { Page }
 
 /** Play the exercise on the stage and end it with Finish. */
 export async function finishCurrentExercise(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /^Play / }).click()
+  // "Play" also names the sidebar's button, so the stage's is the one with a title after it.
+  await page.getByRole('button', { name: /^Play .+ — / }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
 }
 
@@ -85,7 +86,7 @@ interface StoredRun {
   id: string
   exerciseId: string
   completed: boolean
-  rating: number | null
+  difficulty: 'again' | 'hard' | 'good' | 'easy' | null
 }
 
 /** The signed-in user's saved runs, read over the same tRPC wire the app uses. */

@@ -51,7 +51,7 @@ describe('ExercisesPage', () => {
   it('says how often and how recently each exercise was played', async () => {
     const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString()
     const run = (id: string, exerciseId: string, startedAt: string) => ({
-      id, exerciseId, startedAt, durationSeconds: 60, tempoBpm: 60, passes: 3, completed: true, rating: null, sessionId: null,
+      id, exerciseId, startedAt, durationSeconds: 60, tempoBpm: 60, passes: 3, completed: true, difficulty: null, sessionId: null,
     })
     seedTrpcTestRuns([
       run('11111111-1111-4111-8111-111111111111', 'scales-major-open-c', at(0)),

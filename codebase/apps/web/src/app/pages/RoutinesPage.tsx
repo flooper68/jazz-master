@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { routineExercises, sessionSearch } from '../../appData/quickRun'
+import { routineExercises, routinePlan, sessionSearch } from '../../appData/quickRun'
 import type { Routine } from '../../appData/routine'
 import { AREA_BADGE } from '../../components/areaLabels'
 import { PlayIcon, PlusIcon } from '../../components/icons'
@@ -94,7 +94,7 @@ function RoutineCard({ routine, exercises }: { routine: Routine; exercises: read
         <button
           type="button"
           disabled={playable.length === 0}
-          onClick={() => void navigate({ to: '/session', search: sessionSearch({ exercises: playable, routine }) })}
+          onClick={() => void navigate({ to: '/session', search: sessionSearch(routinePlan(routine, playable)) })}
           aria-label={`Start ${routine.name}`}
           className={BUTTON_PRIMARY}
         >

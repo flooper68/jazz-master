@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { formatDuration } from '../../appData/dashboard'
 import { groupRunsByDay } from '../../appData/history'
-import type { ExerciseRun } from '../../appData/run'
+import { DIFFICULTY_LABELS, type ExerciseRun } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { RepeatIcon } from '../../components/icons'
@@ -109,7 +109,7 @@ function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | unde
           {exercise && <SourceTag exerciseId={exercise.id} only="yours" />}
           {run.sessionId && (
             <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-fg-2">
-              Quick run
+              Session
             </span>
           )}
         </div>
@@ -120,15 +120,11 @@ function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | unde
         </p>
       </div>
       <div className="shrink-0 text-right">
-        {run.rating === null ? (
-          <span className="text-xs text-muted">Not rated</span>
+        {run.difficulty === null ? (
+          <span className="text-xs text-muted">Not answered</span>
         ) : (
-          <span
-            className="inline-flex items-baseline gap-0.5 rounded-lg bg-panel-2 px-2 py-1 tabular-nums"
-            aria-label={`Felt ${run.rating} out of 10`}
-          >
-            <span className="font-display text-lg leading-none font-bold text-fg">{run.rating}</span>
-            <span className="text-xs text-muted">/10</span>
+          <span className="inline-flex items-baseline rounded-lg bg-panel-2 px-2 py-1">
+            <span className="font-display text-sm leading-none font-bold text-fg">{DIFFICULTY_LABELS[run.difficulty]}</span>
           </span>
         )}
       </div>

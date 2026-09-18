@@ -40,7 +40,7 @@ describe('ExercisePage', () => {
     ).toBeInTheDocument()
   })
 
-  it('saves the run when it reaches the summary, and again with its rating', async () => {
+  it('saves the run when it reaches the summary, and again with its answer', async () => {
     const user = userEvent.setup()
     await renderRoute(`/exercises/${exercise.id}`)
     await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
@@ -51,12 +51,12 @@ describe('ExercisePage', () => {
       exerciseId: exercise.id,
       tempoBpm: exercise.tempoBpm,
       completed: false,
-      rating: null,
+      difficulty: null,
     })
 
-    const rating = screen.getByRole('group', { name: /^How hard was it\?/ })
-    await user.click(within(rating).getByRole('button', { name: '4 out of 10' }))
-    await waitFor(() => expect(getTrpcTestRuns()[0].rating).toBe(4))
+    const answer = screen.getByRole('group', { name: /^How did it go\?/ })
+    await user.click(within(answer).getByRole('button', { name: 'Good' }))
+    await waitFor(() => expect(getTrpcTestRuns()[0].difficulty).toBe('good'))
     expect(getTrpcTestRuns()).toHaveLength(1)
     expect(screen.queryByRole('alert')).toBeNull()
   })

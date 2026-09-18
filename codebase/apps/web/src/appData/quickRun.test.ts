@@ -1,106 +1,85 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES as PACK } from '../content'
 import {
-  planQuickRun,
-  sessionSearch,
-  clampQuickRunCount,
+  chosenRoutine,
   defaultQuickRunSettings,
   loadQuickRunSettings,
-  pickQuickRun,
-  QUICK_RUN_MAX,
+  parseSessionSearch,
+  routinePlan,
+  sessionSearch,
 } from './quickRun'
 
 /** The five founding exercises: a pack small enough for a test to count — three scales, an arpeggio, a line. */
 const FOUNDING_IDS = ['scales-major-open-c', 'scales-major-open-g', 'scales-major-open-f', 'lines-ii-v-i-f-arpeggios', 'lines-ii-v-i-f-line']
 const EXERCISES = PACK.filter((exercise) => FOUNDING_IDS.includes(exercise.id))
 
-const defaults = defaultQuickRunSettings(EXERCISES)
-
-/** A deterministic stand-in for Math.random. */
-function seeded(seed: number): () => number {
-  let state = seed
-  return () => {
-    state = (state * 1_664_525 + 1_013_904_223) % 4_294_967_296
-    return state / 4_294_967_296
-  }
+const routine = {
+  id: 'r-1',
+  name: 'Warm-up',
+  items: [{ exerciseId: 'lines-ii-v-i-f-line' }, { exerciseId: 'gone-since' }, { exerciseId: 'scales-major-open-c' }],
 }
 
-describe('pickQuickRun', () => {
-  it('draws three different exercises by default, easier ones first', () => {
-    for (let seed = 1; seed <= 25; seed += 1) {
-      const picked = pickQuickRun(EXERCISES, defaults, seeded(seed))
-      expect(picked).toHaveLength(3)
-      expect(new Set(picked.map((exercise) => exercise.id)).size).toBe(3)
-      const levels = picked.map((exercise) => exercise.level)
-      expect(levels).toEqual([...levels].sort((a, b) => a - b))
-    }
+describe('what to play next', () => {
+  it('falls back to the defaults for missing or broken storage', () => {
+    expect(loadQuickRunSettings(null)).toEqual(defaultQuickRunSettings())
+    expect(loadQuickRunSettings({ getItem: () => '{nope' })).toEqual(defaultQuickRunSettings())
+    expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ routineId: '' }) })).toEqual({ routineId: null })
   })
 
-  it('does not always draw the same run', () => {
-    const runs = new Set(
-      Array.from({ length: 25 }, (_, seed) =>
-        pickQuickRun(EXERCISES, defaults, seeded(seed + 1)).map((exercise) => exercise.id).join(),
-      ),
-    )
-    expect(runs.size).toBeGreaterThan(1)
+  it('remembers a routine named as next', () => {
+    expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ routineId: 'r-1' }) })).toEqual({ routineId: 'r-1' })
   })
 
-  it('draws only from the chosen areas, and no more than they hold', () => {
-    const picked = pickQuickRun(EXERCISES, { count: 5, areas: ['scales'], routineId: null }, seeded(7))
-    expect(picked.map((exercise) => exercise.area)).toEqual(['scales', 'scales', 'scales'])
+  it('stands the routine down when it is gone, or has nothing left to play', () => {
+    const emptied = { id: 'r-2', name: 'Emptied', items: [{ exerciseId: 'gone-since' }] }
+    expect(chosenRoutine({ routineId: 'r-1' }, [routine], EXERCISES)).toBe(routine)
+    expect(chosenRoutine({ routineId: null }, [routine], EXERCISES)).toBeNull()
+    expect(chosenRoutine({ routineId: 'deleted' }, [routine], EXERCISES)).toBeNull()
+    expect(chosenRoutine({ routineId: 'r-2' }, [emptied], EXERCISES)).toBeNull()
   })
 })
 
-describe('quick run settings', () => {
-  it('keeps the count inside its bounds', () => {
-    expect(clampQuickRunCount(0)).toBe(1)
-    expect(clampQuickRunCount(99)).toBe(QUICK_RUN_MAX)
-    expect(clampQuickRunCount(Number.NaN)).toBe(3)
-  })
-
-  it('falls back to the defaults for missing or broken storage, and never to no areas', () => {
-    expect(loadQuickRunSettings(EXERCISES, null)).toEqual(defaults)
-    expect(loadQuickRunSettings(EXERCISES, { getItem: () => '{nope' })).toEqual(defaults)
-    expect(
-      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 2, areas: ['bagpipes'] }) }),
-    ).toEqual({ count: 2, areas: defaults.areas, routineId: null })
-    expect(
-      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 4, areas: ['lines', 'scales'], routineId: 'r-1' }) }),
-    ).toEqual({ count: 4, areas: ['scales', 'lines'], routineId: 'r-1' })
-  })
-
-  it('reads areas saved before standards became lines', () => {
-    expect(
-      loadQuickRunSettings(EXERCISES, { getItem: () => JSON.stringify({ count: 3, areas: ['standards'] }) }).areas,
-    ).toEqual(['lines'])
-  })
-})
-
-describe('planQuickRun', () => {
-  const routine = {
-    id: 'r-1',
-    name: 'Warm-up',
-    items: [{ exerciseId: 'lines-ii-v-i-f-line' }, { exerciseId: 'gone-since' }, { exerciseId: 'scales-major-open-c' }],
-  }
-
-  it('plays the chosen routine as prepared — its order, not easier-first — skipping what is gone', () => {
-    const plan = planQuickRun(EXERCISES, { ...defaults, routineId: 'r-1' }, [routine], seeded(1))
+describe('routinePlan', () => {
+  it('plays it as prepared — its order, skipping what is gone, each at its written tempo', () => {
+    const plan = routinePlan(routine, EXERCISES)
     expect(plan.routine).toBe(routine)
-    expect(plan.exercises.map((exercise) => exercise.id)).toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
+    expect(plan.slots.map((slot) => slot.exercise.id)).toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
+    for (const slot of plan.slots) expect(slot.tempoBpm).toBe(slot.exercise.tempoBpm)
     expect(sessionSearch(plan)).toEqual({ x: 'lines-ii-v-i-f-line,scales-major-open-c', r: 'r-1' })
   })
+})
 
-  it('falls back to the random draw when no routine is chosen, or the chosen one is gone or empty', () => {
-    const emptied = { id: 'r-2', name: 'Emptied', items: [{ exerciseId: 'gone-since' }] }
-    for (const [settings, routines] of [
-      [defaults, [routine]],
-      [{ ...defaults, routineId: 'deleted' }, [routine]],
-      [{ ...defaults, routineId: 'r-2' }, [emptied]],
-    ] as const) {
-      const plan = planQuickRun(EXERCISES, settings, routines, seeded(3))
-      expect(plan.routine).toBeNull()
-      expect(plan.exercises).toHaveLength(3)
-      expect(sessionSearch(plan)).not.toHaveProperty('r')
+describe('the session URL', () => {
+  const [first, second] = EXERCISES
+
+  it('names a tempo only when the plan asked for one other than the written tempo', () => {
+    const plan = {
+      slots: [
+        { exercise: first, tempoBpm: first.tempoBpm, reason: 'Due today' },
+        { exercise: second, tempoBpm: second.tempoBpm - 10, reason: 'Overdue 2 days' },
+      ],
+      routine: null,
     }
+    expect(sessionSearch(plan)).toEqual({ x: `${first.id},${second.id}@${second.tempoBpm - 10}` })
+  })
+
+  it('reads back what it wrote', () => {
+    expect(parseSessionSearch(`${first.id},${second.id}@95`)).toEqual([
+      { exerciseId: first.id, tempoBpm: null },
+      { exerciseId: second.id, tempoBpm: 95 },
+    ])
+  })
+
+  it('drops repeats, blanks, and anything that is not a tempo a player could hold', () => {
+    // Nobody but the app writes this URL, but anybody can.
+    expect(parseSessionSearch('a,a@90,,b@0,c@nope,d@-5,e@100000,f@1@2')).toEqual([
+      { exerciseId: 'a', tempoBpm: null },
+      { exerciseId: 'b', tempoBpm: null },
+      { exerciseId: 'c', tempoBpm: null },
+      { exerciseId: 'd', tempoBpm: null },
+      { exerciseId: 'e', tempoBpm: null },
+      { exerciseId: 'f', tempoBpm: null },
+    ])
+    expect(parseSessionSearch(undefined)).toEqual([])
   })
 })

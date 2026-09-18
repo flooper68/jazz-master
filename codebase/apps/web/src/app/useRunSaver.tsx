@@ -1,16 +1,18 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useRef, useState } from 'react'
 import type { ExerciseRun } from '../appData/run'
 import { useTRPC } from './trpc'
 
 /**
  * Saving runs from a player page. A run is saved when it arrives and again
- * when it is rated; the writes are serialized so an older snapshot can never
- * land after a newer one. Every write carries the whole run, so a later one
- * also covers an earlier failure.
+ * when it is answered; the writes are serialized so an older snapshot can
+ * never land after a newer one. Every write carries the whole run, so a later
+ * one also covers an earlier failure. A landed run changes what to practise
+ * next, so the run list is re-read after one.
  */
 export function useRunSaver() {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const { mutateAsync: saveRun } = useMutation(trpc.runs.save.mutationOptions())
   // The run whose latest save did not land, kept so it can be sent again.
   const [unsaved, setUnsaved] = useState<ExerciseRun | null>(null)
@@ -21,12 +23,14 @@ export function useRunSaver() {
         try {
           const result = await saveRun(run)
           setUnsaved(result.status === 'ok' ? null : run)
+          // Not awaited: the next answer must not queue behind a whole history refetch.
+          if (result.status === 'ok') void queryClient.invalidateQueries({ queryKey: trpc.runs.list.queryKey() })
         } catch {
           setUnsaved(run)
         }
       })
     },
-    [saveRun],
+    [saveRun, queryClient, trpc],
   )
   return { save, unsaved }
 }

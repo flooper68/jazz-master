@@ -84,13 +84,13 @@ describe('Layout shell', () => {
     expect(edge).toHaveAttribute('aria-valuenow', '208')
   })
 
-  it('starts a quick run of three random exercises from the navigation', async () => {
+  it('plays the next session from the navigation', async () => {
     const user = userEvent.setup()
     await renderRoute('/history')
     const nav = within(screen.getByRole('navigation', { name: 'Main' }))
-    await user.click(nav.getByRole('button', { name: /^Quick run: 3 random exercises, about \d+ min$/ }))
-    expect(await screen.findByText('Quick run · 1 of 3')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'End quick run' })).toBeInTheDocument()
+    await user.click(nav.getByRole('button', { name: /^Play Next session: 5 exercises, about \d+ min$/ }))
+    expect(await screen.findByText('Next session · 1 of 5')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'End session' })).toBeInTheDocument()
     // On the stage the sidebar is folded: the button is its icon, the settings are away.
     expect(screen.getByRole('banner')).toHaveAttribute('data-collapsed')
   })

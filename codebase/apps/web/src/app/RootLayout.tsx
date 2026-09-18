@@ -1,21 +1,39 @@
+import { useNavigate } from '@tanstack/react-router'
+import { sessionSearch } from '../appData/quickRun'
 import { AgentConfirmPrompt } from '../components/AgentConfirmPrompt'
 import { Layout } from '../components/Layout'
+import { exerciseSeconds } from '../content'
 import { useAgentTools } from '../webmcp/useAgentTools'
 import { useExerciseCatalog } from './useExerciseCatalog'
+import { useNextSession } from './useNextSession'
 import { useRoutines } from './useRoutines'
 
 /**
- * The app shell as every router mounts it: the layout, fed the catalog and the
- * routines its quick run plays from — and, for an AI assistant in the user's
- * browser, the app's tools and the prompt that keeps the user in charge of them.
+ * The app shell as every router mounts it: the layout, fed the catalog, the
+ * routines and the session the scheduler has ready — and, for an AI assistant
+ * in the user's browser, the app's tools and the prompt that keeps the user in
+ * charge of them.
  */
 export function RootLayout() {
+  const navigate = useNavigate()
   const { exercises } = useExerciseCatalog()
   const { routines } = useRoutines()
+  const { plan } = useNextSession()
   useAgentTools()
+  const next = {
+    label: plan.routine?.name ?? 'Next session',
+    count: plan.slots.length,
+    seconds: plan.slots.reduce((sum, slot) => sum + exerciseSeconds(slot.exercise), 0),
+    routineId: plan.routine?.id ?? null,
+  }
   return (
     <>
-      <Layout exercises={exercises} routines={routines} />
+      <Layout
+        exercises={exercises}
+        routines={routines}
+        next={next}
+        onStartNext={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
+      />
       <AgentConfirmPrompt />
     </>
   )

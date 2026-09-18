@@ -40,7 +40,7 @@ describe('an agent in the user\'s browser', () => {
     expect(new Set(names).size).toBe(names.length)
 
     expect(await agent().call('open_exercise', { exerciseId: 'scales-major-open-c' })).toMatchObject({ status: 'ok' })
-    await screen.findByRole('button', { name: /^Play / })
+    await screen.findByRole('button', { name: /^Play C major/ })
     expect(await agent().names()).toContain('player_play')
     expect(await agent().call('get_current_view')).toMatchObject({ page: 'exercise', path: '/exercises/scales-major-open-c', player: { exerciseId: 'scales-major-open-c', playing: false } })
 
@@ -106,7 +106,7 @@ describe('an agent in the user\'s browser', () => {
     const [stored] = await seedTrpcTestRoutines([{ name: 'Warm-up', items: [{ exerciseId: 'scales-major-open-c' }] }])
     await renderApp('/')
     expect(await agent().call('start_routine', { routineId: stored.id })).toMatchObject({ status: 'ok', exerciseIds: ['scales-major-open-c'] })
-    await screen.findByRole('button', { name: /^Play / })
+    await screen.findByRole('button', { name: /^Play C major/ })
     expect(await agent().call('player_set_tempo', { bpm: 96 })).toMatchObject({ status: 'ok', player: { tempoBpm: 96 } })
     expect(await agent().call('player_play')).toMatchObject({ status: 'ok', player: { playing: true, soundAvailable: false } })
     expect(await screen.findByRole('button', { name: /^Pause/ })).toBeInTheDocument()

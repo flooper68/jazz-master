@@ -99,6 +99,20 @@
       "when": 1789679070330,
       "tag": "0013_short_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789722396255,
+      "tag": "0014_watery_red_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789722415650,
+      "tag": "0015_omniscient_red_shift",
+      "breakpoints": true
     }
   ]
 }

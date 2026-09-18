@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LIBRARY_TOOL_DESCRIPTORS, type AgentToolDescriptor } from '../agentTools/descriptors'
 import { MCP_TOOLS } from '../server/mcp/tools'
 import type { AppRouter } from '../server/trpc/router'
-import { getTrpcTestRoutines, resetTrpcTestData, seedTrpcTestRoutines, trpcTestFetch } from '../test/trpcTestFetch'
+import { getTrpcTestRoutines, resetTrpcTestData, seedTrpcTestRoutines, seedTrpcTestRuns, trpcTestFetch } from '../test/trpcTestFetch'
 import { libraryPageTools, type LibraryToolDeps } from './libraryTools'
 
 const exercise = {
@@ -47,6 +47,38 @@ describe('the library tools in the browser', () => {
       expect(name).toMatch(/^[A-Za-z0-9_.-]{1,128}$/)
       expect(description.length).toBeGreaterThan(0)
     }
+  })
+
+  it('answers what to practise next, each slot with its tempo and its reason', async () => {
+    const yesterday = new Date(Date.now() - 86_400_000)
+    yesterday.setHours(10, 0, 0, 0)
+    seedTrpcTestRuns([
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        exerciseId: 'scales-major-open-c',
+        startedAt: yesterday.toISOString(),
+        durationSeconds: 120,
+        tempoBpm: 60,
+        passes: 4,
+        completed: true,
+        difficulty: 'good',
+        sessionId: null,
+      },
+    ])
+    const { call } = setUp()
+    const answer = (await call('get_next_session')) as { status: string; slots: { exerciseId: string; tempoBpm: number; reason: string }[] }
+    expect(answer.status).toBe('ok')
+    expect(answer.slots).toHaveLength(5)
+    // Yesterday's scale is due back, at its own tempo, and the answer says why.
+    expect(answer.slots[0]).toEqual({
+      exerciseId: 'scales-major-open-c',
+      title: 'C major — open position',
+      area: 'scales',
+      tempoBpm: 60,
+      targetTempoBpm: 60,
+      reason: 'Due today · at its tempo, 60 BPM',
+    })
+    for (const slot of answer.slots) expect(slot.reason.length).toBeGreaterThan(0)
   })
 
   it('check an exercise without a round trip, and add one to the library the app shows', async () => {

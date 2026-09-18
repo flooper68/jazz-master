@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isRating } from './run'
+import { DIFFICULTIES, isDifficulty } from './run'
 
-describe('isRating', () => {
-  it('takes whole numbers from 1 to 10, except 7', () => {
-    expect([1, 2, 3, 4, 5, 6, 8, 9, 10].every(isRating)).toBe(true)
-    expect([0, 7, 11, 2.5, Number.NaN, '5', null].some(isRating)).toBe(false)
+describe('isDifficulty', () => {
+  it('takes the four answers and nothing else', () => {
+    expect(DIFFICULTIES.every(isDifficulty)).toBe(true)
+    expect(['', 'ok', 'fine', '7', 7, null, undefined].some(isDifficulty)).toBe(false)
+  })
+
+  it('runs hardest first, so a tie between answers falls to the harder one', () => {
+    expect([...DIFFICULTIES]).toEqual(['again', 'hard', 'good', 'easy'])
   })
 })
