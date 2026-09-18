@@ -80,3 +80,21 @@ describe('exerciseShape', () => {
     expect(shape.positions.map((p) => `${p.label}${p.role === 'root' ? '*' : ''}`)).toEqual(['G*', 'B', 'G*'])
   })
 })
+
+describe('a chord on the neck', () => {
+  it('draws every string of the chord, roots marked', () => {
+    const shape = exerciseShape(
+      exercise({
+        key: 'C',
+        notes: [{ string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] }],
+      }),
+    )
+    expect(shape.positions).toEqual([
+      { string: 5, fret: 3, label: 'C', role: 'root' },
+      { string: 4, fret: 2, label: 'E', role: 'other' },
+      { string: 3, fret: 0, label: 'G', role: 'other' },
+      { string: 2, fret: 1, label: 'C', role: 'root' },
+      { string: 1, fret: 0, label: 'E', role: 'other' },
+    ])
+  })
+})

@@ -1,7 +1,6 @@
-import { midiAt } from '@jazz-master/theory'
 import { createPlayerAudio, type PlayerAudio } from '../audio/engine'
 import { DEFAULT_VOICE, type VoiceId } from '../audio/voices'
-import { passBeats, type TabNote } from '../content'
+import { midisOf, passBeats, type TabNote } from '../content'
 import {
   createRun,
   tempoForPass,
@@ -94,6 +93,8 @@ export const MIN_TEMPO = 20
 export const MAX_TEMPO = 400
 const LEAD_IN_SECONDS = 0.05
 const BACKLOG_TOLERANCE_SECONDS = 0.5
+/** How far apart the strings of a chord sound: a pick crossing six strings, not a piano. */
+const STRUM_SECONDS_PER_STRING = 0.012
 
 export function clampTempo(bpm: number): number {
   if (!Number.isFinite(bpm)) return MIN_TEMPO
@@ -115,7 +116,7 @@ export function createTransport({
 }: TransportOptions): Transport {
   const totalBeats = passBeats(notes)
   if (!(totalBeats > 0)) throw new Error('A transport needs an exercise with notes')
-  const pitches = [...new Set(notes.map((note) => midiAt(note.string, note.fret)))]
+  const pitches = [...new Set(notes.flatMap(midisOf))]
 
   let snapshot: TransportSnapshot = {
     status: 'stopped',
@@ -208,11 +209,16 @@ export function createTransport({
     // rather than firing it all at once.
     if (scheduledUntil < time - BACKLOG_TOLERANCE_SECONDS) scheduledUntil = time
     const horizon = time + lookaheadSeconds
-    if (audio) {
+    const engine = audio
+    if (engine) {
       for (const event of run.eventsBetween(scheduledUntil, horizon)) {
-        if (event.kind === 'click' && snapshot.click) audio.click(event.time, event.accent)
+        if (event.kind === 'click' && snapshot.click) engine.click(event.time, event.accent)
         if (event.kind === 'note' && snapshot.voice) {
-          audio.pluck(event.time, event.midi + transposeSemitones, event.seconds, voiceGain)
+          // A chord is strummed, bass first, and shared out so six strings are not six times as loud.
+          const gain = voiceGain / Math.sqrt(event.midis.length)
+          event.midis.forEach((midi, string) => {
+            engine.pluck(event.time + string * STRUM_SECONDS_PER_STRING, midi + transposeSemitones, event.seconds, gain)
+          })
         }
       }
     }

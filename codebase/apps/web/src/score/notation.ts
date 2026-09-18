@@ -8,7 +8,7 @@ import {
   type KeySignature,
   type Letter,
 } from '@jazz-master/theory'
-import type { TabNote } from '../content'
+import { stringsOf, type TabNote } from '../content'
 
 /**
  * From a tab to staff positions: guitar is written in treble clef an octave
@@ -56,12 +56,17 @@ export function resolveKey(key: string | undefined): KeySignature | null {
   return key === undefined ? null : keySignature(key)
 }
 
+/**
+ * The heads to draw for each tab event, bass first: one for a note, one per
+ * string for a chord. Accidentals carry through the bar in the order the
+ * heads are read, low to high within a chord.
+ */
 export function staffNotes(
   notes: readonly TabNote[],
   starts: readonly number[],
   beatsPerBar: number,
   key: KeySignature | null,
-): StaffNote[] {
+): StaffNote[][] {
   const inKey = new Map<Letter, number>()
   for (const note of key?.scale ?? []) inKey.set(note.letter, note.accidental)
   // Accidentals in force, by letter and octave, reset at every bar line.
@@ -73,17 +78,24 @@ export function staffNotes(
       bar = thisBar
       inForce = new Map()
     }
-    const midi = midiAt(note.string, note.fret)
-    const pitch = spellMidi(midi + 12, key)
-    const slot = `${pitch.letter}${pitch.octave}`
-    const implied = inForce.get(slot) ?? inKey.get(pitch.letter) ?? 0
-    let accidental: StaffNote['accidental'] = null
-    if (pitch.accidental !== implied) {
-      accidental = Math.sign(pitch.accidental) as -1 | 0 | 1
-      inForce.set(slot, pitch.accidental)
-    }
-    return { step: diatonicStep(pitch), accidental, midi }
+    return stringsOf(note).map(({ string, fret }): StaffNote => {
+      const midi = midiAt(string, fret)
+      const pitch = spellMidi(midi + 12, key)
+      const slot = `${pitch.letter}${pitch.octave}`
+      const implied = inForce.get(slot) ?? inKey.get(pitch.letter) ?? 0
+      let accidental: StaffNote['accidental'] = null
+      if (pitch.accidental !== implied) {
+        accidental = Math.sign(pitch.accidental) as -1 | 0 | 1
+        inForce.set(slot, pitch.accidental)
+      }
+      return { step: diatonicStep(pitch), accidental, midi }
+    })
   })
+}
+
+/** Of an event's heads, the one that decides its stem: farthest from the middle line. */
+export function farthestStep(steps: readonly number[]): number {
+  return steps.reduce((a, b) => (Math.abs(b - MIDDLE_LINE_STEP) > Math.abs(a - MIDDLE_LINE_STEP) ? b : a))
 }
 
 /** Ledger line steps a head at `step` needs, outside the five lines. */

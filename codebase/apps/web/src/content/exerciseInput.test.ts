@@ -89,3 +89,15 @@ describe('parseExerciseInput', () => {
     expect(problemsOf({ ...valid, tempoBpm: 0 })[0]).toMatch(/^tempoBpm: /)
   })
 })
+
+describe('chords', () => {
+  const openC = { string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] }
+
+  it('takes a chord as a note with strings above it, and keeps every string on the neck', () => {
+    const result = parseExerciseInput({ ...valid, notes: [openC] })
+    expect(result).toMatchObject({ ok: true, exercise: { notes: [openC] } })
+    expect(problemsOf({ ...valid, notes: [{ ...openC, above: [{ string: 4, fret: 23 }] }] })[0]).toMatch(/^notes\.0\.above\.0\.fret: /)
+    expect(problemsOf({ ...valid, notes: [{ ...openC, above: [{ string: 4, fret: 2, beats: 1 }] }] })[0]).toMatch(/^notes\.0\.above\.0: /)
+    expect(problemsOf({ ...valid, notes: [{ ...openC, above: [{ string: 3, fret: 0 }, { string: 4, fret: 2 }] }] })[0]).toMatch(/written from its bass up/)
+  })
+})

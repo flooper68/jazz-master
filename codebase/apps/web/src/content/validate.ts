@@ -1,6 +1,6 @@
-import { keySignature, STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
+import { keySignature, midiAt, STRING_NUMBERS, type GuitarString } from '@jazz-master/theory'
 import { passBeats } from './timeline'
-import { DEFAULT_BEATS_PER_BAR, type Exercise, type TabNote } from './types'
+import { DEFAULT_BEATS_PER_BAR, type Exercise, type StringFret, type TabNote } from './types'
 
 /** One thing wrong with an exercise set; an empty result means valid. */
 export interface ExerciseProblem {
@@ -8,15 +8,35 @@ export interface ExerciseProblem {
   message: string
 }
 
+function positionProblem(position: StringFret, where: string): string | null {
+  if (!STRING_NUMBERS.includes(position.string as GuitarString)) {
+    return `${where}: string must be 1–6, got ${position.string}`
+  }
+  if (!Number.isInteger(position.fret) || position.fret < 0) {
+    return `${where}: fret must be a non-negative integer, got ${position.fret}`
+  }
+  return null
+}
+
 function noteProblem(note: TabNote, index: number): string | null {
-  if (!STRING_NUMBERS.includes(note.string as GuitarString)) {
-    return `note ${index}: string must be 1–6, got ${note.string}`
-  }
-  if (!Number.isInteger(note.fret) || note.fret < 0) {
-    return `note ${index}: fret must be a non-negative integer, got ${note.fret}`
-  }
+  const own = positionProblem(note, `note ${index}`)
+  if (own) return own
   if (!(note.beats > 0)) {
     return `note ${index}: beats must be positive, got ${note.beats}`
+  }
+  // A chord stacks up from its bass: each string higher in pitch than the one before, none twice.
+  let below = midiAt(note.string, note.fret)
+  for (const [at, position] of (note.above ?? []).entries()) {
+    const problem = positionProblem(position, `note ${index}, above ${at}`)
+    if (problem) return problem
+    const midi = midiAt(position.string, position.fret)
+    if (position.string >= note.string || (note.above ?? []).slice(0, at).some((earlier) => earlier.string === position.string)) {
+      return `note ${index}, above ${at}: string ${position.string} is already struck in this chord`
+    }
+    if (midi <= below) {
+      return `note ${index}, above ${at}: a chord is written from its bass up, and ${position.string}/${position.fret} is not higher than the string before it`
+    }
+    below = midi
   }
   return null
 }

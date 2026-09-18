@@ -15,12 +15,25 @@ import type {
  * authoring tools that emit these notes — see `authoring.ts`.
  */
 
-/** One note of a tab: where to play it and how long it lasts, in beats. */
-export interface TabNote {
+/** A place on the neck: a string and a fret on it. */
+export interface StringFret {
   string: GuitarString
   fret: number
+}
+
+/**
+ * One event of a tab: where to play it and how long it lasts, in beats. A
+ * note is one string; a chord is that string — its lowest, the bass — with
+ * more strings stacked `above` it, struck together.
+ */
+export interface TabNote extends StringFret {
   /** Length in beats at the exercise tempo (0.5 = an eighth in 4/4). */
   beats: number
+  /**
+   * The other strings of a chord, each higher in pitch than the last: the
+   * note itself is the bass. Absent or empty for a single note.
+   */
+  above?: readonly StringFret[]
 }
 
 /** How long to stay on an exercise: clocked, or a number of passes through the tab. */

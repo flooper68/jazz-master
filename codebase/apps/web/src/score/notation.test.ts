@@ -1,10 +1,11 @@
 import { keySignature } from '@jazz-master/theory'
 import { describe, expect, it } from 'vitest'
 import { noteStarts, type TabNote } from '../content'
-import { keySignatureGlyphs, ledgerSteps, resolveKey, staffNotes } from './notation'
+import { farthestStep, keySignatureGlyphs, ledgerSteps, resolveKey, staffNotes } from './notation'
 
+/** The heads of each event; for these single notes, the one head each. */
 function staff(notes: TabNote[], key: string | undefined, beatsPerBar = 4) {
-  return staffNotes(notes, noteStarts(notes), beatsPerBar, resolveKey(key))
+  return staffNotes(notes, noteStarts(notes), beatsPerBar, resolveKey(key)).map((heads) => heads[0])
 }
 
 describe('staffNotes', () => {
@@ -64,6 +65,22 @@ describe('staffNotes', () => {
     expect(high.accidental).toBe(1)
   })
 
+  it('gives a chord one head per string, bass first, and carries its accidentals on through the bar', () => {
+    // A7 with a C# on top, then a C# on its own: the sharp is in force from the chord.
+    const [chord, after] = staffNotes(
+      [
+        { string: 5, fret: 0, beats: 2, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 2 }] },
+        { string: 2, fret: 2, beats: 2 },
+      ],
+      [0, 2],
+      4,
+      resolveKey('C'),
+    )
+    expect(chord.map((head) => head.midi)).toEqual([45, 52, 55, 61])
+    expect(chord.map((head) => head.accidental)).toEqual([null, null, null, 1])
+    expect(after).toEqual([{ step: 35, accidental: null, midi: 61 }])
+  })
+
   it('spells chromatic notes with flats in flat keys', () => {
     const [ab] = staff([{ string: 1, fret: 4, beats: 1 }], 'F')
     // Ab5 written: A5 is step 40; a flat on it.
@@ -94,5 +111,13 @@ describe('ledgerSteps', () => {
     expect(ledgerSteps(23)).toEqual([28, 26, 24])
     expect(ledgerSteps(40)).toEqual([40])
     expect(ledgerSteps(43)).toEqual([40, 42])
+  })
+})
+
+describe('farthestStep', () => {
+  it('picks the head farthest from the middle line, which decides where the stem goes', () => {
+    expect(farthestStep([30, 36])).toBe(30)
+    expect(farthestStep([32, 39])).toBe(39)
+    expect(farthestStep([34])).toBe(34)
   })
 })

@@ -3,6 +3,7 @@ import { CHORDS } from './pack/chords'
 import { ETUDES } from './pack/etudes'
 import { LINES_AFTER_BEBOP_LINE, LINES_BEFORE_BEBOP_LINE } from './pack/lines'
 import { PATTERNS } from './pack/patterns'
+import { PROGRESSIONS } from './pack/progressions'
 import { SCALES } from './pack/scales'
 import { TECHNIQUE } from './pack/technique'
 import type { Exercise } from './types'
@@ -285,6 +286,7 @@ export const EXERCISES: readonly Exercise[] = [
   founding('lines-ii-v-i-f-arpeggios'),
   ...ARPEGGIOS_AFTER_II_V_I,
   ...CHORDS,
+  ...PROGRESSIONS,
   ...LINES_BEFORE_BEBOP_LINE,
   founding('lines-ii-v-i-f-line'),
   ...LINES_AFTER_BEBOP_LINE,

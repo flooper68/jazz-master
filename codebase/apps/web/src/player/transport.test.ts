@@ -133,6 +133,22 @@ describe('createTransport', () => {
     ])
   })
 
+  it('strums a chord, bass first, a few milliseconds a string, and primes every pitch of it', () => {
+    const chord: TabNote[] = [{ string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }] }]
+    const { transport, log, advance } = harness({ notes: chord })
+    transport.setCountIn(false)
+    transport.setClick(false)
+    transport.setVoice(true)
+    transport.play()
+    advance(0.5)
+    expect(log.filter((entry) => entry.startsWith('prime')).at(-1)).toBe('prime 48,52,55')
+    expect(log.filter((entry) => entry.startsWith('note'))).toEqual([
+      'note 0.05 m48 4.00s',
+      'note 0.06 m52 4.00s',
+      'note 0.07 m55 4.00s',
+    ])
+  })
+
   it('pauses where it is, silences, and resumes from there without a count-in', () => {
     const { transport, log, advance } = harness()
     transport.setCountIn(false)

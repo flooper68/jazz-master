@@ -13,6 +13,7 @@ import {
   type ExerciseTechnique,
   type ExerciseVoicing,
 } from './taxonomy'
+import { stringsOf } from './stack'
 import type { Exercise } from './types'
 
 /**
@@ -29,12 +30,13 @@ export type ExercisePosition = (typeof EXERCISE_POSITIONS)[number]
 const WIDEST_POSITION_SPAN = 5
 
 export function exercisePosition(exercise: Pick<Exercise, 'notes'>): ExercisePosition {
-  const fretted = exercise.notes.map((note) => note.fret).filter((fret) => fret > 0)
+  const frets = exercise.notes.flatMap((note) => stringsOf(note).map((position) => position.fret))
+  const fretted = frets.filter((fret) => fret > 0)
   if (fretted.length === 0) return 'open'
   const lowest = Math.min(...fretted)
   const highest = Math.max(...fretted)
   if (highest - lowest > WIDEST_POSITION_SPAN) return 'shifting'
-  const usesOpenStrings = fretted.length < exercise.notes.length
+  const usesOpenStrings = fretted.length < frets.length
   if (usesOpenStrings && highest <= 4) return 'open'
   if (lowest <= 4) return 'low'
   return lowest <= 8 ? 'mid' : 'high'

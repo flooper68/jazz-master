@@ -43,10 +43,13 @@ const REPLACES = { readOnlyHint: false, destructiveHint: true, idempotentHint: t
 
 /** What a model needs to know to write a valid exercise the first time; the schema says the rest. */
 const EXERCISE_FORMAT = [
-  'An exercise is a guitar tab in standard tuning with a rhythm: `notes` is an ordered list of single notes, each',
+  'An exercise is a guitar tab in standard tuning with a rhythm: `notes` is an ordered list of events, each',
   '`{ string, fret, beats }`. `string` is 1 (high E) to 6 (low E); `fret` is 0 (open) to ' + `${HIGHEST_FRET}` + ';',
   `\`beats\` is the note's length in quarter-note beats and must be one of ${NOTE_LENGTHS_IN_BEATS.join(', ')}`,
-  '(0.5 is an eighth note). There are no rests and no chords: one note sounds at a time, so write a chord as an arpeggio.',
+  '(0.5 is an eighth note). A chord is one event: its lowest string is the note, and the rest go in `above` as',
+  '`[{ string, fret }, ...]` from the next string up, each higher in pitch than the last (open C is `{ "string": 5,',
+  '"fret": 3, "beats": 1, "above": [{ "string": 4, "fret": 2 }, { "string": 3, "fret": 0 }, { "string": 2, "fret": 1 },',
+  '{ "string": 1, "fret": 0 }] }`). There are no rests: something sounds on every beat.',
   'The note lengths must add up to a whole number of bars (`beatsPerBar`, default 4); end on a long note to land on',
   'the bar line. `key` is the MAJOR key whose signature the notation uses (`C`, `F`, `Bb`, `F#`): for a minor or modal',
   'line give the relative major (D Dorian and A minor are both `C`) and name the note it is built on in `tonic` (`D`,',

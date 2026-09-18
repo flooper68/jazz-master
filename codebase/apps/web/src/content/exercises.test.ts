@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseExerciseInput } from './exerciseInput'
 import { EXERCISES } from './exercises'
 import { exercisePosition } from './filter'
+import { isChord } from './stack'
 import { EXERCISE_AREAS, STYLE_FAMILIES, styleFamily } from './taxonomy'
 import { passBeats } from './timeline'
 import { validateExercises } from './validate'
@@ -80,6 +81,15 @@ describe('the pack as a library', () => {
 
   it('keeps fundamentals unstyled, so they belong to every style', () => {
     expect(EXERCISES.filter((exercise) => !exercise.styles?.length).length).toBeGreaterThan(20)
+  })
+
+  it('plays chords as chords in the chords area, and nowhere else', () => {
+    const strummed = EXERCISES.filter((exercise) => exercise.notes.some(isChord))
+    expect(strummed.length).toBeGreaterThanOrEqual(10)
+    for (const exercise of strummed) expect({ id: exercise.id, area: exercise.area }).toEqual({ id: exercise.id, area: 'chords' })
+    // Every voicing kind a chord can be labelled with is somewhere played whole.
+    const voicings = new Set(strummed.flatMap((exercise) => exercise.voicings ?? []))
+    expect([...voicings].sort()).toEqual(['barre', 'drop-2', 'open', 'power', 'quartal', 'shell'])
   })
 
   it('names chord shapes only in the chords area', () => {

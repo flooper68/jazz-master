@@ -1,5 +1,5 @@
 import { STRING_NUMBERS } from '@jazz-master/theory'
-import type { TabNote } from '../content'
+import { stringsOf, type TabNote } from '../content'
 import { Flag } from './glyphs'
 import type { ScoreLayout, SystemLayout } from './layout'
 import { STRING_GAP } from './metrics'
@@ -7,8 +7,9 @@ import { beamGroups, noteGlyph } from './rhythm'
 
 /**
  * Tablature on the score's shared time axis: six string lines, high E on
- * top, one fret number per note at its onset, and rhythm stems under the
- * strings so the tab reads in time without the staff above it.
+ * top, a fret number on each string struck at an onset (one for a note, a
+ * stack for a chord), and rhythm stems under the strings so the tab reads
+ * in time without the staff above it.
  */
 
 const STEM_TOP = 6
@@ -65,28 +66,34 @@ export function TabStaff({ notes, layout, system, top, currentIndex }: TabStaffP
       {system.noteIndices.map((index) => {
         const note = notes[index]
         const x = layout.noteX[index]
-        const y = stringY(note.string)
         const current = index === currentIndex
         const glyph = glyphs[index]
-        const wide = note.fret >= 10
         return (
           <g key={index} data-note={index} data-current={current || undefined}>
-            {current ? (
-              <circle cx={x} cy={y} r={7.5} className="fill-accent" />
-            ) : (
-              <rect x={x - (wide ? 7.5 : 5.5)} y={y - 6} width={wide ? 15 : 11} height={12} rx={2} className="fill-panel" />
-            )}
-            <text
-              x={x}
-              y={y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={10}
-              fontWeight={current ? 800 : 600}
-              className={current ? 'fill-on-accent' : 'fill-fg'}
-            >
-              {note.fret}
-            </text>
+            {stringsOf(note).map(({ string, fret }) => {
+              const y = stringY(string)
+              const wide = fret >= 10
+              return (
+                <g key={string}>
+                  {current ? (
+                    <circle cx={x} cy={y} r={7.5} className="fill-accent" />
+                  ) : (
+                    <rect x={x - (wide ? 7.5 : 5.5)} y={y - 6} width={wide ? 15 : 11} height={12} rx={2} className="fill-panel" />
+                  )}
+                  <text
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={10}
+                    fontWeight={current ? 800 : 600}
+                    className={current ? 'fill-on-accent' : 'fill-fg'}
+                  >
+                    {fret}
+                  </text>
+                </g>
+              )
+            })}
             {glyph.stem && (
               <line
                 x1={x}

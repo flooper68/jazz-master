@@ -1,4 +1,5 @@
 import { keySignature, midiAt, parseNote, pitchClass, spellMidi, type FretRange, type GuitarString } from '@jazz-master/theory'
+import { stringsOf } from './stack'
 import type { Exercise } from './types'
 
 /**
@@ -26,14 +27,14 @@ export function exerciseShape(exercise: Exercise): ExerciseShape {
   const rootPc = tonic ? pitchClass(tonic) : key ? pitchClass(key.tonic) : midiAt(exercise.notes[0].string, exercise.notes[0].fret) % 12
   const seen = new Set<string>()
   const positions: ShapePosition[] = []
-  for (const note of exercise.notes) {
-    const id = `${note.string}/${note.fret}`
+  for (const { string, fret } of exercise.notes.flatMap(stringsOf)) {
+    const id = `${string}/${fret}`
     if (seen.has(id)) continue
     seen.add(id)
-    const midi = midiAt(note.string, note.fret)
+    const midi = midiAt(string, fret)
     const spelled = spellMidi(midi, key)
     const label = spelled.letter + (spelled.accidental < 0 ? 'b'.repeat(-spelled.accidental) : '#'.repeat(spelled.accidental))
-    positions.push({ string: note.string, fret: note.fret, label, role: midi % 12 === rootPc ? 'root' : 'other' })
+    positions.push({ string, fret, label, role: midi % 12 === rootPc ? 'root' : 'other' })
   }
   positions.sort((a, b) => b.string - a.string || a.fret - b.fret)
   const frets = positions.map((position) => position.fret)

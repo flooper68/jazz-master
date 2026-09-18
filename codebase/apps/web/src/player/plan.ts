@@ -1,5 +1,4 @@
-import { midiAt } from '@jazz-master/theory'
-import { noteStarts, type TabNote } from '../content'
+import { midisOf, noteStarts, type TabNote } from '../content'
 
 /**
  * Pure timing for one run of the player. A run is a region of the exercise
@@ -59,7 +58,8 @@ export interface RunPosition {
 
 export type RunEvent =
   | { kind: 'click'; time: number; accent: boolean; pass: number }
-  | { kind: 'note'; time: number; noteIndex: number; midi: number; seconds: number; pass: number }
+  /** A note onset; `midis` holds one pitch for a note, several, bass first, for a chord. */
+  | { kind: 'note'; time: number; noteIndex: number; midis: readonly number[]; seconds: number; pass: number }
 
 /** Tempo of a given pass under the plan's ladder. */
 export function tempoForPass(plan: Pick<RunPlan, 'tempoBpm' | 'ladder'>, pass: number): number {
@@ -180,7 +180,7 @@ export function createRun(plan: RunPlan, start: RunStart): Run {
         kind: 'note',
         time: timeOf(localPass, onset),
         noteIndex,
-        midi: midiAt(note.string, note.fret),
+        midis: midisOf(note),
         seconds: (beats * 60) / tempoBpm,
         pass,
       })

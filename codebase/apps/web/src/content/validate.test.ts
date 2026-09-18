@@ -82,3 +82,20 @@ describe('validateExercises', () => {
     ])
   })
 })
+
+describe('chords', () => {
+  it('accepts a chord stacked from its bass up, and says what is wrong with one that is not', () => {
+    const chord = (above: { string: number; fret: number }[]) =>
+      validateExercises([exercise({ notes: [{ string: 5, fret: 3, beats: 4, above: above as never }] })]).map((problem) => problem.message)
+    expect(chord([{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }])).toEqual([])
+    expect(chord([{ string: 5, fret: 5 }])).toEqual(['note 0, above 0: string 5 is already struck in this chord'])
+    expect(chord([{ string: 4, fret: 2 }, { string: 4, fret: 3 }])).toEqual(['note 0, above 1: string 4 is already struck in this chord'])
+    // 4/0 is D3, below the C3 bass.
+    expect(chord([{ string: 4, fret: 0 }, { string: 3, fret: 0 }])).toEqual([])
+    expect(chord([{ string: 3, fret: 0 }, { string: 4, fret: 2 }])).toEqual([
+      'note 0, above 1: a chord is written from its bass up, and 4/2 is not higher than the string before it',
+    ])
+    expect(chord([{ string: 7, fret: 0 }])).toEqual(['note 0, above 0: string must be 1–6, got 7'])
+    expect(chord([{ string: 4, fret: -1 }])).toEqual(['note 0, above 0: fret must be a non-negative integer, got -1'])
+  })
+})

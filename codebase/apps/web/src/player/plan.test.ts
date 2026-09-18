@@ -98,6 +98,14 @@ describe('createRun', () => {
     expect(run.positionAt(5)).toMatchObject({ beat: 2, pass: 1 })
   })
 
+  it('carries every pitch of a chord in its onset, bass first', () => {
+    const chord = plan({ notes: [{ string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }] }] })
+    const run = createRun(chord, { beat: 0, pass: 0, time: 0 })
+    const onsets = run.eventsBetween(0, 4).filter((event) => event.kind === 'note')
+    expect(onsets).toHaveLength(1)
+    expect(onsets[0]).toMatchObject({ kind: 'note', noteIndex: 0, midis: [48, 52, 55], seconds: 4 })
+  })
+
   it('lists clicks and note onsets in a window, accenting the downbeat', () => {
     const run = createRun(plan(), { beat: 0, pass: 0, time: 0 })
     const events = run.eventsBetween(0, 4.5)
@@ -107,8 +115,8 @@ describe('createRun', () => {
     ])
     expect(events[0]).toMatchObject({ kind: 'click', accent: true, pass: 0 })
     expect(events[2]).toMatchObject({ kind: 'click', accent: false })
-    expect(events[1]).toMatchObject({ kind: 'note', noteIndex: 0, midi: 48, seconds: 1 })
-    expect(events[6]).toMatchObject({ kind: 'note', noteIndex: 3, midi: 53, seconds: 0.5 })
+    expect(events[1]).toMatchObject({ kind: 'note', noteIndex: 0, midis: [48], seconds: 1 })
+    expect(events[6]).toMatchObject({ kind: 'note', noteIndex: 3, midis: [53], seconds: 0.5 })
     expect(events[10]).toMatchObject({ kind: 'note', noteIndex: 0, pass: 1 })
     expect(run.eventsBetween(2, 2)).toEqual([])
   })

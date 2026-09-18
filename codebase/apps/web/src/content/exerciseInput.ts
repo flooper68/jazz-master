@@ -36,14 +36,19 @@ function facet<const Values extends readonly [string, ...string[]]>(values: Valu
     .optional()
 }
 
-const noteSchema = z.strictObject({
+const stringFretSchema = z.strictObject({
   string: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
   fret: z.number().int().min(0).max(HIGHEST_FRET),
+})
+
+const noteSchema = stringFretSchema.extend({
   beats: z
     .number()
     .refine((beats) => NOTE_LENGTHS_IN_BEATS.some((length) => Math.abs(length - beats) < 1e-9), {
       message: `beats must be one of ${NOTE_LENGTHS_IN_BEATS.join(', ')}`,
     }),
+  // The other strings of a chord; that they climb from the bass is checked with the pack's rules, below.
+  above: z.array(stringFretSchema).max(5).optional(),
 })
 
 export const exerciseInputSchema = z.strictObject({

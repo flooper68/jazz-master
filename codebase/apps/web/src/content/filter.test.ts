@@ -96,6 +96,13 @@ describe('exercisePosition', () => {
     expect(exercisePosition(at(3, 5, 10))).toBe('shifting')
     expect(exercisePosition(at(0, 0))).toBe('open')
   })
+
+  it('reads every string of a chord', () => {
+    const openC = { notes: [{ string: 5 as const, fret: 3, beats: 4, above: [{ string: 4 as const, fret: 2 }, { string: 1 as const, fret: 0 }] }] }
+    expect(exercisePosition(openC)).toBe('open')
+    const barre = { notes: [{ string: 6 as const, fret: 5, beats: 4, above: [{ string: 5 as const, fret: 7 }, { string: 4 as const, fret: 7 }] }] }
+    expect(exercisePosition(barre)).toBe('mid')
+  })
 })
 
 describe('toggleFacetValue and activeFilterCount', () => {

@@ -2,10 +2,11 @@ import { phrase, tab } from '../authoring'
 import type { Exercise } from '../types'
 
 /*
- * A tab here holds one note at a time, so these teach a chord the way a
- * teacher does before asking for it strummed: the shape held down, its notes
- * played one by one, low to high. The guide-tone and bass-line exercises are
- * harmony played as a single line, which is how it is heard in a band.
+ * Chords a note at a time: these teach a shape the way a teacher does before
+ * asking for it strummed — held down, its notes played one by one, low to
+ * high. The guide-tone and bass-line exercises are harmony played as a
+ * single line, which is how it is heard in a band. The shapes struck whole,
+ * in progressions, are in progressions.ts.
  */
 
 const FOUR_PASSES = { kind: 'repetitions', count: 4 } as const

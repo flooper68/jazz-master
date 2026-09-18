@@ -5,6 +5,7 @@ import type { ScoreLayout, SystemLayout } from './layout'
 import { HALF_GAP, LINE_GAP } from './metrics'
 import {
   BOTTOM_LINE_STEP,
+  farthestStep,
   keySignatureGlyphs,
   ledgerSteps,
   MIDDLE_LINE_STEP,
@@ -15,11 +16,15 @@ import { beamGroups, noteGlyph } from './rhythm'
 /**
  * Standard notation on a treble staff, laid out on the score's shared time
  * axis: heads at their onsets, stems and beams by the beat, accidentals as
- * the key and the bar imply.
+ * the key and the bar imply. A chord is its heads stacked on one stem; a
+ * head a step above its neighbour moves to the other side of the stem so
+ * the two do not overlap.
  */
 
 const STEM_LENGTH = 3.3 * LINE_GAP
 const BEAM_THICKNESS = 3.2
+/** How far a displaced head of a second sits from the stem, on the far side. */
+const SECOND_OFFSET = 2 * HEAD_RX - 0.8
 
 interface NotationStaffProps {
   notes: readonly TabNote[]
@@ -45,24 +50,21 @@ export function NotationStaff({ notes, layout, system, keySig, top, currentIndex
   const grouped = new Map<number, number>()
   groups.forEach((group, groupIndex) => group.forEach((index) => grouped.set(index, groupIndex)))
 
-  // Stem direction: a beamed group follows its farthest head from the middle line.
+  const stepsOf = (index: number) => staff[index].map((head) => head.step)
+  // Stem direction: an event follows its head farthest from the middle line; a beamed group its farthest head of all.
   const stemUp = (index: number): boolean => {
     const groupIndex = grouped.get(index)
-    if (groupIndex === undefined) return staff[index].step < MIDDLE_LINE_STEP
-    const steps = groups[groupIndex].map((i) => staff[i].step)
-    const farthest = steps.reduce((a, b) =>
-      Math.abs(b - MIDDLE_LINE_STEP) > Math.abs(a - MIDDLE_LINE_STEP) ? b : a,
-    )
-    return farthest < MIDDLE_LINE_STEP
+    const steps = groupIndex === undefined ? stepsOf(index) : groups[groupIndex].flatMap(stepsOf)
+    return farthestStep(steps) < MIDDLE_LINE_STEP
   }
   const stemX = (index: number) => layout.noteX[index] + (stemUp(index) ? HEAD_RX - 0.4 : -HEAD_RX + 0.4)
-  const headY = (index: number) => yOfStep(staff[index].step)
-  // Beamed stems all reach the beam; a lone stem is a fixed length.
+  const headYs = (index: number) => stepsOf(index).map(yOfStep)
+  // A stem runs from the event's outermost head on its side to a fixed length past the other; beamed stems all reach the beam.
+  const stemStartY = (index: number): number => (stemUp(index) ? Math.max(...headYs(index)) : Math.min(...headYs(index)))
   const stemEndY = (index: number): number => {
     const groupIndex = grouped.get(index)
     const up = stemUp(index)
-    if (groupIndex === undefined) return headY(index) + (up ? -STEM_LENGTH : STEM_LENGTH)
-    const ys = groups[groupIndex].map(headY)
+    const ys = groupIndex === undefined ? headYs(index) : groups[groupIndex].flatMap(headYs)
     return up ? Math.min(...ys) - STEM_LENGTH : Math.max(...ys) + STEM_LENGTH
   }
 
@@ -116,33 +118,61 @@ export function NotationStaff({ notes, layout, system, keySig, top, currentIndex
       {system.noteIndices.map((index) => {
         const glyph = glyphs[index]
         const x = layout.noteX[index]
-        const y = headY(index)
+        const heads = staff[index]
         const current = index === currentIndex
         const up = stemUp(index)
         const inGroup = grouped.has(index)
+        // Heads a second apart alternate sides of the stem, from the bass up.
+        const displaced: boolean[] = []
+        heads.forEach((head, at) => {
+          displaced.push(at > 0 && head.step - heads[at - 1].step === 1 && !displaced[at - 1])
+        })
+        const headX = (at: number) => (displaced[at] ? x + (up ? SECOND_OFFSET : -SECOND_OFFSET) : x)
+        // Accidentals of heads close together step back to the left so they do not collide.
+        let lastAccidentalStep = -Infinity
+        const accidentalX = heads.map((head) => {
+          if (head.accidental === null) return x
+          const shifted = head.step - lastAccidentalStep <= 2
+          lastAccidentalStep = shifted ? -Infinity : head.step
+          return x - HEAD_RX - 6.5 - (shifted ? 7 : 0)
+        })
+        const ledgers = [...new Set(heads.flatMap((head) => ledgerSteps(head.step)))]
+        const ledgerWidth = displaced.some(Boolean) ? SECOND_OFFSET : 0
         return (
           <g key={index} data-staff-note={index} data-current={current || undefined}>
-            {ledgerSteps(staff[index].step).map((step) => (
+            {ledgers.map((step) => (
               <line
                 key={step}
-                x1={x - HEAD_RX - 3}
-                x2={x + HEAD_RX + 3}
+                x1={x - HEAD_RX - 3 - (up ? 0 : ledgerWidth)}
+                x2={x + HEAD_RX + 3 + (up ? ledgerWidth : 0)}
                 y1={yOfStep(step)}
                 y2={yOfStep(step)}
                 className="stroke-fg"
                 strokeWidth={1}
               />
             ))}
-            {staff[index].accidental !== null && (
-              <Accidental kind={staff[index].accidental} x={x - HEAD_RX - 6.5} y={y} />
-            )}
-            <NoteHeadGlyph head={glyph.head} x={x} y={y} current={current} />
-            {glyph.dot && <circle cx={x + HEAD_RX + 4} cy={y - (staff[index].step % 2 === 0 ? HALF_GAP : 0)} r={1.6} className={current ? 'fill-accent' : 'fill-fg'} />}
+            {heads.map((head, at) => {
+              const y = yOfStep(head.step)
+              return (
+                <g key={at} data-head={at}>
+                  {head.accidental !== null && <Accidental kind={head.accidental} x={accidentalX[at]} y={y} />}
+                  <NoteHeadGlyph head={glyph.head} x={headX(at)} y={y} current={current} />
+                  {glyph.dot && (
+                    <circle
+                      cx={headX(at) + HEAD_RX + 4}
+                      cy={y - (head.step % 2 === 0 ? HALF_GAP : 0)}
+                      r={1.6}
+                      className={current ? 'fill-accent' : 'fill-fg'}
+                    />
+                  )}
+                </g>
+              )
+            })}
             {glyph.stem && (
               <line
                 x1={stemX(index)}
                 x2={stemX(index)}
-                y1={y}
+                y1={stemStartY(index)}
                 y2={stemEndY(index)}
                 className={current ? 'stroke-accent' : 'stroke-fg'}
                 strokeWidth={1.3}

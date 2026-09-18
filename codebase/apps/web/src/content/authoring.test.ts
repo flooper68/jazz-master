@@ -9,6 +9,8 @@ import {
   placeIn,
   scaleRun,
   sequenceRun,
+  shape,
+  strum,
   tab,
   threePerStringRun,
 } from './authoring'
@@ -150,5 +152,45 @@ describe('phrase and tab', () => {
       { string: 1, fret: 12, beats: 0.5 },
     ])
     expect(() => tab('7/3')).toThrow()
+  })
+})
+
+describe('chords', () => {
+  it('reads strings joined with + as one chord, its lowest string the note and the rest stacked above', () => {
+    expect(tab('5/3+4/2+3/0+2/1+1/0:4')).toEqual([
+      { string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] },
+    ])
+    // Written in any order, stacked from the bass; a string struck twice is a mistake.
+    expect(tab('1/0+5/3:1')).toEqual([{ string: 5, fret: 3, beats: 1, above: [{ string: 1, fret: 0 }] }])
+    expect(() => tab('5/3+5/2')).toThrow(/twice/)
+  })
+
+  it('reads a chord box low E to high E, skipping the strings marked x, with dashes for frets past 9', () => {
+    expect(shape('x32010')).toEqual([
+      { string: 5, fret: 3 },
+      { string: 4, fret: 2 },
+      { string: 3, fret: 0 },
+      { string: 2, fret: 1 },
+      { string: 1, fret: 0 },
+    ])
+    expect(shape('x-x-10-12-12-10')).toEqual([
+      { string: 4, fret: 10 },
+      { string: 3, fret: 12 },
+      { string: 2, fret: 12 },
+      { string: 1, fret: 10 },
+    ])
+    expect(() => shape('x3201')).toThrow(/six strings/)
+    expect(() => shape('x3201y')).toThrow(/Unreadable fret/)
+  })
+
+  it('strums named shapes, a beat each unless told, repeating and holding as asked', () => {
+    const shapes = { C: 'x32010', G5: '355xxx' }
+    const strummed = strum('C*2 | G5:2', shapes)
+    expect(strummed).toHaveLength(3)
+    expect(strummed[0]).toEqual({ string: 5, fret: 3, beats: 1, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] })
+    expect(strummed[1]).toEqual(strummed[0])
+    expect(strummed[2]).toEqual({ string: 6, fret: 3, beats: 2, above: [{ string: 5, fret: 5 }, { string: 4, fret: 5 }] })
+    expect(strum('C', shapes, 0.5)[0].beats).toBe(0.5)
+    expect(() => strum('C Dm', shapes)).toThrow(/No shape for "Dm"/)
   })
 })

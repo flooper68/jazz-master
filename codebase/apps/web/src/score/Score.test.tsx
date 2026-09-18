@@ -55,6 +55,26 @@ describe('Score', () => {
     expect(headX).toEqual(tabX)
   })
 
+  it('draws a chord as a stack of fret numbers on one stem, and a stack of heads on the staff', () => {
+    const chords: TabNote[] = [
+      { string: 5, fret: 3, beats: 2, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] },
+      { string: 3, fret: 0, beats: 2 },
+    ]
+    const { container } = renderScore({ notes: chords, currentIndex: 0 })
+    const chord = container.querySelector('[data-note="0"]')!
+    const frets = [...chord.querySelectorAll('text')].map((t) => t.textContent)
+    expect(frets).toEqual(['3', '2', '0', '1', '0'])
+    // One onset, so one x for every number of the stack, and one stem.
+    expect(new Set([...chord.querySelectorAll('text')].map((t) => t.getAttribute('x'))).size).toBe(1)
+    expect(chord.querySelectorAll('line')).toHaveLength(1)
+    // The current chord is lit on every string.
+    expect(chord.querySelectorAll('circle')).toHaveLength(5)
+    const staffChord = container.querySelector('[data-staff-note="0"]')!
+    expect(staffChord.querySelectorAll('[data-head]')).toHaveLength(5)
+    expect(staffChord.querySelectorAll('line').length).toBeGreaterThanOrEqual(1)
+    expect(container.querySelector('[data-staff-note="1"]')!.querySelectorAll('[data-head]')).toHaveLength(1)
+  })
+
   it('shows one view at a time when asked', () => {
     const { container, rerender } = renderScore({ view: 'tab' })
     expect(container.querySelector('[data-staff="notation"]')).toBeNull()

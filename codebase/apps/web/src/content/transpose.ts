@@ -1,4 +1,5 @@
 import { parseNote, pitchClass, transposeMajorKey } from '@jazz-master/theory'
+import { stringsOf } from './stack'
 import type { Exercise } from './types'
 
 /**
@@ -21,7 +22,7 @@ export interface TransposeRange {
 
 /** How far an exercise's shape can slide before it runs off the neck. */
 export function transposeRange(exercise: Exercise): TransposeRange {
-  const frets = exercise.notes.map((note) => note.fret)
+  const frets = exercise.notes.flatMap((note) => stringsOf(note).map((position) => position.fret))
   if (frets.length === 0) return { min: 0, max: 0 }
   const lowest = Math.min(...frets)
   const highest = Math.max(...frets)
@@ -48,7 +49,11 @@ export function transposeExercise(exercise: Exercise, semitones: number): Exerci
   if (shift === 0) return exercise
   return {
     ...exercise,
-    notes: exercise.notes.map((note) => ({ ...note, fret: note.fret + shift })),
+    notes: exercise.notes.map((note) => ({
+      ...note,
+      fret: note.fret + shift,
+      ...(note.above?.length ? { above: note.above.map((position) => ({ ...position, fret: position.fret + shift })) } : {}),
+    })),
     key: exercise.key ? (transposeMajorKey(exercise.key, shift) ?? undefined) : undefined,
     tonic: exercise.tonic ? transposeTonic(exercise.tonic, shift) : undefined,
   }

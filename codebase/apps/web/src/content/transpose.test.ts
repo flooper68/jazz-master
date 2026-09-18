@@ -111,3 +111,17 @@ describe('the tonic, transposed and captioned', () => {
     }
   })
 })
+
+describe('chords, transposed', () => {
+  const chords: Exercise = {
+    ...line,
+    notes: [{ string: 5, fret: 3, beats: 4, above: [{ string: 4, fret: 2 }, { string: 3, fret: 0 }, { string: 2, fret: 1 }, { string: 1, fret: 0 }] }],
+  }
+
+  it('slides every string of a chord together, and counts the open strings in how far down it can go', () => {
+    expect(transposeRange(chords)).toEqual({ min: 0, max: 11 })
+    expect(transposeExercise(chords, 2).notes).toEqual([
+      { string: 5, fret: 5, beats: 4, above: [{ string: 4, fret: 4 }, { string: 3, fret: 2 }, { string: 2, fret: 3 }, { string: 1, fret: 2 }] },
+    ])
+  })
+})

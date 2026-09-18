@@ -8,7 +8,7 @@ import {
   type GuitarString,
   type ScaleType,
 } from '@jazz-master/theory'
-import type { TabNote } from './types'
+import type { StringFret, TabNote } from './types'
 
 /**
  * Authoring helpers: theory in, tab out. The pack (see pack/) builds its tabs
@@ -303,15 +303,73 @@ export function phrase(source: string, window: FretRange, beats = 0.5): TabNote[
     })
 }
 
-/** A tab written directly, for when the fingering is the point: `6/3 4/5:1 3/0*2`, string/fret, eighths unless told. */
+/** `5/3` as a place on the neck; null when the text is not one. */
+function stringFret(text: string): StringFret | null {
+  const [, string, fret] = /^([1-6])\/(\d+)$/.exec(text) ?? []
+  return string ? { string: Number(string) as GuitarString, fret: Number(fret) } : null
+}
+
+/**
+ * A chord from the strings it is played on, in any order: the lowest string
+ * becomes the note and the rest stack above it. Every string at most once.
+ */
+export function chordOf(positions: readonly StringFret[], beats: number): TabNote {
+  if (positions.length === 0) throw new Error('A chord needs at least one string')
+  const sorted = [...positions].sort((a, b) => b.string - a.string)
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (sorted[index].string === sorted[index - 1].string) throw new Error(`String ${sorted[index].string} is struck twice in one chord`)
+  }
+  const [bass, ...above] = sorted
+  return above.length ? { ...bass, beats, above } : { ...bass, beats }
+}
+
+/**
+ * A tab written directly, for when the fingering is the point: `6/3 4/5:1
+ * 3/0*2`, string/fret, eighths unless told. Strings joined with `+` are
+ * struck together, a chord: `5/3+4/2+3/0+2/1+1/0:4`.
+ */
 export function tab(source: string, beats = 0.5): TabNote[] {
   return source
     .split(/\s+/)
     .filter((token) => token && token !== '|')
     .flatMap((token) => {
-      const [, string, fret, length, times] = /^([1-6])\/(\d+)(?::([\d.]+))?(?:\*(\d+))?$/.exec(token) ?? []
-      if (!string) throw new Error(`Unreadable token "${token}"`)
-      const note = { string: Number(string) as GuitarString, fret: Number(fret), beats: length ? Number(length) : beats }
+      const [, places, length, times] = /^([1-6]\/\d+(?:\+[1-6]\/\d+)*)(?::([\d.]+))?(?:\*(\d+))?$/.exec(token) ?? []
+      if (!places) throw new Error(`Unreadable token "${token}"`)
+      const positions = places.split('+').map((place) => stringFret(place) as StringFret)
+      const note = chordOf(positions, length ? Number(length) : beats)
       return Array.from({ length: times ? Number(times) : 1 }, () => ({ ...note }))
+    })
+}
+
+/**
+ * A chord shape as a chord box writes it, low E to high E: `x32010` is open
+ * C, `x` a string not struck. Frets past 9 take a dash between strings:
+ * `x-10-12-12-12-10`.
+ */
+export function shape(box: string): StringFret[] {
+  const frets = box.includes('-') ? box.split('-') : [...box]
+  if (frets.length !== STRING_NUMBERS.length) throw new Error(`A shape names six strings, low to high: "${box}"`)
+  return frets.flatMap((fret, index) => {
+    if (fret === 'x') return []
+    if (!/^\d+$/.test(fret)) throw new Error(`Unreadable fret "${fret}" in shape "${box}"`)
+    return [{ string: (STRING_NUMBERS.length - index) as GuitarString, fret: Number(fret) }]
+  })
+}
+
+/**
+ * A progression strummed from named shapes: `C G:2 Am:2 | F*4`, one strum a
+ * beat unless told, `:beats` for a longer one, `*times` to strike it again.
+ * Bar lines are for the reader. Each name looks up its shape in `shapes`.
+ */
+export function strum(source: string, shapes: Record<string, string>, beats = 1): TabNote[] {
+  return source
+    .split(/\s+/)
+    .filter((token) => token && token !== '|')
+    .flatMap((token) => {
+      const [, name, length, times] = /^([^:*]+)(?::([\d.]+))?(?:\*(\d+))?$/.exec(token) ?? []
+      const box = name ? shapes[name] : undefined
+      if (!box) throw new Error(`No shape for "${token}"`)
+      const chord = chordOf(shape(box), length ? Number(length) : beats)
+      return Array.from({ length: times ? Number(times) : 1 }, () => ({ ...chord }))
     })
 }
