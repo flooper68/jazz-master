@@ -88,8 +88,8 @@ describe('Layout shell', () => {
     const user = userEvent.setup()
     await renderRoute('/history')
     const nav = within(screen.getByRole('navigation', { name: 'Main' }))
-    await user.click(nav.getByRole('button', { name: /^Play Next session: 5 exercises, about \d+ min$/ }))
-    expect(await screen.findByText('Next session · 1 of 5')).toBeInTheDocument()
+    await user.click(nav.getByRole('button', { name: /^Play Next session: \d+ exercises, about \d+ min$/ }))
+    expect(await screen.findByText(/^Next session · 1 of \d+$/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'End session' })).toBeInTheDocument()
     // On the stage the sidebar is folded: the button is its icon, the settings are away.
     expect(screen.getByRole('banner')).toHaveAttribute('data-collapsed')

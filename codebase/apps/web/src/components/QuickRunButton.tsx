@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { routineExercises, setQuickRunSettings } from '../appData/quickRun'
+import { quickRunSettings, routineExercises, setQuickRunSettings } from '../appData/quickRun'
 import type { Routine } from '../appData/routine'
 import type { Exercise } from '../content'
 import { ChevronDownIcon, PlayIcon } from './icons'
@@ -102,7 +102,7 @@ export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = 
                   name="quick-run-source"
                   className="accent-cta"
                   checked={routine === null}
-                  onChange={() => setQuickRunSettings({ routineId: null })}
+                  onChange={() => setQuickRunSettings({ ...quickRunSettings(), routineId: null })}
                 />
                 The next session
               </label>
@@ -116,7 +116,7 @@ export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = 
                       className="accent-cta"
                       disabled={playable === 0}
                       checked={routine?.id === item.id}
-                      onChange={() => setQuickRunSettings({ routineId: item.id })}
+                      onChange={() => setQuickRunSettings({ ...quickRunSettings(), routineId: item.id })}
                     />
                     <span className="truncate">{item.name}</span>
                     <span className="ml-auto text-xs text-muted tabular-nums">{playable}</span>

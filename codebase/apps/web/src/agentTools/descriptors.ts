@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
 import { MOST_ROUTINE_ITEMS, routineInputSchema } from '../appData/routine'
@@ -47,7 +48,13 @@ export function builtinExerciseSummaries() {
  * page. The tool says so; a timezone argument is the fix when it matters.
  */
 export function nextSessionAnswer(runs: readonly ExerciseRun[], catalog: readonly Exercise[]) {
-  const { slots } = planNextSession(foldRuns(runs, catalog), catalog, planSeed(runs))
+  const { slots } = planNextSession({
+    state: foldRuns(runs, catalog),
+    catalog,
+    seed: planSeed(runs),
+    costs: exerciseCosts(runs, catalog),
+    lastRunEnded: lastRunEnded(runs),
+  })
   return {
     status: 'ok' as const,
     slots: slots.map((slot) => ({

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { formatDuration } from '../appData/dashboard'
-import type { SessionPlan } from '../appData/quickRun'
+import { SESSION_MINUTES, type SessionPlan } from '../appData/quickRun'
 import { exerciseSeconds, homeLabel, type Exercise } from '../content'
 import { AREA_BADGE, AREA_LABELS } from './areaLabels'
 import { ExerciseThumb } from './ExerciseThumb'
@@ -22,6 +22,9 @@ import { Button } from './ui/Primitives'
 interface NextSessionCardProps {
   plan: SessionPlan
   onStart: () => void
+  /** How long the session should be, and the user changing their mind about it. */
+  minutes: number
+  onMinutesChange: (minutes: number) => void
   /** The runs have not arrived, so this plan is not the real answer yet. */
   pending?: boolean
   /** The runs could not be read; the plan stands but knows nothing of the history. */
@@ -29,10 +32,17 @@ interface NextSessionCardProps {
 }
 
 function totalMinutes(plan: SessionPlan): string {
-  return formatDuration(plan.slots.reduce((sum, slot) => sum + exerciseSeconds(slot.exercise), 0))
+  return formatDuration(plan.plannedSeconds)
 }
 
-export function NextSessionCard({ plan, onStart, pending = false, failed = false }: NextSessionCardProps) {
+export function NextSessionCard({
+  plan,
+  onStart,
+  minutes,
+  onMinutesChange,
+  pending = false,
+  failed = false,
+}: NextSessionCardProps) {
   const headingId = useId()
   const [open, setOpen] = useState(false)
   const count = plan.slots.length
@@ -59,6 +69,8 @@ export function NextSessionCard({ plan, onStart, pending = false, failed = false
       {count > 0 && !waiting && (
         <p className="mt-0.5 text-sm opacity-75 tabular-nums">About {totalMinutes(plan)}</p>
       )}
+      {/* A routine is the list the user prepared, so no budget is put to it. */}
+      {plan.routine === null && <LengthPicker minutes={minutes} onChange={onMinutesChange} />}
       {/* The controls hold the foot of the card, however tall its neighbour makes it. */}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         <Button variant="onAccent" onClick={onStart} disabled={count === 0 || waiting}>
@@ -78,6 +90,44 @@ export function NextSessionCard({ plan, onStart, pending = false, failed = false
       </div>
       {open && <PlanDialog plan={plan} title={title} onClose={() => setOpen(false)} />}
     </section>
+  )
+}
+
+/**
+ * How long there is. The whole session is planned to the answer, so this is the
+ * one setting that changes what is about to be played — and it sits on the card
+ * rather than behind a settings page, because on a busy day it is the first
+ * thing the user knows and the app does not (§7, §9).
+ */
+function LengthPicker({ minutes, onChange }: { minutes: number; onChange: (minutes: number) => void }) {
+  const name = useId()
+  return (
+    <fieldset className="mt-3">
+      <legend className="sr-only">How long have you got?</legend>
+      <div className="flex flex-wrap gap-1.5">
+        {SESSION_MINUTES.map((option) => {
+          const chosen = option === minutes
+          return (
+            <label
+              key={option}
+              className={`cursor-pointer rounded-lg px-2.5 py-1 text-sm font-semibold tabular-nums transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-on-accent ${
+                chosen ? 'bg-on-accent text-accent' : 'bg-on-accent/10 text-on-accent hover:bg-on-accent/20'
+              }`}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={option}
+                checked={chosen}
+                onChange={() => onChange(option)}
+                className="sr-only"
+              />
+              {option} min
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
 

@@ -25,11 +25,13 @@ test('home offers a next session with a reason per slot, and one Play starts it'
   await expect(card.getByRole('heading', { level: 2, name: 'Next session' })).toBeVisible()
 
   // The card is the answer and a Play; the plan itself is a press away.
-  await expect(card.getByText('5 exercises, put together from what you have played.')).toBeVisible()
+  await expect(card.getByText(/exercises, put together from what you have played\.$/)).toBeVisible()
   await expect(card.getByRole('listitem')).toHaveCount(0)
+  // And it says how long it will take, because the length is what was asked for.
+  await expect(card.getByText(/^About /)).toBeVisible()
 
   const first = await slots(page)
-  expect(first).toHaveLength(5)
+  expect(first.length).toBeGreaterThan(1)
   // Nothing played yet, so every slot says so — and none is left without a reason.
   for (const slot of first) expect(slot).toContain('New — not played yet')
 
@@ -57,7 +59,26 @@ test('home offers a next session with a reason per slot, and one Play starts it'
   // One Play starts the session the card described.
   await card.getByRole('button', { name: 'Play' }).click()
   await expect(page).toHaveURL(/\/app\/session\?/)
-  await expect(page.getByText('Next session · 1 of 5')).toBeVisible()
+  await expect(page.getByText(`Next session · 1 of ${first.length}`)).toBeVisible()
+})
+
+test('the session is planned to the length the user picked, and it is remembered', async ({ page }) => {
+  await page.goto('/app/')
+  const card = page.getByRole('region', { name: 'Next session' })
+  await expect(card.getByRole('radio', { name: '20 min' })).toBeChecked()
+
+  // The radio itself is screen-reader-only; its label is what a user presses.
+  await card.getByText('10 min', { exact: true }).click()
+  await expect(card.getByRole('radio', { name: '10 min' })).toBeChecked()
+  const short = await slots(page)
+  await card.getByText('60 min', { exact: true }).click()
+  const long = await slots(page)
+  expect(long.length).toBeGreaterThan(short.length)
+
+  // The choice outlives the page: a reload plans to it rather than the default.
+  await page.reload()
+  await expect(card.getByRole('radio', { name: '60 min' })).toBeChecked()
+  expect(await slots(page)).toEqual(long)
 })
 
 test('a session is answered on four buttons, and the plan takes the answer', async ({ page }) => {

@@ -1,18 +1,26 @@
-import type { Exercise } from '../content'
+import { homeLabel, type Exercise } from '../content'
+import { exerciseCost } from './cost'
 import { dayKey, daysBetween, type ExerciseState } from './memory'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
 
 /**
  * The assembler: state in, a session out. Pure, and deterministic by contract
- * — the same state, catalog, seed and day always give the same slots
+ * — the same state, catalog, seed, budget and day always give the same slots
  * (docs/product/next-session-design.md §3, §7, §9). Nothing is stored: the
  * plan is derived every time the home page renders, and it changes only
  * because a run landed or a day passed.
  *
- * The order is: overdue work → due maintenance → new → ahead of schedule. The
- * seed — the last run's id — decides nothing but which items are drawn for the
- * ahead-of-schedule fill, so a session that is otherwise the same stays the
- * same between two looks.
+ * **A session is a length of time, not a number of slots.** The user says how
+ * long they have — ten minutes on a bad day — and the assembler fills those
+ * minutes with what each exercise actually costs (appData/cost). It never
+ * passes the budget by more than the one item that crossed it.
+ *
+ * **And it has a shape.** Warm-up, the work, dessert: it opens on something the
+ * hands already know and ends on something that plays itself, so the memory of
+ * the session is not the wall in the middle of it. The work block is ordered
+ * overdue → due maintenance → new → ahead of schedule; the seed decides nothing
+ * but which items are drawn for the ahead-of-schedule fill, so a session that is
+ * otherwise the same stays the same between two looks.
  *
  * Reasons are data. They are written here and rendered as they are, so the
  * page cannot say something the scheduler did not mean.
@@ -27,7 +35,33 @@ export interface SessionSlot {
 }
 
 export interface NextSession {
+  /** Everything to play, in order: the warm-up, the work, then dessert. */
   slots: SessionSlot[]
+  /** At most one, and none when the hands are already warm or nothing suits. */
+  warmUp: SessionSlot[]
+  work: SessionSlot[]
+  /** At most one, and none when nothing in the pool is solid enough to end on. */
+  dessert: SessionSlot[]
+  /** The minutes asked for, and what the plan came to — both in seconds. */
+  budgetSeconds: number
+  plannedSeconds: number
+}
+
+/** What the assembler needs. Everything but the state and the catalog has a sane default. */
+export interface PlanInput {
+  state: ReadonlyMap<string, ExerciseState>
+  catalog: readonly Exercise[]
+  /** The newest run's id; it orders the ahead-of-schedule fill and nothing else. */
+  seed: string
+  /** How long the session should be. Defaults to the length a new user starts on. */
+  budgetSeconds?: number
+  /** What each exercise costs, by id (appData/cost). Anything missing falls back to its written length. */
+  costs?: ReadonlyMap<string, number>
+  /** Now. The calendar day of it decides what is overdue. */
+  today?: Date
+  /** When the last run ended; inside the skip window the warm-up is left out. */
+  lastRunEnded?: Date | null
+  constants?: PlanConstants
 }
 
 /** When there are no runs at all there is no last run to seed with. */
@@ -75,31 +109,69 @@ interface Candidate {
   rank: number
   /** Days past due; negative when it is not due yet. */
   over: number
+  /** What it is expected to take, in seconds. */
+  cost: number
 }
 
 /**
- * The session: a fixed number of slots, never empty while the catalog has
- * anything in it. Fewer than a session's worth due means it fills ahead of
- * schedule rather than showing a short day (§9).
+ * Winnable: it can go well today. Fine and easy items have been played through
+ * at the target; a hard one with the tempo already in hand is a fair fight. A
+ * session made only of walls is a session not played (§7).
  */
-export function planNextSession(
-  state: ReadonlyMap<string, ExerciseState>,
-  catalog: readonly Exercise[],
-  seed: string,
-  today: Date = new Date(),
-  constants: PlanConstants = PLAN_CONSTANTS,
-): NextSession {
+function winnable(candidate: Candidate): boolean {
+  const { band, margin } = candidate.state
+  if (band === 'fine' || band === 'easy') return true
+  return band === 'hard' && margin !== null && margin >= 0
+}
+
+/** Solid enough to open or close on: played through at the target, more than once. */
+function settled(candidate: Candidate): boolean {
+  return candidate.state.band === 'fine' || candidate.state.band === 'easy'
+}
+
+/** The key or mode the material sits in, for matching a warm-up to the work. */
+function home(exercise: Exercise): string {
+  return exercise.tonic ?? exercise.key ?? 'C'
+}
+
+/** Numbers first, in the order given; the first that differs decides. */
+function by(...values: number[]): number {
+  return values.find((value) => value !== 0) ?? 0
+}
+
+function flag(value: boolean): number {
+  return value ? 1 : 0
+}
+
+/**
+ * The session. Fewer than a budget's worth due means it fills ahead of schedule
+ * rather than showing a short day (§9); more than a budget's worth means the
+ * rest waits, because a plan that cannot be finished is not a plan.
+ */
+export function planNextSession(input: PlanInput): NextSession {
+  const constants = input.constants ?? PLAN_CONSTANTS
+  const budgetSeconds = input.budgetSeconds ?? constants.defaultSessionMinutes * 60
+  const today = input.today ?? new Date()
   const day = dayKey(today)
-  const candidates: Candidate[] = catalog.flatMap((exercise, rank) => {
-    const found = state.get(exercise.id)
+
+  const candidates: Candidate[] = input.catalog.flatMap((exercise, rank) => {
+    const found = input.state.get(exercise.id)
     if (!found) return []
-    return [{ exercise, state: found, rank, over: found.due === null ? 0 : daysBetween(found.due, day) }]
+    return [
+      {
+        exercise,
+        state: found,
+        rank,
+        over: found.due === null ? 0 : daysBetween(found.due, day),
+        cost: input.costs?.get(exercise.id) ?? exerciseCost(exercise, [], constants),
+      },
+    ]
   })
 
   const isDue = (candidate: Candidate) => candidate.state.due !== null && candidate.over >= 0
   const mostOverdue = (a: Candidate, b: Candidate) => b.over - a.over || a.rank - b.rank
 
-  const work = candidates
+  const due = candidates
     .filter((candidate) => isDue(candidate) && (candidate.state.band === 'stuck' || candidate.state.band === 'hard'))
     .sort(mostOverdue)
   const maintenance = candidates
@@ -109,16 +181,212 @@ export function planNextSession(
   // Not due yet: soonest first, and the seed decides between two that come back on the same day.
   const ahead = candidates
     .filter((candidate) => candidate.state.due !== null && candidate.over < 0)
-    .sort((a, b) => b.over - a.over || seeded(`${seed}:${a.exercise.id}`) - seeded(`${seed}:${b.exercise.id}`))
+    .sort((a, b) => b.over - a.over || seeded(`${input.seed}:${a.exercise.id}`) - seeded(`${input.seed}:${b.exercise.id}`))
+
+  const ordered = [...due, ...maintenance, ...fresh, ...ahead]
+  const taken = new Set<string>()
+
+  // The warm-up is matched to what the session is actually for, so the work
+  // block's own head is worked out before anything is chosen.
+  const warmUp = pickWarmUp(candidates, ordered[0] ?? null, budgetSeconds, today, input.lastRunEnded ?? null, constants)
+  if (warmUp) taken.add(warmUp.exercise.id)
+
+  const dessert = pickDessert(
+    candidates,
+    taken,
+    ordered[0] ?? null,
+    Math.min(budgetSeconds - (warmUp?.cost ?? 0), budgetSeconds * constants.dessertMaxFraction),
+  )
+  if (dessert) taken.add(dessert.exercise.id)
+
+  const work = fillWork(ordered, taken, {
+    budget: budgetSeconds - (warmUp?.cost ?? 0) - (dessert?.cost ?? 0),
+    constants,
+  })
+
+  const warmUpSlots = warmUp ? [warmUpSlot(warmUp, constants)] : []
+  const workSlots = work.map((candidate) => ({
+    exercise: candidate.exercise,
+    tempoBpm: candidate.state.nextTempo,
+    reason: reasonFor(candidate.state, candidate.exercise, day),
+  }))
+  const dessertSlots = dessert ? [dessertSlot(dessert)] : []
+  const planned = [warmUp, ...work, dessert].reduce((sum, candidate) => sum + (candidate?.cost ?? 0), 0)
 
   return {
-    slots: [...work, ...maintenance, ...fresh, ...ahead]
-      .slice(0, constants.sessionSlots)
-      .map(({ exercise, state: found }) => ({
-        exercise,
-        tempoBpm: found.nextTempo,
-        reason: reasonFor(found, exercise, day),
-      })),
+    slots: [...warmUpSlots, ...workSlots, ...dessertSlots],
+    warmUp: warmUpSlots,
+    work: workSlots,
+    dessert: dessertSlots,
+    budgetSeconds,
+    plannedSeconds: planned,
+  }
+}
+
+/**
+ * Something the hands already know, to open on. Solid or fine, technique by
+ * preference, and in the key the work is about to be in — played at 85% of
+ * what it is written for, as an extra rep that the schedule ignores.
+ *
+ * It is skipped when the last run ended within the window: practising twice in
+ * half an hour does not need warming up twice.
+ */
+function pickWarmUp(
+  candidates: readonly Candidate[],
+  first: Candidate | null,
+  budgetSeconds: number,
+  today: Date,
+  lastRunEnded: Date | null,
+  constants: PlanConstants,
+): Candidate | null {
+  if (lastRunEnded !== null) {
+    const sinceMinutes = (today.valueOf() - lastRunEnded.valueOf()) / 60_000
+    if (sinceMinutes >= 0 && sinceMinutes < constants.warmUpSkipWindowMinutes) return null
+  }
+
+  const pool = candidates.filter((candidate) => settled(candidate) && candidate.exercise.id !== first?.exercise.id)
+  if (pool.length === 0) return null
+
+  const share = Math.min(budgetSeconds * constants.warmUpBudgetFraction, constants.warmUpMaxSeconds)
+  const preferred = [...pool].sort((a, b) =>
+    by(
+      // An extra rep, so something not owed today comes first: an item that is
+      // due deserves its own slot in the work, at its own tempo.
+      flag(a.over >= 0) - flag(b.over >= 0),
+      flag(b.exercise.area === 'technique') - flag(a.exercise.area === 'technique'),
+      flag(first !== null && home(b.exercise) === home(first.exercise)) -
+        flag(first !== null && home(a.exercise) === home(first.exercise)),
+      a.cost - b.cost,
+      a.rank - b.rank,
+    ),
+  )
+  const fitting = preferred.find((candidate) => candidate.cost <= share)
+  if (fitting) return fitting
+
+  // Nothing is that short. The shortest suitable item stands in, unless even it
+  // would eat the session — then the work is better served without a warm-up.
+  const shortest = [...pool].sort((a, b) => by(a.cost - b.cost, a.rank - b.rank))[0]
+  return shortest.cost <= budgetSeconds * constants.warmUpMaxFraction ? shortest : null
+}
+
+/**
+ * Something to end on: the easiest solid thing in the pool, at its own tempo.
+ * Peak and end are what a session is remembered by, so it never ends on a bail
+ * (§7). Until feel exists this is the easiest item; from then on it is a loved
+ * one.
+ */
+function pickDessert(
+  candidates: readonly Candidate[],
+  taken: ReadonlySet<string>,
+  first: Candidate | null,
+  roomSeconds: number,
+): Candidate | null {
+  const pool = candidates
+    .filter(
+      (candidate) =>
+        settled(candidate) &&
+        !taken.has(candidate.exercise.id) &&
+        // Never the thing the session exists for: a pool of two solid items
+        // would otherwise be served entirely as warm-up and pudding, and the
+        // overdue one would be told it was dessert.
+        candidate.exercise.id !== first?.exercise.id,
+    )
+    .sort((a, b) =>
+      by(
+        flag(b.state.band === 'easy') - flag(a.state.band === 'easy'),
+        (b.state.margin ?? 0) - (a.state.margin ?? 0),
+        a.cost - b.cost,
+        a.rank - b.rank,
+      ),
+    )
+  // It has to leave room for the work; a session that is only its dessert is not one.
+  return pool.find((candidate) => candidate.cost < roomSeconds) ?? null
+}
+
+/**
+ * The work, in the order the design sets, filled by minutes rather than slots.
+ * An item is only started while there is budget left, so the plan passes what
+ * was asked for by at most the one item that crossed the line.
+ *
+ * Two rules shape what goes in. At most three stuck items, because a session of
+ * walls is a session not played. And from the second item on, the block keeps at
+ * least as many winnable items as unwinnable ones — when the next in line would
+ * break that, a winnable one further down takes its place and the skipped item
+ * is offered again next time round. The *first* item is exempt: the session
+ * exists for the thing most overdue, whatever state it is in.
+ */
+function fillWork(
+  ordered: readonly Candidate[],
+  taken: ReadonlySet<string>,
+  { budget, constants }: { budget: number; constants: PlanConstants },
+): Candidate[] {
+  const queue = ordered.filter((candidate) => !taken.has(candidate.exercise.id))
+  const used = new Set<string>()
+  const block: Candidate[] = []
+  let spent = 0
+  let stuck = 0
+  let winners = 0
+  let losers = 0
+
+  while (spent < budget) {
+    const available = queue.filter(
+      (candidate) =>
+        !used.has(candidate.exercise.id) &&
+        (candidate.state.band !== 'stuck' || stuck < constants.maxStuckPerSession),
+    )
+    if (available.length === 0) break
+
+    // An item is only started if it actually fits what is left. Otherwise one
+    // long exercise at the head of the queue would swallow a short session
+    // whole, and the shorter items behind it — which would have fitted — would
+    // never be reached at all.
+    const fits = available.filter((candidate) => spent + candidate.cost <= budget)
+    const next = fits[0]
+    if (!next) {
+      // Nothing left fits. Something is still better than nothing, so an empty
+      // session takes the shortest item there is and goes over; otherwise the
+      // block stands as it is.
+      if (block.length > 0) break
+      const shortest = [...available].sort((a, b) => by(a.cost - b.cost, a.rank - b.rank))[0]
+      used.add(shortest.exercise.id)
+      block.push(shortest)
+      spent += shortest.cost
+      continue
+    }
+
+    // Behind on winnable items: reach past this one for the next that can go well.
+    const share = constants.winnableWorkFraction
+    const behind = !winnable(next) && winners * share < losers * (1 - share)
+    const pick = behind ? (fits.find(winnable) ?? next) : next
+
+    used.add(pick.exercise.id)
+    block.push(pick)
+    spent += pick.cost
+    if (pick.state.band === 'stuck') stuck += 1
+    if (winnable(pick)) winners += 1
+    else losers += 1
+  }
+
+  return block
+}
+
+function warmUpSlot(candidate: Candidate, constants: PlanConstants): SessionSlot {
+  const target = candidate.exercise.tempoBpm
+  const tempoBpm = Math.round(target * constants.warmUpTempoFactor)
+  const key = homeLabel(candidate.exercise)
+  return {
+    exercise: candidate.exercise,
+    tempoBpm,
+    reason: `Warm-up — hands first${key ? ` in ${key}` : ''}, at ${tempoBpm} of ${target} BPM`,
+  }
+}
+
+function dessertSlot(candidate: Candidate): SessionSlot {
+  const target = candidate.exercise.tempoBpm
+  return {
+    exercise: candidate.exercise,
+    tempoBpm: target,
+    reason: `Dessert — you have this one, at its tempo, ${target} BPM`,
   }
 }
 

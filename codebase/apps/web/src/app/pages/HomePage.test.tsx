@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { cleanup, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { resetQuickRunSettings } from '../../appData/quickRun'
@@ -33,15 +33,17 @@ describe('HomePage', () => {
     expect(session.getByRole('button', { name: 'Play' })).toBeDisabled()
 
     // Then it says how much there is, and nothing else to read before starting.
-    expect(await session.findByText('5 exercises, put together from what you have played.')).toBeInTheDocument()
+    expect(await session.findByText(/exercises, put together from what you have played\.$/)).toBeInTheDocument()
     expect(session.getByRole('button', { name: 'Play' })).toBeEnabled()
     expect(session.queryByRole('listitem')).toBeNull()
 
     // The plan itself is a press away: nothing played, so every slot is new.
     await user.click(session.getByRole('button', { name: 'What\u2019s in it' }))
     const plan = within(screen.getByRole('dialog', { name: 'Next session' }))
-    expect(plan.getAllByRole('listitem')).toHaveLength(5)
-    expect(plan.getAllByText('New — not played yet')).toHaveLength(5)
+    const slots = plan.getAllByRole('listitem')
+    expect(slots.length).toBeGreaterThan(1)
+    expect(plan.getAllByText('New — not played yet')).toHaveLength(slots.length)
+    await user.keyboard('{Escape}')
     expect(await screen.findByText('Nothing played yet — your runs show up here.')).toBeInTheDocument()
     expect(stat('Streak')).toHaveTextContent('0 days')
     expect(stat('Felt this week')).toHaveTextContent('—')
@@ -96,17 +98,47 @@ describe('HomePage', () => {
     const session = within(screen.getByRole('region', { name: 'Next session' }))
     await userEvent.setup().click(session.getByRole('button', { name: 'What\u2019s in it' }))
     const slots = within(screen.getByRole('dialog', { name: 'Next session' })).getAllByRole('listitem')
-    expect(slots).toHaveLength(5)
+    expect(slots.length).toBeGreaterThan(1)
     expect(slots[0]).toHaveTextContent('C major — open position')
     expect(slots[0]).toHaveTextContent('Due today · at its tempo, 60 BPM')
-    expect(slots.filter((slot) => slot.textContent?.includes('New — not played yet'))).toHaveLength(4)
+    // Today's line is not due back yet, but it has been played through, so it
+    // joins the session among the new items to keep the session winnable.
+    const line = slots.find((slot) => slot.textContent?.includes('Gm7 – C7 – Fmaj7 — a bebop line'))
+    expect(line).toHaveTextContent('Ahead of schedule')
+    expect(slots.filter((slot) => slot.textContent?.includes('New — not played yet'))).toHaveLength(slots.length - 2)
   })
 
   it('plays the next session from the card, at the tempos it planned', async () => {
     const user = userEvent.setup()
     await renderRoute('/')
     await user.click(await screen.findByRole('button', { name: 'Play' }))
-    expect(await screen.findByText('Next session · 1 of 5')).toBeInTheDocument()
+    expect(await screen.findByText(/^Next session · 1 of \d+$/)).toBeInTheDocument()
+  })
+
+  it('plans to the length the user has, and still has it after a reload', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/')
+    const card = () => within(screen.getByRole('region', { name: 'Next session' }))
+    // "About 9 min", or "About 1 h 4 min" once there is an hour of it.
+    const minutes = () => {
+      const [, hours = '0', mins = '0'] = /About (?:(\d+) h )?(\d+) min/.exec(card().getByText(/^About /).textContent ?? '') ?? []
+      return Number(hours) * 60 + Number(mins)
+    }
+
+    await card().findByText(/exercises, put together from what you have played\.$/)
+    await user.click(card().getByRole('radio', { name: '10 min' }))
+    const short = minutes()
+    expect(short).toBeLessThanOrEqual(12)
+
+    await user.click(card().getByRole('radio', { name: '60 min' }))
+    expect(minutes()).toBeGreaterThan(short)
+    expect(card().getByRole('radio', { name: '60 min' })).toBeChecked()
+
+    // A reload reads the choice back rather than starting over at the default.
+    cleanup()
+    resetQuickRunSettings()
+    await renderRoute('/')
+    expect(await card().findByRole('radio', { name: '60 min' })).toBeChecked()
   })
 
   it('says so when the runs cannot be loaded, and still offers the pack', async () => {

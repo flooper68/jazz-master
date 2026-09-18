@@ -78,7 +78,7 @@ describe('SessionPage', () => {
     await renderRoute('/session?x=scales-major-open-c')
     await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
     await user.click(screen.getByRole('button', { name: 'What now?' }))
-    expect(await screen.findByText('Next session · 1 of 5')).toBeInTheDocument()
+    expect(await screen.findByText(/^Next session · 1 of \d+$/)).toBeInTheDocument()
   })
 
   it('starts each exercise at the tempo the plan asked for', async () => {

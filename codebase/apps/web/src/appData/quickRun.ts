@@ -1,6 +1,8 @@
 import type { Exercise } from '../content'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
+import { exerciseCost } from './cost'
 import type { SessionSlot } from './nextSession'
+import { PLAN_CONSTANTS } from './planConstants'
 import type { Routine } from './routine'
 
 /**
@@ -10,16 +12,26 @@ import type { Routine } from './routine'
  * (docs/product/next-session-design.md §3).
  */
 
-/** The only choice left in the old quick-run settings: a routine as next, or nothing. */
+/** What the user has said about the next session: how long it is, and whose it is. */
 export interface QuickRunSettings {
   /** Play this routine instead of the next session; null for the generated one. */
   routineId: string | null
+  /** How long the session should be, in minutes — one of the offered lengths. */
+  sessionMinutes: number
 }
 
 export const QUICK_RUN_KEY = 'jazz-master.quick-run'
 
+/** The lengths on offer, shortest first; a busy day is the normal day, so it leads. */
+export const SESSION_MINUTES: readonly number[] = PLAN_CONSTANTS.sessionMinutes
+
 export function defaultQuickRunSettings(): QuickRunSettings {
-  return { routineId: null }
+  return { routineId: null, sessionMinutes: PLAN_CONSTANTS.defaultSessionMinutes }
+}
+
+/** What the chosen length comes to in seconds, which is what the assembler takes. */
+export function sessionBudgetSeconds(settings: QuickRunSettings): number {
+  return settings.sessionMinutes * 60
 }
 
 /** The exercises of a routine that can be played now, in its order; one deleted since is skipped. */
@@ -33,14 +45,26 @@ export interface SessionPlan {
   slots: readonly SessionSlot[]
   /** Set when the plan is a routine, so the session can say whose it is. */
   routine: Routine | null
+  /** What it is expected to take, in seconds — the card says it before Play is pressed. */
+  plannedSeconds: number
 }
 
-/** A routine as prepared: its exercises in order, each at its own written tempo. */
-export function routinePlan(routine: Routine, exercises: readonly Exercise[]): SessionPlan {
+/**
+ * A routine as prepared: its exercises in order, each at its own written tempo.
+ * A routine is the user's own list, so nothing is cut to fit a budget — but it
+ * is costed the same way, so the card says how long it will take in the same
+ * terms as a generated session.
+ */
+export function routinePlan(
+  routine: Routine,
+  exercises: readonly Exercise[],
+  costs?: ReadonlyMap<string, number>,
+): SessionPlan {
   const prepared = routineExercises(routine, exercises)
   return {
     slots: prepared.map((exercise) => ({ exercise, tempoBpm: exercise.tempoBpm, reason: `From ${routine.name}` })),
     routine,
+    plannedSeconds: prepared.reduce((sum, exercise) => sum + (costs?.get(exercise.id) ?? exerciseCost(exercise, [])), 0),
   }
 }
 
@@ -133,6 +157,12 @@ export function loadQuickRunSettings(
     const parsed = JSON.parse(raw) as Partial<Record<keyof QuickRunSettings, unknown>>
     return {
       routineId: typeof parsed.routineId === 'string' && parsed.routineId.length > 0 ? parsed.routineId : null,
+      // Anything but one of the offered lengths — an old value, a hand-edited
+      // one — reads as the default rather than planning to a length no button shows.
+      sessionMinutes:
+        typeof parsed.sessionMinutes === 'number' && SESSION_MINUTES.includes(parsed.sessionMinutes)
+          ? parsed.sessionMinutes
+          : PLAN_CONSTANTS.defaultSessionMinutes,
     }
   } catch {
     return defaultQuickRunSettings()

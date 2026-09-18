@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
-import { chosenRoutine, routinePlan, type SessionPlan } from '../appData/quickRun'
+import { chosenRoutine, routinePlan, sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
 import { useToday } from './useToday'
@@ -36,10 +37,19 @@ export function useNextSession(): NextSessionResult {
   const settings = useQuickRunSettings()
 
   return useMemo(() => {
-    const routine = chosenRoutine(settings, routines, exercises)
-    if (routine) return { plan: routinePlan(routine, exercises), pending: isPending, failed: false }
     const history = runs ?? []
-    const plan = planNextSession(foldRuns(history, exercises), exercises, planSeed(history), today)
+    const costs = exerciseCosts(history, exercises)
+    const routine = chosenRoutine(settings, routines, exercises)
+    if (routine) return { plan: routinePlan(routine, exercises, costs), pending: isPending, failed: false }
+    const plan = planNextSession({
+      state: foldRuns(history, exercises),
+      catalog: exercises,
+      seed: planSeed(history),
+      budgetSeconds: sessionBudgetSeconds(settings),
+      costs,
+      today,
+      lastRunEnded: lastRunEnded(history),
+    })
     return { plan: { ...plan, routine: null }, pending: isPending, failed: !isPending && runs === null }
   }, [settings, routines, exercises, runs, isPending, today])
 }

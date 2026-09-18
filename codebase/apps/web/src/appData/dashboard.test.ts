@@ -48,6 +48,30 @@ describe('summarizeRuns', () => {
     expect(summary.unplayed).toEqual(['d'])
   })
 
+  it('counts today: the sittings and the minutes, with a run played alone one of its own', () => {
+    const sitting = '33333333-3333-4333-8333-333333333333'
+    const summary = summarizeRuns(
+      [
+        run('a', 0, { id: 'one', sessionId: sitting }),
+        run('b', 0, { id: 'two', sessionId: sitting }),
+        // On its own from the exercise page: a sitting all the same.
+        run('c', 0, { id: 'three' }),
+        // Yesterday's is not today's.
+        run('d', 1, { id: 'four' }),
+      ],
+      PACK,
+      now,
+    )
+    expect(summary.todaySessions).toBe(2)
+    expect(summary.todaySeconds).toBe(360)
+  })
+
+  it('has nothing to say about a day with no practice in it', () => {
+    const summary = summarizeRuns([run('a', 1)], PACK, now)
+    expect(summary.todaySessions).toBe(0)
+    expect(summary.todaySeconds).toBe(0)
+  })
+
   it('counts a streak back from today, or from yesterday when today is still quiet', () => {
     expect(summarizeRuns([run('a', 0), run('a', 1), run('a', 2), run('a', 4)], PACK, now).streakDays).toBe(3)
     expect(summarizeRuns([run('a', 1), run('a', 2)], PACK, now).streakDays).toBe(2)

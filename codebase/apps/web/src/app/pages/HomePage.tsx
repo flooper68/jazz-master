@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { formatDuration, summarizeRuns, type ActivityDay, type Dashboard } from '../../appData/dashboard'
 import { firstPicks } from '../../appData/firstPicks'
 import { dayLabel } from '../../appData/history'
-import { sessionSearch } from '../../appData/quickRun'
+import { quickRunSettings, sessionSearch, setQuickRunSettings } from '../../appData/quickRun'
 import { DIFFICULTY_LABELS } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
@@ -12,6 +12,7 @@ import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
 import { useNextSession } from '../useNextSession'
+import { useQuickRunSettings } from '../useQuickRunSettings'
 import { useTRPC } from '../trpc'
 import { PAGE_WIDE } from '../../components/pageFrame'
 
@@ -31,13 +32,18 @@ export default function HomePage() {
   const failed = !isPending && data?.status !== 'ok'
   const { exercises, byId } = useExerciseCatalog()
   const { plan, pending: planPending, failed: planFailed } = useNextSession()
+  const settings = useQuickRunSettings()
   const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
 
   return (
     <div className={PAGE_WIDE}>
       <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
+      {/* What today already is, before what it could be: a day of ten short
+          sittings should read as a day of practice, not as nothing yet. */}
       <p className="mt-1 text-sm text-fg-2">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+        {summary.todaySessions > 0 &&
+          ` · ${summary.todaySessions} ${summary.todaySessions === 1 ? 'session' : 'sessions'} · ${formatDuration(summary.todaySeconds)}`}
         {summary.streakDays > 1 && ` · ${summary.streakDays} days in a row`}
       </p>
       {failed && (
@@ -51,6 +57,8 @@ export default function HomePage() {
           plan={plan}
           pending={planPending}
           failed={planFailed}
+          minutes={settings.sessionMinutes}
+          onMinutesChange={(sessionMinutes) => setQuickRunSettings({ ...quickRunSettings(), sessionMinutes })}
           onStart={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
         />
 

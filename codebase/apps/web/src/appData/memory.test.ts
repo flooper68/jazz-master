@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Exercise } from '../content'
-import { foldRuns, staggerDays, type ExerciseState } from './memory'
+import { daysBetween, foldRuns, staggerDays, type ExerciseState } from './memory'
 import { PLAN_CONSTANTS } from './planConstants'
 import type { Difficulty, ExerciseRun } from './run'
 
@@ -211,6 +211,31 @@ describe('foldRuns', () => {
     expect([...folded.keys()]).toEqual(['ex-1', 'ex-2', 'ex-3'])
     expect(folded.get('ex-1')?.band).toBe('new')
     expect(folded.get('ex-2')?.bestTempo).toBe(120)
+  })
+})
+
+/**
+ * The warm-up and the dessert are ordinary runs — no flag, no special case —
+ * so what stops an extra rep from buying its way forward is the fold itself.
+ */
+describe('an extra rep of something already learned', () => {
+  const subject = exercise('known', 100)
+  const learned = [run('known', '2026-01-01'), run('known', '2026-01-02'), run('known', '2026-01-03')]
+
+  it('does not bring the next review forward', () => {
+    const before = state(learned, subject)
+    const withExtra = state([...learned, run('known', '2026-01-04', { tempoBpm: 85, difficulty: 'good' })], subject)
+    expect(before.due).not.toBeNull()
+    // An early review counts from the day it was already owed, never from today,
+    // so playing it again can only ever push the next one further out.
+    expect(daysBetween(before.due ?? '', withExtra.due ?? '')).toBeGreaterThanOrEqual(0)
+  })
+
+  it('does not take an item it was played slowly out of its band', () => {
+    const before = state(learned, subject)
+    const withExtra = state([...learned, run('known', '2026-01-04', { tempoBpm: 85, difficulty: 'good' })], subject)
+    expect(withExtra.band).toBe(before.band)
+    expect(withExtra.bestTempo).toBe(before.bestTempo)
   })
 })
 

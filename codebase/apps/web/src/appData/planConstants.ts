@@ -40,8 +40,35 @@ export interface PlanConstants {
   easyQualifyingDays: number
   /** How solid the previous stage must be before a stage opens. Unused until paths (step 4). */
   stageSolidThreshold: number
-  /** How many slots a session has, until the time budget replaces it (step 2). */
-  sessionSlots: number
+  /** Lengths the user chooses between, in minutes, and the one a new user starts on. */
+  sessionMinutes: readonly number[]
+  defaultSessionMinutes: number
+  /**
+   * Added to every exercise's own length: picking it up, reading the tab,
+   * finding the first note. A session of five two-minute exercises is not ten
+   * minutes long, and a budget that pretends otherwise always overruns.
+   */
+  exerciseOverheadSeconds: number
+  /**
+   * The warm-up's share of the budget, and the ceiling it never passes. When
+   * nothing suitable is that short — a ten-minute budget gives the warm-up
+   * ninety seconds, and plenty of exercises are written longer — the shortest
+   * suitable item stands in, up to `warmUpMaxFraction` of the budget. Past
+   * that there is no warm-up: it would be the session.
+   */
+  warmUpBudgetFraction: number
+  warmUpMaxSeconds: number
+  warmUpMaxFraction: number
+  /** What the warm-up is played at: the item's next tempo, times this. */
+  warmUpTempoFactor: number
+  /** Played again within this many minutes, the hands are still warm and the warm-up is skipped. */
+  warmUpSkipWindowMinutes: number
+  /** The most of the budget dessert may take: it closes the session, it is not the session. */
+  dessertMaxFraction: number
+  /** At most this many stuck items in one session — a session of walls is a session not played. */
+  maxStuckPerSession: number
+  /** This share of the work block must be winnable: fine, easy, or hard already at the target. */
+  winnableWorkFraction: number
 }
 
 export const PLAN_CONSTANTS: PlanConstants = {
@@ -60,5 +87,15 @@ export const PLAN_CONSTANTS: PlanConstants = {
   solidQualifyingDays: 2,
   easyQualifyingDays: 2,
   stageSolidThreshold: 2 / 3,
-  sessionSlots: 5,
+  sessionMinutes: [10, 20, 40, 60],
+  defaultSessionMinutes: 20,
+  exerciseOverheadSeconds: 30,
+  warmUpBudgetFraction: 0.15,
+  warmUpMaxSeconds: 8 * 60,
+  warmUpMaxFraction: 1 / 3,
+  warmUpTempoFactor: 0.85,
+  warmUpSkipWindowMinutes: 30,
+  dessertMaxFraction: 1 / 3,
+  maxStuckPerSession: 3,
+  winnableWorkFraction: 0.5,
 }

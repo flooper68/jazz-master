@@ -17,6 +17,9 @@ export interface Dashboard {
   weekRuns: number
   /** Consecutive days with a run, ending today — or yesterday, so a streak is not lost before today's practice. */
   streakDays: number
+  /** What today has come to so far: sessions started and time played. */
+  todaySessions: number
+  todaySeconds: number
   /** How the last seven days' answered runs mostly went; null when none were answered. */
   weekDifficulty: Difficulty | null
   /** The last seven days, oldest first, today last. */
@@ -60,9 +63,18 @@ export function summarizeRuns(
   const weekByDay = new Map(week.map((day) => [day.day, day]))
   const playedDays = new Set<string>()
   const weekDifficulties: Difficulty[] = []
+  // A session is a sitting: runs share its id, and a run played on its own is
+  // one of its own. Ten short sittings is what a normal day looks like (§9).
+  const todaySessions = new Set<string>()
+  const today = dayKey(now)
+  let todaySeconds = 0
   for (const run of sorted) {
     const key = dayKey(new Date(run.startedAt))
     playedDays.add(key)
+    if (key === today) {
+      todaySessions.add(run.sessionId ?? run.id)
+      todaySeconds += run.durationSeconds
+    }
     const day = weekByDay.get(key)
     if (!day) continue
     day.seconds += run.durationSeconds
@@ -96,6 +108,8 @@ export function summarizeRuns(
     weekSeconds: week.reduce((sum, day) => sum + day.seconds, 0),
     weekRuns: week.reduce((sum, day) => sum + day.runs, 0),
     streakDays,
+    todaySessions: todaySessions.size,
+    todaySeconds,
     weekDifficulty: commonest(weekDifficulties),
     week,
     recent: sorted.slice(0, 4),
