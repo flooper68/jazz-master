@@ -203,6 +203,7 @@ describe('the next session over MCP', () => {
       passes: 4,
       completed: true,
       difficulty: 'good',
+      feel: null,
       sessionId: null,
     })
     const client = await connect('user_123', createMemoryUserExerciseRepository(), createMemoryRoutineRepository(), runs)
@@ -228,6 +229,7 @@ describe('the next session over MCP', () => {
       passes: 4,
       completed: true,
       difficulty: 'again',
+      feel: null,
       sessionId: null,
     })
     const theirs = await connect('user_456', createMemoryUserExerciseRepository(), createMemoryRoutineRepository(), runs)

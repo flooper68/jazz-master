@@ -55,3 +55,29 @@ export function UnsavedRunAlert({ unsaved, onRetry }: { unsaved: ExerciseRun | n
 /** The player is a full-bleed stage: cancel the shell's page padding and take the viewport — below the phone header, beside the sidebar from md up. */
 export const STAGE_FRAME =
   '-mx-4 -my-6 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col px-2 py-2 md:-mx-8 md:-my-7 md:h-dvh'
+
+/**
+ * Saving the note a user wrote about a whole sitting. One note per session,
+ * rewritten in place, saved when the box is left rather than on every keypress
+ * — a note is a sentence, not a stream.
+ */
+export function useNoteSaver() {
+  const trpc = useTRPC()
+  const { mutateAsync: saveNote } = useMutation(trpc.notes.save.mutationOptions())
+  const [failed, setFailed] = useState(false)
+  const queueRef = useRef(Promise.resolve())
+  const save = useCallback(
+    (sessionId: string, text: string) => {
+      queueRef.current = queueRef.current.then(async () => {
+        try {
+          const result = await saveNote({ sessionId, text })
+          setFailed(result.status !== 'ok')
+        } catch {
+          setFailed(true)
+        }
+      })
+    },
+    [saveNote],
+  )
+  return { save, failed }
+}

@@ -26,8 +26,8 @@ describe('HistoryPage', () => {
 
   it('lists runs a day at a time with what was played, how it went, and a way back in', async () => {
     seedTrpcTestRuns([
-      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, sessionId: '33333333-3333-4333-8333-333333333333' },
-      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-g', startedAt: at(1, 18), durationSeconds: 45, tempoBpm: 60, passes: 1, completed: false, difficulty: null, sessionId: null },
+      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, feel: null, sessionId: '33333333-3333-4333-8333-333333333333' },
+      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-g', startedAt: at(1, 18), durationSeconds: 45, tempoBpm: 60, passes: 1, completed: false, difficulty: null, feel: null, sessionId: null },
     ])
     await renderRoute('/history')
 

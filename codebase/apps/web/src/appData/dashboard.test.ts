@@ -16,6 +16,7 @@ function run(exerciseId: string, daysAgo: number, overrides: Partial<ExerciseRun
     passes: 3,
     completed: true,
     difficulty: null,
+    feel: null,
     sessionId: null,
     ...overrides,
   }

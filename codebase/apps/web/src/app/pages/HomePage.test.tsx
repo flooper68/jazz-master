@@ -59,8 +59,8 @@ describe('HomePage', () => {
 
   it('shows the week, the streak, what was played and what felt hard', async () => {
     seedTrpcTestRuns([
-      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0), durationSeconds: 300, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, sessionId: '33333333-3333-4333-8333-333333333333' },
-      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-c', startedAt: at(1), durationSeconds: 180, tempoBpm: 60, passes: 5, completed: true, difficulty: 'easy' as const, sessionId: null },
+      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0), durationSeconds: 300, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, feel: null, sessionId: '33333333-3333-4333-8333-333333333333' },
+      { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-c', startedAt: at(1), durationSeconds: 180, tempoBpm: 60, passes: 5, completed: true, difficulty: 'easy' as const, feel: null, sessionId: null },
     ])
     await renderRoute('/')
 

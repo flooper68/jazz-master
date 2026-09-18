@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { Difficulty, ExerciseRun, RunOutcome } from '../appData/run'
+import type { ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
 import { AREA_BADGE, AREA_LABELS } from './areaLabels'
 import { ExercisePlayer } from './ExercisePlayer'
 import { ExerciseThumb } from './ExerciseThumb'
+import { FeelInput } from './FeelInput'
 import { CheckIcon } from './icons'
 import { RatingInput } from './RatingInput'
 import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
@@ -79,6 +80,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
       exerciseId: exercise.id,
       ...outcome,
       difficulty: null,
+      feel: null,
       sessionId: session?.id ?? null,
     }
     if (finishedRun) onRunChange(finishedRun)
@@ -87,11 +89,12 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
     setFinished(true)
   }
 
-  function rate(difficulty: Difficulty | null): void {
+  /** Either answer, saved the moment it is given; the run already exists. */
+  function answer(part: Partial<Pick<ExerciseRun, 'difficulty' | 'feel'>>): void {
     if (!run) return
-    const rated = { ...run, difficulty }
-    setRun(rated)
-    onRunChange(rated)
+    const answered = { ...run, ...part }
+    setRun(answered)
+    onRunChange(answered)
   }
 
   if (finished) {
@@ -131,8 +134,12 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
           </ul>
 
           {run && (
-            <div className="mt-3 rounded-2xl border border-line bg-panel p-3.5">
-              <RatingInput value={run.difficulty} onChange={rate} />
+            <div className="mt-3 space-y-4 rounded-2xl border border-line bg-panel p-3.5">
+              <RatingInput value={run.difficulty} onChange={(difficulty) => answer({ difficulty })} />
+              {/* How it went moves the schedule; how it felt never does. */}
+              <div className="border-t border-line pt-3.5">
+                <FeelInput value={run.feel} onChange={(feel) => answer({ feel })} />
+              </div>
             </div>
           )}
 

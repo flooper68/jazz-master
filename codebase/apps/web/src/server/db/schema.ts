@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -39,6 +40,9 @@ export const exerciseRuns = pgTable(
     completed: boolean('completed').notNull(),
     // How it went — 'again', 'hard', 'good' or 'easy'; null until the player says.
     difficulty: text('difficulty'),
+    // How it felt — 'dragged', 'fine' or 'loved'; null when the player did not say,
+    // which reads as 'fine'. Shapes the session, never the schedule.
+    feel: text('feel'),
     // Groups the runs of one practice session (a quick run); no table of its own yet.
     sessionId: uuid('session_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -63,6 +67,40 @@ export const exerciseRuns = pgTable(
       'exercise_runs_difficulty_check',
       sql`${table.difficulty} in ('again', 'hard', 'good', 'easy')`,
     ),
+    check(
+      'exercise_runs_feel_check',
+      sql`${table.feel} in ('dragged', 'fine', 'loved')`,
+    ),
+  ],
+)
+
+// What the user said about a whole sitting, in their own words. Runs already
+// carry the session id they belong to and there is no sessions table, so that
+// id keys the note too — one note per sitting, rewritten in place.
+//
+// **The key is the owner and the sitting together.** The session id arrives
+// from the client, so keying on it alone would let one user's row sit where
+// another's belongs: whoever wrote first would own that id for everyone. With
+// the pair as the key, every write and every read is scoped by construction
+// rather than by a predicate somebody has to remember to add.
+export const sessionNotes = pgTable(
+  'session_notes',
+  {
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    sessionId: uuid('session_id').notNull(),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.clerkUserId, table.sessionId] }),
+    index('session_notes_user_created_idx').on(table.clerkUserId, table.createdAt),
   ],
 )
 
@@ -130,6 +168,7 @@ export const waitlistSignups = pgTable('waitlist_signups', {
 export const schema = {
   exerciseRuns,
   practiceRoutines,
+  sessionNotes,
   userExercises,
   users,
   waitlistSignups,

@@ -1,6 +1,6 @@
 import type { Exercise } from '../content'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
-import type { Difficulty, ExerciseRun } from './run'
+import type { Difficulty, ExerciseRun, Feel } from './run'
 
 /**
  * The memory: what the runs say about each exercise. A pure fold, never
@@ -36,6 +36,18 @@ export interface ExerciseState {
   nextTempo: number
   /** The day of the last review, `YYYY-MM-DD` local; null for an item never played. */
   lastReview: string | null
+  /**
+   * How it last felt, of the runs that said. Null means nothing has ever been
+   * said about it, which reads as `fine` — the same as saying so. The latest
+   * answer stands rather than a majority: a player who has just fallen for
+   * something should not have to say it three times (§8).
+   *
+   * **This never touches the schedule.** It orders a session and picks its
+   * ends; `interval`, `due` and `band` are worked out without it — with one
+   * named exception, which is that a dragged item is called stuck a day
+   * sooner, because grinding on something hated is how people quit.
+   */
+  feel: Feel | null
 }
 
 /** `YYYY-MM-DD` in the runtime's own timezone. */
@@ -71,12 +83,14 @@ export function staggerDays(exerciseId: string, constants: PlanConstants = PLAN_
   return constants.newItemStaggerMinDays + (hash % span)
 }
 
-/** One exercise's day: what it was answered, and the fastest it was played through. */
+/** One exercise's day: what it was answered, how it felt, and the fastest it was played through. */
 interface ReviewDay {
   day: string
   difficulty: Difficulty
   /** The fastest completed run of the day; null when nothing was completed. */
   tempo: number | null
+  /** The last run of the day that said how it felt; null when none did. */
+  feel: Feel | null
 }
 
 function reviewDays(runs: readonly ExerciseRun[]): ReviewDay[] {
@@ -99,6 +113,7 @@ function reviewDays(runs: readonly ExerciseRun[]): ReviewDay[] {
         day,
         difficulty: completed.length === 0 ? 'again' : (answered ?? 'good'),
         tempo: completed.length === 0 ? null : Math.max(...completed.map((run) => run.tempoBpm)),
+        feel: [...ordered].reverse().find((run) => run.feel !== null)?.feel ?? null,
       }
     })
 }
@@ -130,8 +145,18 @@ function foldExercise(
   const target = exercise.tempoBpm
   const days = reviewDays(runs)
   if (days.length === 0) {
-    return { band: 'new', interval: 0, due: null, bestTempo: null, margin: null, nextTempo: target, lastReview: null }
+    return { band: 'new', interval: 0, due: null, bestTempo: null, margin: null, nextTempo: target, lastReview: null, feel: null }
   }
+
+  // A dragged item is called stuck a day sooner. Grinding away at something
+  // hated is how people stop practising altogether, so the app reaches for the
+  // lower tempo earlier — the only place feel touches anything the fold decides.
+  //
+  // It is read **as the history ran**, not as it ended: saying "dragged" today
+  // must not re-decide whether the item was stuck a month ago, when nobody had
+  // said anything of the kind.
+  const stuckAfterFor = (feelSoFar: Feel | null) =>
+    feelSoFar === 'dragged' ? Math.max(constants.stuckAfterAgainDays - 1, 1) : constants.stuckAfterAgainDays
 
   let interval = 0
   let due: string | null = null
@@ -142,8 +167,12 @@ function foldExercise(
   let solidDays = 0
   let easyDays = 0
   let lastDifficulty: Difficulty = 'good'
+  // The latest thing said about it up to the day being folded, and by the end
+  // of the loop the latest thing said at all.
+  let feel: Feel | null = null
 
   for (const [index, review] of days.entries()) {
+    if (review.feel !== null) feel = review.feel
     if (review.tempo !== null) bestTempo = Math.max(bestTempo ?? 0, review.tempo)
     const margin = bestTempo === null ? null : bestTempo - target
     lastDifficulty = review.difficulty
@@ -157,7 +186,7 @@ function foldExercise(
     if (review.difficulty === 'again') {
       againStreak += 1
       cleanStreak = 0
-      if (againStreak >= constants.stuckAfterAgainDays) stuck = true
+      if (againStreak >= stuckAfterFor(feel)) stuck = true
     } else {
       againStreak = 0
       cleanStreak += 1
@@ -190,7 +219,7 @@ function foldExercise(
         ? 'easy'
         : 'fine'
 
-  return { band, interval, due, bestTempo, margin, nextTempo, lastReview: days[days.length - 1].day }
+  return { band, interval, due, bestTempo, margin, nextTempo, lastReview: days[days.length - 1].day, feel }
 }
 
 /**

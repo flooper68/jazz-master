@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
+import { recoveryState } from '../appData/recovery'
 import { planNextSession, planSeed } from '../appData/nextSession'
 import { MOST_ROUTINE_ITEMS, routineInputSchema } from '../appData/routine'
 import type { ExerciseRun } from '../appData/run'
@@ -54,6 +55,7 @@ export function nextSessionAnswer(runs: readonly ExerciseRun[], catalog: readonl
     seed: planSeed(runs),
     costs: exerciseCosts(runs, catalog),
     lastRunEnded: lastRunEnded(runs),
+    recovering: recoveryState(runs).recovering,
   })
   return {
     status: 'ok' as const,

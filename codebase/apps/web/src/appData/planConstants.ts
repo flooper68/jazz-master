@@ -69,6 +69,18 @@ export interface PlanConstants {
   maxStuckPerSession: number
   /** This share of the work block must be winnable: fine, easy, or hard already at the target. */
   winnableWorkFraction: number
+  /** At most this many dragged items that are still work — one slog a session is plenty. */
+  maxDraggedWorkPerSession: number
+  /** Below this share of runs completed, with nothing loved, the day went badly. */
+  badDayCompletionRate: number
+  /** This many bad days of practice in a row and the next session backs off. */
+  badDaysBeforeRecovery: number
+  /** A bad run older than this is history, not a state to be recovered from. */
+  badDayStaleAfterDays: number
+  /** What a recovery session does: less of it, fewer walls, this many loved items, nothing new. */
+  recoveryBudgetFactor: number
+  recoveryStuckLimit: number
+  recoveryLovedItems: number
 }
 
 export const PLAN_CONSTANTS: PlanConstants = {
@@ -98,4 +110,11 @@ export const PLAN_CONSTANTS: PlanConstants = {
   dessertMaxFraction: 1 / 3,
   maxStuckPerSession: 3,
   winnableWorkFraction: 0.5,
+  maxDraggedWorkPerSession: 1,
+  badDayCompletionRate: 0.5,
+  badDaysBeforeRecovery: 2,
+  badDayStaleAfterDays: 7,
+  recoveryBudgetFactor: 0.6,
+  recoveryStuckLimit: 1,
+  recoveryLovedItems: 2,
 }

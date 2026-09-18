@@ -62,6 +62,7 @@ describe('the library tools in the browser', () => {
         passes: 4,
         completed: true,
         difficulty: 'good',
+        feel: null,
         sessionId: null,
       },
     ])

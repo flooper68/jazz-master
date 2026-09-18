@@ -1,18 +1,20 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { parseSessionSearch, sessionSearch } from '../../appData/quickRun'
-import type { Difficulty, ExerciseRun } from '../../appData/run'
+import type { Difficulty, ExerciseRun, Feel } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
+import { FeelInput } from '../../components/FeelInput'
 import { RatingInput } from '../../components/RatingInput'
+import { SessionNoteInput } from '../../components/SessionNoteInput'
 import { CheckIcon } from '../../components/icons'
 import { useViewFocus } from '../../components/useViewFocus'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { useNextSession } from '../useNextSession'
 import { useRoutines } from '../useRoutines'
-import { STAGE_FRAME, UnsavedRunAlert, useRunSaver } from '../useRunSaver'
+import { STAGE_FRAME, UnsavedRunAlert, useNoteSaver, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
 
 const BUTTON_PRIMARY =
@@ -59,6 +61,8 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
   const routineName = routineId === null ? null : (routines.find((routine) => routine.id === routineId)?.name ?? 'Routine')
   const label = routineName ?? 'Next session'
   const { save, unsaved } = useRunSaver()
+  const { save: saveNote, failed: noteFailed } = useNoteSaver()
+  const [note, setNote] = useState('')
   // The session's identity is minted once, when it mounts — not in render.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
   const [index, setIndex] = useState(0)
@@ -71,6 +75,7 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
   function restart(): void {
     setSessionId(crypto.randomUUID())
     setRuns(new Map())
+    setNote('')
     setIndex(0)
   }
   const done = index >= steps.length
@@ -122,11 +127,17 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
                       </div>
                     </div>
                     {run && (
-                      <div className="mt-3 border-t border-line px-1.5 pt-3 pb-1">
+                      <div className="mt-3 space-y-4 border-t border-line px-1.5 pt-3 pb-1">
                         <RatingInput
                           value={run.difficulty}
                           subject={exercise.title}
                           onChange={(difficulty: Difficulty | null) => record(step, { ...run, difficulty })}
+                        />
+                        {/* How it went moves the schedule; how it felt never does. */}
+                        <FeelInput
+                          value={run.feel}
+                          subject={exercise.title}
+                          onChange={(feel: Feel | null) => record(step, { ...run, feel })}
                         />
                       </div>
                     )}
@@ -134,6 +145,18 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
                 )
               })}
             </ol>
+
+            {/* One note for the whole sitting, once there is a sitting to note. */}
+            {runs.size > 0 && (
+              <div className="mt-5 rounded-2xl border border-line bg-panel p-3.5">
+                <SessionNoteInput
+                  value={note}
+                  onChange={setNote}
+                  onCommit={() => saveNote(sessionId, note)}
+                  failed={noteFailed}
+                />
+              </div>
+            )}
 
             <div className="mt-5 flex flex-wrap gap-2.5">
               <button type="button" onClick={() => void navigate({ to: '/exercises' })} className={BUTTON_PRIMARY}>

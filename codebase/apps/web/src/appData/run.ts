@@ -27,6 +27,34 @@ export function isDifficulty(value: unknown): value is Difficulty {
   return typeof value === 'string' && (DIFFICULTIES as readonly string[]).includes(value)
 }
 
+/**
+ * How it *felt*, which is a different question from how it went: an exercise
+ * can be clean and joyless, or a mess and the best part of the day. The answer
+ * shapes the session — what it opens on, what it ends on, what a bad week gets
+ * — and never the schedule (docs/product/next-session-design.md §8).
+ */
+export type Feel = 'dragged' | 'fine' | 'loved'
+
+/** Worst first, the order the summary shows them in. */
+export const FEELS: readonly Feel[] = ['dragged', 'fine', 'loved']
+
+export const FEEL_LABELS: Record<Feel, string> = {
+  dragged: 'Dragged',
+  fine: 'Fine',
+  loved: 'Loved it',
+}
+
+/** What each one means, said back once it is chosen. */
+export const FEEL_MEANINGS: Record<Feel, string> = {
+  dragged: 'A slog — you will see less of it',
+  fine: 'No strong feeling either way',
+  loved: 'More of this, and it closes your sessions',
+}
+
+export function isFeel(value: unknown): value is Feel {
+  return typeof value === 'string' && (FEELS as readonly string[]).includes(value)
+}
+
 /** One played-through run of one exercise, recorded when it reaches the summary. */
 export interface ExerciseRun {
   id: string
@@ -43,6 +71,8 @@ export interface ExerciseRun {
   completed: boolean
   /** How it went, if the player said. */
   difficulty: Difficulty | null
+  /** How it felt, if the player said. Null reads as `fine` everywhere it is used. */
+  feel: Feel | null
   /** The practice session (a quick run) this run was part of; null when played on its own. */
   sessionId: string | null
 }

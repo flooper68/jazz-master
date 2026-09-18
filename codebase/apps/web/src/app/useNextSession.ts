@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
+import { recoveryState } from '../appData/recovery'
 import { chosenRoutine, routinePlan, sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
@@ -49,6 +50,7 @@ export function useNextSession(): NextSessionResult {
       costs,
       today,
       lastRunEnded: lastRunEnded(history),
+      recovering: recoveryState(history, today).recovering,
     })
     return { plan: { ...plan, routine: null }, pending: isPending, failed: !isPending && runs === null }
   }, [settings, routines, exercises, runs, isPending, today])

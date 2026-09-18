@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { isDifficulty, type ExerciseRun } from '../../appData/run'
+import { isDifficulty, isFeel, type ExerciseRun } from '../../appData/run'
 import {
   readDatabaseUrl,
   resolveDatabaseConnectionString,
@@ -90,6 +90,7 @@ export function createRunRepository({
             passes: run.passes,
             completed: run.completed,
             difficulty: run.difficulty,
+            feel: run.feel,
             sessionId: run.sessionId,
             updatedAt: new Date(),
           }
@@ -125,6 +126,7 @@ function serializeRun(row: typeof exerciseRuns.$inferSelect): ExerciseRun {
     passes: row.passes,
     completed: row.completed,
     difficulty: isDifficulty(row.difficulty) ? row.difficulty : null,
+    feel: isFeel(row.feel) ? row.feel : null,
     sessionId: row.sessionId,
   }
 }

@@ -61,6 +61,13 @@ export interface PlanInput {
   today?: Date
   /** When the last run ended; inside the skip window the warm-up is left out. */
   lastRunEnded?: Date | null
+  /**
+   * Two bad days behind the user (appData/recovery): the session backs off —
+   * shorter, at most one wall, something loved in it, nothing new to learn.
+   * It never moves a due date; what is owed is still owed, just less of it in
+   * one sitting.
+   */
+  recovering?: boolean
   constants?: PlanConstants
 }
 
@@ -129,6 +136,15 @@ function settled(candidate: Candidate): boolean {
   return candidate.state.band === 'fine' || candidate.state.band === 'easy'
 }
 
+function loved(candidate: Candidate): boolean {
+  return candidate.state.feel === 'loved'
+}
+
+/** Still work, and a slog: the combination the session rations. */
+function draggedWork(candidate: Candidate): boolean {
+  return candidate.state.feel === 'dragged' && (candidate.state.band === 'hard' || candidate.state.band === 'stuck')
+}
+
 /** The key or mode the material sits in, for matching a warm-up to the work. */
 function home(exercise: Exercise): string {
   return exercise.tonic ?? exercise.key ?? 'C'
@@ -149,8 +165,15 @@ function flag(value: boolean): number {
  * rest waits, because a plan that cannot be finished is not a plan.
  */
 export function planNextSession(input: PlanInput): NextSession {
-  const constants = input.constants ?? PLAN_CONSTANTS
-  const budgetSeconds = input.budgetSeconds ?? constants.defaultSessionMinutes * 60
+  const given = input.constants ?? PLAN_CONSTANTS
+  const recovering = input.recovering ?? false
+  // A recovery session is the ordinary one with its dials turned down; the
+  // rules stay in one place rather than growing a second assembler.
+  const constants: PlanConstants = recovering
+    ? { ...given, maxStuckPerSession: given.recoveryStuckLimit }
+    : given
+  const asked = input.budgetSeconds ?? constants.defaultSessionMinutes * 60
+  const budgetSeconds = recovering ? Math.round(asked * constants.recoveryBudgetFactor) : asked
   const today = input.today ?? new Date()
   const day = dayKey(today)
 
@@ -171,13 +194,18 @@ export function planNextSession(input: PlanInput): NextSession {
   const isDue = (candidate: Candidate) => candidate.state.due !== null && candidate.over >= 0
   const mostOverdue = (a: Candidate, b: Candidate) => b.over - a.over || a.rank - b.rank
 
+  // Among the work, something loved comes first: the same wall is easier to
+  // walk at when the session has already gone well (§8).
   const due = candidates
     .filter((candidate) => isDue(candidate) && (candidate.state.band === 'stuck' || candidate.state.band === 'hard'))
-    .sort(mostOverdue)
+    .sort((a, b) => by(flag(loved(b)) - flag(loved(a)), mostOverdue(a, b)))
   const maintenance = candidates
     .filter((candidate) => isDue(candidate) && candidate.state.band !== 'stuck' && candidate.state.band !== 'hard')
     .sort(mostOverdue)
-  const fresh = candidates.filter((candidate) => candidate.state.band === 'new').sort((a, b) => a.rank - b.rank)
+  // Nothing new on a recovery day: learning something is the opposite of a rest.
+  const fresh = recovering
+    ? []
+    : candidates.filter((candidate) => candidate.state.band === 'new').sort((a, b) => a.rank - b.rank)
   // Not due yet: soonest first, and the seed decides between two that come back on the same day.
   const ahead = candidates
     .filter((candidate) => candidate.state.due !== null && candidate.over < 0)
@@ -186,20 +214,26 @@ export function planNextSession(input: PlanInput): NextSession {
   const ordered = [...due, ...maintenance, ...fresh, ...ahead]
   const taken = new Set<string>()
 
-  // The warm-up is matched to what the session is actually for, so the work
-  // block's own head is worked out before anything is chosen.
-  const warmUp = pickWarmUp(candidates, ordered[0] ?? null, budgetSeconds, today, input.lastRunEnded ?? null, constants)
-  if (warmUp) taken.add(warmUp.exercise.id)
-
-  const dessert = pickDessert(
-    candidates,
-    taken,
-    ordered[0] ?? null,
-    Math.min(budgetSeconds - (warmUp?.cost ?? 0), budgetSeconds * constants.dessertMaxFraction),
-  )
+  // Dessert chooses first. Both ends want the same thing — something loved —
+  // and what a session is remembered by is what it ended on, so the ending has
+  // first claim on it and the warm-up takes the next best thing.
+  const dessert = pickDessert(candidates, taken, ordered[0] ?? null, budgetSeconds * constants.dessertMaxFraction)
   if (dessert) taken.add(dessert.exercise.id)
 
-  const work = fillWork(ordered, taken, {
+  // The warm-up is matched to what the session is actually for, so the work
+  // block's own head is worked out before anything is chosen.
+  const warmUp = pickWarmUp(candidates, ordered[0] ?? null, taken, budgetSeconds, today, input.lastRunEnded ?? null, constants)
+  if (warmUp) taken.add(warmUp.exercise.id)
+
+  // A recovery session opens its work with things the user loves, wherever
+  // those sit in the ordinary order — but only the ones the two ends did not
+  // already take, or the comfort would be counted twice and reach nothing.
+  const comforts = recovering
+    ? ordered.filter((candidate) => loved(candidate) && !taken.has(candidate.exercise.id)).slice(0, constants.recoveryLovedItems)
+    : []
+  const workOrder = [...comforts, ...ordered.filter((candidate) => !comforts.includes(candidate))]
+
+  const work = fillWork(workOrder, taken, {
     budget: budgetSeconds - (warmUp?.cost ?? 0) - (dessert?.cost ?? 0),
     constants,
   })
@@ -208,7 +242,11 @@ export function planNextSession(input: PlanInput): NextSession {
   const workSlots = work.map((candidate) => ({
     exercise: candidate.exercise,
     tempoBpm: candidate.state.nextTempo,
-    reason: reasonFor(candidate.state, candidate.exercise, day),
+    reason: recovering && loved(candidate)
+      ? `Taking it easy — one you love, ${tempoNote(candidate.state, candidate.exercise)}`
+      : recovering
+        ? `Taking it easy · ${reasonFor(candidate.state, candidate.exercise, day)}`
+        : reasonFor(candidate.state, candidate.exercise, day),
   }))
   const dessertSlots = dessert ? [dessertSlot(dessert)] : []
   const planned = [warmUp, ...work, dessert].reduce((sum, candidate) => sum + (candidate?.cost ?? 0), 0)
@@ -234,6 +272,7 @@ export function planNextSession(input: PlanInput): NextSession {
 function pickWarmUp(
   candidates: readonly Candidate[],
   first: Candidate | null,
+  taken: ReadonlySet<string>,
   budgetSeconds: number,
   today: Date,
   lastRunEnded: Date | null,
@@ -244,7 +283,10 @@ function pickWarmUp(
     if (sinceMinutes >= 0 && sinceMinutes < constants.warmUpSkipWindowMinutes) return null
   }
 
-  const pool = candidates.filter((candidate) => settled(candidate) && candidate.exercise.id !== first?.exercise.id)
+  const pool = candidates.filter(
+    (candidate) =>
+      settled(candidate) && !taken.has(candidate.exercise.id) && candidate.exercise.id !== first?.exercise.id,
+  )
   if (pool.length === 0) return null
 
   const share = Math.min(budgetSeconds * constants.warmUpBudgetFraction, constants.warmUpMaxSeconds)
@@ -253,6 +295,8 @@ function pickWarmUp(
       // An extra rep, so something not owed today comes first: an item that is
       // due deserves its own slot in the work, at its own tempo.
       flag(a.over >= 0) - flag(b.over >= 0),
+      // Then something the user actually likes — a session should start well.
+      flag(loved(b)) - flag(loved(a)),
       flag(b.exercise.area === 'technique') - flag(a.exercise.area === 'technique'),
       flag(first !== null && home(b.exercise) === home(first.exercise)) -
         flag(first !== null && home(a.exercise) === home(first.exercise)),
@@ -284,7 +328,11 @@ function pickDessert(
   const pool = candidates
     .filter(
       (candidate) =>
-        settled(candidate) &&
+        // Loved beats easy: what a session is remembered by is what it ended
+        // on, and an item the user loves ends it better than the one they
+        // merely find easy. A stuck one is still a wall, though — loving
+        // something does not make it a good note to finish on.
+        ((loved(candidate) && candidate.state.band !== 'stuck') || settled(candidate)) &&
         !taken.has(candidate.exercise.id) &&
         // Never the thing the session exists for: a pool of two solid items
         // would otherwise be served entirely as warm-up and pudding, and the
@@ -293,6 +341,7 @@ function pickDessert(
     )
     .sort((a, b) =>
       by(
+        flag(loved(b)) - flag(loved(a)),
         flag(b.state.band === 'easy') - flag(a.state.band === 'easy'),
         (b.state.margin ?? 0) - (a.state.margin ?? 0),
         a.cost - b.cost,
@@ -325,6 +374,7 @@ function fillWork(
   const block: Candidate[] = []
   let spent = 0
   let stuck = 0
+  let dragged = 0
   let winners = 0
   let losers = 0
 
@@ -332,7 +382,10 @@ function fillWork(
     const available = queue.filter(
       (candidate) =>
         !used.has(candidate.exercise.id) &&
-        (candidate.state.band !== 'stuck' || stuck < constants.maxStuckPerSession),
+        (candidate.state.band !== 'stuck' || stuck < constants.maxStuckPerSession) &&
+        // One slog a session. A wall the user hates is the thing most likely to
+        // end the habit, so the rest of them wait for another day (§8).
+        (!draggedWork(candidate) || dragged < constants.maxDraggedWorkPerSession),
     )
     if (available.length === 0) break
 
@@ -351,6 +404,8 @@ function fillWork(
       used.add(shortest.exercise.id)
       block.push(shortest)
       spent += shortest.cost
+      if (shortest.state.band === 'stuck') stuck += 1
+      if (draggedWork(shortest)) dragged += 1
       continue
     }
 
@@ -363,6 +418,7 @@ function fillWork(
     block.push(pick)
     spent += pick.cost
     if (pick.state.band === 'stuck') stuck += 1
+    if (draggedWork(pick)) dragged += 1
     if (winnable(pick)) winners += 1
     else losers += 1
   }
@@ -382,11 +438,14 @@ function warmUpSlot(candidate: Candidate, constants: PlanConstants): SessionSlot
 }
 
 function dessertSlot(candidate: Candidate): SessionSlot {
-  const target = candidate.exercise.tempoBpm
+  // A solid item's next tempo is its target already; a loved one that is still
+  // work keeps the tempo the fold asked for rather than being forced up to it.
+  const tempoBpm = candidate.state.nextTempo
+  const note = tempoNote(candidate.state, candidate.exercise)
   return {
     exercise: candidate.exercise,
-    tempoBpm: target,
-    reason: `Dessert — you have this one, at its tempo, ${target} BPM`,
+    tempoBpm,
+    reason: candidate.state.feel === 'loved' ? `To finish — one you love, ${note}` : `Dessert — you have this one, ${note}`,
   }
 }
 

@@ -39,6 +39,7 @@ function run(exerciseId: string, durationSeconds: number, { completed = true, da
     passes: 4,
     completed,
     difficulty: 'good',
+    feel: null,
     sessionId: null,
   }
 }

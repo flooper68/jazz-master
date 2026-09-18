@@ -5,8 +5,10 @@ import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 import type { ExerciseInput } from '../content/exerciseInput'
 import type { RoutineInput } from '../appData/routine'
+import type { NoteRepository } from '../server/db/notes'
 import type { RoutineRepository } from '../server/db/routines'
 import type { UserExerciseRepository } from '../server/db/userExercises'
+import { createMemoryNoteRepository } from './memoryNotes'
 import { createMemoryRoutineRepository } from './memoryRoutines'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
 
@@ -17,6 +19,7 @@ let runsRepositoryAvailable = true
 let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
 let routines: RoutineRepository = createMemoryRoutineRepository()
 let routinesRepositoryAvailable = true
+let notes: NoteRepository = createMemoryNoteRepository()
 
 export function resetTrpcTestData() {
   runs.clear()
@@ -24,6 +27,12 @@ export function resetTrpcTestData() {
   userExercises = createMemoryUserExerciseRepository()
   routines = createMemoryRoutineRepository()
   routinesRepositoryAvailable = true
+  notes = createMemoryNoteRepository()
+}
+
+/** The notes the test user has written, for asserting what a page saved. */
+export function getTrpcTestNotes() {
+  return notes.listNotes(TEST_CLERK_USER_ID)
 }
 
 /** Put routines in the test user's account; resolves to them as stored, ids included. */
@@ -103,6 +112,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
       createContext({
         auth: { clerkUserId: TEST_CLERK_USER_ID },
         runs: runsRepositoryAvailable ? runRepository : null,
+        notes,
         routines: routinesRepositoryAvailable ? routines : null,
         userExercises,
         users: null,

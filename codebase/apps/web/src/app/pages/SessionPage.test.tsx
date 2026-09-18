@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetQuickRunSettings } from '../../appData/quickRun'
 import { renderRoute } from '../../test/renderRoute'
-import { getTrpcTestRuns, resetTrpcTestData, seedTrpcTestRoutines } from '../../test/trpcTestFetch'
+import { getTrpcTestNotes, getTrpcTestRuns, resetTrpcTestData, seedTrpcTestRoutines } from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -61,6 +61,51 @@ describe('SessionPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
+  })
+
+  it('answers how it felt beside how it went, and keeps the two apart', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-c')
+    await playAndFinish(user, 'C major — open position')
+
+    // Two questions on the summary, and neither is answered for the user.
+    expect(screen.getByRole('group', { name: /^How did it go\?/ })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /^How did it feel\?/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Loved it for C major — open position' }))
+    await waitFor(() => expect(getTrpcTestRuns()[0]?.feel).toBe('loved'))
+    // Saying how it felt says nothing about how it went.
+    expect(getTrpcTestRuns()[0]?.difficulty).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Good for C major — open position' }))
+    await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('good'))
+    expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
+
+    // Pressing the chosen answer again clears it.
+    await user.click(screen.getByRole('button', { name: 'Loved it for C major — open position' }))
+    await waitFor(() => expect(getTrpcTestRuns()[0]?.feel).toBeNull())
+  })
+
+  it('keeps a note about the whole sitting, once something has been played', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-c')
+    await playAndFinish(user, 'C major — open position')
+
+    const note = screen.getByLabelText(/^Anything worth remembering\?/)
+    await user.type(note, 'The ii–V finally sat in the pocket.')
+    // Written away when the box is left, not on every keypress.
+    expect(await getTrpcTestNotes()).toEqual([])
+    await user.tab()
+    await waitFor(async () =>
+      expect(await getTrpcTestNotes()).toMatchObject([{ text: 'The ii–V finally sat in the pocket.' }]),
+    )
+  })
+
+  it('offers no note for a sitting where nothing was played', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-c')
+    await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
+    expect(screen.queryByLabelText(/^Anything worth remembering\?/)).toBeNull()
   })
 
   it('marks an exercise finished without playing as skipped', async () => {

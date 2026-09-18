@@ -112,3 +112,38 @@ test('a session is answered on four buttons, and the plan takes the answer', asy
   await expect(plan.getByRole('listitem').first()).toBeVisible()
   await expect(plan.getByRole('listitem').filter({ hasText: 'C major — open position' }).filter({ hasText: 'New — not played yet' })).toHaveCount(0)
 })
+
+test('an exercise the player loved ends the next session, and the note survives the sitting', async ({ page }) => {
+  await page.goto('/app/session?x=scales-major-open-c')
+  await page.getByRole('button', { name: /^Play C major/ }).click()
+  await page.getByRole('button', { name: /^Finish / }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Next session complete' })).toBeVisible()
+
+  // How it went and how it felt are two separate questions on the summary.
+  const feel = page.getByRole('group', { name: /^How did it feel\?/ })
+  await expect(feel.getByRole('button')).toHaveText(['Dragged', 'Fine', 'Loved it'])
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('runs.save') && (response.request().postData() ?? '').includes('"feel":"loved"'),
+    ),
+    feel.getByRole('button', { name: /^Loved it/ }).click(),
+  ])
+
+  // A sentence about the whole sitting, written away when the box is left.
+  const note = page.getByLabel(/^Anything worth remembering\?/)
+  await note.fill('The ii–V finally sat in the pocket.')
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes('notes.save')),
+    note.blur(),
+  ])
+
+  // Back home, the plan ends on the thing the player loved.
+  await page.getByRole('link', { name: 'Home' }).first().click()
+  const card = page.getByRole('region', { name: 'Next session' })
+  await card.getByRole('button', { name: /^What/ }).click()
+  const plan = page.getByRole('dialog', { name: 'Next session' })
+  await expect(plan.getByRole('listitem').first()).toBeVisible()
+  const slots = plan.getByRole('listitem')
+  await expect(slots.last()).toContainText('C major — open position')
+  await expect(slots.last()).toContainText('one you love')
+})

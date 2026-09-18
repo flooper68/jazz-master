@@ -4,7 +4,7 @@ import { exerciseCost, exerciseCosts } from './cost'
 import { foldRuns } from './memory'
 import { FIRST_SEED, planNextSession, planSeed, type NextSession, type PlanInput } from './nextSession'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
-import type { Difficulty, ExerciseRun } from './run'
+import type { Difficulty, ExerciseRun, Feel } from './run'
 
 /**
  * The assembler, over states built by the fold — so what these tests assert is
@@ -37,7 +37,7 @@ let runCounter = 0
 function run(
   exerciseId: string,
   day: string,
-  { tempoBpm = 100, difficulty = 'good' as Difficulty | null, completed = true, at = '10:00' } = {},
+  { tempoBpm = 100, difficulty = 'good' as Difficulty | null, feel = null as Feel | null, completed = true, at = '10:00' } = {},
 ): ExerciseRun {
   runCounter += 1
   return {
@@ -49,6 +49,7 @@ function run(
     passes: 4,
     completed,
     difficulty,
+    feel,
     sessionId: null,
   }
 }
@@ -294,8 +295,13 @@ describe('the shape of a session', () => {
   })
 
   it('plays the warm-up slower than it is written, as an extra rep', () => {
-    const catalog = [exercise('wall'), exercise('known', 120)]
-    const runs = [run('wall', '2026-01-05', { tempoBpm: 70 }), ...solid('known').map((item) => ({ ...item, tempoBpm: 120 }))]
+    // Two solid items: dessert has first claim, so the warm-up takes the other.
+    const catalog = [exercise('wall'), exercise('sweet'), exercise('known', 120)]
+    const runs = [
+      run('wall', '2026-01-05', { tempoBpm: 70 }),
+      ...solid('sweet'),
+      ...solid('known').map((item) => ({ ...item, tempoBpm: 120 })),
+    ]
     const session = arc(runs, catalog, '2026-01-10')
     expect(session.warmUp[0].exercise.id).toBe('known')
     expect(session.warmUp[0].tempoBpm).toBe(Math.round(120 * PLAN_CONSTANTS.warmUpTempoFactor))
@@ -430,5 +436,156 @@ describe('the shape of a session', () => {
     expect(session.warmUp).toEqual([])
     expect(session.dessert).toEqual([])
     expect(session.work).toHaveLength(PLAN_CONSTANTS.maxStuckPerSession)
+  })
+})
+
+/**
+ * What feel does to a session, and what it never does to the schedule. The
+ * fold's own invariant lives in memory.test.ts; these are the session's end of
+ * it — the ordering, the two ends, the rationing, and the recovery day.
+ */
+describe('feel, in a session', () => {
+  function solid(id: string, from = '2026-01-01', extra: Partial<ExerciseRun> = {}): ExerciseRun[] {
+    return [{ ...run(id, from), ...extra }, { ...run(id, addDays(from, 1)), ...extra }]
+  }
+
+  function addDays(day: string, days: number): string {
+    const date = new Date(`${day}T10:00:00`)
+    date.setDate(date.getDate() + days)
+    return date.toISOString().slice(0, 10)
+  }
+
+  /** Overdue and never at the target: work, whatever it is felt about. */
+  function wall(id: string, feel: Feel | null = null): ExerciseRun {
+    return { ...run(id, '2026-01-02', { tempoBpm: 70 }), feel }
+  }
+
+  const arc = (
+    runs: readonly ExerciseRun[],
+    catalog: readonly Exercise[],
+    day: string,
+    extra: Partial<PlanInput> = {},
+  ) => plan(runs, catalog, day, { constants: PLAN_CONSTANTS, budgetSeconds: 40 * 60, ...extra })
+
+  it('puts a loved wall before the ones the user is neutral about', () => {
+    const catalog = [exercise('plain-1'), exercise('plain-2'), exercise('adored')]
+    // All equally overdue, so only feel can separate them.
+    const runs = [wall('plain-1'), wall('plain-2'), wall('adored', 'loved')]
+    const session = arc(runs, catalog, '2026-01-10')
+    expect(session.work[0].exercise.id).toBe('adored')
+  })
+
+  it('takes at most one slog a session, however many are owed', () => {
+    const catalog = Array.from({ length: 5 }, (_, index) => exercise(`slog-${index}`))
+    const runs = catalog.map((item) => wall(item.id, 'dragged'))
+    const session = arc(runs, catalog, '2026-01-10')
+    const slogs = session.work.filter((slot) => slot.exercise.id.startsWith('slog'))
+    expect(slogs).toHaveLength(PLAN_CONSTANTS.maxDraggedWorkPerSession)
+  })
+
+  it('ends on something loved rather than something merely easy', () => {
+    const catalog = [exercise('wall'), exercise('effortless'), exercise('adored')]
+    const runs = [
+      wall('wall'),
+      // Easy, and nothing felt about it.
+      ...solid('effortless', '2026-01-01', { difficulty: 'easy' }),
+      // Merely fine to play, but loved.
+      ...solid('adored', '2026-01-01', { feel: 'loved' }),
+    ]
+    const session = arc(runs, catalog, '2026-01-10')
+    expect(session.dessert.map((slot) => slot.exercise.id)).toEqual(['adored'])
+    expect(session.dessert[0].reason).toContain('one you love')
+  })
+
+  it('falls back to the easiest solid item when nothing is loved', () => {
+    // Two solid items, because the warm-up takes one of them first.
+    const catalog = [exercise('wall'), exercise('warmer'), exercise('effortless')]
+    const runs = [
+      wall('wall'),
+      ...solid('warmer', '2026-01-01'),
+      ...solid('effortless', '2026-01-01', { difficulty: 'easy' }),
+    ]
+    const session = arc(runs, catalog, '2026-01-10')
+    expect(session.dessert.map((slot) => slot.exercise.id)).toEqual(['effortless'])
+    expect(session.dessert[0].reason).toContain('you have this one')
+  })
+
+  it('opens on something loved too, once the ending has had its pick', () => {
+    // Both ends want something loved and the ending chooses first, so with two
+    // loved items the session is bracketed by them.
+    const catalog = [exercise('wall'), exercise('plain'), exercise('adored-1'), exercise('adored-2')]
+    const runs = [
+      wall('wall'),
+      ...solid('plain', '2026-01-18'),
+      ...solid('adored-1', '2026-01-18', { feel: 'loved' }),
+      ...solid('adored-2', '2026-01-18', { feel: 'loved' }),
+    ]
+    const session = arc(runs, catalog, '2026-01-20')
+    expect(session.dessert[0].exercise.id).toMatch(/^adored/)
+    expect(session.warmUp[0].exercise.id).toMatch(/^adored/)
+    expect(session.warmUp[0].exercise.id).not.toBe(session.dessert[0].exercise.id)
+  })
+})
+
+describe('a recovery session', () => {
+  function solid(id: string, from: string, extra: Partial<ExerciseRun> = {}): ExerciseRun[] {
+    const second = new Date(`${from}T10:00:00`)
+    second.setDate(second.getDate() + 1)
+    return [
+      { ...run(id, from), ...extra },
+      { ...run(id, second.toISOString().slice(0, 10)), ...extra },
+    ]
+  }
+
+  const catalog = [
+    exercise('wall-1'),
+    exercise('wall-2'),
+    exercise('adored-1'),
+    exercise('adored-2'),
+    exercise('adored-3'),
+    exercise('unplayed'),
+  ]
+  // Three loved items: the two ends take one each, so one is left to lead the work.
+  const runs = [
+    run('wall-1', '2026-01-02', { tempoBpm: 70 }),
+    run('wall-2', '2026-01-02', { tempoBpm: 70 }),
+    ...solid('adored-1', '2026-01-01', { feel: 'loved' }),
+    ...solid('adored-2', '2026-01-01', { feel: 'loved' }),
+    ...solid('adored-3', '2026-01-01', { feel: 'loved' }),
+  ]
+
+  const on = (recovering: boolean) =>
+    plan(runs, catalog, '2026-01-10', { constants: PLAN_CONSTANTS, budgetSeconds: 40 * 60, recovering })
+
+  it('is shorter than the session that was asked for', () => {
+    expect(on(true).budgetSeconds).toBe(Math.round(40 * 60 * PLAN_CONSTANTS.recoveryBudgetFactor))
+    expect(on(false).budgetSeconds).toBe(40 * 60)
+    expect(on(true).plannedSeconds).toBeLessThan(on(false).plannedSeconds)
+  })
+
+  it('leads its work on what the user loves, and says that is what it is doing', () => {
+    const session = on(true)
+    expect(session.work[0].exercise.id).toMatch(/^adored/)
+    for (const slot of session.work) expect(slot.reason).toContain('Taking it easy')
+  })
+
+  it('puts as many loved items in as it promises', () => {
+    const loved = on(true).slots.filter((slot) => slot.exercise.id.startsWith('adored'))
+    expect(loved.length).toBeGreaterThanOrEqual(PLAN_CONSTANTS.recoveryLovedItems)
+  })
+
+  it('teaches nothing new on a bad week', () => {
+    expect(on(true).slots.map((slot) => slot.exercise.id)).not.toContain('unplayed')
+    expect(on(false).slots.map((slot) => slot.exercise.id)).toContain('unplayed')
+  })
+
+  it('does not move a single due date', () => {
+    // The plan is derived, so the proof is that the state it read is the same
+    // state either way: recovery changes what is offered, never what is owed.
+    const state = foldRuns(runs, catalog)
+    const before = [...state.values()].map((item) => ({ due: item.due, interval: item.interval }))
+    on(true)
+    const after = [...foldRuns(runs, catalog).values()].map((item) => ({ due: item.due, interval: item.interval }))
+    expect(after).toEqual(before)
   })
 })

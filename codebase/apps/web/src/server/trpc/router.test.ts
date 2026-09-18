@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { ExerciseRun } from '../../appData/run'
 import type { StructuredLogger } from '../observability/logger'
 import type { RunRepository } from '../db/runs'
+import { LONGEST_NOTE } from '../../appData/note'
+import { createMemoryNoteRepository } from '../../test/memoryNotes'
 import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserRepository } from '../db/users'
 import { createContext } from './context'
@@ -421,6 +423,19 @@ describe('appRouter.runs', () => {
     })
   })
 
+  it('keeps a feel with the run it belongs to, and rejects one outside the three', async () => {
+    const runs = createMemoryRunRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, runs }))
+    const run = runRecord()
+
+    await caller.runs.save({ ...run, feel: 'loved' })
+    await expect(caller.runs.list()).resolves.toEqual({ status: 'ok', runs: [{ ...run, feel: 'loved' }] })
+
+    await expect(
+      caller.runs.save(runRecord({ feel: 'delighted' } as unknown as Partial<ExerciseRun>)),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+  })
+
   it.each(['', 'fine', 7, 'Easy'])('rejects a difficulty of %s', async (difficulty) => {
     const caller = createCaller(
       createContext({
@@ -514,6 +529,7 @@ function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
     passes: 6,
     completed: true,
     difficulty: null,
+    feel: null,
     sessionId: null,
     ...overrides,
   }
@@ -629,5 +645,92 @@ describe('appRouter.users.deleteData', () => {
     const caller = createCaller(createContext({ auth: { clerkUserId: 'user_wes' }, users }))
 
     await expect(caller.users.deleteData()).resolves.toEqual({ status: 'error', message: 'Account data could not be deleted' })
+  })
+})
+
+describe('session notes over tRPC', () => {
+  const sessionId = '55555555-5555-4555-8555-555555555555'
+
+  it('reports unconfigured rather than failing when there is no database', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes: null }))
+
+    await expect(caller.notes.list()).resolves.toEqual({ status: 'unconfigured' })
+    await expect(caller.notes.save({ sessionId, text: 'anything' })).resolves.toEqual({ status: 'unconfigured' })
+  })
+
+  it('refuses a signed-out caller', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: null }, notes: createMemoryNoteRepository() }))
+
+    await expect(caller.notes.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+    await expect(caller.notes.save({ sessionId, text: 'anything' })).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+
+  it('writes and reads notes for the authenticated user only', async () => {
+    const notes = createMemoryNoteRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, notes }))
+
+    const saved = await caller.notes.save({ sessionId, text: 'The ii–V finally sat in the pocket.' })
+    expect(saved).toMatchObject({ status: 'ok', note: { sessionId, text: 'The ii–V finally sat in the pocket.' } })
+
+    await expect(caller.notes.list()).resolves.toMatchObject({
+      status: 'ok',
+      notes: [{ sessionId, text: 'The ii–V finally sat in the pocket.' }],
+    })
+    // Another user's sitting is not theirs to read.
+    await expect(otherCaller.notes.list()).resolves.toEqual({ status: 'ok', notes: [] })
+  })
+
+  it('cannot be written over by another user, however the session id was come by', async () => {
+    const notes = createMemoryNoteRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, notes }))
+
+    await caller.notes.save({ sessionId, text: 'Mine.' })
+    // The same session id from another account writes that account's own note.
+    await otherCaller.notes.save({ sessionId, text: 'Not yours.' })
+
+    await expect(caller.notes.list()).resolves.toMatchObject({ status: 'ok', notes: [{ text: 'Mine.' }] })
+    await expect(otherCaller.notes.list()).resolves.toMatchObject({ status: 'ok', notes: [{ text: 'Not yours.' }] })
+  })
+
+  it('cannot be cleared by another user either — the emptying path is scoped too', async () => {
+    // The path that is easiest to leave unscoped, because it writes nothing:
+    // an empty note is a delete, and a delete keyed on the sitting alone would
+    // wipe whoever's note happened to be sitting under that id.
+    const notes = createMemoryNoteRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes }))
+    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, notes }))
+
+    await caller.notes.save({ sessionId, text: 'Mine, and I am keeping it.' })
+    await expect(otherCaller.notes.save({ sessionId, text: '' })).resolves.toEqual({ status: 'ok', note: null })
+
+    await expect(caller.notes.list()).resolves.toMatchObject({
+      status: 'ok',
+      notes: [{ text: 'Mine, and I am keeping it.' }],
+    })
+  })
+
+  it('rewrites the note in place, and clearing it removes it', async () => {
+    const notes = createMemoryNoteRepository()
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes }))
+
+    await caller.notes.save({ sessionId, text: 'First thought.' })
+    await caller.notes.save({ sessionId, text: 'Second thought.' })
+    await expect(caller.notes.list()).resolves.toMatchObject({ status: 'ok', notes: [{ text: 'Second thought.' }] })
+
+    await expect(caller.notes.save({ sessionId, text: '   ' })).resolves.toEqual({ status: 'ok', note: null })
+    await expect(caller.notes.list()).resolves.toEqual({ status: 'ok', notes: [] })
+  })
+
+  it('refuses a note longer than one paragraph, and a session id that is not one', async () => {
+    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, notes: createMemoryNoteRepository() }))
+
+    await expect(caller.notes.save({ sessionId, text: 'x'.repeat(LONGEST_NOTE + 1) })).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+    await expect(caller.notes.save({ sessionId: 'not-a-uuid', text: 'hello' })).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
   })
 })
