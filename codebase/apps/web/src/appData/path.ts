@@ -13,17 +13,10 @@ import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
  * in: the fold owes it a review, and a gate that swallowed that would quietly
  * drop work the user had already started. What a closed stage withholds is the
  * *introduction* of its items.
- *
- * **A muted exercise is not part of the count.** The user has said they never
- * want to see it; if it still counted toward a stage's solidity it could never
- * become solid, the stage behind it would never open, and the path would be
- * stuck for good on something its owner has explicitly put down.
  */
 
 export interface PathProgress {
   goal: Goal
-  /** What the user has muted, so the rest of the scheduler counts it the same way. */
-  muted: ReadonlySet<string>
   /** How solid each stage is, 0–1, stage by stage. */
   solidity: number[]
   /** Stages open for new items: every stage up to and including the first unfinished one. */
@@ -43,14 +36,11 @@ export function pathProgress(
   goal: Goal,
   state: ReadonlyMap<string, ExerciseState>,
   constants: PlanConstants = PLAN_CONSTANTS,
-  /** Exercises the user has muted; they count for nothing, either way. */
-  muted: ReadonlySet<string> = new Set(),
 ): PathProgress {
   const solidity = goal.stages.map((stage) => {
-    const counted = stage.items.filter((item) => !muted.has(item.exerciseId))
-    const solid = counted.filter((item) => isSolid(state.get(item.exerciseId))).length
-    // A stage of nothing but muted items is as done as it can be.
-    return counted.length === 0 ? 1 : solid / counted.length
+    const solid = stage.items.filter((item) => isSolid(state.get(item.exerciseId))).length
+    // An empty stage is as done as it can be.
+    return stage.items.length === 0 ? 1 : solid / stage.items.length
   })
 
   // The first stage is always open. Each next one opens only if every stage
@@ -63,12 +53,10 @@ export function pathProgress(
 
   const nextStage =
     openStages.find((index) =>
-      goal.stages[index].items.some(
-        (item) => !muted.has(item.exerciseId) && (state.get(item.exerciseId)?.band ?? 'new') === 'new',
-      ),
+      goal.stages[index].items.some((item) => (state.get(item.exerciseId)?.band ?? 'new') === 'new'),
     ) ?? null
 
-  return { goal, muted, solidity, openStages, nextStage }
+  return { goal, solidity, openStages, nextStage }
 }
 
 /** Every active path's progress, in the order the goals were made. */
@@ -76,9 +64,8 @@ export function pathsProgress(
   goals: readonly Goal[],
   state: ReadonlyMap<string, ExerciseState>,
   constants: PlanConstants = PLAN_CONSTANTS,
-  muted: ReadonlySet<string> = new Set(),
 ): PathProgress[] {
-  return activeGoals(goals).map((goal) => pathProgress(goal, state, constants, muted))
+  return activeGoals(goals).map((goal) => pathProgress(goal, state, constants))
 }
 
 /**
@@ -90,9 +77,7 @@ export function eligibleNewIds(progress: readonly PathProgress[]): Set<string> {
   const ids = new Set<string>()
   for (const path of progress) {
     for (const index of path.openStages) {
-      for (const item of path.goal.stages[index].items) {
-        if (!path.muted.has(item.exerciseId)) ids.add(item.exerciseId)
-      }
+      for (const item of path.goal.stages[index].items) ids.add(item.exerciseId)
     }
   }
   return ids

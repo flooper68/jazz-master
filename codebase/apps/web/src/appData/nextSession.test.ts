@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Exercise } from '../content'
 import { exerciseCost, exerciseCosts } from './cost'
-import type { ExercisePriority, Goal } from './goal'
+import type { Goal } from './goal'
 import { pathsProgress } from './path'
-import { priorityMap, resolveTargets } from './targets'
+import { resolveTargets } from './targets'
 import { foldRuns } from './memory'
 import { FIRST_SEED, planNextSession, planSeed, type NextSession, type PlanInput } from './nextSession'
 import { PLAN_CONSTANTS, type PlanConstants } from './planConstants'
@@ -626,18 +626,13 @@ describe('a session with goals in it', () => {
     }
   }
 
-  function solid(id: string): ExerciseRun[] {
-    return [run(id, '2026-04-01'), run(id, '2026-04-02')]
-  }
-
   function planned(
     runs: readonly ExerciseRun[],
     catalog: readonly Exercise[],
     goals: readonly Goal[],
-    priorities: readonly ExercisePriority[] = [],
     extra: Partial<PlanInput> = {},
   ): NextSession {
-    const targets = resolveTargets(catalog, goals, priorities)
+    const targets = resolveTargets(catalog, goals)
     const state = foldRuns(runs, catalog, undefined, targets)
     return planNextSession({
       state,
@@ -650,7 +645,6 @@ describe('a session with goals in it', () => {
       constants: WORK_ONLY,
       targets,
       paths: pathsProgress(goals, state),
-      priorities: priorityMap(priorities),
       ...extra,
     })
   }
@@ -687,22 +681,6 @@ describe('a session with goals in it', () => {
     expect(ids(planned([], catalog, [])).sort()).toEqual(['a', 'b', 'c'])
   })
 
-  it('puts a pinned exercise first and never offers a muted one', () => {
-    const catalog = ['wall', 'pet', 'hated'].map((id) => exercise(id))
-    const runs = [
-      run('wall', '2026-04-01', { tempoBpm: 70 }),
-      ...solid('pet'),
-      run('hated', '2026-04-01', { tempoBpm: 70 }),
-    ]
-    const priorities: ExercisePriority[] = [
-      { exerciseId: 'pet', priority: 'pinned', targetOverrideBpm: null },
-      { exerciseId: 'hated', priority: 'muted', targetOverrideBpm: null },
-    ]
-    const session = planned(runs, catalog, [], priorities)
-    expect(session.work[0].exercise.id).toBe('pet')
-    expect(ids(session)).not.toContain('hated')
-  })
-
   it('splits the work between two goals rather than finishing one first', () => {
     const light = ['l1', 'l2', 'l3', 'l4'].map((id) => exercise(id))
     const heavy = ['h1', 'h2', 'h3', 'h4'].map((id) => exercise(id))
@@ -718,20 +696,6 @@ describe('a session with goals in it', () => {
     expect(first.filter((id) => id.startsWith('h')).length).toBeGreaterThan(
       first.filter((id) => id.startsWith('l')).length,
     )
-  })
-
-  it('moves a boosted exercise up among the others in its state', () => {
-    // Three items in the same state and the same catalog order; only the boost
-    // separates them, and it does not jump the ones that are actually overdue.
-    const catalog = ['first', 'second', 'third'].map((id) => exercise(id))
-    const runs = catalog.map((item) => run(item.id, '2026-04-01', { tempoBpm: 70 }))
-    const plain = ids(planned(runs, catalog, []))
-    expect(plain).toEqual(['first', 'second', 'third'])
-
-    const boosted = ids(
-      planned(runs, catalog, [], [{ exerciseId: 'third', priority: 'boosted', targetOverrideBpm: null }]),
-    )
-    expect(boosted[0]).toBe('third')
   })
 
   it('gives a half-weight goal half a share, rather than rounding it up to a whole one', () => {

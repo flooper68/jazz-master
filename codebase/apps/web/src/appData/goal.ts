@@ -62,19 +62,6 @@ export interface Goal extends GoalInput {
 
 export const goalSchema = goalInputSchema.extend({ id: z.string().min(1) })
 
-/** What the user has said about one exercise, over and above what the path says. */
-export const PRIORITIES = ['pinned', 'boosted', 'muted'] as const
-export type Priority = (typeof PRIORITIES)[number]
-
-export const prioritySchema = z.strictObject({
-  exerciseId: z.string().trim().min(1).max(100),
-  priority: z.enum(PRIORITIES),
-  /** Judge it against this instead of the path's target or its own. */
-  targetOverrideBpm: z.number().int().min(MIN_TEMPO).max(MAX_TEMPO).nullable().default(null),
-})
-
-export type ExercisePriority = z.infer<typeof prioritySchema>
-
 export type ParsedGoalInput = { ok: true; goal: GoalInput } | { ok: false; problems: string[] }
 
 /**

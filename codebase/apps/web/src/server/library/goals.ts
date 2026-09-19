@@ -1,16 +1,9 @@
 import { exerciseStateAnswer, goalsAnswer, nextSessionAnswer } from '../../agentTools/descriptors'
-import {
-  goalInputSchema,
-  parseGoalInput,
-  PRIORITIES,
-  stageSchema,
-  type ExercisePriority,
-  type Goal,
-} from '../../appData/goal'
+import { goalInputSchema, parseGoalInput, stageSchema, type Goal } from '../../appData/goal'
 import { foldRuns } from '../../appData/memory'
 import { resolveTargets } from '../../appData/targets'
 import { EXERCISES, type Exercise } from '../../content'
-import { GoalLimitError, PriorityLimitError, type GoalRepository } from '../db/goals'
+import { GoalLimitError, type GoalRepository } from '../db/goals'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { listLibrary } from './library'
@@ -41,13 +34,6 @@ export type GoalWriteResult =
   | Unavailable
   | WriteFailed
 
-export type PriorityWriteResult =
-  | { status: 'ok'; priority: ExercisePriority | null }
-  | { status: 'invalid'; problems: string[] }
-  | { status: 'full'; message: string }
-  | Unavailable
-  | WriteFailed
-
 export type ExerciseStateResult = ReturnType<typeof exerciseStateAnswer> | Unavailable | ReadFailed
 
 export type NextSessionResult = ReturnType<typeof nextSessionAnswer> | Unavailable | PlanReadFailed
@@ -69,16 +55,15 @@ async function catalogFor(stores: GoalStores, clerkUserId: string): Promise<Exer
 export async function listGoals(stores: GoalStores, clerkUserId: string): Promise<GoalListResult> {
   if (!stores.goals) return { status: 'unconfigured' }
   try {
-    const [goals, priorities, catalog] = await Promise.all([
+    const [goals, catalog] = await Promise.all([
       stores.goals.listGoals(clerkUserId),
-      stores.goals.listPriorities(clerkUserId),
       catalogFor(stores, clerkUserId),
     ])
     // Solidity is what the scheduler thinks, so it is worked out the same way:
     // the fold, against the targets the paths themselves ask for.
     const runs = stores.runs ? await stores.runs.listRuns(clerkUserId) : []
-    const state = foldRuns(runs, catalog, undefined, resolveTargets(catalog, goals, priorities))
-    return goalsAnswer(goals, priorities, state)
+    const state = foldRuns(runs, catalog, undefined, resolveTargets(catalog, goals))
+    return goalsAnswer(goals, state)
   } catch {
     return { status: 'error', message: 'Goal read failed' }
   }
@@ -151,68 +136,28 @@ export async function savePath(
   }
 }
 
-export async function savePriority(
-  stores: GoalStores,
-  clerkUserId: string,
-  exerciseId: unknown,
-  priority: unknown,
-  targetOverrideBpm: unknown,
-): Promise<PriorityWriteResult> {
-  if (!stores.goals) return { status: 'unconfigured' }
-  const problems: string[] = []
-  if (typeof exerciseId !== 'string' || exerciseId.trim().length === 0) {
-    problems.push('exerciseId: give the id of an exercise from list_builtin_exercises or list_exercises')
-  }
-  if (priority !== null && !(PRIORITIES as readonly unknown[]).includes(priority)) {
-    problems.push(`priority: one of ${PRIORITIES.join(', ')}, or null to clear it`)
-  }
-  const override =
-    targetOverrideBpm === undefined || targetOverrideBpm === null ? null : Number(targetOverrideBpm)
-  if (override !== null && (!Number.isInteger(override) || override <= 0)) {
-    problems.push('targetOverrideBpm: a tempo in beats per minute, or null')
-  }
-  if (problems.length > 0) return { status: 'invalid', problems }
-
-  try {
-    const catalog = await catalogFor(stores, clerkUserId)
-    if (!catalog.some((exercise) => exercise.id === exerciseId)) {
-      return { status: 'invalid', problems: [`exerciseId: no exercise "${String(exerciseId)}"`] }
-    }
-    const saved = await stores.goals.setPriority(
-      clerkUserId,
-      exerciseId as string,
-      priority as ExercisePriority['priority'] | null,
-      override,
-    )
-    return { status: 'ok', priority: saved }
-  } catch (error) {
-    if (error instanceof PriorityLimitError) return { status: 'full', message: error.message }
-    return { status: 'error', message: 'Goal write failed' }
-  }
-}
 
 /**
- * The four things any plan is made from, for this user, read together. It
- * exists so that no caller has to remember the last two: leaving the paths and
- * the priorities out is exactly how the practice offered over MCP came to
- * ignore the user's goals (JM-11).
+ * The three things any plan is made from, for this user, read together. It
+ * exists so that no caller has to remember the paths: leaving them out is
+ * exactly how the practice offered over MCP came to ignore the user's goals
+ * (JM-11).
  */
 async function planInputs(stores: GoalStores & { runs: RunRepository }, clerkUserId: string) {
-  const [runs, catalog, goals, priorities] = await Promise.all([
+  const [runs, catalog, goals] = await Promise.all([
     stores.runs.listRuns(clerkUserId),
     catalogFor(stores, clerkUserId),
     stores.goals ? stores.goals.listGoals(clerkUserId) : Promise.resolve([]),
-    stores.goals ? stores.goals.listPriorities(clerkUserId) : Promise.resolve([]),
   ])
-  return { runs, catalog, goals, priorities }
+  return { runs, catalog, goals }
 }
 
 /** What the scheduler knows about every exercise. */
 export async function exerciseState(stores: GoalStores, clerkUserId: string): Promise<ExerciseStateResult> {
   if (!stores.runs) return { status: 'unconfigured' }
   try {
-    const { runs, catalog, goals, priorities } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
-    return exerciseStateAnswer(runs, catalog, goals, priorities)
+    const { runs, catalog, goals } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
+    return exerciseStateAnswer(runs, catalog, goals)
   } catch {
     return { status: 'error', message: 'Goal read failed' }
   }
@@ -227,8 +172,8 @@ export async function exerciseState(stores: GoalStores, clerkUserId: string): Pr
 export async function nextSession(stores: GoalStores, clerkUserId: string): Promise<NextSessionResult> {
   if (!stores.runs) return { status: 'unconfigured' }
   try {
-    const { runs, catalog, goals, priorities } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
-    return nextSessionAnswer(runs, catalog, goals, priorities)
+    const { runs, catalog, goals } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
+    return nextSessionAnswer(runs, catalog, goals)
   } catch {
     return { status: 'error', message: 'Practice plan read failed' }
   }

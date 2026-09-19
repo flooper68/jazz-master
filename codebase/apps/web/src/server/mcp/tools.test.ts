@@ -20,7 +20,7 @@ import { MCP_TOOLS, type McpToolContext } from './tools'
  *
  * The plan these answer with used to be worked out from the runs alone: the
  * server call site left out the goals and priorities the browser's call site
- * passed, so a path set over MCP steered nothing and a muted exercise was still
+ * passed, so a path set over MCP steered nothing and the plan was still
  * offered (JM-11). These tests hold the server door to what the page does, and
  * the last one holds both doors to a single answer.
  */
@@ -109,20 +109,6 @@ describe('what the MCP server offers to practise', () => {
     expect(slot?.targetTempoBpm).toBe(200)
   })
 
-  it('never offers an exercise the user muted', async () => {
-    seedTrpcTestRuns([ranYesterday('scales-major-open-c', 60)])
-    // Due today, so it would certainly be offered were it not muted.
-    const before = ((await call('get_next_session')) as Slots).slots.map((slot) => slot.exerciseId)
-    expect(before).toContain('scales-major-open-c')
-
-    expect(await call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })).toMatchObject({
-      status: 'ok',
-    })
-
-    const after = ((await call('get_next_session')) as Slots).slots.map((slot) => slot.exerciseId)
-    expect(after).not.toContain('scales-major-open-c')
-  })
-
   it('says so when there is no run database, and says it as an error', async () => {
     setTrpcTestRunsRepositoryAvailable(false)
     const answer = await callRaw('get_next_session')
@@ -131,8 +117,8 @@ describe('what the MCP server offers to practise', () => {
   })
 
   it('answers exactly what the browser\'s own tools answer', async () => {
-    // Something of the user's own in the catalogue, and something muted, so the
-    // two doors are pinned on more than the pack alone.
+    // Something of the user's own in the catalogue, so the two doors are
+    // pinned on more than the pack alone.
     const [mine] = await seedTrpcTestLibrary([
       {
         title: 'My own lick',
@@ -150,8 +136,6 @@ describe('what the MCP server offers to practise', () => {
       weight: 1,
       stages: [{ items: [{ exerciseId: 'scales-major-open-c', targetTempoBpm: 120 }] }],
     })
-    await call('set_priority', { exerciseId: 'technique-spider-1234', priority: 'muted' })
-
     // One user, one moment, two doors: the answers have to be the same object.
     // This is the guard the original defect got past — the two call sites had
     // drifted apart and nothing compared them.

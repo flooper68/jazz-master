@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { goalInputSchema, goalSchema, PRIORITIES, prioritySchema } from '../../../appData/goal'
-import { listGoals as readGoals, saveGoal, savePriority } from '../../library/goals'
+import { goalInputSchema, goalSchema } from '../../../appData/goal'
+import { listGoals as readGoals, saveGoal } from '../../library/goals'
 import { protectedProcedure, router } from '../init'
 
 /**
@@ -19,7 +19,7 @@ const goalProgressSchema = goalSchema.extend({
 })
 
 export const goalListOutput = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('ok'), goals: z.array(goalProgressSchema), priorities: z.array(prioritySchema) }),
+  z.object({ status: z.literal('ok'), goals: z.array(goalProgressSchema) }),
   z.object({ status: z.literal('unconfigured') }),
   z.object({ status: z.literal('error'), message: z.literal('Goal read failed') }),
 ])
@@ -40,15 +40,6 @@ export const goalDeleteOutput = z.discriminatedUnion('status', [
   z.object({ status: z.literal('error'), message: z.literal('Goal write failed') }),
 ])
 
-export const prioritySaveOutput = z.discriminatedUnion('status', [
-  // Null when the answer was cleared: no priority and no override is no row.
-  z.object({ status: z.literal('ok'), priority: prioritySchema.nullable() }),
-  z.object({ status: z.literal('invalid'), problems: z.array(z.string()) }),
-  z.object({ status: z.literal('unconfigured') }),
-  z.object({ status: z.literal('error'), message: z.literal('Goal write failed') }),
-  z.object({ status: z.literal('full'), message: z.string() }),
-])
-
 export const goals = router({
   list: protectedProcedure
     .input(z.void())
@@ -57,7 +48,7 @@ export const goals = router({
       if (!ctx.goals) return { status: 'unconfigured' as const }
       try {
         const answer = await readGoals(ctx, ctx.auth.clerkUserId)
-        return answer.status === 'ok' ? { ...answer, priorities: [...answer.priorities] } : answer
+        return answer
       } catch (error) {
         if (error instanceof TRPCError) throw error
         return { status: 'error' as const, message: 'Goal read failed' as const }
@@ -91,16 +82,4 @@ export const goals = router({
       }
     }),
 
-  setPriority: protectedProcedure
-    .input(
-      z.object({
-        exerciseId: z.string().trim().min(1).max(100),
-        priority: z.enum(PRIORITIES).nullable(),
-        targetOverrideBpm: z.number().int().positive().nullable().default(null),
-      }),
-    )
-    .output(prioritySaveOutput)
-    .mutation(({ ctx, input }) =>
-      savePriority(ctx, ctx.auth.clerkUserId, input.exerciseId, input.priority, input.targetOverrideBpm),
-    ),
 })

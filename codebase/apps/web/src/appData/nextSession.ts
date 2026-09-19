@@ -1,6 +1,5 @@
 import { homeLabel, type Exercise } from '../content'
 import { exerciseCost } from './cost'
-import type { ExercisePriority } from './goal'
 import { dayKey, daysBetween, type ExerciseState } from './memory'
 import type { PathProgress } from './path'
 import { eligibleNewIds, goalOfExercise } from './path'
@@ -74,8 +73,6 @@ export interface PlanInput {
    * whole pack is one implicit path and nothing below changes.
    */
   paths?: readonly PathProgress[]
-  /** What the user has said about single exercises, by id (appData/targets). */
-  priorities?: ReadonlyMap<string, ExercisePriority>
   /**
    * Two bad days behind the user (appData/recovery): the session backs off —
    * shorter, at most one wall, something loved in it, nothing new to learn.
@@ -136,10 +133,8 @@ interface Candidate {
   over: number
   /** What it is expected to take, in seconds. */
   cost: number
-  /** The tempo it is judged against — a path's, an override's, or its own. */
+  /** The tempo it is judged against — a path's, or its own. */
   target: number
-  /** What the user said about this one: pinned first, muted never, boosted early. */
-  priority: ExercisePriority['priority'] | null
 }
 
 /**
@@ -265,10 +260,6 @@ export function planNextSession(input: PlanInput): NextSession {
   const candidates: Candidate[] = input.catalog.flatMap((exercise, rank) => {
     const found = input.state.get(exercise.id)
     if (!found) return []
-    const priority = input.priorities?.get(exercise.id)?.priority ?? null
-    // Muted is the one answer that removes an exercise from the practice
-    // altogether: not offered, not counted, not come back to.
-    if (priority === 'muted') return []
     // A new item behind a closed stage is not offered yet.
     if (found.band === 'new' && eligible !== null && !eligible.has(exercise.id)) return []
     return [
@@ -279,16 +270,12 @@ export function planNextSession(input: PlanInput): NextSession {
         over: found.due === null ? 0 : daysBetween(found.due, day),
         cost: input.costs?.get(exercise.id) ?? exerciseCost(exercise, [], constants),
         target: input.targets?.get(exercise.id) ?? exercise.tempoBpm,
-        priority,
       },
     ]
   })
 
   const isDue = (candidate: Candidate) => candidate.state.due !== null && candidate.over >= 0
-  // Pinned rises above everything in its group; boosted rises within its band.
-  // Both are the user overruling the schedule, which is their right.
-  const chosen = (candidate: Candidate) => (candidate.priority === 'pinned' ? 2 : candidate.priority === 'boosted' ? 1 : 0)
-  const mostOverdue = (a: Candidate, b: Candidate) => by(chosen(b) - chosen(a), b.over - a.over, a.rank - b.rank)
+  const mostOverdue = (a: Candidate, b: Candidate) => by(b.over - a.over, a.rank - b.rank)
 
   // Among the work, something loved comes first: the same wall is easier to
   // walk at when the session has already gone well (§8).
@@ -305,7 +292,7 @@ export function planNextSession(input: PlanInput): NextSession {
     ? []
     : candidates
         .filter((candidate) => candidate.state.band === 'new')
-        .sort((a, b) => by(chosen(b) - chosen(a), a.rank - b.rank))
+        .sort((a, b) => a.rank - b.rank)
   // Not due yet: soonest first, and the seed decides between two that come back on the same day.
   const ahead = candidates
     .filter((candidate) => candidate.state.due !== null && candidate.over < 0)
@@ -313,16 +300,7 @@ export function planNextSession(input: PlanInput): NextSession {
 
   // Several goals share the work by weight: interleaved so the heavier path
   // gets more of the session without the lighter one waiting for it to finish.
-  const shared = shareByWeight([...due, ...maintenance, ...fresh, ...ahead], owner)
-  // Pinned means first, and first across the whole order rather than first
-  // among its own kind: a solid item the user asked to keep in front of them
-  // would otherwise sit behind every wall. This runs *after* the weight share,
-  // which would otherwise deal ordinary items of a heavy goal ahead of a light
-  // goal's pinned one — and `ordered[0]` anchors both ends of the arc.
-  const ordered = [
-    ...shared.filter((candidate) => candidate.priority === 'pinned'),
-    ...shared.filter((candidate) => candidate.priority !== 'pinned'),
-  ]
+  const ordered = shareByWeight([...due, ...maintenance, ...fresh, ...ahead], owner)
   const taken = new Set<string>()
 
   // Dessert chooses first. Both ends want the same thing — something loved —

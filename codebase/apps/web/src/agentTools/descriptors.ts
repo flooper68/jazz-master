@@ -3,10 +3,10 @@ import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { recoveryState } from '../appData/recovery'
 import { planNextSession, planSeed } from '../appData/nextSession'
-import { goalInputSchema, PRIORITIES, type ExercisePriority, type Goal } from '../appData/goal'
+import { goalInputSchema, type Goal } from '../appData/goal'
 import type { ExerciseState } from '../appData/memory'
 import { pathsProgress } from '../appData/path'
-import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
+import { resolveTargets } from '../appData/targets'
 import type { ExerciseRun } from '../appData/run'
 import { EXERCISES, type Exercise } from '../content'
 import { HIGHEST_FRET, NOTE_LENGTHS_IN_BEATS, exerciseInputSchema } from '../content/exerciseInput'
@@ -59,11 +59,10 @@ export function nextSessionAnswer(
   runs: readonly ExerciseRun[],
   catalog: readonly Exercise[],
   goals: readonly Goal[],
-  priorities: readonly ExercisePriority[],
 ) {
   // The same inputs the home card assembles from, so a tool and the page can
   // never describe two different sessions.
-  const targets = resolveTargets(catalog, goals, priorities)
+  const targets = resolveTargets(catalog, goals)
   const state = foldRuns(runs, catalog, undefined, targets)
   const { slots } = planNextSession({
     state,
@@ -73,8 +72,7 @@ export function nextSessionAnswer(
     lastRunEnded: lastRunEnded(runs),
     recovering: recoveryState(runs).recovering,
     targets,
-    paths: pathsProgress(goals, state, undefined, mutedIds(priorities)),
-    priorities: priorityMap(priorities),
+    paths: pathsProgress(goals, state),
   })
   return {
     status: 'ok' as const,
@@ -96,14 +94,8 @@ export function nextSessionAnswer(
  * stage is — worked out by the same pure functions the home card uses, so a
  * model and the page never disagree about what is open.
  */
-export function goalsAnswer(
-  goals: readonly Goal[],
-  priorities: readonly ExercisePriority[],
-  state: ReadonlyMap<string, ExerciseState>,
-) {
-  const progress = new Map(
-    pathsProgress(goals, state, undefined, mutedIds(priorities)).map((path) => [path.goal.id, path]),
-  )
+export function goalsAnswer(goals: readonly Goal[], state: ReadonlyMap<string, ExerciseState>) {
+  const progress = new Map(pathsProgress(goals, state).map((path) => [path.goal.id, path]))
   return {
     status: 'ok' as const,
     goals: goals.map((goal) => ({
@@ -111,7 +103,6 @@ export function goalsAnswer(
       solidity: progress.get(goal.id)?.solidity ?? null,
       openStages: progress.get(goal.id)?.openStages ?? null,
     })),
-    priorities,
   }
 }
 
@@ -120,9 +111,8 @@ export function exerciseStateAnswer(
   runs: readonly ExerciseRun[],
   catalog: readonly Exercise[],
   goals: readonly Goal[],
-  priorities: readonly ExercisePriority[],
 ) {
-  const targets = resolveTargets(catalog, goals, priorities)
+  const targets = resolveTargets(catalog, goals)
   const state = foldRuns(runs, catalog, undefined, targets)
   return {
     status: 'ok' as const,
@@ -213,7 +203,6 @@ export type LibraryToolName =
   | 'list_goals'
   | 'set_goal'
   | 'set_path'
-  | 'set_priority'
   | 'get_exercise_state'
   | 'list_runs'
 
@@ -279,21 +268,6 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     inputSchema: objectSchema(
       { ...goalIdArgument, stages: z.toJSONSchema(goalInputSchema, { io: 'input' }).properties?.stages ?? { type: 'array' } },
       ['goalId', 'stages'],
-    ),
-    annotations: REPLACES,
-  },
-  {
-    name: 'set_priority',
-    title: 'Pin, boost or mute an exercise',
-    description:
-      "Say something about one exercise, over and above what any path says. `pinned` keeps it at the front of every session; `boosted` moves it up among items in the same state; `muted` takes it out of the practice altogether. `targetOverrideBpm` judges it against that tempo instead of the path's or its own. Pass `priority: null` and `targetOverrideBpm: null` to clear what was said. Only mute when the user asked.",
-    inputSchema: objectSchema(
-      {
-        exerciseId: { type: 'string', description: 'A pack id or a library id.' },
-        priority: { type: ['string', 'null'], enum: [...PRIORITIES, null], description: 'null clears it.' },
-        targetOverrideBpm: { type: ['integer', 'null'], description: 'null leaves the tempo to the path or the exercise.' },
-      },
-      ['exerciseId', 'priority'],
     ),
     annotations: REPLACES,
   },

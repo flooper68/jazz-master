@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ExercisePriority, Goal } from '../appData/goal'
+import type { Goal } from '../appData/goal'
 import type { Exercise } from '../content'
 import { nextSessionAnswer } from './descriptors'
 
@@ -26,27 +26,15 @@ describe('the next session, as either door answers it', () => {
       [],
       catalog,
       [goal([{ items: [{ exerciseId: 'written-at-80', targetTempoBpm: 140 }] }])],
-      [],
     )
     const slot = answer.slots.find((candidate) => candidate.exerciseId === 'written-at-80')
     expect(slot?.targetTempoBpm).toBe(140)
   })
 
   it('leaves an exercise no path names judged at its own tempo', () => {
-    const answer = nextSessionAnswer([], catalog, [], [])
+    const answer = nextSessionAnswer([], catalog, [])
     const slot = answer.slots.find((candidate) => candidate.exerciseId === 'untouched')
     expect(slot?.targetTempoBpm).toBe(90)
   })
 
-  it('lets what the user said about one exercise beat what the path asks', () => {
-    const override: ExercisePriority = { exerciseId: 'written-at-80', priority: 'boosted', targetOverrideBpm: 60 }
-    const answer = nextSessionAnswer(
-      [],
-      catalog,
-      [goal([{ items: [{ exerciseId: 'written-at-80', targetTempoBpm: 140 }] }])],
-      [override],
-    )
-    const slot = answer.slots.find((candidate) => candidate.exerciseId === 'written-at-80')
-    expect(slot?.targetTempoBpm).toBe(60)
-  })
 })

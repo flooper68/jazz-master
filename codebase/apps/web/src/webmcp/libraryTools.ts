@@ -9,7 +9,7 @@ import {
   toolArgument,
   type LibraryToolName,
 } from '../agentTools/descriptors'
-import { parseGoalInput, type ExercisePriority, type Goal } from '../appData/goal'
+import { parseGoalInput, type Goal } from '../appData/goal'
 import { foldRuns } from '../appData/memory'
 import { resolveTargets } from '../appData/targets'
 import { EXERCISES } from '../content'
@@ -34,14 +34,7 @@ export interface LibraryToolDeps {
 
 type Execute = (args: unknown, options: { signal?: AbortSignal }) => Promise<PageToolAnswer>
 
-const REFUSED: PageToolAnswer = { status: 'refused', message: 'The user did not allow this. Do not try again unless they ask.' }
-
-/** A name as the question shows it: the agent may have chosen it, so it gets a line, not a paragraph. */
-function quoted(name: string): string {
-  return `“${name.length > 60 ? `${name.slice(0, 59)}…` : name}”`
-}
-
-function executors({ client, refresh, confirm }: LibraryToolDeps): Record<LibraryToolName, Execute> {
+function executors({ client, refresh }: LibraryToolDeps): Record<LibraryToolName, Execute> {
   return {
     async get_next_session() {
       const listed = await client.runs.list.query()
@@ -51,7 +44,6 @@ function executors({ client, refresh, confirm }: LibraryToolDeps): Record<Librar
         listed.runs,
         await catalog(client),
         goals.status === 'ok' ? goals.goals.map(withoutProgress) : [],
-        goals.status === 'ok' ? goals.priorities : [],
       )
     },
     list_exercises: () => client.exercises.list.query(),
@@ -71,7 +63,7 @@ function executors({ client, refresh, confirm }: LibraryToolDeps): Record<Librar
       const listed = await client.goals.list.query()
       if (listed.status !== 'ok') return listed
       const stored = listed.goals.map(withoutProgress)
-      return goalsAnswer(stored, listed.priorities, await foldedState(client, stored, listed.priorities))
+      return goalsAnswer(stored, await foldedState(client, stored))
     },
 
     async set_goal(args) {
@@ -107,31 +99,6 @@ function executors({ client, refresh, confirm }: LibraryToolDeps): Record<Librar
       return result
     },
 
-    async set_priority(args, { signal }) {
-      const exerciseId = toolArgument(args, 'exerciseId')
-      if (typeof exerciseId !== 'string' || exerciseId.length === 0) {
-        return { status: 'invalid', problems: ['exerciseId: give the id of an exercise'] }
-      }
-      const priority = toolArgument(args, 'priority')
-      const override = toolArgument(args, 'targetOverrideBpm')
-      // Muting takes an exercise out of the practice altogether, which is the
-      // kind of thing the user should be the one to decide.
-      if (priority === 'muted') {
-        const allowed = await confirm(
-          { question: `Let the assistant mute ${quoted(exerciseId)}?`, consequence: 'It stops being offered in any session until it is unmuted.' },
-          signal,
-        )
-        if (!allowed) return REFUSED
-      }
-      const result = await client.goals.setPriority.mutate({
-        exerciseId,
-        priority: priority === null || priority === undefined ? null : (priority as 'pinned' | 'boosted' | 'muted'),
-        targetOverrideBpm: typeof override === 'number' ? override : null,
-      })
-      if (result.status === 'ok') await refresh('goals')
-      return result
-    },
-
     async get_exercise_state() {
       const listed = await client.runs.list.query()
       if (listed.status !== 'ok') return listed
@@ -140,7 +107,6 @@ function executors({ client, refresh, confirm }: LibraryToolDeps): Record<Librar
         listed.runs,
         await catalog(client),
         goals.status === 'ok' ? goals.goals : [],
-        goals.status === 'ok' ? goals.priorities : [],
       )
     },
 
@@ -171,14 +137,10 @@ async function knownExerciseIds(client: LibraryToolDeps['client']): Promise<Set<
 }
 
 /** The fold, against the targets the paths ask for — what the home card sees. */
-async function foldedState(
-  client: LibraryToolDeps['client'],
-  goals: readonly Goal[],
-  priorities: readonly ExercisePriority[],
-) {
+async function foldedState(client: LibraryToolDeps['client'], goals: readonly Goal[]) {
   const listed = await client.runs.list.query()
   const known = await catalog(client)
-  return foldRuns(listed.status === 'ok' ? listed.runs : [], known, undefined, resolveTargets(known, goals, priorities))
+  return foldRuns(listed.status === 'ok' ? listed.runs : [], known, undefined, resolveTargets(known, goals))
 }
 
 /** A fault is an answer too — an agent cannot read a thrown error — but a refused input is not a lost connection. */

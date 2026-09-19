@@ -64,7 +64,6 @@ describe('the MCP server, through the official client', () => {
       'list_goals',
       'set_goal',
       'set_path',
-      'set_priority',
       'get_exercise_state',
       'list_runs',
     ])

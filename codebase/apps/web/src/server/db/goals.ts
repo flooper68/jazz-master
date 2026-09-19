@@ -1,35 +1,19 @@
 import { and, asc, count, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import {
-  goalInputSchema,
-  prioritySchema,
-  type ExercisePriority,
-  type Goal,
-  type GoalInput,
-} from '../../appData/goal'
+import { goalInputSchema, type Goal, type GoalInput } from '../../appData/goal'
 import {
   readDatabaseUrl,
   resolveDatabaseConnectionString,
   type HyperdriveConnection,
 } from './connection'
-import { exercisePriorities, goals, schema, users } from './schema'
+import { goals, schema, users } from './schema'
 
 /** Goals are a handful of things worth working toward, not a log; the cap bounds a runaway client. */
 export const MOST_GOALS = 20
-/** And priorities are per exercise, so the pack plus a library is the natural bound. */
-export const MOST_PRIORITIES = 500
-
 export class GoalLimitError extends Error {
   constructor() {
     super(`A user keeps at most ${MOST_GOALS} goals`)
     this.name = 'GoalLimitError'
-  }
-}
-
-export class PriorityLimitError extends Error {
-  constructor() {
-    super(`A user keeps at most ${MOST_PRIORITIES} exercise priorities`)
-    this.name = 'PriorityLimitError'
   }
 }
 
@@ -41,14 +25,6 @@ export interface GoalRepository {
   updateGoal(clerkUserId: string, goalId: string, goal: GoalInput): Promise<Goal | null>
   /** True when a goal of this user's was deleted; false when there was none. */
   deleteGoal(clerkUserId: string, goalId: string): Promise<boolean>
-  listPriorities(clerkUserId: string): Promise<ExercisePriority[]>
-  /** Write one exercise's priority, or clear it when `priority` is null. */
-  setPriority(
-    clerkUserId: string,
-    exerciseId: string,
-    priority: ExercisePriority['priority'] | null,
-    targetOverrideBpm: number | null,
-  ): Promise<ExercisePriority | null>
 }
 
 interface GoalRepositoryOptions {
@@ -128,70 +104,6 @@ export function createGoalRepository({
         await db.$client.end()
       }
     },
-
-    async listPriorities(clerkUserId) {
-      const db = drizzle(connectionString, { schema })
-      try {
-        const rows = await db
-          .select()
-          .from(exercisePriorities)
-          .where(eq(exercisePriorities.clerkUserId, clerkUserId))
-          .orderBy(asc(exercisePriorities.exerciseId))
-        return rows.flatMap(serializePriority)
-      } finally {
-        await db.$client.end()
-      }
-    },
-
-    async setPriority(clerkUserId, exerciseId, priority, targetOverrideBpm) {
-      const db = drizzle(connectionString, { schema })
-      try {
-        return await db.transaction(async (tx) => {
-          await tx.insert(users).values({ clerkUserId }).onConflictDoNothing()
-
-          // No priority and no override is nothing to say: the row goes.
-          if (priority === null && targetOverrideBpm === null) {
-            await tx
-              .delete(exercisePriorities)
-              .where(
-                and(
-                  eq(exercisePriorities.clerkUserId, clerkUserId),
-                  eq(exercisePriorities.exerciseId, exerciseId),
-                ),
-              )
-            return null
-          }
-
-          const [{ value: held }] = await tx
-            .select({ value: count() })
-            .from(exercisePriorities)
-            .where(eq(exercisePriorities.clerkUserId, clerkUserId))
-          if (held >= MOST_PRIORITIES) throw new PriorityLimitError()
-
-          // The key is (owner, exercise), so a conflict is only ever this
-          // user's own earlier answer about the same exercise.
-          const [row] = await tx
-            .insert(exercisePriorities)
-            .values({
-              clerkUserId,
-              exerciseId,
-              priority: priority ?? 'boosted',
-              targetOverrideBpm,
-              updatedAt: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [exercisePriorities.clerkUserId, exercisePriorities.exerciseId],
-              set: { priority: priority ?? 'boosted', targetOverrideBpm, updatedAt: new Date() },
-            })
-            .returning()
-          const stored = row && serializePriority(row)[0]
-          if (!stored) throw new Error('Priority row was not returned after save')
-          return stored
-        })
-      } finally {
-        await db.$client.end()
-      }
-    },
   }
 }
 
@@ -203,13 +115,4 @@ export function createGoalRepository({
 function serializeGoal(row: typeof goals.$inferSelect): Goal[] {
   const parsed = goalInputSchema.safeParse(row.goal)
   return parsed.success ? [{ id: row.id, ...parsed.data }] : []
-}
-
-function serializePriority(row: typeof exercisePriorities.$inferSelect): ExercisePriority[] {
-  const parsed = prioritySchema.safeParse({
-    exerciseId: row.exerciseId,
-    priority: row.priority,
-    targetOverrideBpm: row.targetOverrideBpm,
-  })
-  return parsed.success ? [parsed.data] : []
 }

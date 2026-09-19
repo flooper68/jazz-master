@@ -5,7 +5,7 @@ import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
 import { pathsProgress } from '../appData/path'
 import { recoveryState } from '../appData/recovery'
-import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
+import { resolveTargets } from '../appData/targets'
 import { sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
@@ -34,7 +34,7 @@ export function useNextSession(): NextSessionResult {
   const { data, isPending } = useQuery(trpc.runs.list.queryOptions())
   const runs = data?.status === 'ok' ? data.runs : null
   const { exercises } = useExerciseCatalog()
-  const { goals, priorities } = useGoals()
+  const { goals } = useGoals()
   // One day for the whole app, so two cards cannot straddle midnight.
   const today = useToday()
   const settings = useQuickRunSettings()
@@ -44,9 +44,9 @@ export function useNextSession(): NextSessionResult {
     const costs = exerciseCosts(history, exercises)
     // What each exercise is judged against comes before the fold: a path's
     // target is what `solid` means for it, and the fold owns that word.
-    const targets = resolveTargets(exercises, goals, priorities)
+    const targets = resolveTargets(exercises, goals)
     const state = foldRuns(history, exercises, undefined, targets)
-    const paths = pathsProgress(goals, state, undefined, mutedIds(priorities))
+    const paths = pathsProgress(goals, state)
     const plan = planNextSession({
       state,
       catalog: exercises,
@@ -58,12 +58,11 @@ export function useNextSession(): NextSessionResult {
       recovering: recoveryState(history, today).recovering,
       targets,
       paths,
-      priorities: priorityMap(priorities),
     })
     return {
       plan,
       pending: isPending,
       failed: !isPending && runs === null,
     }
-  }, [settings, exercises, runs, isPending, today, goals, priorities])
+  }, [settings, exercises, runs, isPending, today, goals])
 }

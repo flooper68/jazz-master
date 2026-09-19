@@ -47,7 +47,7 @@ function goalOf(stages: string[][], targetTempoBpm = 100): Goal {
 }
 
 function stateOf(runs: readonly ExerciseRun[], catalog: readonly Exercise[], goal?: Goal): ReadonlyMap<string, ExerciseState> {
-  return foldRuns(runs, catalog, undefined, resolveTargets(catalog, goal ? [goal] : [], []))
+  return foldRuns(runs, catalog, undefined, resolveTargets(catalog, goal ? [goal] : []))
 }
 
 describe('pathProgress', () => {
@@ -107,33 +107,6 @@ describe('pathProgress', () => {
 
     const allOfStageOne = stateOf([...solid('a'), ...solid('b'), ...solid('c')], catalog, goal)
     expect(pathProgress(goal, allOfStageOne).nextStage).toBe(1)
-  })
-})
-
-describe('a muted exercise in a path', () => {
-  const catalog = ['a', 'b', 'c'].map((id) => exercise(id))
-
-  it('does not hold a stage shut for ever', () => {
-    // Two items, one muted: without excluding it the stage tops out at half,
-    // below the two-thirds threshold, and the next stage never opens — the path
-    // is stuck for good on something its owner has explicitly put down.
-    const goal = goalOf([['a', 'b'], ['c']])
-    const state = stateOf(solid('a'), catalog, goal)
-    expect(pathProgress(goal, state).openStages).toEqual([0])
-    expect(pathProgress(goal, state, PLAN_CONSTANTS, new Set(['b'])).openStages).toEqual([0, 1])
-  })
-
-  it('is never offered as a new item', () => {
-    const goal = goalOf([['a', 'b']])
-    const progress = pathsProgress([goal], stateOf([], catalog, goal), PLAN_CONSTANTS, new Set(['b']))
-    expect([...eligibleNewIds(progress)]).toEqual(['a'])
-  })
-
-  it('is not what the path is waiting to have played', () => {
-    const goal = goalOf([['a', 'b']])
-    const state = stateOf(solid('a'), catalog, goal)
-    // `b` is muted, so the stage has nothing left to introduce.
-    expect(pathProgress(goal, state, PLAN_CONSTANTS, new Set(['b'])).nextStage).toBeNull()
   })
 })
 

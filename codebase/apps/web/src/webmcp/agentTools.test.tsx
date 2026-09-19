@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderRoute } from '../test/renderRoute'
@@ -35,7 +35,7 @@ describe('an agent in the user\'s browser', () => {
     const view = await renderApp('/exercises')
     await screen.findByRole('heading', { level: 1, name: 'Exercises' })
     const names = await agent().names()
-    expect(names).toEqual(expect.arrayContaining(['list_exercises', 'create_exercise', 'list_goals', 'set_priority', 'get_current_view', 'navigate', 'open_exercise', 'start_exercise']))
+    expect(names).toEqual(expect.arrayContaining(['list_exercises', 'create_exercise', 'list_goals', 'get_current_view', 'navigate', 'open_exercise', 'start_exercise']))
     expect(names).not.toContain('player_play')
     expect(new Set(names).size).toBe(names.length)
 
@@ -58,27 +58,13 @@ describe('an agent in the user\'s browser', () => {
     expect(await agent().names()).toEqual([])
   })
 
-  it('mutes an exercise only after the user allows it on the page', async () => {
-    const user = userEvent.setup()
-    await renderApp('/exercises')
-    await screen.findByRole('heading', { level: 1, name: 'Exercises' })
-
-    const refused = agent().call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })
-    const prompt = await screen.findByRole('alertdialog', { name: /mute “scales-major-open-c”/ })
-    expect(within(prompt).getByRole('button', { name: 'Refuse' })).toHaveFocus()
-    await user.click(within(prompt).getByRole('button', { name: 'Refuse' }))
-    expect(await refused).toMatchObject({ status: 'refused' })
-
-    const allowed = agent().call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })
-    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Allow' }))
-    expect(await allowed).toMatchObject({ status: 'ok' })
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  })
-
   it('takes Escape on the question as a no', async () => {
-    await renderApp('/exercises')
-    await screen.findByRole('heading', { level: 1, name: 'Exercises' })
-    const asked = agent().call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })
+    await renderApp('/')
+    expect(await agent().call('start_exercise', { exerciseId: 'scales-major-open-c' })).toMatchObject({ status: 'ok' })
+    await screen.findByRole('button', { name: /^Play C major/ })
+    expect(await agent().call('player_play')).toMatchObject({ status: 'ok', player: { playing: true } })
+
+    const asked = agent().call('navigate', { page: 'history' })
     const prompt = await screen.findByRole('alertdialog')
     // jsdom's dialog has no cancel event of its own; this is the one a browser fires on Escape.
     prompt.dispatchEvent(new Event('cancel', { cancelable: true }))

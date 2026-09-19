@@ -193,28 +193,6 @@ describe('goals and paths through the page’s own tools', () => {
     expect(refused.problems[0]).toContain('no-such-thing')
   })
 
-  it('pins an exercise, and takes a muted one out of the practice', async () => {
-    const { call } = setUp()
-    expect(await call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'pinned' })).toMatchObject({
-      status: 'ok',
-      priority: { exerciseId: 'scales-major-open-c', priority: 'pinned' },
-    })
-
-    // Muting takes it out of every session, so the user is asked first — and
-    // the default seam answers yes.
-    await call('set_priority', { exerciseId: 'lines-ii-v-i-f-line', priority: 'muted' })
-    const session = (await call('get_next_session')) as unknown as { slots: { exerciseId: string }[] }
-    expect(session.slots.map((slot) => slot.exerciseId)).not.toContain('lines-ii-v-i-f-line')
-  })
-
-  it('will not mute behind the user’s back', async () => {
-    const { call, deps } = setUp({ confirm: vi.fn(async () => false) })
-    expect(await call('set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })).toMatchObject({
-      status: 'refused',
-    })
-    expect(vi.mocked(deps.confirm).mock.lastCall?.[0].question).toContain('mute')
-  })
-
   it('lists the runs a user has actually played, newest first and paged', async () => {
     const days = [2, 1, 0].map((daysAgo) => {
       const date = new Date(Date.now() - daysAgo * 86_400_000)

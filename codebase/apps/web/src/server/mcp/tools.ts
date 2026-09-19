@@ -10,7 +10,7 @@ import type { GoalRepository } from '../db/goals'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
-import { exerciseState, listGoals, nextSession, saveGoal, savePath, savePriority } from '../library/goals'
+import { exerciseState, listGoals, nextSession, saveGoal, savePath } from '../library/goals'
 
 /**
  * The tools an AI client gets: look at the user's library, check an exercise,
@@ -81,17 +81,6 @@ const CALLS: Record<LibraryToolName, McpToolCall> = {
 
   async set_path(args, context) {
     const result = await savePath(context, context.clerkUserId, argument(args, 'goalId'), argument(args, 'stages'))
-    return text(result, result.status !== 'ok')
-  },
-
-  async set_priority(args, context) {
-    const result = await savePriority(
-      context,
-      context.clerkUserId,
-      argument(args, 'exerciseId'),
-      argument(args, 'priority'),
-      argument(args, 'targetOverrideBpm'),
-    )
     return text(result, result.status !== 'ok')
   },
 

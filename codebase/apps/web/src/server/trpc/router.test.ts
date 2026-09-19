@@ -738,42 +738,10 @@ describe('goals and paths over tRPC', () => {
     await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', goals: [{ title: 'Play a blues in F' }] })
   })
 
-  it('keeps one user’s priorities from another', async () => {
-    const goals = createMemoryGoalRepository()
-    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
-    const otherCaller = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, goals }))
-
-    await caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'pinned', targetOverrideBpm: 70 })
-    await otherCaller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'muted', targetOverrideBpm: null })
-
-    await expect(caller.goals.list()).resolves.toMatchObject({
-      status: 'ok',
-      priorities: [{ exerciseId: 'scales-major-open-c', priority: 'pinned', targetOverrideBpm: 70 }],
-    })
-    await expect(otherCaller.goals.list()).resolves.toMatchObject({
-      status: 'ok',
-      priorities: [{ exerciseId: 'scales-major-open-c', priority: 'muted' }],
-    })
-  })
-
-  it('clears a priority when nothing is left to say about the exercise', async () => {
-    const goals = createMemoryGoalRepository()
-    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals }))
-
-    await caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: 'boosted', targetOverrideBpm: null })
-    await expect(
-      caller.goals.setPriority({ exerciseId: 'scales-major-open-c', priority: null, targetOverrideBpm: null }),
-    ).resolves.toEqual({ status: 'ok', priority: null })
-    await expect(caller.goals.list()).resolves.toMatchObject({ status: 'ok', priorities: [] })
-  })
-
-  it('refuses a path with no stages, and a priority outside the three', async () => {
+  it('refuses a path with no stages', async () => {
     const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, goals: createMemoryGoalRepository() }))
 
     await expect(caller.goals.create({ title: 'Nothing', stages: [] })).rejects.toMatchObject({ code: 'BAD_REQUEST' })
-    await expect(
-      caller.goals.setPriority({ exerciseId: 'a', priority: 'beloved' as 'pinned', targetOverrideBpm: null }),
-    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
   })
 
   it('holds the app to the same path rules an assistant is held to', async () => {
