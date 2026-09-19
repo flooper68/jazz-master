@@ -1,3 +1,4 @@
+import { commonest, practiceRuns } from './practiceRun'
 import { DIFFICULTIES, type Difficulty, type ExerciseRun } from './run'
 
 /** One local calendar day of the activity strip. */
@@ -63,24 +64,25 @@ export function summarizeRuns(
   const weekByDay = new Map(week.map((day) => [day.day, day]))
   const playedDays = new Set<string>()
   const weekDifficulties: Difficulty[] = []
-  // A session is a sitting: runs share its id, and a run played on its own is
-  // one of its own. Ten short sittings is what a normal day looks like (§9).
-  const todaySessions = new Set<string>()
   const today = dayKey(now)
-  let todaySeconds = 0
   for (const run of sorted) {
     const key = dayKey(new Date(run.startedAt))
     playedDays.add(key)
-    if (key === today) {
-      todaySessions.add(run.sessionId ?? run.id)
-      todaySeconds += run.durationSeconds
-    }
     const day = weekByDay.get(key)
     if (!day) continue
+    // The strip is minutes played per day, so it counts each run on its own
+    // day — a sitting that crosses midnight is drawn on both sides of it.
     day.seconds += run.durationSeconds
     day.runs += 1
     if (run.difficulty !== null) weekDifficulties.push(run.difficulty)
   }
+
+  // Today's practice runs are sittings, grouped exactly as the history groups
+  // them (appData/practiceRun) rather than by a second copy of the rule here:
+  // one sitting, counted on the day it began. Ten short sittings is what a
+  // normal day looks like (§9).
+  const todayRuns = practiceRuns(sorted).filter((sitting) => dayKey(new Date(sitting.startedAt)) === today)
+  const todaySeconds = todayRuns.reduce((sum, sitting) => sum + sitting.seconds, 0)
 
   // Count back from today; a quiet today does not break yesterday's streak.
   let streakDays = 0
@@ -108,23 +110,14 @@ export function summarizeRuns(
     weekSeconds: week.reduce((sum, day) => sum + day.seconds, 0),
     weekRuns: week.reduce((sum, day) => sum + day.runs, 0),
     streakDays,
-    todaySessions: todaySessions.size,
+    todaySessions: todayRuns.length,
     todaySeconds,
-    weekDifficulty: commonest(weekDifficulties),
+    weekDifficulty: commonest(weekDifficulties, DIFFICULTIES),
     week,
     recent: sorted.slice(0, 4),
     hardest,
     unplayed: exerciseIds.filter((id) => !played.has(id)),
   }
-}
-
-/** The week in one word: the answer given most often, the harder one when two tie. */
-function commonest(difficulties: readonly Difficulty[]): Difficulty | null {
-  if (difficulties.length === 0) return null
-  const counts = new Map<Difficulty, number>()
-  for (const difficulty of difficulties) counts.set(difficulty, (counts.get(difficulty) ?? 0) + 1)
-  // DIFFICULTIES runs hardest first, so a tie falls to the harder answer.
-  return DIFFICULTIES.reduce((best, difficulty) => ((counts.get(difficulty) ?? 0) > (counts.get(best) ?? 0) ? difficulty : best))
 }
 
 /** "12 min", "1 h 5 min" — totals do not need seconds. */

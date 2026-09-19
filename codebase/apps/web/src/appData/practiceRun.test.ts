@@ -61,4 +61,14 @@ describe('practice runs', () => {
     expect(runDifficulty(silent)).toBeNull()
     expect(runFeel(silent)).toBeNull()
   })
+
+  it('calls a tie the worse of the two answers', () => {
+    // Half hard and half good was a hard sitting; half dragged was not a fine one.
+    const tied = practiceRuns([
+      run('a', '2026-09-17T09:00:00.000Z', 's', { difficulty: 'good', feel: 'loved' }),
+      run('b', '2026-09-17T09:05:00.000Z', 's', { difficulty: 'hard', feel: 'dragged' }),
+    ])[0]
+    expect(runDifficulty(tied)).toBe('hard')
+    expect(runFeel(tied)).toBe('dragged')
+  })
 })

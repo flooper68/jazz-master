@@ -1,4 +1,4 @@
-import type { Difficulty, ExerciseRun, Feel } from './run'
+import { DIFFICULTIES, FEELS, type Difficulty, type ExerciseRun, type Feel } from './run'
 
 /**
  * A **practice run** is one sitting: everything played between pressing Play
@@ -26,27 +26,28 @@ export interface PracticeRun {
 
 /** How the sitting mostly went, and how it mostly felt: the commonest answer given, or null when none was. */
 export function runDifficulty(run: PracticeRun): Difficulty | null {
-  return commonest(run.runs.map((exercise) => exercise.difficulty))
+  return commonest(run.runs.map((exercise) => exercise.difficulty), DIFFICULTIES)
 }
 
 export function runFeel(run: PracticeRun): Feel | null {
-  return commonest(run.runs.map((exercise) => exercise.feel))
+  return commonest(run.runs.map((exercise) => exercise.feel), FEELS)
 }
 
 /**
- * The value given most often; ties go to the one given last, which for a
- * sitting is the answer the user left it on.
+ * The answer given most often, with **ties going to the worse one** — the
+ * sitting that was half Hard and half Good was a hard sitting, and a week that
+ * was half dragged was not a fine week. `order` is the vocabulary worst first
+ * (`DIFFICULTIES`, `FEELS`), which is the order both are declared in; the
+ * dashboard's week summary uses this same function, so the two surfaces cannot
+ * answer one question differently.
  */
-function commonest<T extends string>(values: readonly (T | null)[]): T | null {
+export function commonest<T extends string>(values: readonly (T | null)[], order: readonly T[]): T | null {
   const counts = new Map<T, number>()
-  let best: T | null = null
   for (const value of values) {
-    if (value === null) continue
-    const count = (counts.get(value) ?? 0) + 1
-    counts.set(value, count)
-    if (best === null || count >= (counts.get(best) ?? 0)) best = value
+    if (value !== null) counts.set(value, (counts.get(value) ?? 0) + 1)
   }
-  return best
+  if (counts.size === 0) return null
+  return order.reduce((best, value) => ((counts.get(value) ?? 0) > (counts.get(best) ?? 0) ? value : best))
 }
 
 /**
@@ -74,11 +75,12 @@ export function practiceRuns(runs: readonly ExerciseRun[]): PracticeRun[] {
         completed: ordered.filter((run) => run.completed).length,
       }
     })
-    .sort((a, b) => new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf())
+    .sort((a, b) => started(b) - started(a))
 }
 
-function started(run: ExerciseRun): number {
+/** Both sorts go through this: one NaN in a comparator makes the whole ordering engine-defined. */
+function started(run: { startedAt: string }): number {
   const value = new Date(run.startedAt).valueOf()
-  // An unparseable timestamp sorts first rather than poisoning every comparison.
+  // An unparseable timestamp sorts oldest rather than poisoning every comparison.
   return Number.isFinite(value) ? value : 0
 }
