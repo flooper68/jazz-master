@@ -8,18 +8,17 @@ import { pathsProgress } from '../appData/path'
 import { recoveryState } from '../appData/recovery'
 import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
 import { exhaustion } from '../appData/expansion'
-import { chosenRoutine, routinePlan, sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
+import { sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
 import { useToday } from './useToday'
 import { useGoals } from './useGoals'
-import { useRoutines } from './useRoutines'
 import { useTRPC } from './trpc'
 
 /**
- * What to practise now: the routine the user named as next, or the session the
- * scheduler works out from their runs. The plan is derived, never stored, and
- * it holds still while the page is open: looking twice cannot change the answer
+ * What to practise now: the session the scheduler works out from the user's
+ * runs. The plan is derived, never stored, and it holds still while the page
+ * is open: looking twice cannot change the answer
  * (docs/product/next-session-design.md §3). Only a run landing, or the calendar
  * day turning, moves it — and the day is one value for the whole app
  * (`useToday`), so no two cards can plan against different days.
@@ -41,7 +40,6 @@ export function useNextSession(): NextSessionResult {
   const { data, isPending } = useQuery(trpc.runs.list.queryOptions())
   const runs = data?.status === 'ok' ? data.runs : null
   const { exercises } = useExerciseCatalog()
-  const { routines } = useRoutines()
   const { goals, priorities } = useGoals()
   // One day for the whole app, so two cards cannot straddle midnight.
   const today = useToday()
@@ -50,9 +48,6 @@ export function useNextSession(): NextSessionResult {
   return useMemo(() => {
     const history = runs ?? []
     const costs = exerciseCosts(history, exercises)
-    const routine = chosenRoutine(settings, routines, exercises)
-    if (routine) return { plan: routinePlan(routine, exercises, costs), pending: isPending, failed: false }
-
     // What each exercise is judged against comes before the fold: a path's
     // target is what `solid` means for it, and the fold owns that word.
     const targets = resolveTargets(exercises, goals, priorities)
@@ -72,10 +67,10 @@ export function useNextSession(): NextSessionResult {
       priorities: priorityMap(priorities),
     })
     return {
-      plan: { ...plan, routine: null },
+      plan,
       pending: isPending,
       failed: !isPending && runs === null,
       ...exhaustion(paths, state, exercises, today),
     }
-  }, [settings, routines, exercises, runs, isPending, today, goals, priorities])
+  }, [settings, exercises, runs, isPending, today, goals, priorities])
 }

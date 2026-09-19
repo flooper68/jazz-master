@@ -1,7 +1,7 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
 
 /**
- * Back to wherever the player came from — home, the exercise list, a routine,
+ * Back to wherever the player came from — home, the exercise list,
  * a goal — rather than always the same page. A stage opened cold (a shared
  * link, a reload) has nothing behind it in this tab, so it falls back to the
  * exercises rather than walking the player out of the app.

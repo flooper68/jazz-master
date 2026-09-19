@@ -17,9 +17,6 @@ export const users = pgTable('users', {
   // How this user has the player set — sound and view, the whole object, read
   // back through appData/playerPrefs. Null until they have changed anything.
   playerPrefs: jsonb('player_prefs'),
-  // When this user was given the starter routines (or found to have routines
-  // already); set once, so deleting them all does not bring them back.
-  starterRoutinesAt: timestamp('starter_routines_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -130,31 +127,7 @@ export const userExercises = pgTable(
   ],
 )
 
-export const practiceRoutines = pgTable(
-  'practice_routines',
-  {
-    id: uuid('id').primaryKey(),
-    clerkUserId: text('clerk_user_id')
-      .notNull()
-      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
-    // The routine whole (name, about, ordered items), like user_exercises.exercise.
-    routine: jsonb('routine').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index('practice_routines_user_created_idx').on(
-      table.clerkUserId,
-      table.createdAt,
-    ),
-  ],
-)
-
-// A goal and the path to it, stored whole like a routine: the JSON is parsed
+// A goal and the path to it, stored whole: the JSON is parsed
 // against appData/goal's schema on the way in and again on the way out, so the
 // columns here are only what queries need.
 export const goals = pgTable(
@@ -212,7 +185,6 @@ export const schema = {
   exercisePriorities,
   exerciseRuns,
   goals,
-  practiceRoutines,
   sessionNotes,
   userExercises,
   users,

@@ -4,16 +4,13 @@ import type { RunRepository } from '../server/db/runs'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 import type { ExerciseInput } from '../content/exerciseInput'
-import type { RoutineInput } from '../appData/routine'
 import type { GoalRepository } from '../server/db/goals'
 import type { NoteRepository } from '../server/db/notes'
-import type { RoutineRepository } from '../server/db/routines'
 import type { UserExerciseRepository } from '../server/db/userExercises'
 import type { UserRepository } from '../server/db/users'
 import type { PlayerPrefs } from '../appData/playerPrefs'
 import { createMemoryGoalRepository } from './memoryGoals'
 import { createMemoryNoteRepository } from './memoryNotes'
-import { createMemoryRoutineRepository } from './memoryRoutines'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
 import { createMemoryUserRepository } from './memoryUsers'
 
@@ -22,8 +19,6 @@ export const TEST_CLERK_USER_ID = 'user_test_123'
 const runs = new Map<string, Map<string, ExerciseRun>>()
 let runsRepositoryAvailable = true
 let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
-let routines: RoutineRepository = createMemoryRoutineRepository()
-let routinesRepositoryAvailable = true
 let notes: NoteRepository = createMemoryNoteRepository()
 let goals: GoalRepository = createMemoryGoalRepository()
 let users: UserRepository = createMemoryUserRepository()
@@ -35,8 +30,6 @@ export function resetTrpcTestData() {
   runs.clear()
   runsRepositoryAvailable = true
   userExercises = createMemoryUserExerciseRepository()
-  routines = createMemoryRoutineRepository()
-  routinesRepositoryAvailable = true
   notes = createMemoryNoteRepository()
   goals = createMemoryGoalRepository()
   users = createMemoryUserRepository()
@@ -62,13 +55,11 @@ export function getTrpcTestPlayerPrefs() {
 export function trpcTestStores(): {
   goals: GoalRepository
   userExercises: UserExerciseRepository
-  routines: RoutineRepository | null
   runs: RunRepository | null
 } {
   return {
     goals,
     userExercises,
-    routines: routinesRepositoryAvailable ? routines : null,
     runs: runsRepositoryAvailable ? runRepository : null,
   }
 }
@@ -81,22 +72,6 @@ export async function seedTrpcTestGoal(goal: Parameters<GoalRepository['createGo
 /** The notes the test user has written, for asserting what a page saved. */
 export function getTrpcTestNotes() {
   return notes.listNotes(TEST_CLERK_USER_ID)
-}
-
-/** Put routines in the test user's account; resolves to them as stored, ids included. */
-export async function seedTrpcTestRoutines(seedRoutines: RoutineInput[]) {
-  const stored = []
-  // In order, so the list comes back oldest first as seeded.
-  for (const routine of seedRoutines) stored.push(await routines.createRoutine(TEST_CLERK_USER_ID, routine))
-  return stored
-}
-
-export function getTrpcTestRoutines() {
-  return routines.listRoutines(TEST_CLERK_USER_ID)
-}
-
-export function setTrpcTestRoutinesRepositoryAvailable(available: boolean) {
-  routinesRepositoryAvailable = available
 }
 
 /** Put exercises in the test user's library; resolves to them as stored, ids included. */
@@ -162,7 +137,6 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
         runs: runsRepositoryAvailable ? runRepository : null,
         goals,
         notes,
-        routines: routinesRepositoryAvailable ? routines : null,
         userExercises,
         users: usersRepositoryAvailable ? users : null,
       }),

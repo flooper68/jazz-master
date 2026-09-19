@@ -2,25 +2,22 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { exerciseCosts } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
-import { routinePlan, SESSION_MINUTES, type SessionPlan } from '../appData/quickRun'
+import { SESSION_MINUTES, type SessionPlan } from '../appData/quickRun'
 import { EXERCISES } from '../content'
-import { routines, runs } from '../stories/fixtures'
+import { runs } from '../stories/fixtures'
 import { NextSessionCard } from './NextSessionCard'
 
 function planned(history: typeof runs, minutes: number): SessionPlan {
-  return {
-    ...planNextSession({
-      state: foldRuns(history, EXERCISES),
-      catalog: EXERCISES,
-      seed: planSeed(history),
-      budgetSeconds: minutes * 60,
-      costs: exerciseCosts(history, EXERCISES),
-      // The fixture week ends whenever it ends; a story should always show the
-      // warm-up rather than the skipped one it would get at build time.
-      lastRunEnded: null,
-    }),
-    routine: null,
-  }
+  return planNextSession({
+    state: foldRuns(history, EXERCISES),
+    catalog: EXERCISES,
+    seed: planSeed(history),
+    budgetSeconds: minutes * 60,
+    costs: exerciseCosts(history, EXERCISES),
+    // The fixture week ends whenever it ends; a story should always show the
+    // warm-up rather than the skipped one it would get at build time.
+    lastRunEnded: null,
+  })
 }
 
 /** The plan the scheduler makes of the fixture week — reasons and all. */
@@ -43,7 +40,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'The home page’s answer to “what should I practise?”: how long there is, how much the plan comes to, and one Play, so nothing has to be read before starting. The length picker is the one setting on the card — the session is assembled to fit it, opening on a warm-up and ending on something solid. “What’s in it” opens the plan — the exercises in playing order, each with the scheduler’s reason for being there (warm-up, overdue, due today, new, dessert) in its own words. A routine named as next replaces the generated session, is simply the list the user made, and is not cut to a budget.',
+          'The home page’s answer to “what should I practise?”: how long there is, how much the plan comes to, and one Play, so nothing has to be read before starting. The length picker is the one setting on the card — the session is assembled to fit it, opening on a warm-up and ending on something solid. “What’s in it” opens the plan — the exercises in playing order, each with the scheduler’s reason for being there (warm-up, overdue, due today, new, dessert) in its own words.',
       },
     },
   },
@@ -61,7 +58,5 @@ export const FromHistory: Story = {}
 export const TenMinutes: Story = { args: { plan: tenMinutes, minutes: SESSION_MINUTES[0] } }
 export const AnHour: Story = { args: { plan: anHour, minutes: 60 } }
 export const FirstVisit: Story = { args: { plan: firstVisit } }
-/** A routine named as next wins over the generated session, and carries no budget. */
-export const ARoutineInstead: Story = { args: { plan: routinePlan(routines[0], EXERCISES) } }
 /** Nothing in the catalog at all: the card says so rather than offering an empty session. */
-export const NothingToPractise: Story = { args: { plan: { slots: [], routine: null, plannedSeconds: 0 } } }
+export const NothingToPractise: Story = { args: { plan: { slots: [], plannedSeconds: 0 } } }

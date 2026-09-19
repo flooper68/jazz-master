@@ -8,9 +8,9 @@ import { useNextSession } from './useNextSession'
 import { usePlayerPrefsSync } from './usePlayerPrefsSync'
 
 /**
- * The app shell as every router mounts it: the layout, fed the catalog, the
- * routines and the session the scheduler has ready — and, for an AI assistant
- * in the user's browser, the app's tools and the prompt that keeps the user in
+ * The app shell as every router mounts it: the layout, fed the catalog and
+ * the session the scheduler has ready — and, for an AI assistant in the
+ * user's browser, the app's tools and the prompt that keeps the user in
  * charge of them.
  */
 export function RootLayout() {
@@ -20,10 +20,9 @@ export function RootLayout() {
   // The player's settings follow the account, not this browser.
   usePlayerPrefsSync()
   const next = {
-    label: plan.routine?.name ?? 'Next session',
+    label: 'Next session',
     count: plan.slots.length,
     seconds: plan.slots.reduce((sum, slot) => sum + exerciseSeconds(slot.exercise), 0),
-    routineId: plan.routine?.id ?? null,
   }
   return (
     <>

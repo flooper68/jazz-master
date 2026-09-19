@@ -7,7 +7,7 @@ import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
  * tempo that counts as having it (docs/product/next-session-design.md §4).
  *
  * A stage opens when the one before it is mostly solid, so the pack arrives in
- * an order that makes sense rather than all at once. Like a routine, a path
+ * an order that makes sense rather than all at once. Like the pack, a path
  * holds references and not copies: an exercise edited in the library is what
  * the path plays next time.
  *

@@ -10,7 +10,7 @@ beforeEach(() => {
 })
 
 /** What the page works out and hands down: here, a generated session of three. */
-const NEXT: QuickRunButtonProps['next'] = { label: 'Next session', count: 3, seconds: 300, routineId: null }
+const NEXT: QuickRunButtonProps['next'] = { label: 'Next session', count: 3, seconds: 300 }
 
 function renderButton(next: QuickRunButtonProps['next'] = NEXT) {
   const onStart = vi.fn()
@@ -32,7 +32,7 @@ describe('QuickRunButton', () => {
   })
 
   it('offers nothing to press when there is nothing to practise', () => {
-    renderButton({ label: 'Next session', count: 0, seconds: 0, routineId: null })
+    renderButton({ label: 'Next session', count: 0, seconds: 0 })
     expect(screen.getByRole('button', { name: /^Play Next session/ })).toBeDisabled()
   })
 
@@ -50,13 +50,6 @@ describe('QuickRunButton', () => {
     unmount()
     renderButton()
     expect((await openPanel(user)).getByRole('radio', { name: '40 min' })).toBeChecked()
-  })
-
-  it('says what is about to play, and that a routine carries its own length', async () => {
-    const user = userEvent.setup()
-    renderButton({ label: 'Warm-up', count: 2, seconds: 180, routineId: 'r-1' })
-    expect(screen.getByRole('button', { name: 'Play Warm-up: 2 exercises, about 3 min' })).toBeInTheDocument()
-    expect((await openPanel(user)).getByText(/^Warm-up, as prepared: 2 exercises in order/)).toBeInTheDocument()
   })
 
   it('explains a generated session in the panel', async () => {

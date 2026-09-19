@@ -7,17 +7,16 @@ import {
   type LibraryToolName,
 } from '../../agentTools/descriptors'
 import type { GoalRepository } from '../db/goals'
-import type { RoutineRepository } from '../db/routines'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
 import { exerciseState, listGoals, nextSession, saveGoal, savePath, savePriority } from '../library/goals'
-import { deleteRoutine, listRoutines, saveRoutine } from '../library/routines'
 
 /**
  * The tools an AI client gets: look at the user's library, check an exercise,
- * add one; and look at, make, change and delete practice routines. What each
- * tool says of itself lives in agentTools/descriptors, which the page's own
+ * add one; read and set their goals, paths and priorities; and ask for the
+ * session the app would play next. What each tool says of itself lives in
+ * agentTools/descriptors, which the page's own
  * WebMCP tools share; here is how the server carries each one out. Each goes
  * through the same library functions the app uses, so nothing can be stored
  * over MCP that the app would refuse.
@@ -26,7 +25,6 @@ import { deleteRoutine, listRoutines, saveRoutine } from '../library/routines'
 export interface McpToolContext {
   clerkUserId: string
   userExercises: UserExerciseRepository | null
-  routines: RoutineRepository | null
   runs: RunRepository | null
   goals: GoalRepository | null
 }
@@ -69,26 +67,6 @@ const CALLS: Record<LibraryToolName, McpToolCall> = {
   },
   async list_builtin_exercises() {
     return text({ status: 'ok', exercises: builtinExerciseSummaries() })
-  },
-  async list_routines(_args, context) {
-    const result = await listRoutines(context, context.clerkUserId)
-    return text(result, result.status !== 'ok')
-  },
-  async create_routine(args, context) {
-    const result = await saveRoutine(context, context.clerkUserId, argument(args, 'routine'))
-    return text(result, result.status !== 'ok')
-  },
-  async update_routine(args, context) {
-    const routineId = argument(args, 'routineId')
-    if (typeof routineId !== 'string') return text({ status: 'invalid', problems: ['routineId: give the id of the routine to change'] }, true)
-    const result = await saveRoutine(context, context.clerkUserId, argument(args, 'routine'), routineId)
-    return text(result, result.status !== 'ok')
-  },
-  async delete_routine(args, context) {
-    const routineId = argument(args, 'routineId')
-    if (typeof routineId !== 'string') return text({ status: 'invalid', problems: ['routineId: give the id of the routine to delete'] }, true)
-    const result = await deleteRoutine(context, context.clerkUserId, routineId)
-    return text(result, result.status !== 'ok')
   },
 
   async list_goals(_args, context) {

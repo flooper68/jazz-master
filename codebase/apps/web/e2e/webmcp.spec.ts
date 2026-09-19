@@ -33,22 +33,14 @@ function callTool(page: Page, name: string, args: unknown = {}): Promise<Record<
   )
 }
 
-test('an agent in the browser makes a routine, starts it, plays it, and deletes it with the user\'s leave', async ({ page }) => {
-  await page.goto('/app/routines')
-  await expect(page.getByRole('heading', { level: 1, name: 'Routines' })).toBeVisible()
-  await expect.poll(() => toolNames(page)).toContain('create_routine')
+test('an agent in the browser starts an exercise, plays it, and mutes one with the user\'s leave', async ({ page }) => {
+  await page.goto('/app/exercises')
+  await expect(page.getByRole('heading', { level: 1, name: 'Exercises' })).toBeVisible()
+  await expect.poll(() => toolNames(page)).toContain('start_exercise')
   expect(await toolNames(page)).not.toContain('player_play')
 
-  // Made by the agent, it turns up on the page the user is looking at — no reload.
-  const made = await callTool(page, 'create_routine', {
-    routine: { name: 'E2E — from the assistant', items: [{ exerciseId: 'scales-major-open-c' }] },
-  })
-  expect(made.status).toBe('ok')
-  const routineId = (made.routine as { id: string }).id
-  await expect(page.getByRole('listitem', { name: 'E2E — from the assistant' })).toBeVisible()
-
   // Started by the agent: the session comes up, and with it the player's tools.
-  expect((await callTool(page, 'start_routine', { routineId })).status).toBe('ok')
+  expect((await callTool(page, 'start_exercise', { exerciseId: 'scales-major-open-c' })).status).toBe('ok')
   await expect(page).toHaveURL(/\/app\/session\?/)
   await expect(page.getByRole('button', { name: /^Play .+ — / })).toBeVisible()
   await expect.poll(() => toolNames(page)).toContain('player_play')
@@ -60,20 +52,17 @@ test('an agent in the browser makes a routine, starts it, plays it, and deletes 
   await expect(page.getByRole('button', { name: /^Pause/ })).toBeVisible()
   expect(await callTool(page, 'player_stop')).toMatchObject({ status: 'ok', player: { playing: false, tempoBpm: 96 } })
 
-  // Deleting waits for the user: refused first, then allowed.
-  expect((await callTool(page, 'navigate', { page: 'routines' })).status).toBe('ok')
-  await expect(page.getByRole('listitem', { name: 'E2E — from the assistant' })).toBeVisible()
+  // Muting waits for the user: refused first, then allowed.
+  expect((await callTool(page, 'navigate', { page: 'exercises' })).status).toBe('ok')
   await expect.poll(() => toolNames(page)).not.toContain('player_play')
 
-  const refused = callTool(page, 'delete_routine', { routineId })
+  const refused = callTool(page, 'set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })
   await page.getByRole('alertdialog').getByRole('button', { name: 'Refuse' }).click()
   expect((await refused).status).toBe('refused')
-  await expect(page.getByRole('listitem', { name: 'E2E — from the assistant' })).toBeVisible()
 
-  const allowed = callTool(page, 'delete_routine', { routineId })
+  const allowed = callTool(page, 'set_priority', { exerciseId: 'scales-major-open-c', priority: 'muted' })
   await page.getByRole('alertdialog').getByRole('button', { name: 'Allow' }).click()
-  expect(await allowed).toEqual({ status: 'ok', deleted: true })
-  await expect(page.getByRole('listitem', { name: 'E2E — from the assistant' })).toHaveCount(0)
+  expect((await allowed).status).toBe('ok')
 })
 
 test('an agent writes a goal with a path, and the practice runs it stage by stage', async ({ page }) => {

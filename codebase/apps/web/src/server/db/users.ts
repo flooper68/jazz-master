@@ -20,7 +20,7 @@ export interface UserRepository {
   readPlayerPrefs(clerkUserId: string): Promise<PlayerPrefs | null>
   /** Save the whole set; the row is created if this is the user's first write. */
   writePlayerPrefs(clerkUserId: string, prefs: PlayerPrefs): Promise<PlayerPrefs>
-  /** Delete the user and, by cascade, everything saved under them: runs, exercises, routines. */
+  /** Delete the user and, by cascade, everything saved under them: runs, exercises, goals. */
   deleteUser(clerkUserId: string): Promise<void>
 }
 

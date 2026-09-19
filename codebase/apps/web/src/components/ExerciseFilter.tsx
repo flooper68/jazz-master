@@ -208,7 +208,7 @@ export function ExerciseFilter({ exercises, query, onChange }: ExerciseFilterPro
   }
 
   function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    // Inside a form — the routine editor — Enter would submit it; searching is not saving.
+    // Inside a form, Enter would submit it; searching is not saving.
     if (event.key === 'Enter') event.preventDefault()
     if (!open) return
     if (event.key === 'ArrowDown') {

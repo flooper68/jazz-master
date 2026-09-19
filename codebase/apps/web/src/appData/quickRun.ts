@@ -1,21 +1,15 @@
-import type { Exercise } from '../content'
 import { MAX_TEMPO, MIN_TEMPO } from '../player/transport'
-import { exerciseCost } from './cost'
 import type { SessionSlot } from './nextSession'
 import { PLAN_CONSTANTS } from './planConstants'
-import type { Routine } from './routine'
 
 /**
  * What one press of Play starts. The app decides — the next session comes from
- * the run history (appData/nextSession) — unless the user has named a routine
- * as what to play instead, which is the one override that wins
- * (docs/product/next-session-design.md §3).
+ * the run history (appData/nextSession); the only thing the user says about it
+ * is how long they have got (docs/product/next-session-design.md §3).
  */
 
-/** What the user has said about the next session: how long it is, and whose it is. */
+/** What the user has said about the next session: how long it is. */
 export interface QuickRunSettings {
-  /** Play this routine instead of the next session; null for the generated one. */
-  routineId: string | null
   /** How long the session should be, in minutes — one of the offered lengths. */
   sessionMinutes: number
 }
@@ -26,7 +20,7 @@ export const QUICK_RUN_KEY = 'jazz-master.quick-run'
 export const SESSION_MINUTES: readonly number[] = PLAN_CONSTANTS.sessionMinutes
 
 export function defaultQuickRunSettings(): QuickRunSettings {
-  return { routineId: null, sessionMinutes: PLAN_CONSTANTS.defaultSessionMinutes }
+  return { sessionMinutes: PLAN_CONSTANTS.defaultSessionMinutes }
 }
 
 /** What the chosen length comes to in seconds, which is what the assembler takes. */
@@ -34,48 +28,11 @@ export function sessionBudgetSeconds(settings: QuickRunSettings): number {
   return settings.sessionMinutes * 60
 }
 
-/** The exercises of a routine that can be played now, in its order; one deleted since is skipped. */
-export function routineExercises(routine: Routine, exercises: readonly Exercise[]): Exercise[] {
-  const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]))
-  return routine.items.flatMap((item) => byId.get(item.exerciseId) ?? [])
-}
-
-/** What a session plays, in order, and where it came from. */
+/** What a session plays, in order. */
 export interface SessionPlan {
   slots: readonly SessionSlot[]
-  /** Set when the plan is a routine, so the session can say whose it is. */
-  routine: Routine | null
   /** What it is expected to take, in seconds — the card says it before Play is pressed. */
   plannedSeconds: number
-}
-
-/**
- * A routine as prepared: its exercises in order, each at its own written tempo.
- * A routine is the user's own list, so nothing is cut to fit a budget — but it
- * is costed the same way, so the card says how long it will take in the same
- * terms as a generated session.
- */
-export function routinePlan(
-  routine: Routine,
-  exercises: readonly Exercise[],
-  costs?: ReadonlyMap<string, number>,
-): SessionPlan {
-  const prepared = routineExercises(routine, exercises)
-  return {
-    slots: prepared.map((exercise) => ({ exercise, tempoBpm: exercise.tempoBpm, reason: `From ${routine.name}` })),
-    routine,
-    plannedSeconds: prepared.reduce((sum, exercise) => sum + (costs?.get(exercise.id) ?? exerciseCost(exercise, [])), 0),
-  }
-}
-
-/** The routine named as next, while it still exists and still has something to play. */
-export function chosenRoutine(
-  settings: QuickRunSettings,
-  routines: readonly Routine[],
-  exercises: readonly Exercise[],
-): Routine | null {
-  const routine = routines.find((candidate) => candidate.id === settings.routineId)
-  return routine && routineExercises(routine, exercises).length > 0 ? routine : null
 }
 
 /**
@@ -84,11 +41,11 @@ export function chosenRoutine(
  * played at the exercise's own tempo and `id@95` when the scheduler asked for
  * another one.
  */
-export function sessionSearch(plan: SessionPlan): { x: string; r?: string } {
+export function sessionSearch(plan: SessionPlan): { x: string } {
   const x = plan.slots
     .map((slot) => (slot.tempoBpm === slot.exercise.tempoBpm ? slot.exercise.id : `${slot.exercise.id}@${slot.tempoBpm}`))
     .join(',')
-  return plan.routine ? { x, r: plan.routine.id } : { x }
+  return { x }
 }
 
 /** One exercise of a session as the URL names it. */
@@ -156,7 +113,6 @@ export function loadQuickRunSettings(
     if (!raw) return defaultQuickRunSettings()
     const parsed = JSON.parse(raw) as Partial<Record<keyof QuickRunSettings, unknown>>
     return {
-      routineId: typeof parsed.routineId === 'string' && parsed.routineId.length > 0 ? parsed.routineId : null,
       // Anything but one of the offered lengths — an old value, a hand-edited
       // one — reads as the default rather than planning to a length no button shows.
       sessionMinutes:

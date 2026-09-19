@@ -23,18 +23,12 @@ export function useAgentTools(): void {
   useEffect(() => {
     // Read through the cache the pages share, but never trust it to be fresh: an agent acts on what it is told.
     const library = () => queryClient.fetchQuery({ ...trpc.exercises.list.queryOptions(), staleTime: 0 })
-    const routines = () => queryClient.fetchQuery({ ...trpc.routines.list.queryOptions(), staleTime: 0 })
     return registerPageTools([
       ...libraryPageTools({
         client,
         refresh: (list) =>
           queryClient.invalidateQueries({
-            queryKey:
-              list === 'exercises'
-                ? trpc.exercises.list.queryKey()
-                : list === 'goals'
-                  ? trpc.goals.list.queryKey()
-                  : trpc.routines.list.queryKey(),
+            queryKey: list === 'exercises' ? trpc.exercises.list.queryKey() : trpc.goals.list.queryKey(),
           }),
         confirm: agentConfirm.ask,
       }),
@@ -52,10 +46,6 @@ export function useAgentTools(): void {
         async exercises() {
           const listed = await library().catch(() => null)
           return listed?.status === 'ok' ? [...EXERCISES, ...listed.exercises] : EXERCISES
-        },
-        async routines() {
-          const listed = await routines().catch(() => null)
-          return listed?.status === 'ok' ? listed.routines : null
         },
         player: activePlayerState,
         confirm: agentConfirm.ask,

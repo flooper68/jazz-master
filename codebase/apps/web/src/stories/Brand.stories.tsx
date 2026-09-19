@@ -199,7 +199,7 @@ function BrandPage() {
       <Section eyebrow="Motion" title="Everything moves in four">
         <p className="max-w-2xl text-fg-2">
           One animation, reused: dots land on their beat, then the downbeat. The landing page plays it at full size (the amber dot opens to fill the screen).
-          Loading is the same four steps; progress through a routine is one dot per exercise with the current one amber. Nothing bounces, and everything holds
+          Loading is the same four steps; progress through a session is one dot per exercise with the current one amber. Nothing bounces, and everything holds
           still under reduced motion.
         </p>
       </Section>

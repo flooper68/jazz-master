@@ -226,7 +226,7 @@ export default function AccountPage({ deleteAppData }: { deleteAppData: () => Pr
           <Saved message={devicesState.saved} />
         </Section>
 
-        <Section title="Delete your account" about="Removes your account and everything you saved: your exercises, routines and history. This cannot be undone.">
+        <Section title="Delete your account" about="Removes your account and everything you saved: your exercises, goals and history. This cannot be undone.">
           <form onSubmit={deleteAccount} className="flex flex-col gap-4" aria-busy={removal.busy}>
             <Labelled label={`Type ${CONFIRM_DELETE} to confirm`}>
               <Input name="confirm" autoComplete="off" required pattern={CONFIRM_DELETE} className="sm:max-w-xs" />

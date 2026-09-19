@@ -7,7 +7,7 @@
 
 export interface AgentRequest {
   id: number
-  /** What the agent wants to do, as a question to the user: "Delete the routine “Warm-up”?" */
+  /** What the agent wants to do, as a question to the user: "Let the assistant mute “Spider 1234”?" */
   question: string
   /** What saying yes means, in a sentence. */
   consequence: string

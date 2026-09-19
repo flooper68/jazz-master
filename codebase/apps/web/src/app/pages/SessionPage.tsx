@@ -17,7 +17,6 @@ import { Modal } from '../../components/ui/Modal'
 import { CheckIcon, ResetIcon } from '../../components/icons'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
-import { useRoutines } from '../useRoutines'
 import { useGoBack } from '../useGoBack'
 import { STAGE_FRAME, UnsavedRunAlert, useNoteSaver, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
@@ -31,13 +30,13 @@ const BUTTON_SECONDARY = `${BUTTON_BASE} border border-line bg-panel text-fg hov
 const ANSWER_CHIP = 'rounded-full px-2 py-0.5 text-[11px] font-medium'
 
 /**
- * A practice session — the scheduler's next session, or a practice routine:
- * the exercises named in the URL, each at the tempo the URL asked for, played
- * straight through, then summed up — and answered — on one closing screen.
+ * A practice session: the exercises named in the URL, each at the tempo the
+ * URL asked for, played straight through, then summed up — and answered — on
+ * one closing screen.
  */
 export default function SessionPage() {
   // Loose search so the page also renders inside Storybook's ad hoc router.
-  const { x, r } = useSearch({ strict: false }) as { x?: string; r?: string }
+  const { x } = useSearch({ strict: false }) as { x?: string }
   const planned = parseSessionSearch(x)
   const { byId, libraryPending } = useExerciseCatalog()
   // A plan that includes the user's own exercises waits for the library, rather than starting short and restarting.
@@ -52,7 +51,7 @@ export default function SessionPage() {
   if (steps.length === 0) return <NotFoundPage />
 
   // Keyed on the plan so another session starts afresh.
-  return <SessionStage key={steps.map((step) => `${step.exercise.id}@${step.tempoBpm}`).join()} steps={steps} routineId={r ?? null} />
+  return <SessionStage key={steps.map((step) => `${step.exercise.id}@${step.tempoBpm}`).join()} steps={steps} />
 }
 
 /** One exercise of the session, at the tempo the plan asked for. */
@@ -61,12 +60,10 @@ interface SessionStep {
   tempoBpm: number
 }
 
-function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: string | null }) {
+function SessionStage({ steps }: { steps: SessionStep[] }) {
   const goBack = useGoBack()
-  const { routines } = useRoutines()
-  // The routine's name arrives with the routines; until then (or if it is gone) the session is simply a routine.
-  const routineName = routineId === null ? null : (routines.find((routine) => routine.id === routineId)?.name ?? 'Routine')
-  const label = routineName ?? 'Next session'
+  // One kind of sitting, so one name (ADR-021).
+  const label = 'Next session'
   const { save, unsaved } = useRunSaver()
   const { save: saveNote, failed: noteFailed } = useNoteSaver()
   const [note, setNote] = useState('')
@@ -116,7 +113,7 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
           <button
             type="button"
             onClick={restart}
-            data-tip={routineId !== null ? 'Play this routine again, from the top' : 'Play the same again, from the top'}
+            data-tip="Play the same again, from the top"
             className={BUTTON_SECONDARY}
           >
             <ResetIcon />
@@ -143,8 +140,6 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
         startTempoBpm={step.tempoBpm}
         session={{
           id: sessionId,
-          label,
-          endLabel: routineId !== null ? 'End routine' : 'End session',
           step: stepIndex + 1,
           total: steps.length,
           onContinue: () => setIndex((current) => current + 1),

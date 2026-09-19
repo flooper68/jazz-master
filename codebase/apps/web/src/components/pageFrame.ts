@@ -6,7 +6,7 @@
  */
 
 /**
- * The top-level pages (Home, Exercises, Routines, History): wide, and a step wider on the largest
+ * The top-level pages (Home, Exercises, Goals, History): wide, and a step wider on the largest
  * screens, where the card grid adds columns. They share one frame so their headings sit on one line
  * as you move between them.
  */

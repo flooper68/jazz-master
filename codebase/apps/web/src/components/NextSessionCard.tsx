@@ -52,8 +52,8 @@ export function NextSessionCard({
   const headingId = useId()
   const [open, setOpen] = useState(false)
   const count = plan.slots.length
-  const waiting = pending && plan.routine === null
-  const title = plan.routine ? `Next: ${plan.routine.name}` : 'Next session'
+  const waiting = pending
+  const title = 'Next session'
   const exercises = `${count} ${count === 1 ? 'exercise' : 'exercises'}`
 
   return (
@@ -66,11 +66,9 @@ export function NextSessionCard({
           ? 'Working out what to practise…'
           : count === 0
             ? 'Nothing to practise yet — add an exercise and it shows up here.'
-            : plan.routine
-              ? `${exercises}, in the order you prepared them.`
-              : failed
-                ? `${exercises} — your runs could not be read, so this is a fresh start rather than your plan.`
-                : `${exercises}, put together from what you have played.`}
+            : failed
+              ? `${exercises} — your runs could not be read, so this is a fresh start rather than your plan.`
+              : `${exercises}, put together from what you have played.`}
       </p>
       {count > 0 && !waiting && (
         <p className="mt-0.5 text-sm opacity-75 tabular-nums">About {totalMinutes(plan)}</p>
@@ -93,8 +91,7 @@ export function NextSessionCard({
           )}
         </p>
       )}
-      {/* A routine is the list the user prepared, so no budget is put to it. */}
-      {plan.routine === null && <LengthPicker minutes={minutes} onChange={onMinutesChange} />}
+      <LengthPicker minutes={minutes} onChange={onMinutesChange} />
       {/* The controls hold the foot of the card, however tall its neighbour makes it. */}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         <Button variant="onAccent" onClick={onStart} disabled={count === 0 || waiting}>
@@ -156,9 +153,8 @@ function LengthPicker({ minutes, onChange }: { minutes: number; onChange: (minut
 }
 
 /**
- * The plan, spelled out: what each exercise is, and — for a generated session —
- * the scheduler's reason for it being here, in the scheduler's own words. A
- * routine is simply the list the user made, so its slots carry no reason.
+ * The plan, spelled out: what each exercise is, and the scheduler's reason for
+ * it being here, in the scheduler's own words.
  */
 function PlanDialog({ plan, title, onClose }: { plan: SessionPlan; title: string; onClose: () => void }) {
   const headingId = useId()
@@ -197,9 +193,7 @@ function PlanDialog({ plan, title, onClose }: { plan: SessionPlan; title: string
             {title}
           </h2>
           <p className="mt-0.5 text-sm text-muted">
-            {plan.routine
-              ? `In the order you prepared them · about ${totalMinutes(plan)}`
-              : `In playing order, and why each one is here · about ${totalMinutes(plan)}`}
+            {`In playing order, and why each one is here · about ${totalMinutes(plan)}`}
           </p>
         </div>
         <button
@@ -239,8 +233,8 @@ function PlanDialog({ plan, title, onClose }: { plan: SessionPlan; title: string
                 </p>
               </div>
             </div>
-            {/* The scheduler's own sentence, shown unchanged. A routine has none — the subtitle said it. */}
-            {!plan.routine && <p className="mt-2 text-sm font-medium text-accent-text">{slot.reason}</p>}
+            {/* The scheduler's own sentence, shown unchanged. */}
+            <p className="mt-2 text-sm font-medium text-accent-text">{slot.reason}</p>
             {slot.exercise.about?.[0] && (
               <p className="mt-1.5 line-clamp-3 text-sm text-fg-2">{slot.exercise.about[0]}</p>
             )}

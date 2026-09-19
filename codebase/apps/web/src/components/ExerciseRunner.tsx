@@ -42,6 +42,14 @@ const STEP_OUT_MS = 180
 const ANSWERED_PAUSE_MS = 900
 
 /**
+ * What a sitting is called on the stage, and the way out of it in words.
+ * Every sitting is the session the app worked out — there is no second kind
+ * to name since routines were dropped (ADR-021).
+ */
+const SESSION_LABEL = 'Next session'
+const SESSION_EXIT = 'End session'
+
+/**
  * Where this exercise sits in its session, and how to move on from it. The
  * summary is where the exercise is answered while it is still fresh; the
  * session sums the whole sitting up at its end, where every answer can still
@@ -49,10 +57,6 @@ const ANSWERED_PAUSE_MS = 900
  */
 export interface RunnerSession {
   id: string
-  /** What the session is called on the stage: "Next session", or the routine's name. */
-  label: string
-  /** The way out, in words: "End session", "End routine". */
-  endLabel: string
   /** One-based. */
   step: number
   total: number
@@ -182,7 +186,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
           headerAction={
             <span className="flex items-baseline gap-3 text-xs text-muted">
               <span className="tabular-nums">
-                {session.label} · {session.step} of {session.total}
+                {SESSION_LABEL} · {session.step} of {session.total}
               </span>
               <button
                 type="button"
@@ -190,7 +194,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
                 data-tip="Leave the session here"
                 className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
               >
-                {session.endLabel}
+                {SESSION_EXIT}
               </button>
             </span>
           }
@@ -225,7 +229,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
               {run ? 'Exercise complete' : 'Exercise skipped'}
             </h2>
             <p className="rise-in [animation-delay:140ms] mt-1 text-sm text-muted tabular-nums">
-              {session.label} · {session.step} of {session.total}
+              {SESSION_LABEL} · {session.step} of {session.total}
             </p>
           </div>
 
@@ -281,7 +285,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
                 className={BUTTON_QUIET}
               >
                 <SignOutIcon />
-                {session.endLabel}
+                {SESSION_EXIT}
               </button>
             </div>
           )}

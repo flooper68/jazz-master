@@ -13,7 +13,7 @@ import type { Exercise } from './types'
  * notes (string, fret, beats) the player renders and steps through. The scale
  * tabs were produced by `scaleTab` in authoring.ts — one note per eighth, up
  * through the open position and back down. Their ids are in users' run
- * history and routines, so they stay as they are.
+ * history, so they stay as they are.
  */
 const FOUNDING: readonly Exercise[] = [
   {

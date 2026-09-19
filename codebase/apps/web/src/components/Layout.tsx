@@ -9,7 +9,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { GoalIcon, HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
+import { GoalIcon, HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
 
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -27,7 +27,6 @@ import { useTheme } from './theme'
 const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/exercises', label: 'Exercises', icon: ListIcon },
-  { to: '/routines', label: 'Routines', icon: RoutineIcon },
   { to: '/goals', label: 'Goals', icon: GoalIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
@@ -36,7 +35,7 @@ const NAV = [
 interface LayoutProps {
   /** The catalog: the pack, joined by the user's own exercises once the app has them. */
   /** What Play offers, worked out by the page. */
-  next: { label: string; count: number; seconds: number; routineId: string | null }
+  next: { label: string; count: number; seconds: number }
   onStartNext: () => void
 }
 
@@ -52,9 +51,7 @@ export function Layout({ next, onStartNext }: LayoutProps) {
   // Playing an exercise is still being in Exercises; a session belongs to no page.
   const current = pathname.endsWith('/history')
     ? '/history'
-    : pathname.includes('/routines')
-      ? '/routines'
-      : pathname.includes('/exercises')
+    : pathname.includes('/exercises')
       ? '/exercises'
       : pathname.endsWith('/session')
         ? null

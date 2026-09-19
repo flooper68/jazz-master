@@ -16,7 +16,7 @@ export const MCP_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', 
 export const MCP_SERVER_INFO = { name: 'jazz-master', title: 'Count-in', version: '1.0.0' } as const
 
 const INSTRUCTIONS =
-  "Count-in is a music practice app, guitar first, in any style. These tools add exercises to the signed-in user's own library and manage their practice routines. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. A practice routine is a named, ordered list of exercises the user plays straight through: find ids with list_builtin_exercises and list_exercises, then use create_routine; read its description for the format."
+  "Count-in is a music practice app, guitar first, in any style. These tools add exercises to the signed-in user's own library and set the goals the app practises towards. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. The app decides what to practise next on its own: set_goal and set_path say what the user is working towards, and get_next_session shows what it would play now."
 
 /** Requests above this are refused before they are parsed; the largest honest exercise is a fraction of it. */
 const MOST_BODY_BYTES = 256 * 1024

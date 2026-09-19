@@ -7,7 +7,6 @@ import {
 import { createGoalRepository, type GoalRepository } from '../db/goals'
 import { createNoteRepository, type NoteRepository } from '../db/notes'
 import { createRunRepository, type RunRepository } from '../db/runs'
-import { createRoutineRepository, type RoutineRepository } from '../db/routines'
 import {
   createUserExerciseRepository,
   type UserExerciseRepository,
@@ -32,7 +31,6 @@ interface CreateContextOptions {
   goals?: GoalRepository | null
   notes?: NoteRepository | null
   runs?: RunRepository | null
-  routines?: RoutineRepository | null
   userExercises?: UserExerciseRepository | null
   users?: UserRepository | null
   waitlist?: WaitlistRepository | null
@@ -75,10 +73,6 @@ function hasNotesOption(options: unknown): options is CreateContextOptions {
 
 function hasGoalsOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'goals' in options
-}
-
-function hasRoutinesOption(options: unknown): options is CreateContextOptions {
-  return typeof options === 'object' && options !== null && 'routines' in options
 }
 
 function hasUserExercisesOption(
@@ -157,9 +151,6 @@ export function createContext(options?: unknown) {
   const userExerciseRepository = hasUserExercisesOption(options)
     ? options.userExercises
     : createUserExerciseRepository({ hyperdrive })
-  const routineRepository = hasRoutinesOption(options)
-    ? options.routines
-    : createRoutineRepository({ hyperdrive })
   const waitlistRepository = hasWaitlistOption(options)
     ? options.waitlist
     : createWaitlistRepository({ hyperdrive })
@@ -172,7 +163,6 @@ export function createContext(options?: unknown) {
     requestMetadata,
     goals: goalRepository ?? null,
     notes: noteRepository ?? null,
-    routines: routineRepository ?? null,
     runs: runRepository,
     userExercises: userExerciseRepository ?? null,
     users: userRepository,

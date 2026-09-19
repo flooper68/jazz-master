@@ -16,7 +16,7 @@ describe('EXERCISES', () => {
     expect(validateExercises(EXERCISES)).toEqual([])
   })
 
-  it('keeps the five founding exercises, by id and in their order — run history and routines point at them', () => {
+  it('keeps the five founding exercises, by id and in their order — run history points at them', () => {
     const founding = ['scales-major-open-c', 'scales-major-open-g', 'scales-major-open-f', 'lines-ii-v-i-f-arpeggios', 'lines-ii-v-i-f-line']
     expect(EXERCISES.map((exercise) => exercise.id).filter((id) => founding.includes(id))).toEqual(founding)
     // The scales area still opens with them.

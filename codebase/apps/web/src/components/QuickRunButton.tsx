@@ -14,11 +14,11 @@ const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 
 export interface QuickRunButtonProps {
   /**
-   * What is on offer: its name, how many exercises, roughly how long, and the
-   * routine it came from — the page has already resolved which it is, so the
-   * panel can say what is actually going to play.
+   * What is on offer: its name, how many exercises and roughly how long — the
+   * page has already worked the plan out, so the panel can say what is
+   * actually going to play.
    */
-  next: { label: string; count: number; seconds: number; routineId: string | null }
+  next: { label: string; count: number; seconds: number }
   /** Called when the user presses Play; the page works out the plan afresh. */
   onStart: () => void
   /** Folded sidebar: just the icon, from md up; one press still starts a session. */
@@ -50,8 +50,6 @@ export function QuickRunButton({ next, onStart, iconOnly = false }: QuickRunButt
   const { label, count } = next
   const minutes = Math.max(Math.round(next.seconds / 60), 1)
   const chosenMinutes = quickRunSettings().sessionMinutes
-  // A routine named on its own page plays as prepared; its length is not ours to set.
-  const isRoutine = next.routineId !== null
 
   return (
     <div ref={rootRef} className="relative flex">
@@ -119,11 +117,9 @@ export function QuickRunButton({ next, onStart, iconOnly = false }: QuickRunButt
           </fieldset>
 
           <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
-            {isRoutine
-              ? `${label}, as prepared: ${count} ${count === 1 ? 'exercise' : 'exercises'} in order — about ${minutes} min. Its length is its own.`
-              : count === 0
-                ? 'Nothing to practise yet — add an exercise and it shows up here.'
-                : `Worked out from what you have played: ${count} ${count === 1 ? 'exercise' : 'exercises'} — about ${minutes} min. Home says why each one is there.`}
+            {count === 0
+              ? 'Nothing to practise yet — add an exercise and it shows up here.'
+              : `Worked out from what you have played: ${count} ${count === 1 ? 'exercise' : 'exercises'} — about ${minutes} min. Home says why each one is there.`}
           </p>
         </div>
       )}

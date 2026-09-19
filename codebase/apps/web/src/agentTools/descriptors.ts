@@ -8,7 +8,6 @@ import { goalInputSchema, PRIORITIES, type ExercisePriority, type Goal } from '.
 import type { ExerciseState } from '../appData/memory'
 import { pathsProgress } from '../appData/path'
 import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
-import { MOST_ROUTINE_ITEMS, routineInputSchema } from '../appData/routine'
 import type { ExerciseRun } from '../appData/run'
 import { EXERCISES, type Exercise } from '../content'
 import { HIGHEST_FRET, NOTE_LENGTHS_IN_BEATS, exerciseInputSchema } from '../content/exerciseInput'
@@ -48,8 +47,8 @@ export function builtinExerciseSummaries() {
  * catalogue, the paths and what the user said about single exercises.
  *
  * Not yet the card's plan exactly: the card also passes the session length the
- * user chose and the routine they named as next, and this does neither, so a
- * user who asked for ten minutes is answered here at the default budget.
+ * user chose, and this does not, so a user who asked for ten minutes is
+ * answered here at the default budget.
  *
  * Days are counted in the runtime's own timezone. In the browser (WebMCP) that
  * is the user's, so the answer matches the page exactly. On the `/mcp` server
@@ -199,19 +198,7 @@ const EXERCISE_FORMAT = [
   "belong together and are learned in the order they were added. `tags` are the user's own free-text labels.",
 ].join(' ')
 
-/** What a model needs to know to put a routine together. */
-const ROUTINE_FORMAT = [
-  'A practice routine is a named, ordered list of exercises prepared ahead of time; the user starts it in the app and',
-  'plays it straight through, top to bottom. `name` is what the user sees (up to 80 characters). `about` is optional: a',
-  `sentence or two on what the routine is for. \`items\` is the playing order, 1 to ${MOST_ROUTINE_ITEMS} entries, each`,
-  '`{ "exerciseId": "…" }`. An id is either a built-in one from list_builtin_exercises or one of the user\'s own from',
-  'list_exercises (those start with `user-`); any other id is refused. A routine refers to exercises, it does not copy',
-  'them. Order it like a practice session: warm up with easier material, then the harder work.',
-].join(' ')
-
 const exerciseArgument = { exercise: z.toJSONSchema(exerciseInputSchema, { io: 'input' }) }
-const routineArgument = { routine: z.toJSONSchema(routineInputSchema, { io: 'input' }) }
-const routineIdArgument = { routineId: { type: 'string', description: 'The `id` of a routine from list_routines.' } }
 const goalArgument = { goal: z.toJSONSchema(goalInputSchema, { io: 'input' }) }
 const goalIdArgument = { goalId: { type: 'string', description: 'The `id` of a goal from list_goals.' } }
 
@@ -232,10 +219,6 @@ export type LibraryToolName =
   | 'validate_exercise'
   | 'create_exercise'
   | 'list_builtin_exercises'
-  | 'list_routines'
-  | 'create_routine'
-  | 'update_routine'
-  | 'delete_routine'
   | 'list_goals'
   | 'set_goal'
   | 'set_path'
@@ -243,7 +226,7 @@ export type LibraryToolName =
   | 'get_exercise_state'
   | 'list_runs'
 
-/** The library and routine tools, in the order a client lists them. */
+/** The library, goal and scheduling tools, in the order a client lists them. */
 export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: LibraryToolName })[] = [
   {
     name: 'get_next_session',
@@ -279,37 +262,9 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'list_builtin_exercises',
     title: 'List the built-in exercises',
     description:
-      'List the exercises that ship with Count-in — id, title, area, level, key, tempo and the labels they are filtered by — without their tabs. Every user has these; use their ids in a routine alongside ids from list_exercises.',
+      'List the exercises that ship with Count-in — id, title, area, level, key, tempo and the labels they are filtered by — without their tabs. Every user has these; use their ids in a path alongside ids from list_exercises.',
     inputSchema: objectSchema({}, []),
     annotations: READ_ONLY,
-  },
-  {
-    name: 'list_routines',
-    title: 'List my practice routines',
-    description: "List the signed-in user's practice routines, oldest first, each with its id, name and ordered exercise ids. Call it before changing or deleting a routine, and to avoid making one that already exists.",
-    inputSchema: objectSchema({}, []),
-    annotations: READS_USER_TEXT,
-  },
-  {
-    name: 'create_routine',
-    title: 'Create a practice routine',
-    description: `Create a new practice routine for the signed-in user; it appears in the app under Routines and as a source for Quick run. Returns the stored routine with its id, or the problems to fix — fix them and call again. ${ROUTINE_FORMAT}`,
-    inputSchema: objectSchema(routineArgument, ['routine']),
-    annotations: ADDS,
-  },
-  {
-    name: 'update_routine',
-    title: 'Change a practice routine',
-    description: `Replace one of the signed-in user's routines — its name, its note and its whole item list — with the routine given. To add, remove or reorder exercises, send the full new list. Returns the stored routine, the problems to fix, or \`not_found\` when the user has no routine with that id. ${ROUTINE_FORMAT}`,
-    inputSchema: objectSchema({ ...routineIdArgument, ...routineArgument }, ['routineId', 'routine']),
-    annotations: REPLACES,
-  },
-  {
-    name: 'delete_routine',
-    title: 'Delete a practice routine',
-    description: "Delete one of the signed-in user's practice routines for good. The exercises in it are not touched. Only do this when the user asked for it.",
-    inputSchema: objectSchema(routineIdArgument, ['routineId']),
-    annotations: REPLACES,
   },
   {
     name: 'list_goals',

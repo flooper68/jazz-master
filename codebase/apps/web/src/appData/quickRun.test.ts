@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES as PACK } from '../content'
 import {
-  chosenRoutine,
   defaultQuickRunSettings,
   loadQuickRunSettings,
   parseSessionSearch,
-  routinePlan,
   sessionSearch,
 } from './quickRun'
 
@@ -13,50 +11,20 @@ import {
 const FOUNDING_IDS = ['scales-major-open-c', 'scales-major-open-g', 'scales-major-open-f', 'lines-ii-v-i-f-arpeggios', 'lines-ii-v-i-f-line']
 const EXERCISES = PACK.filter((exercise) => FOUNDING_IDS.includes(exercise.id))
 
-const routine = {
-  id: 'r-1',
-  name: 'Warm-up',
-  items: [{ exerciseId: 'lines-ii-v-i-f-line' }, { exerciseId: 'gone-since' }, { exerciseId: 'scales-major-open-c' }],
-}
-
 describe('what to play next', () => {
   it('falls back to the defaults for missing or broken storage', () => {
     expect(loadQuickRunSettings(null)).toEqual(defaultQuickRunSettings())
     expect(loadQuickRunSettings({ getItem: () => '{nope' })).toEqual(defaultQuickRunSettings())
-    expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ routineId: '' }) })).toEqual(defaultQuickRunSettings())
     // A length no button offers — an old save, a hand-edited one — is not planned to.
     expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ sessionMinutes: 37 }) })).toEqual(
       defaultQuickRunSettings(),
     )
   })
 
-  it('remembers a routine named as next, and how long the session should be', () => {
-    expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ routineId: 'r-1' }) })).toEqual({
-      ...defaultQuickRunSettings(),
-      routineId: 'r-1',
-    })
+  it('remembers how long the session should be', () => {
     expect(loadQuickRunSettings({ getItem: () => JSON.stringify({ sessionMinutes: 60 }) })).toEqual({
-      routineId: null,
       sessionMinutes: 60,
     })
-  })
-
-  it('stands the routine down when it is gone, or has nothing left to play', () => {
-    const emptied = { id: 'r-2', name: 'Emptied', items: [{ exerciseId: 'gone-since' }] }
-    expect(chosenRoutine({ ...defaultQuickRunSettings(), routineId: 'r-1' }, [routine], EXERCISES)).toBe(routine)
-    expect(chosenRoutine({ ...defaultQuickRunSettings(), routineId: null }, [routine], EXERCISES)).toBeNull()
-    expect(chosenRoutine({ ...defaultQuickRunSettings(), routineId: 'deleted' }, [routine], EXERCISES)).toBeNull()
-    expect(chosenRoutine({ ...defaultQuickRunSettings(), routineId: 'r-2' }, [emptied], EXERCISES)).toBeNull()
-  })
-})
-
-describe('routinePlan', () => {
-  it('plays it as prepared — its order, skipping what is gone, each at its written tempo', () => {
-    const plan = routinePlan(routine, EXERCISES)
-    expect(plan.routine).toBe(routine)
-    expect(plan.slots.map((slot) => slot.exercise.id)).toEqual(['lines-ii-v-i-f-line', 'scales-major-open-c'])
-    for (const slot of plan.slots) expect(slot.tempoBpm).toBe(slot.exercise.tempoBpm)
-    expect(sessionSearch(plan)).toEqual({ x: 'lines-ii-v-i-f-line,scales-major-open-c', r: 'r-1' })
   })
 })
 
@@ -69,7 +37,6 @@ describe('the session URL', () => {
         { exercise: first, tempoBpm: first.tempoBpm, reason: 'Due today' },
         { exercise: second, tempoBpm: second.tempoBpm - 10, reason: 'Overdue 2 days' },
       ],
-      routine: null,
       plannedSeconds: 0,
     }
     expect(sessionSearch(plan)).toEqual({ x: `${first.id},${second.id}@${second.tempoBpm - 10}` })

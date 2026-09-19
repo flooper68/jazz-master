@@ -10,8 +10,6 @@ import type { UserRepository } from '../db/users'
 import { createContext } from './context'
 import { createCallerFactory } from './init'
 import { appRouter } from './router'
-import { STARTER_ROUTINES } from '../../content/starterRoutines'
-import { createMemoryRoutineRepository } from '../../test/memoryRoutines'
 
 const createCaller = createCallerFactory(appRouter)
 
@@ -553,81 +551,6 @@ function runRecord(overrides: Partial<ExerciseRun> = {}): ExerciseRun {
     ...overrides,
   }
 }
-
-describe('appRouter.routines', () => {
-  const routine = { name: 'Warm-up', items: [{ exerciseId: 'scales-major-open-c' }] }
-
-  it('creates, changes, lists and deletes a routine, for its owner only', async () => {
-    const routines = createMemoryRoutineRepository()
-    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, routines, userExercises: null }))
-    const other = createCaller(createContext({ auth: { clerkUserId: 'user_456' }, routines, userExercises: null }))
-
-    const created = await caller.routines.create({ routine })
-    expect(created).toMatchObject({ status: 'ok', routine })
-    const id = created.status === 'ok' ? created.routine.id : ''
-
-    const theirs = await other.routines.list()
-    expect(theirs.status === 'ok' && theirs.routines.map((item) => item.id)).not.toContain(id)
-    await expect(other.routines.update({ routineId: id, routine: { ...routine, name: 'Stolen' } })).resolves.toEqual({ status: 'not_found' })
-
-    await expect(caller.routines.update({ routineId: id, routine: { ...routine, name: 'Warm-up II' } })).resolves.toMatchObject({
-      status: 'ok',
-      routine: { id, name: 'Warm-up II' },
-    })
-    await expect(caller.routines.delete({ routineId: id })).resolves.toEqual({ status: 'ok', deleted: true })
-    await expect(caller.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
-  })
-
-  it('gives a new user the starter routines once — not again after they delete them all, and not to someone who made their own first', async () => {
-    const routines = createMemoryRoutineRepository()
-    const fresh = createCaller(createContext({ auth: { clerkUserId: 'user_new' }, routines, userExercises: null }))
-
-    const first = await fresh.routines.list()
-    const given = first.status === 'ok' ? first.routines : []
-    expect(given.map((item) => item.name)).toEqual(STARTER_ROUTINES.map((item) => item.name))
-    // Asking again gives the same routines, not a second set.
-    await expect(fresh.routines.list()).resolves.toEqual(first)
-
-    for (const item of given) await fresh.routines.delete({ routineId: item.id })
-    await expect(fresh.routines.list()).resolves.toEqual({ status: 'ok', routines: [] })
-
-    const maker = createCaller(createContext({ auth: { clerkUserId: 'user_maker' }, routines, userExercises: null }))
-    await maker.routines.create({ routine })
-    await expect(maker.routines.list()).resolves.toMatchObject({ status: 'ok', routines: [{ name: 'Warm-up' }] })
-    const theirs = await maker.routines.list()
-    expect(theirs.status === 'ok' && theirs.routines).toHaveLength(1)
-  })
-
-  it('answers a bad routine with its problems, not a transport error', async () => {
-    const caller = createCaller(
-      createContext({ auth: { clerkUserId: 'user_123' }, routines: createMemoryRoutineRepository(), userExercises: null }),
-    )
-    const result = await caller.routines.create({
-      routine: { name: 'Twice', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: 'scales-major-open-c' }, { exerciseId: 'nope' }], extra: true },
-    })
-    expect(result.status).toBe('invalid')
-
-    const twice = await caller.routines.create({
-      routine: { name: 'Twice', items: [{ exerciseId: 'scales-major-open-c' }, { exerciseId: 'scales-major-open-c' }, { exerciseId: 'nope' }] },
-    })
-    expect(twice).toEqual({
-      status: 'invalid',
-      problems: [
-        expect.stringMatching(/^items\.1\.exerciseId: "scales-major-open-c" is already in the routine/),
-        expect.stringMatching(/^items\.2\.exerciseId: no exercise "nope"/),
-      ],
-    })
-  })
-
-  it('reports unconfigured without a database, and refuses the signed-out', async () => {
-    const caller = createCaller(createContext({ auth: { clerkUserId: 'user_123' }, routines: null, userExercises: null }))
-    await expect(caller.routines.list()).resolves.toEqual({ status: 'unconfigured' })
-    await expect(caller.routines.create({ routine })).resolves.toEqual({ status: 'unconfigured' })
-
-    const signedOut = createCaller(createContext({ auth: { clerkUserId: null }, routines: createMemoryRoutineRepository() }))
-    await expect(signedOut.routines.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
-  })
-})
 
 describe('appRouter.users.deleteData', () => {
   it('deletes what the app saved under the signed-in user, and only theirs', async () => {

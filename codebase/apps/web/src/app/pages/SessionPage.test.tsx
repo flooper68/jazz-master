@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetQuickRunSettings } from '../../appData/quickRun'
 import { renderRoute } from '../../test/renderRoute'
-import { getTrpcTestNotes, getTrpcTestRuns, resetTrpcTestData, seedTrpcTestRoutines } from '../../test/trpcTestFetch'
+import { getTrpcTestNotes, getTrpcTestRuns, resetTrpcTestData } from '../../test/trpcTestFetch'
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -240,19 +240,18 @@ describe('SessionPage', () => {
     expect(screen.getByRole('spinbutton', { name: /[Tt]empo/ })).toHaveValue(48)
   })
 
-  it('plays a routine under its name, and offers it again at the end', async () => {
+  it('offers the same plan again at the end, as a session of its own', async () => {
     const user = userEvent.setup()
-    const [routine] = await seedTrpcTestRoutines([{ name: 'Warm-up', items: [{ exerciseId: 'scales-major-open-c' }] }])
-    await renderRoute(`/session?x=scales-major-open-c&r=${routine.id}`)
+    await renderRoute('/session?x=scales-major-open-c')
 
-    expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
+    expect(await screen.findByText('Next session · 1 of 1')).toBeInTheDocument()
     await playAndFinish(user, 'C major — open position')
     expect(await screen.findByRole('dialog')).toHaveFocus()
     await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(1))
     const first = getTrpcTestRuns()[0].sessionId
 
     await user.click(within(dialog()).getByRole('button', { name: 'Play it again' }))
-    expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
+    expect(await screen.findByText('Next session · 1 of 1')).toBeInTheDocument()
     await playAndFinish(user, 'C major — open position')
     await screen.findByRole('dialog')
     // A second time through is a session of its own.

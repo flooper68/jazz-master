@@ -9,7 +9,7 @@ describe('safeRedirectPath', () => {
   })
 
   it('keeps a path on this site, with its query', () => {
-    expect(safeRedirectPath('?redirect_url=%2Fapp%2Froutines%3Fnew%3D1', ORIGIN)).toBe('/app/routines?new=1')
+    expect(safeRedirectPath('?redirect_url=%2Fapp%2Fexercises%3Farea%3Dscales', ORIGIN)).toBe('/app/exercises?area=scales')
     expect(safeRedirectPath(`?redirect_url=${encodeURIComponent(`${ORIGIN}/app/history`)}`, ORIGIN)).toBe('/app/history')
   })
 

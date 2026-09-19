@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro'
 import { env } from 'cloudflare:workers'
 import { readClerkRuntimeKeys } from '../auth/clerkEnv'
 import { createGoalRepository } from '../db/goals'
-import { createRoutineRepository } from '../db/routines'
 import { createRunRepository } from '../db/runs'
 import { createUserExerciseRepository } from '../db/userExercises'
 import { authorizationServerUrl, MCP_CORS_HEADERS, mcpUserId, protectedResourceMetadata, unauthorizedResponse } from './auth'
@@ -37,7 +36,6 @@ export const mcpEndpoint: APIRoute = async ({ request, locals, url }) => {
   const response = await handleMcpRequest(request, {
     clerkUserId,
     userExercises: createUserExerciseRepository({ hyperdrive: env.HYPERDRIVE }),
-    routines: createRoutineRepository({ hyperdrive: env.HYPERDRIVE }),
     runs: createRunRepository({ hyperdrive: env.HYPERDRIVE }),
     goals: createGoalRepository({ hyperdrive: env.HYPERDRIVE }),
   })

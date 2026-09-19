@@ -6,7 +6,7 @@ import { protectedProcedure, router } from '../init'
 
 /**
  * Goals, their paths, and what the user has said about single exercises.
- * Owner-scoped like routines: every read and write carries the signed-in user,
+ * Owner-scoped like the exercise library: every read and write carries the signed-in user,
  * and an id from somewhere else names nothing.
  */
 
