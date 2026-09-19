@@ -84,6 +84,30 @@ describe('Layout shell', () => {
     expect(edge).toHaveAttribute('aria-valuenow', '208')
   })
 
+  it('marks the section the page belongs to, and no other', async () => {
+    const currentLink = () =>
+      within(screen.getByRole('navigation', { name: 'Main' }))
+        .queryByRole('link', { current: 'page' })?.textContent ?? null
+
+    for (const [path, label] of [
+      ['/', 'Home'],
+      ['/exercises', 'Exercises'],
+      ['/goals', 'Goals'],
+      ['/history', 'History'],
+      // A goal is still Goals, the way an exercise is still Exercises.
+      ['/goals/tone', 'Goals'],
+    ] as const) {
+      const { unmount } = await renderRoute(path)
+      expect(currentLink(), path).toBe(label)
+      unmount()
+    }
+
+    // The account page is in no section: nothing is marked.
+    const { unmount } = await renderRoute('/account')
+    expect(currentLink()).toBeNull()
+    unmount()
+  })
+
   it('plays the next session from the navigation', async () => {
     const user = userEvent.setup()
     await renderRoute('/history')

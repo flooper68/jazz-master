@@ -48,14 +48,11 @@ export function Layout({ next, onStartNext }: LayoutProps) {
   // The player is a stage: the phone header drops its nav row there, and the
   // sidebar remembers a fold of its own for it (folded unless opened).
   const onStage = /\/exercises\/[^/]+/.test(pathname) || pathname.endsWith('/session')
-  // Playing an exercise is still being in Exercises; a session belongs to no page.
-  const current = pathname.endsWith('/history')
-    ? '/history'
-    : pathname.includes('/exercises')
-      ? '/exercises'
-      : pathname.endsWith('/session')
-        ? null
-        : '/'
+  // A page belongs to the section its first segment names: an exercise is still
+  // Exercises, a goal is still Goals. The session stage and the account page
+  // name no section, so nothing is current there.
+  const section = `/${pathname.split('/')[1]}`
+  const current = NAV.some(({ to }) => to === section) ? section : null
 
   const [sidebar, setSidebar] = useState<SidebarPrefs>(loadSidebarPrefs)
   useEffect(() => saveSidebarPrefs(sidebar), [sidebar])
