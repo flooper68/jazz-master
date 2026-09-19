@@ -5,6 +5,7 @@ import { formatDuration } from '../../appData/dashboard'
 import { groupRunsByDay } from '../../appData/history'
 import type { SessionNote } from '../../appData/note'
 import { practiceRuns, runDifficulty, runFeel, type PracticeRun } from '../../appData/practiceRun'
+import { plannedMinutes } from '../../appData/quickRun'
 import { DIFFICULTY_LABELS, FEEL_LABELS, type ExerciseRun } from '../../appData/run'
 import { DIFFICULTY_BADGE, FEEL_BADGE } from '../../components/answerBadges'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
@@ -164,6 +165,7 @@ function PracticeRunRow({
                   {FEEL_LABELS[feel]}
                 </span>
               )}
+              {difficulty === null && feel === null && <span className="text-xs text-muted">Not answered</span>}
             </span>
             <span className="mt-0.5 block text-[13px] text-muted tabular-nums">
               {formatSeconds(run.seconds)} played
@@ -173,7 +175,7 @@ function PracticeRunRow({
         </button>
         <Link
           to="/session"
-          search={{ x: run.runs.map((exercise) => exercise.exerciseId).join(',') }}
+          search={replaySearch(run)}
           aria-label={`Play this run again: ${title}`}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
@@ -191,6 +193,18 @@ function PracticeRunRow({
       )}
     </li>
   )
+}
+
+/**
+ * The same sitting again: its exercises in order, each at the tempo it was
+ * actually played at — not the written one, which for anything the scheduler
+ * had taken down would make the replay harder than the run being repeated —
+ * and the length it came to, so the clock has the same target.
+ */
+function replaySearch(run: PracticeRun): { x: string; m?: number } {
+  const x = run.runs.map((exercise) => `${exercise.exerciseId}@${exercise.tempoBpm}`).join(',')
+  const m = plannedMinutes(run.seconds)
+  return m === null ? { x } : { x, m }
 }
 
 /** One exercise inside a practice run: the detail the list used to be. */

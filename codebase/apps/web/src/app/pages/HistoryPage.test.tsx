@@ -49,10 +49,10 @@ describe('HistoryPage', () => {
     expect(sitting.getByText('Loved it')).toBeInTheDocument()
     // What was written at the end of that sitting belongs to the sitting.
     expect(sitting.getByText('“Hands cold, second half better.”')).toBeInTheDocument()
-    // The whole run is what Play again plays, in its order.
+    // The whole run is what Play again plays: its order, its tempos, its length.
     expect(sitting.getByRole('link', { name: /^Play this run again/ })).toHaveAttribute(
       'href',
-      '/app/session?x=lines-ii-v-i-f-line%2Cscales-major-open-c',
+      '/app/session?x=lines-ii-v-i-f-line%4090%2Cscales-major-open-c%4060&m=2',
     )
     // Until it is opened, the exercises are not the list.
     expect(sitting.queryByRole('heading', { level: 3 })).toBeNull()
@@ -66,9 +66,19 @@ describe('HistoryPage', () => {
       '/app/session?x=lines-ii-v-i-f-line',
     )
 
-    // A run recorded before sittings were the only way to play is a run of one.
-    const yesterday = within(within(screen.getByRole('region', { name: 'Yesterday' })).getAllByRole('listitem')[0])
+    // A run recorded before sittings were the only way to play is a run of one,
+    // and a sitting nobody answered says so rather than showing nothing.
+    const yesterdayRows = within(screen.getByRole('region', { name: 'Yesterday' })).getAllByRole('listitem')
+    expect(yesterdayRows).toHaveLength(1)
+    const yesterday = within(yesterdayRows[0])
     expect(yesterday.getByText(/1 exercise$/)).toBeInTheDocument()
+    expect(yesterday.getByText('Not answered')).toBeInTheDocument()
+    await user.click(yesterday.getByRole('button', { expanded: false }))
+    expect(yesterday.getByText(/0:45 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
+    expect(yesterday.getByRole('link', { name: 'Play G major — open position again' })).toHaveAttribute(
+      'href',
+      '/app/session?x=scales-major-open-g',
+    )
 
     // The totals count sittings, not exercises.
     expect(screen.getByText('Practice runs').nextElementSibling).toHaveTextContent('2')
