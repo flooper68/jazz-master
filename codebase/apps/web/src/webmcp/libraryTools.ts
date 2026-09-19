@@ -99,6 +99,31 @@ function executors({ client, refresh }: LibraryToolDeps): Record<LibraryToolName
       return result
     },
 
+    get_player_bio: () => client.player.readBio.query(),
+
+    async write_player_bio(args) {
+      const bio = toolArgument(args, 'bio')
+      if (typeof bio !== 'string') return { status: 'invalid', problems: ['bio: give the whole new bio as a string'] }
+      return await client.player.writeBio.mutate({ bio })
+    },
+
+    async list_player_log(args) {
+      const limit = toolArgument(args, 'limit')
+      return await client.player.listLog.query(typeof limit === 'number' ? { limit } : undefined)
+    },
+
+    async append_player_log(args) {
+      const kind = toolArgument(args, 'kind')
+      const summary = toolArgument(args, 'summary')
+      if (typeof summary !== 'string' || summary.trim().length === 0) {
+        return { status: 'invalid', problems: ['summary: say what was discussed and decided'] }
+      }
+      if (kind !== 'onboarding' && kind !== 'after_session' && kind !== 'on_demand' && kind !== 'check_in') {
+        return { status: 'invalid', problems: ['kind: one of onboarding, after_session, on_demand, check_in'] }
+      }
+      return await client.player.appendLog.mutate({ kind, summary })
+    },
+
     async get_exercise_state() {
       const listed = await client.runs.list.query()
       if (listed.status !== 'ok') return listed

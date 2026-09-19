@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryUserExerciseRepository } from '../../test/memoryUserExercises'
 import type { RunRepository } from '../db/runs'
 import { createMemoryGoalRepository } from '../../test/memoryGoals'
+import { createMemoryPlayerRepository } from '../../test/memoryPlayer'
 import { createMemoryRunRepository } from '../../test/memoryRuns'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { handleMcpRequest, MCP_PROTOCOL_VERSIONS } from './protocol'
@@ -29,10 +30,11 @@ async function connect(
   userExercises: UserExerciseRepository | null,
   runs: RunRepository | null = createMemoryRunRepository(),
   goals = createMemoryGoalRepository(),
+  player = createMemoryPlayerRepository(),
 ) {
   const client = new Client({ name: 'test-client', version: '0.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL('https://jazz.test/mcp'), {
-    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, runs, goals }),
+    fetch: (url, init) => handleMcpRequest(new Request(url, init), { clerkUserId, userExercises, runs, goals, player }),
   })
   await client.connect(transport)
   return client
@@ -46,6 +48,7 @@ function post(body: unknown, raw = false) {
       userExercises: createMemoryUserExerciseRepository(),
       runs: createMemoryRunRepository(),
       goals: createMemoryGoalRepository(),
+      player: createMemoryPlayerRepository(),
     },
   )
 }
@@ -66,13 +69,36 @@ describe('the MCP server, through the official client', () => {
       'set_path',
       'get_exercise_state',
       'list_runs',
+      'get_player_bio',
+      'write_player_bio',
+      'list_player_log',
+      'append_player_log',
     ])
+    expect(client.getServerCapabilities()).toMatchObject({ prompts: { listChanged: false } })
+
     const create = tools.find((tool) => tool.name === 'create_exercise')!
     expect(create.inputSchema).toMatchObject({ type: 'object', required: ['exercise'] })
     expect(create.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false })
     expect(tools[0].annotations?.readOnlyHint).toBe(true)
   })
 
+
+  it('offers the teacher\u2019s scripts as prompts, so a client can run a lesson', async () => {
+    // The behaviour half of the tool surface: a contract belongs on a tool, a
+    // flow belongs in a prompt, and both have to be fetchable by name.
+    const client = await connect('user_123', createMemoryUserExerciseRepository())
+    const { prompts } = await client.listPrompts()
+    expect(prompts.map((prompt) => prompt.name)).toEqual(['first_lesson', 'check_in', 'after_session'])
+
+    const first = await client.getPrompt({ name: 'first_lesson' })
+    const [message] = first.messages
+    expect(message.role).toBe('user')
+    const text = message.content.type === 'text' ? message.content.text : ''
+    // The rules the app's own lesson runs on reach an outside agent unchanged.
+    expect(text).toContain('Read `get_player_bio` before you ask anything')
+    expect(text).toContain('the runs win')
+    expect(text).toContain('append_player_log')
+  })
   it('creates an exercise in the caller’s library and lists it back, and nobody else’s', async () => {
     const repository = createMemoryUserExerciseRepository()
     const mine = await connect('user_123', repository)
@@ -117,7 +143,7 @@ describe('the MCP server, on the wire', () => {
 
   it('accepts notifications silently, and refuses streams and sessions it does not have', async () => {
     expect((await post({ jsonrpc: '2.0', method: 'notifications/initialized' })).status).toBe(202)
-    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, runs: null, goals: null })
+    const get = await handleMcpRequest(new Request('https://jazz.test/mcp'), { clerkUserId: 'user_123', userExercises: null, runs: null, goals: null, player: null })
     expect(get.status).toBe(405)
     expect(get.headers.get('allow')).toBe('POST')
   })
@@ -136,7 +162,7 @@ describe('the MCP server, on the wire', () => {
     // The library turns repository failures into results; a throw past it is simulated by a context that is not an object.
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'list_exercises', arguments: {} } }) }),
-      null as unknown as { clerkUserId: string; userExercises: typeof broken; runs: null; goals: null },
+      null as unknown as { clerkUserId: string; userExercises: typeof broken; runs: null; goals: null; player: null },
     )
     expect(await response.json()).toEqual({ jsonrpc: '2.0', id: 9, error: { code: -32603, message: 'Internal error' } })
   })
@@ -144,7 +170,7 @@ describe('the MCP server, on the wire', () => {
   it('refuses a body by its declared size before reading it', async () => {
     const response = await handleMcpRequest(
       new Request('https://jazz.test/mcp', { method: 'POST', headers: { 'content-length': '999999' }, body: '{}' }),
-      { clerkUserId: 'user_123', userExercises: null, runs: null, goals: null },
+      { clerkUserId: 'user_123', userExercises: null, runs: null, goals: null, player: null },
     )
     expect(response.status).toBe(413)
   })

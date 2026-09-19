@@ -1,9 +1,10 @@
+import { AGENT_PROMPTS } from '../../agentTools/prompts'
 import { MCP_TOOLS, type McpToolContext } from './tools'
 
 /**
  * The MCP server: JSON-RPC over plain HTTP POST, stateless, JSON responses.
  * It is the small request/response core of the Streamable HTTP transport —
- * initialize, ping, tools/list, tools/call — with no sessions and no streams,
+ * initialize, ping, tools/list, tools/call, prompts/list, prompts/get — with no sessions and no streams,
  * because the Worker keeps no state between requests and the tools never need
  * to push. Written by hand rather than on the SDK: a handful of tools does not justify
  * its dependency tree in a Worker bundle. The SDK's own client runs against
@@ -15,8 +16,12 @@ export const MCP_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', 
 
 export const MCP_SERVER_INFO = { name: 'jazz-master', title: 'Count-in', version: '1.0.0' } as const
 
+// A pointer, not a paragraph. How to *be* the teacher is long, changes with the
+// product, and is the same text the app's own lesson runs on — so it is served
+// where a client can ask for it by name (prompts/get) rather than pasted here,
+// where every client would carry it whether or not it was giving a lesson.
 const INSTRUCTIONS =
-  "Count-in is a music practice app, guitar first, in any style. These tools add exercises to the signed-in user's own library and set the goals the app practises towards. To add an exercise: write it, check it with validate_exercise, then save it with create_exercise. Exercises are single-note tabs with rhythm; read create_exercise's description for the format. The app decides what to practise next on its own: set_goal and set_path say what the user is working towards, and get_next_session shows what it would play now."
+  "Count-in is a music practice app, guitar first, in any style. These tools read and write the signed-in player's exercises, goals and paths, and what the teacher remembers about them. The app decides what to practise on its own: it never calls you, and nothing here moves a due date. To give this player a lesson, fetch the `first_lesson` prompt (or `check_in`, or `after_session`) with prompts/get and follow it — it carries the flow, the questions and the rules. Otherwise: get_next_session shows what the app would play now, and set_goal / set_path say what the player is working towards."
 
 /** Requests above this are refused before they are parsed; the largest honest exercise is a fraction of it. */
 const MOST_BODY_BYTES = 256 * 1024
@@ -70,7 +75,12 @@ async function respond(message: JsonRpcRequest, context: McpToolContext): Promis
       return {
         jsonrpc: '2.0',
         id,
-        result: { protocolVersion, capabilities: { tools: { listChanged: false } }, serverInfo: MCP_SERVER_INFO, instructions: INSTRUCTIONS },
+        result: {
+          protocolVersion,
+          capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
+          serverInfo: MCP_SERVER_INFO,
+          instructions: INSTRUCTIONS,
+        },
       }
     }
     case 'ping':
@@ -83,6 +93,26 @@ async function respond(message: JsonRpcRequest, context: McpToolContext): Promis
           tools: MCP_TOOLS.map(({ name, title, description, inputSchema, annotations }) => ({ name, title, description, inputSchema, annotations })),
         },
       }
+    case 'prompts/list':
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          prompts: AGENT_PROMPTS.map(({ name, title, description }) => ({ name, title, description, arguments: [] })),
+        },
+      }
+    case 'prompts/get': {
+      const prompt = AGENT_PROMPTS.find((candidate) => candidate.name === params.name)
+      if (!prompt) return rpcError(id, INVALID_PARAMS, `Unknown prompt: ${String(params.name)}`)
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: prompt.description,
+          messages: [{ role: 'user', content: { type: 'text', text: prompt.text } }],
+        },
+      }
+    }
     case 'tools/call': {
       const tool = MCP_TOOLS.find((candidate) => candidate.name === params.name)
       if (!tool) return rpcError(id, INVALID_PARAMS, `Unknown tool: ${String(params.name)}`)

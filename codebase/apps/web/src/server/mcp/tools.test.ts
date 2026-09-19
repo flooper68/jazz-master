@@ -109,6 +109,34 @@ describe('what the MCP server offers to practise', () => {
     expect(slot?.targetTempoBpm).toBe(200)
   })
 
+  it('remembers the player between lessons, through its own door', async () => {
+    // A lesson's last two acts: rewrite the bio, append one summary. Both come
+    // back on the next lesson's first read, which is the whole point of them.
+    expect(await call('get_player_bio')).toMatchObject({ status: 'ok', bio: null })
+
+    expect(await call('write_player_bio', { bio: 'Wants jazz standards. Knows open chords, no arpeggios.' })).toMatchObject({
+      status: 'ok',
+      bio: { bio: 'Wants jazz standards. Knows open chords, no arpeggios.' },
+    })
+    expect(await call('append_player_log', { kind: 'onboarding', summary: 'First lesson: wrote a comping path.' })).toMatchObject({
+      status: 'ok',
+      entry: { kind: 'onboarding', summary: 'First lesson: wrote a comping path.' },
+    })
+
+    expect(await call('get_player_bio')).toMatchObject({
+      status: 'ok',
+      bio: { bio: 'Wants jazz standards. Knows open chords, no arpeggios.' },
+    })
+    const log = (await call('list_player_log')) as { entries: { kind: string }[] }
+    expect(log.entries.map((entry) => entry.kind)).toEqual(['onboarding'])
+  })
+
+  it('refuses a log entry that says nothing, and says why', async () => {
+    const answer = await callRaw('append_player_log', { kind: 'check_in', summary: '  ' })
+    expect(answer.isError).toBe(true)
+    expect(answer.structuredContent).toMatchObject({ status: 'invalid' })
+  })
+
   it('says so when there is no run database, and says it as an error', async () => {
     setTrpcTestRunsRepositoryAvailable(false)
     const answer = await callRaw('get_next_session')

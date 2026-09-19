@@ -144,6 +144,49 @@ export const goals = pgTable(
   (table) => [index('goals_user_created_idx').on(table.clerkUserId, table.createdAt)],
 )
 
+// What the teacher remembers about the player, reduced to one living document:
+// preferences, skills, what they have learned, what bores them. One row per
+// user, rewritten in place — the bio is the latest reduction, not a history.
+// Never read by the scheduler: the practice stays a function of runs alone.
+export const playerBios = pgTable('player_bios', {
+  clerkUserId: text('clerk_user_id')
+    .primaryKey()
+    .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+  bio: text('bio').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
+
+// One summary per lesson — what was said, what was decided, why. Append-only:
+// there is no update and no delete, because a record of a conversation that can
+// be rewritten afterwards is not a record. The transcript lives elsewhere (or
+// nowhere); this is what the next lesson actually reads.
+export const playerLog = pgTable(
+  'player_log',
+  {
+    id: uuid('id').primaryKey(),
+    clerkUserId: text('clerk_user_id')
+      .notNull()
+      .references(() => users.clerkUserId, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    summary: text('summary').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('player_log_user_created_idx').on(table.clerkUserId, table.createdAt),
+    check(
+      'player_log_kind_check',
+      sql`${table.kind} in ('onboarding', 'after_session', 'on_demand', 'check_in')`,
+    ),
+  ],
+)
+
 // People who asked to join the beta from the public landing page. Not users:
 // nobody here has an account yet, so nothing references the users table.
 export const waitlistSignups = pgTable('waitlist_signups', {
@@ -161,6 +204,8 @@ export const waitlistSignups = pgTable('waitlist_signups', {
 export const schema = {
   exerciseRuns,
   goals,
+  playerBios,
+  playerLog,
   sessionNotes,
   userExercises,
   users,

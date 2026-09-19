@@ -6,6 +6,7 @@ import {
 } from '../db/smoke'
 import { createGoalRepository, type GoalRepository } from '../db/goals'
 import { createNoteRepository, type NoteRepository } from '../db/notes'
+import { createPlayerRepository, type PlayerRepository } from '../db/player'
 import { createRunRepository, type RunRepository } from '../db/runs'
 import {
   createUserExerciseRepository,
@@ -30,6 +31,7 @@ interface CreateContextOptions {
   requestMetadata?: RequestLogMetadata | null
   goals?: GoalRepository | null
   notes?: NoteRepository | null
+  player?: PlayerRepository | null
   runs?: RunRepository | null
   userExercises?: UserExerciseRepository | null
   users?: UserRepository | null
@@ -73,6 +75,10 @@ function hasNotesOption(options: unknown): options is CreateContextOptions {
 
 function hasGoalsOption(options: unknown): options is CreateContextOptions {
   return typeof options === 'object' && options !== null && 'goals' in options
+}
+
+function hasPlayerOption(options: unknown): options is CreateContextOptions {
+  return typeof options === 'object' && options !== null && 'player' in options
 }
 
 function hasUserExercisesOption(
@@ -148,6 +154,9 @@ export function createContext(options?: unknown) {
   const goalRepository = hasGoalsOption(options)
     ? options.goals
     : createGoalRepository({ hyperdrive })
+  const playerRepository = hasPlayerOption(options)
+    ? options.player
+    : createPlayerRepository({ hyperdrive })
   const userExerciseRepository = hasUserExercisesOption(options)
     ? options.userExercises
     : createUserExerciseRepository({ hyperdrive })
@@ -163,6 +172,7 @@ export function createContext(options?: unknown) {
     requestMetadata,
     goals: goalRepository ?? null,
     notes: noteRepository ?? null,
+    player: playerRepository ?? null,
     runs: runRepository,
     userExercises: userExerciseRepository ?? null,
     users: userRepository,

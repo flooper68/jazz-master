@@ -4,12 +4,14 @@ import type { RunRepository } from '../server/db/runs'
 import { createContext } from '../server/trpc/context'
 import { appRouter } from '../server/trpc/router'
 import type { ExerciseInput } from '../content/exerciseInput'
+import type { PlayerRepository } from '../server/db/player'
 import type { GoalRepository } from '../server/db/goals'
 import type { NoteRepository } from '../server/db/notes'
 import type { UserExerciseRepository } from '../server/db/userExercises'
 import type { UserRepository } from '../server/db/users'
 import type { PlayerPrefs } from '../appData/playerPrefs'
 import { createMemoryGoalRepository } from './memoryGoals'
+import { createMemoryPlayerRepository } from './memoryPlayer'
 import { createMemoryNoteRepository } from './memoryNotes'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
 import { createMemoryUserRepository } from './memoryUsers'
@@ -21,6 +23,7 @@ let runsRepositoryAvailable = true
 let userExercises: UserExerciseRepository = createMemoryUserExerciseRepository()
 let notes: NoteRepository = createMemoryNoteRepository()
 let goals: GoalRepository = createMemoryGoalRepository()
+let player: PlayerRepository = createMemoryPlayerRepository()
 let users: UserRepository = createMemoryUserRepository()
 // The account is only asked about the player's settings once a test says the
 // user row exists; the rest run as they did before, with no user repository.
@@ -32,6 +35,7 @@ export function resetTrpcTestData() {
   userExercises = createMemoryUserExerciseRepository()
   notes = createMemoryNoteRepository()
   goals = createMemoryGoalRepository()
+  player = createMemoryPlayerRepository()
   users = createMemoryUserRepository()
   usersRepositoryAvailable = false
 }
@@ -54,11 +58,13 @@ export function getTrpcTestPlayerPrefs() {
  */
 export function trpcTestStores(): {
   goals: GoalRepository
+  player: PlayerRepository
   userExercises: UserExerciseRepository
   runs: RunRepository | null
 } {
   return {
     goals,
+    player,
     userExercises,
     runs: runsRepositoryAvailable ? runRepository : null,
   }
@@ -142,6 +148,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
         runs: runsRepositoryAvailable ? runRepository : null,
         goals,
         notes,
+        player,
         userExercises,
         users: usersRepositoryAvailable ? users : null,
       }),

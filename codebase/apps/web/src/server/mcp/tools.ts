@@ -7,15 +7,17 @@ import {
   type LibraryToolName,
 } from '../../agentTools/descriptors'
 import type { GoalRepository } from '../db/goals'
+import type { PlayerRepository } from '../db/player'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
 import { exerciseState, listGoals, nextSession, saveGoal, savePath } from '../library/goals'
+import { appendLog, listLog, readBio, writeBio } from '../library/player'
 
 /**
  * The tools an AI client gets: look at the user's library, check an exercise,
- * add one; read and set their goals, paths and priorities; and ask for the
- * session the app would play next. What each tool says of itself lives in
+ * add one; read and set their goals and paths; read and write what the teacher
+ * remembers about them; and ask for the session the app would play next. What each tool says of itself lives in
  * agentTools/descriptors, which the page's own
  * WebMCP tools share; here is how the server carries each one out. Each goes
  * through the same library functions the app uses, so nothing can be stored
@@ -27,6 +29,7 @@ export interface McpToolContext {
   userExercises: UserExerciseRepository | null
   runs: RunRepository | null
   goals: GoalRepository | null
+  player: PlayerRepository | null
 }
 
 export interface McpToolResult {
@@ -81,6 +84,29 @@ const CALLS: Record<LibraryToolName, McpToolCall> = {
 
   async set_path(args, context) {
     const result = await savePath(context, context.clerkUserId, argument(args, 'goalId'), argument(args, 'stages'))
+    return text(result, result.status !== 'ok')
+  },
+
+  async get_player_bio(_args, context) {
+    const result = await readBio(context, context.clerkUserId)
+    return text(result, result.status !== 'ok')
+  },
+
+  async write_player_bio(args, context) {
+    const result = await writeBio(context, context.clerkUserId, argument(args, 'bio'))
+    return text(result, result.status !== 'ok')
+  },
+
+  async list_player_log(args, context) {
+    const result = await listLog(context, context.clerkUserId, argument(args, 'limit'))
+    return text(result, result.status !== 'ok')
+  },
+
+  async append_player_log(args, context) {
+    const result = await appendLog(context, context.clerkUserId, {
+      kind: argument(args, 'kind'),
+      summary: argument(args, 'summary'),
+    })
     return text(result, result.status !== 'ok')
   },
 

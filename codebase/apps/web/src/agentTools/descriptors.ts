@@ -205,6 +205,10 @@ export type LibraryToolName =
   | 'set_path'
   | 'get_exercise_state'
   | 'list_runs'
+  | 'get_player_bio'
+  | 'write_player_bio'
+  | 'list_player_log'
+  | 'append_player_log'
 
 /** The library, goal and scheduling tools, in the order a client lists them. */
 export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: LibraryToolName })[] = [
@@ -212,7 +216,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'get_next_session',
     title: 'What to practise next',
     description:
-      "What Count-in would have the signed-in user practise now: the exercises of their next session, in playing order, each with the tempo to start at and the reason it is there (overdue, due today, new, ahead of schedule). It is worked out from their run history, and it follows their goals: a path decides what is open to be practised, a path's target is the tempo each of its exercises is judged against, and an exercise the user muted is never offered. Nothing is stored and calling it changes nothing. Note on days: the scheduler counts calendar days, and over this server they are counted in UTC — a user in another timezone may see a slightly different plan in the app itself.",
+      "What Count-in would have the signed-in user practise now: the exercises of their next session, in playing order, each with the tempo to start at and the reason it is there (overdue, due today, new, ahead of schedule). It is worked out from their run history, and it follows their goals: a path decides what is open to be practised, and a path's target is the tempo each of its exercises is judged against. Nothing is stored and calling it changes nothing. Note on days: the scheduler counts calendar days, and over this server they are counted in UTC — a user in another timezone may see a slightly different plan in the app itself.",
     inputSchema: objectSchema({}, []),
     annotations: READS_USER_TEXT,
   },
@@ -292,5 +296,53 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
       [],
     ),
     annotations: READS_USER_TEXT,
+  },
+  {
+    name: 'get_player_bio',
+    title: 'What is known about this player',
+    description:
+      "Read what the teacher knows about the signed-in player: preferences, skills, what they have already learned, what bores them — one living document in prose, the reduction of every lesson so far. **Read this before asking anything**; it is what makes a lesson feel like a conversation with somebody who remembers you. It holds what runs cannot tell — taste, history from before the app, what the player *said* they can do. Where it disagrees with the runs about a skill, the runs are right: check `get_exercise_state`, then correct the bio. Returns `{ \"bio\": null }` for a player who has never had a lesson. Nothing is stored and calling it changes nothing.",
+    inputSchema: objectSchema({}, []),
+    annotations: READS_USER_TEXT,
+  },
+  {
+    name: 'write_player_bio',
+    title: 'Rewrite what is known about this player',
+    description:
+      "Replace the player bio with a new one. It is a reduction, not a journal: read the old one, decide what the player now looks like, and write **that** — do not append, and do not keep a history in it, which is what the log is for. Write it in prose, in the second person, as notes a teacher would keep: what they want to play, what they can already do, what they enjoy, what bores them, how much time they have, anything they asked for. Update it at the end of every lesson. Passing an empty string clears it. Never record anything the player would not expect a teacher to write down.",
+    inputSchema: objectSchema(
+      { bio: { type: 'string', description: 'The whole new bio, in prose. Empty clears it.' } },
+      ['bio'],
+    ),
+    annotations: REPLACES,
+  },
+  {
+    name: 'list_player_log',
+    title: 'What past lessons decided',
+    description:
+      "The signed-in player's lesson log, newest first: one summary per lesson — what was said, what was decided, and why. Read it alongside the bio when something depends on history rather than on the current picture: what was promised last time, what the player asked to come back to, an intention like \"two weeks of solos, then add comping\" that is now due. Paged — pass `limit`. Nothing is stored and calling it changes nothing.",
+    inputSchema: objectSchema(
+      { limit: { type: 'integer', description: 'How many entries to return, newest first. Defaults to all, up to 500.' } },
+      [],
+    ),
+    annotations: READS_USER_TEXT,
+  },
+  {
+    name: 'append_player_log',
+    title: 'Record what this lesson decided',
+    description:
+      "Add one entry to the player's lesson log. Do this once at the **end of every lesson**, after any path or bio change: say what was discussed, what was decided, and why — briefly, in the words a teacher would use to remind themselves next time, including anything agreed for later. Append-only: there is no update and no delete, because a record of a conversation that can be rewritten afterwards is not a record. `kind` says which lesson it was: `onboarding` for a player's first, `after_session` for a chat offered at the end of a practice session, `on_demand` when the player started it themselves, `check_in` for a periodic catch-up.",
+    inputSchema: objectSchema(
+      {
+        kind: {
+          type: 'string',
+          enum: ['onboarding', 'after_session', 'on_demand', 'check_in'],
+          description: 'Which of the four kinds of lesson this was.',
+        },
+        summary: { type: 'string', description: 'What was said, decided, and why.' },
+      },
+      ['kind', 'summary'],
+    ),
+    annotations: ADDS,
   },
 ]

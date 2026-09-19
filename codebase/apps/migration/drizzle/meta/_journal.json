@@ -148,6 +148,13 @@
       "when": 1789855023842,
       "tag": "0020_drop_exercise_priorities",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789855356302,
+      "tag": "0021_player_bio_and_log",
+      "breakpoints": true
     }
   ]
 }
