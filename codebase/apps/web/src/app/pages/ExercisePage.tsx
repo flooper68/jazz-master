@@ -55,6 +55,7 @@ function ExerciseDetail({ exercise }: { exercise: Exercise }) {
   const headingRef = useViewFocus<HTMLHeadingElement>('detail', { focusOnMount: true })
   const minutes = Math.max(Math.round(exerciseSeconds(exercise) / 60), 1)
   const home = homeLabel(exercise)
+  const [lead, ...rest] = exercise.about ?? []
   // Keyed by facet, not by label: a style and a context can read the same
   // ("Jazz blues" is both), and one chip is enough to say it.
   const facets = [
@@ -125,6 +126,10 @@ function ExerciseDetail({ exercise }: { exercise: Exercise }) {
         </ul>
       )}
 
+      {/* The first paragraph of `about` is written as the way in — what this is
+          and why it is worth the time — so it leads, above the music. */}
+      {lead && <p className="mt-5 text-[15px] leading-relaxed text-fg-2">{lead}</p>}
+
       {/* How it is written, at rest: no cursor, nothing to seek, nothing to loop. */}
       <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-panel">
         <Score
@@ -139,10 +144,11 @@ function ExerciseDetail({ exercise }: { exercise: Exercise }) {
         />
       </div>
 
-      {exercise.about && exercise.about.length > 0 && (
+      {/* The rest is what to know once the music is in front of you. */}
+      {rest.length > 0 && (
         <div className="mt-6 space-y-3">
           <h2 className="font-display text-base font-semibold tracking-tight text-fg">About this exercise</h2>
-          {exercise.about.map((paragraph) => (
+          {rest.map((paragraph) => (
             <p key={paragraph} className="text-sm leading-relaxed text-fg-2">
               {paragraph}
             </p>

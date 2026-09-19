@@ -32,11 +32,28 @@ describe('ExercisePage', () => {
     expect(screen.queryByRole('button', { name: `Finish ${exercise.title}` })).toBeNull()
   })
 
-  it('tells the story of the exercise where it has one', async () => {
-    const withAbout = EXERCISES.find((item) => (item.about?.length ?? 0) > 0)!
-    await renderRoute(`/exercises/${withAbout.id}`)
-    expect(screen.getByRole('heading', { level: 2, name: 'About this exercise' })).toBeInTheDocument()
-    expect(screen.getByText(withAbout.about![0])).toBeInTheDocument()
+  it('leads with the way in, and keeps the rest for after the music', async () => {
+    const wordy = EXERCISES.find((item) => (item.about?.length ?? 0) > 1)!
+    const [lead, ...rest] = wordy.about!
+    await renderRoute(`/exercises/${wordy.id}`)
+
+    // The first paragraph is the way in, so it comes before the score.
+    const leadText = screen.getByText(lead)
+    const score = screen.getByRole('img', { name: new RegExp(`^${wordy.title} score`) })
+    expect(leadText.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    // The rest is what to know with the music in front of you.
+    const about = screen.getByRole('heading', { level: 2, name: 'About this exercise' })
+    expect(about.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    for (const paragraph of rest) expect(screen.getByText(paragraph)).toBeInTheDocument()
+  })
+
+  it('says nothing more where there is nothing more to say', async () => {
+    const terse = EXERCISES.find((item) => item.about?.length === 1)
+    if (!terse) return
+    await renderRoute(`/exercises/${terse.id}`)
+    expect(screen.getByText(terse.about![0])).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'About this exercise' })).toBeNull()
   })
 
   it('plays the exercise as a session of one — nothing plays outside a session', async () => {
