@@ -82,7 +82,7 @@ describe('HomePage', () => {
     const recent = within(screen.getByRole('region', { name: 'Recently played' }))
     const [latest] = recent.getAllByRole('listitem')
     expect(within(latest).getByText('Gm7 – C7 – Fmaj7 — a bebop line')).toBeInTheDocument()
-    expect(within(latest).getByText('Today · 90 BPM · quick run')).toBeInTheDocument()
+    expect(within(latest).getByText('Today · 90 BPM')).toBeInTheDocument()
     expect(within(latest).getByText('Hard')).toBeInTheDocument()
     expect(recent.getByRole('link', { name: 'All history' })).toHaveAttribute('href', '/app/history')
 

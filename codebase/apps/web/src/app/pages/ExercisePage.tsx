@@ -55,11 +55,13 @@ function ExerciseDetail({ exercise }: { exercise: Exercise }) {
   const headingRef = useViewFocus<HTMLHeadingElement>('detail', { focusOnMount: true })
   const minutes = Math.max(Math.round(exerciseSeconds(exercise) / 60), 1)
   const home = homeLabel(exercise)
+  // Keyed by facet, not by label: a style and a context can read the same
+  // ("Jazz blues" is both), and one chip is enough to say it.
   const facets = [
-    ...(exercise.styles ?? []).map((style) => STYLE_LABELS[style]),
-    ...(exercise.contexts ?? []).map((context) => CONTEXT_LABELS[context]),
-    ...(exercise.techniques ?? []).map((technique) => TECHNIQUE_LABELS[technique]),
-  ]
+    ...(exercise.styles ?? []).map((style) => ({ key: `style:${style}`, label: STYLE_LABELS[style] })),
+    ...(exercise.contexts ?? []).map((context) => ({ key: `context:${context}`, label: CONTEXT_LABELS[context] })),
+    ...(exercise.techniques ?? []).map((technique) => ({ key: `technique:${technique}`, label: TECHNIQUE_LABELS[technique] })),
+  ].filter((facet, index, all) => all.findIndex((other) => other.label === facet.label) === index)
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -114,10 +116,10 @@ function ExerciseDetail({ exercise }: { exercise: Exercise }) {
       </div>
 
       {facets.length > 0 && (
-        <ul className="mt-4 flex flex-wrap gap-1.5">
+        <ul aria-label="What this exercise trains" className="mt-4 flex flex-wrap gap-1.5">
           {facets.map((facet) => (
-            <li key={facet} className={CHIP}>
-              {facet}
+            <li key={facet.key} className={CHIP}>
+              {facet.label}
             </li>
           ))}
         </ul>

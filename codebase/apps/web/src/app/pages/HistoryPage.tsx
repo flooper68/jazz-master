@@ -107,11 +107,6 @@ function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | unde
             </span>
           )}
           {exercise && <SourceTag exerciseId={exercise.id} only="yours" />}
-          {run.sessionId && (
-            <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-fg-2">
-              Session
-            </span>
-          )}
         </div>
         <p className="mt-0.5 text-[13px] text-muted tabular-nums">
           {time} · {formatSeconds(run.durationSeconds)} played · {run.tempoBpm} BPM ·{' '}
@@ -130,8 +125,8 @@ function RunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercise | unde
       </div>
       {exercise && (
         <Link
-          to="/exercises/$exerciseId"
-          params={{ exerciseId: exercise.id }}
+          to="/session"
+          search={{ x: exercise.id }}
           aria-label={`Play ${exercise.title} again`}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >

@@ -49,9 +49,9 @@ const ANSWERED_PAUSE_MS = 900
  */
 export interface RunnerSession {
   id: string
-  /** What the session is called on the stage: "Quick run", or the routine's name. */
+  /** What the session is called on the stage: "Next session", or the routine's name. */
   label: string
-  /** The way out, in words: "End quick run", "End routine". */
+  /** The way out, in words: "End session", "End routine". */
   endLabel: string
   /** One-based. */
   step: number
@@ -113,7 +113,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
       ...outcome,
       difficulty: null,
       feel: null,
-      sessionId: session?.id ?? null,
+      sessionId: session.id,
     }
     if (finishedRun) onRunChange(finishedRun)
     // Every exercise ends on its own summary, played or not: an exercise that
@@ -178,8 +178,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
           onFinish={finish}
           startTempoBpm={startTempoBpm}
           headingRef={headingRef}
-          // On its own an exercise needs no way out in the header — the navigation
-          // is right there; a session says where it stands and how to end it.
+          // The stage says where in the session it stands, and how to leave it.
           headerAction={
             <span className="flex items-baseline gap-3 text-xs text-muted">
               <span className="tabular-nums">

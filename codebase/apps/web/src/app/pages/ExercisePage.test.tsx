@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISES } from '../../content'
@@ -50,6 +50,16 @@ describe('ExercisePage', () => {
     // The session stage, with this exercise as its only step.
     expect(await screen.findByText('Next session · 1 of 1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: `Play ${exercise.title}` })).toBeInTheDocument()
+  })
+
+  it('shows each facet once, even where a style and a context read the same', async () => {
+    // 'jazz/blues' as a style and 'jazz-blues' as a context both render "Jazz blues".
+    const doubled = EXERCISES.find(
+      (item) => item.styles?.includes('jazz/blues') && item.contexts?.includes('jazz-blues'),
+    )!
+    await renderRoute(`/exercises/${doubled.id}`)
+    const facets = within(screen.getByRole('list', { name: 'What this exercise trains' })).getAllByRole('listitem')
+    expect(facets.filter((facet) => facet.textContent === 'Jazz blues')).toHaveLength(1)
   })
 
   it('renders not found for an unknown exercise', async () => {

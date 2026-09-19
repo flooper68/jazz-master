@@ -35,12 +35,12 @@ describe('HistoryPage', () => {
     const line = within(today.getByRole('listitem'))
     expect(line.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
     expect(line.getByText('Lines')).toBeInTheDocument()
-    expect(line.getByText('Session')).toBeInTheDocument()
     expect(line.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
     expect(line.getByText('Hard')).toBeInTheDocument()
+    // Play again means play it again: a session of that exercise alone.
     expect(line.getByRole('link', { name: 'Play Gm7 – C7 – Fmaj7 — a bebop line again' })).toHaveAttribute(
       'href',
-      '/app/exercises/lines-ii-v-i-f-line',
+      '/app/session?x=lines-ii-v-i-f-line',
     )
 
     const yesterday = within(within(screen.getByRole('region', { name: 'Yesterday' })).getByRole('listitem'))

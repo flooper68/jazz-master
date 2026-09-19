@@ -73,7 +73,11 @@ export interface ExerciseRun {
   difficulty: Difficulty | null
   /** How it felt, if the player said. Null reads as `fine` everywhere it is used. */
   feel: Feel | null
-  /** The practice session (a quick run) this run was part of; null when played on its own. */
+  /**
+   * The practice session this run was part of. Nothing is playable outside a
+   * session any more (ADR-020), so the app only ever writes an id here; null
+   * survives on rows recorded when an exercise could be played on its own.
+   */
   sessionId: string | null
 }
 

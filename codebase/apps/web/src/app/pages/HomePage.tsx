@@ -182,7 +182,6 @@ function RecentRuns({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<s
                   <p className="truncate font-medium text-fg">{exercise?.title ?? 'An exercise that is no longer here'}</p>
                   <p className="mt-0.5 text-sm text-muted tabular-nums">
                     {dayLabel(new Date(run.startedAt), new Date())} · {run.tempoBpm} BPM
-                    {run.sessionId && ' · quick run'}
                   </p>
                 </div>
                 <span className="shrink-0 text-sm text-muted">
