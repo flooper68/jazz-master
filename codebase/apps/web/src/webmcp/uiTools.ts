@@ -24,7 +24,7 @@ export type AppPage = keyof typeof APP_PAGES
 export type AppDestination =
   | { page: AppPage }
   | { exerciseId: string }
-  | { session: { x: string } }
+  | { session: { x: string; m?: number } }
 
 export interface UiToolDeps {
   /** The app-relative path and its search, e.g. `/exercises/abc`. */

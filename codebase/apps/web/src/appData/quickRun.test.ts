@@ -42,6 +42,16 @@ describe('the session URL', () => {
     expect(sessionSearch(plan)).toEqual({ x: `${first.id},${second.id}@${second.tempoBpm - 10}` })
   })
 
+  it('carries how long the plan was expected to take, when that is a length worth counting to', () => {
+    const slots = [{ exercise: first, tempoBpm: first.tempoBpm, reason: 'Due today' }]
+    expect(sessionSearch({ slots, plannedSeconds: 20 * 60 })).toMatchObject({ m: 20 })
+    // Rounded to the minute, like the card that offered it.
+    expect(sessionSearch({ slots, plannedSeconds: 7 * 60 + 40 })).toMatchObject({ m: 8 })
+    // Nothing worth counting to: no length in the URL at all.
+    expect(sessionSearch({ slots, plannedSeconds: 0 })).toEqual({ x: first.id })
+    expect(sessionSearch({ slots, plannedSeconds: 99 * 60 * 60 })).toEqual({ x: first.id })
+  })
+
   it('reads back what it wrote', () => {
     expect(parseSessionSearch(`${first.id},${second.id}@95`)).toEqual([
       { exerciseId: first.id, tempoBpm: null },

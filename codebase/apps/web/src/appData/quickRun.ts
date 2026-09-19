@@ -40,13 +40,28 @@ export interface SessionPlan {
  * a reload plays the same thing at the same tempos. A slot is `id` when it is
  * played at the exercise's own tempo and `id@95` when the scheduler asked for
  * another one.
+ *
+ * `m` is what the plan was expected to take, in minutes — the same number the
+ * card said before Play was pressed. The run clock counts against it, and
+ * because it is in the URL it survives a reload; a session URL without it
+ * (one exercise, started from its own page) simply has no length to count to.
  */
-export function sessionSearch(plan: SessionPlan): { x: string } {
+export function sessionSearch(plan: SessionPlan): { x: string; m?: number } {
   const x = plan.slots
     .map((slot) => (slot.tempoBpm === slot.exercise.tempoBpm ? slot.exercise.id : `${slot.exercise.id}@${slot.tempoBpm}`))
     .join(',')
-  return { x }
+  const m = plannedMinutes(plan.plannedSeconds)
+  return m === null ? { x } : { x, m }
 }
+
+/** The whole minutes a plan comes to, or null when it comes to nothing worth counting to. */
+export function plannedMinutes(plannedSeconds: number): number | null {
+  const minutes = Math.round(plannedSeconds / 60)
+  return minutes >= 1 && minutes <= LONGEST_SESSION_MINUTES ? minutes : null
+}
+
+/** A session cannot sensibly be planned longer than a day's practice; anything past it is junk in the URL. */
+export const LONGEST_SESSION_MINUTES = 240
 
 /** One exercise of a session as the URL names it. */
 export interface SessionSearchItem {

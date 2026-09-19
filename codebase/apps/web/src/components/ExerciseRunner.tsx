@@ -8,6 +8,7 @@ import { ExerciseThumb } from './ExerciseThumb'
 import { FeelInput } from './FeelInput'
 import { CheckIcon, MinusIcon, NextIcon, SignOutIcon } from './icons'
 import { RatingInput } from './RatingInput'
+import { RunClock } from './RunClock'
 import { VoiceAnswer, type VoiceAnswerProps } from './VoiceAnswer'
 import { setPlayerPrefs } from './playerPrefs'
 import { usePlayerPrefs } from './usePlayerPrefs'
@@ -57,6 +58,10 @@ const SESSION_EXIT = 'End session'
  */
 export interface RunnerSession {
   id: string
+  /** When the whole run began, in epoch milliseconds — what the run clock counts from. */
+  startedAt: number
+  /** What the run was planned to take; null when nothing planned it. */
+  plannedSeconds: number | null
   /** One-based. */
   step: number
   total: number
@@ -188,6 +193,8 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
               <span className="tabular-nums">
                 {SESSION_LABEL} · {session.step} of {session.total}
               </span>
+              {/* The whole run's clock, ticking in its own component. */}
+              <RunClock startedAt={session.startedAt} plannedSeconds={session.plannedSeconds} />
               <button
                 type="button"
                 onClick={onExit}

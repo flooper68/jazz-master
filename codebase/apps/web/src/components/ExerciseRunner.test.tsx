@@ -79,7 +79,7 @@ function fakeAudio() {
 
 /** Every exercise is played inside a session; on its own it is a session of one. */
 function sessionOfOne(onContinue: () => void, step = 1, total = 1): RunnerSession {
-  return { id: 'session-1', step, total, onContinue }
+  return { id: 'session-1', startedAt: Date.now(), plannedSeconds: null, step, total, onContinue }
 }
 
 function renderRunner({

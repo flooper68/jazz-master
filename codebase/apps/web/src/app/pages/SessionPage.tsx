@@ -13,6 +13,7 @@ import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { SessionNoteInput } from '../../components/SessionNoteInput'
+import { RunClock } from '../../components/RunClock'
 import { Modal } from '../../components/ui/Modal'
 import { CheckIcon, ResetIcon } from '../../components/icons'
 import type { Exercise } from '../../content'
@@ -36,7 +37,7 @@ const ANSWER_CHIP = 'rounded-full px-2 py-0.5 text-[11px] font-medium'
  */
 export default function SessionPage() {
   // Loose search so the page also renders inside Storybook's ad hoc router.
-  const { x } = useSearch({ strict: false }) as { x?: string }
+  const { x, m } = useSearch({ strict: false }) as { x?: string; m?: number }
   const planned = parseSessionSearch(x)
   const { byId, libraryPending } = useExerciseCatalog()
   // A plan that includes the user's own exercises waits for the library, rather than starting short and restarting.
@@ -51,7 +52,13 @@ export default function SessionPage() {
   if (steps.length === 0) return <NotFoundPage />
 
   // Keyed on the plan so another session starts afresh.
-  return <SessionStage key={steps.map((step) => `${step.exercise.id}@${step.tempoBpm}`).join()} steps={steps} />
+  return (
+    <SessionStage
+      key={steps.map((step) => `${step.exercise.id}@${step.tempoBpm}`).join()}
+      steps={steps}
+      plannedSeconds={typeof m === 'number' ? m * 60 : null}
+    />
+  )
 }
 
 /** One exercise of the session, at the tempo the plan asked for. */
@@ -60,7 +67,7 @@ interface SessionStep {
   tempoBpm: number
 }
 
-function SessionStage({ steps }: { steps: SessionStep[] }) {
+function SessionStage({ steps, plannedSeconds }: { steps: SessionStep[]; plannedSeconds: number | null }) {
   const goBack = useGoBack()
   // One kind of sitting, so one name (ADR-021).
   const label = 'Next session'
@@ -69,6 +76,8 @@ function SessionStage({ steps }: { steps: SessionStep[] }) {
   const [note, setNote] = useState('')
   // The session's identity is minted once, when it mounts — not in render.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
+  // And so is its clock: the run is as long as the user has been here.
+  const [startedAt, setStartedAt] = useState(() => Date.now())
   const [index, setIndex] = useState(0)
   // The latest run of each step, for the closing summary; a step ended without playing has none.
   const [runs, setRuns] = useState<ReadonlyMap<number, ExerciseRun>>(new Map())
@@ -78,6 +87,7 @@ function SessionStage({ steps }: { steps: SessionStep[] }) {
   }
   function restart(): void {
     setSessionId(crypto.randomUUID())
+    setStartedAt(Date.now())
     setRuns(new Map())
     setNote('')
     setIndex(0)
@@ -140,6 +150,8 @@ function SessionStage({ steps }: { steps: SessionStep[] }) {
         startTempoBpm={step.tempoBpm}
         session={{
           id: sessionId,
+          startedAt,
+          plannedSeconds,
           step: stepIndex + 1,
           total: steps.length,
           onContinue: () => setIndex((current) => current + 1),
@@ -162,8 +174,7 @@ function SessionStage({ steps }: { steps: SessionStep[] }) {
               {label} complete
             </h2>
             <p className="rise-in [animation-delay:140ms] mt-1 text-sm text-muted">
-              {runs.size} of {steps.length} played ·{' '}
-              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              {runs.size} of {steps.length} played · <RunClock startedAt={startedAt} plannedSeconds={plannedSeconds} />
             </p>
           </div>
 

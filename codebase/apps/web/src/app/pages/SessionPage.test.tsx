@@ -240,6 +240,16 @@ describe('SessionPage', () => {
     expect(screen.getByRole('spinbutton', { name: /[Tt]empo/ })).toHaveValue(48)
   })
 
+  it('keeps the whole run\'s clock on the stage, counting to the length the plan was cut to', async () => {
+    await renderRoute('/session?x=scales-major-open-c,scales-major-open-g&m=20')
+    expect(await screen.findByLabelText('Practice run: 0:00 of ~20 min')).toBeInTheDocument()
+  })
+
+  it('counts without a target when nothing planned the run', async () => {
+    await renderRoute('/session?x=scales-major-open-c')
+    expect(await screen.findByLabelText('Practice run: 0:00')).toBeInTheDocument()
+  })
+
   it('offers the same plan again at the end, as a session of its own', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-c')
