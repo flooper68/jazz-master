@@ -43,9 +43,13 @@ export function builtinExerciseSummaries() {
 }
 
 /**
- * What get_next_session answers with, through either door: the slots the home
- * card shows, in the same order and with the same reasons, worked out from the
- * same pure functions.
+ * What get_next_session answers with, through either door: the same pure
+ * functions the home card plans with, over the same four inputs — the runs, the
+ * catalogue, the paths and what the user said about single exercises.
+ *
+ * Not yet the card's plan exactly: the card also passes the session length the
+ * user chose and the routine they named as next, and this does neither, so a
+ * user who asked for ten minutes is answered here at the default budget.
  *
  * Days are counted in the runtime's own timezone. In the browser (WebMCP) that
  * is the user's, so the answer matches the page exactly. On the `/mcp` server
@@ -56,8 +60,8 @@ export function builtinExerciseSummaries() {
 export function nextSessionAnswer(
   runs: readonly ExerciseRun[],
   catalog: readonly Exercise[],
-  goals: readonly Goal[] = [],
-  priorities: readonly ExercisePriority[] = [],
+  goals: readonly Goal[],
+  priorities: readonly ExercisePriority[],
 ) {
   // The same inputs the home card assembles from, so a tool and the page can
   // never describe two different sessions.
@@ -81,7 +85,9 @@ export function nextSessionAnswer(
       title: slot.exercise.title,
       area: slot.exercise.area,
       tempoBpm: slot.tempoBpm,
-      targetTempoBpm: slot.exercise.tempoBpm,
+      // What this exercise is judged against here and now — the path's target
+      // where one asks, not the tempo the exercise happens to be written at.
+      targetTempoBpm: targets.get(slot.exercise.id) ?? slot.exercise.tempoBpm,
       reason: slot.reason,
     })),
   }
@@ -243,7 +249,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'get_next_session',
     title: 'What to practise next',
     description:
-      "What Count-in would have the signed-in user practise now: the exercises of their next session, in playing order, each with the tempo to start at and the reason it is there (overdue, due today, new, ahead of schedule). It is worked out from their run history by the same code the app's home page uses. Nothing is stored and calling it changes nothing. Note on days: the scheduler counts calendar days, and over this server they are counted in UTC — a user in another timezone may see a slightly different plan in the app itself.",
+      "What Count-in would have the signed-in user practise now: the exercises of their next session, in playing order, each with the tempo to start at and the reason it is there (overdue, due today, new, ahead of schedule). It is worked out from their run history, and it follows their goals: a path decides what is open to be practised, a path's target is the tempo each of its exercises is judged against, and an exercise the user muted is never offered. Nothing is stored and calling it changes nothing. Note on days: the scheduler counts calendar days, and over this server they are counted in UTC — a user in another timezone may see a slightly different plan in the app itself.",
     inputSchema: objectSchema({}, []),
     annotations: READS_USER_TEXT,
   },

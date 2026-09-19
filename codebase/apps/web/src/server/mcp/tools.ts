@@ -1,19 +1,17 @@
 import {
   LIBRARY_TOOL_DESCRIPTORS,
   builtinExerciseSummaries,
-  nextSessionAnswer,
   runsAnswer,
   toolArgument as argument,
   type AgentToolDescriptor,
   type LibraryToolName,
 } from '../../agentTools/descriptors'
-import { EXERCISES } from '../../content'
 import type { GoalRepository } from '../db/goals'
 import type { RoutineRepository } from '../db/routines'
 import type { RunRepository } from '../db/runs'
 import type { UserExerciseRepository } from '../db/userExercises'
 import { checkLibraryExercise, createLibraryExercise, listLibrary } from '../library/library'
-import { exerciseState, listGoals, saveGoal, savePath, savePriority } from '../library/goals'
+import { exerciseState, listGoals, nextSession, saveGoal, savePath, savePriority } from '../library/goals'
 import { deleteRoutine, listRoutines, saveRoutine } from '../library/routines'
 
 /**
@@ -51,16 +49,11 @@ interface McpTool extends AgentToolDescriptor {
 }
 
 const CALLS: Record<LibraryToolName, McpToolCall> = {
-  async get_next_session(_args, { clerkUserId, userExercises, runs }) {
-    if (!runs) return text({ status: 'unconfigured' }, true)
-    try {
-      // The user's own exercises are part of what can be practised; without them the pack still plans.
-      const library = await listLibrary(userExercises, clerkUserId)
-      const catalog = library.status === 'ok' ? [...EXERCISES, ...library.exercises] : EXERCISES
-      return text(nextSessionAnswer(await runs.listRuns(clerkUserId), catalog))
-    } catch {
-      return text({ status: 'error', message: 'Run database read failed' }, true)
-    }
+  async get_next_session(_args, context) {
+    // Through the same gathering as get_exercise_state, so the plan is made
+    // against the user's paths and priorities — not just their runs (JM-11).
+    const result = await nextSession(context, context.clerkUserId)
+    return text(result, result.status !== 'ok')
   },
   async list_exercises(_args, { clerkUserId, userExercises }) {
     const result = await listLibrary(userExercises, clerkUserId)

@@ -47,7 +47,7 @@ function goalOf(stages: string[][], targetTempoBpm = 100): Goal {
 }
 
 function stateOf(runs: readonly ExerciseRun[], catalog: readonly Exercise[], goal?: Goal): ReadonlyMap<string, ExerciseState> {
-  return foldRuns(runs, catalog, undefined, resolveTargets(catalog, goal ? [goal] : []))
+  return foldRuns(runs, catalog, undefined, resolveTargets(catalog, goal ? [goal] : [], []))
 }
 
 describe('pathProgress', () => {

@@ -93,7 +93,7 @@ describe('exhaustion', () => {
   const today = new Date('2026-04-10T18:00:00')
 
   function state(runs: readonly ExerciseRun[]) {
-    return foldRuns(runs, catalog, undefined, resolveTargets(catalog, [goal]))
+    return foldRuns(runs, catalog, undefined, resolveTargets(catalog, [goal], []))
   }
 
   function ask(runs: readonly ExerciseRun[]) {

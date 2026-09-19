@@ -54,6 +54,25 @@ export function getTrpcTestPlayerPrefs() {
   return users.readPlayerPrefs(TEST_CLERK_USER_ID)
 }
 
+/**
+ * The very repositories the tRPC router is serving here, so a test can drive
+ * the MCP *server* surface over the same seeded data the browser's tools see —
+ * which is how the two are held to one answer (JM-11).
+ */
+export function trpcTestStores(): {
+  goals: GoalRepository
+  userExercises: UserExerciseRepository
+  routines: RoutineRepository | null
+  runs: RunRepository | null
+} {
+  return {
+    goals,
+    userExercises,
+    routines: routinesRepositoryAvailable ? routines : null,
+    runs: runsRepositoryAvailable ? runRepository : null,
+  }
+}
+
 /** Give the test user a goal; resolves to it as stored, id included. */
 export async function seedTrpcTestGoal(goal: Parameters<GoalRepository['createGoal']>[1]) {
   return goals.createGoal(TEST_CLERK_USER_ID, goal)

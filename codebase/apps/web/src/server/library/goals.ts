@@ -1,4 +1,4 @@
-import { exerciseStateAnswer, goalsAnswer } from '../../agentTools/descriptors'
+import { exerciseStateAnswer, goalsAnswer, nextSessionAnswer } from '../../agentTools/descriptors'
 import {
   goalInputSchema,
   parseGoalInput,
@@ -26,6 +26,7 @@ import { listLibrary } from './library'
 type Unavailable = { status: 'unconfigured' }
 type ReadFailed = { status: 'error'; message: 'Goal read failed' }
 type WriteFailed = { status: 'error'; message: 'Goal write failed' }
+type PlanReadFailed = { status: 'error'; message: 'Practice plan read failed' }
 
 export type GoalListResult =
   | ReturnType<typeof goalsAnswer>
@@ -48,6 +49,8 @@ export type PriorityWriteResult =
   | WriteFailed
 
 export type ExerciseStateResult = ReturnType<typeof exerciseStateAnswer> | Unavailable | ReadFailed
+
+export type NextSessionResult = ReturnType<typeof nextSessionAnswer> | Unavailable | PlanReadFailed
 
 export interface GoalStores {
   goals: GoalRepository | null
@@ -188,6 +191,22 @@ export async function savePriority(
   }
 }
 
+/**
+ * The four things any plan is made from, for this user, read together. It
+ * exists so that no caller has to remember the last two: leaving the paths and
+ * the priorities out is exactly how the practice offered over MCP came to
+ * ignore the user's goals (JM-11).
+ */
+async function planInputs(stores: GoalStores & { runs: RunRepository }, clerkUserId: string) {
+  const [runs, catalog, goals, priorities] = await Promise.all([
+    stores.runs.listRuns(clerkUserId),
+    catalogFor(stores, clerkUserId),
+    stores.goals ? stores.goals.listGoals(clerkUserId) : Promise.resolve([]),
+    stores.goals ? stores.goals.listPriorities(clerkUserId) : Promise.resolve([]),
+  ])
+  return { runs, catalog, goals, priorities }
+}
+
 /** What the scheduler knows about every exercise, and whether the paths have run out today. */
 export async function exerciseState(
   stores: GoalStores,
@@ -196,14 +215,25 @@ export async function exerciseState(
 ): Promise<ExerciseStateResult> {
   if (!stores.runs) return { status: 'unconfigured' }
   try {
-    const [runs, catalog, goals, priorities] = await Promise.all([
-      stores.runs.listRuns(clerkUserId),
-      catalogFor(stores, clerkUserId),
-      stores.goals ? stores.goals.listGoals(clerkUserId) : Promise.resolve([]),
-      stores.goals ? stores.goals.listPriorities(clerkUserId) : Promise.resolve([]),
-    ])
+    const { runs, catalog, goals, priorities } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
     return exerciseStateAnswer(runs, catalog, goals, priorities, today)
   } catch {
     return { status: 'error', message: 'Goal read failed' }
+  }
+}
+
+/**
+ * What to practise now: the same read as `exerciseState`, answered as a plan
+ * rather than as a state. The message on failure names the plan, not the runs —
+ * the paths and the library are read here too, and any of them can be what went
+ * wrong.
+ */
+export async function nextSession(stores: GoalStores, clerkUserId: string): Promise<NextSessionResult> {
+  if (!stores.runs) return { status: 'unconfigured' }
+  try {
+    const { runs, catalog, goals, priorities } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
+    return nextSessionAnswer(runs, catalog, goals, priorities)
+  } catch {
+    return { status: 'error', message: 'Practice plan read failed' }
   }
 }

@@ -18,8 +18,8 @@ import { activeGoals, type ExercisePriority, type Goal } from './goal'
 /** The tempo each exercise is judged against, by id. */
 export function resolveTargets(
   catalog: readonly Exercise[],
-  goals: readonly Goal[] = [],
-  priorities: readonly ExercisePriority[] = [],
+  goals: readonly Goal[],
+  priorities: readonly ExercisePriority[],
 ): Map<string, number> {
   const fromPaths = new Map<string, number>()
   // Active paths only: a paused goal stops asking anything of its exercises.

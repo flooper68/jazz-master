@@ -23,27 +23,27 @@ const catalog = [exercise('a', 100), exercise('b', 80), exercise('c', 120)]
 
 describe('resolveTargets', () => {
   it('falls back to the tempo an exercise is written at', () => {
-    const targets = resolveTargets(catalog)
+    const targets = resolveTargets(catalog, [], [])
     expect(targets.get('a')).toBe(100)
     expect(targets.get('b')).toBe(80)
   })
 
   it('takes the target an active path asks for', () => {
-    const targets = resolveTargets(catalog, [goal('g1', [['a', 140]])])
+    const targets = resolveTargets(catalog, [goal('g1', [['a', 140]])], [])
     expect(targets.get('a')).toBe(140)
     // Everything the path says nothing about keeps its own tempo.
     expect(targets.get('b')).toBe(80)
   })
 
   it('ignores a paused goal, so pausing really does stop it asking', () => {
-    const targets = resolveTargets(catalog, [goal('g1', [['a', 140]], 'paused')])
+    const targets = resolveTargets(catalog, [goal('g1', [['a', 140]], 'paused')], [])
     expect(targets.get('a')).toBe(100)
   })
 
   it('takes the higher target when two goals want the same exercise', () => {
     // Having it at 160 satisfies the goal that wanted 120; the other way round
     // would quietly tell the harder goal it was finished.
-    const targets = resolveTargets(catalog, [goal('g1', [['a', 120]]), goal('g2', [['a', 160]])])
+    const targets = resolveTargets(catalog, [goal('g1', [['a', 120]]), goal('g2', [['a', 160]])], [])
     expect(targets.get('a')).toBe(160)
   })
 
@@ -59,7 +59,7 @@ describe('resolveTargets', () => {
   })
 
   it('has an entry for every exercise in the catalog and nothing else', () => {
-    const targets = resolveTargets(catalog, [goal('g1', [['gone-since', 140]])])
+    const targets = resolveTargets(catalog, [goal('g1', [['gone-since', 140]])], [])
     expect([...targets.keys()].sort()).toEqual(['a', 'b', 'c'])
   })
 })
