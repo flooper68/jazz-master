@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PlayerAudio } from '../audio/engine'
+import { sampleUrl } from '../audio/voices'
 import type { TabNote } from '../content'
 import { clampTempo, createTransport, type TransportOptions } from './transport'
 
@@ -323,6 +324,48 @@ describe('createTransport', () => {
     transport.setGuitar('nylon')
     expect(transport.getSnapshot().guitar).toBe('nylon')
     expect(log.slice(-2)).toEqual(['guitar nylon', 'prime 48,50,52,53'])
+  })
+
+  it('warms the guitar\u2019s recordings before Play builds an audio context', async () => {
+    const warmed: string[] = []
+    const { transport } = harness({ warmSample: (url) => warmed.push(url) })
+
+    // Mounting applies the saved settings one after another; only the guitar
+    // finally chosen is worth pulling down.
+    transport.setVoice(true)
+    transport.setGuitar('nylon-sampled')
+    await Promise.resolve()
+
+    expect(warmed).toHaveLength(4)
+    expect(warmed.every((url) => url.includes('acoustic_guitar_nylon-mp3'))).toBe(true)
+    expect(warmed).toContain(sampleUrl('acoustic_guitar_nylon', 48))
+
+    // Already warm: settling on the same guitar again asks for nothing more.
+    transport.setGuitar('nylon-sampled')
+    await Promise.resolve()
+    expect(warmed).toHaveLength(4)
+  })
+
+  it('leaves a synthesized guitar alone \u2014 it has nothing to download', async () => {
+    const warmed: string[] = []
+    const { transport } = harness({ warmSample: (url) => warmed.push(url) })
+    transport.setVoice(true)
+    transport.setGuitar('nylon')
+    await Promise.resolve()
+    expect(warmed).toEqual([])
+  })
+
+  it('stops warming once Play has built the audio context', async () => {
+    const warmed: string[] = []
+    const { transport, log } = harness({ warmSample: (url) => warmed.push(url) })
+    transport.setVoice(true)
+    transport.play()
+    warmed.length = 0
+    transport.setGuitar('steel-sampled')
+    await Promise.resolve()
+    // The engine owns the loading now, and it decodes as well as fetches.
+    expect(warmed).toEqual([])
+    expect(log).toContain('prime 48,50,52,53')
   })
 
   it('clamps tempos to the playable range', () => {

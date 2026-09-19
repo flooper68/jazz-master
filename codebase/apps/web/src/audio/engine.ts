@@ -1,4 +1,4 @@
-import { DEFAULT_VOICE, sampleUrl, voiceById, type SynthVoice, type VoiceId } from './voices'
+import { DEFAULT_VOICE, sampleUrl, voiceById, voiceLevel, type SynthVoice, type VoiceId } from './voices'
 
 /**
  * The player's sounds, all on one Web Audio clock: a synthesized click with
@@ -128,6 +128,29 @@ export function renderPluck(
   }
 }
 
+/**
+ * Pull a recording into the browser's cache before there is an audio context
+ * to decode it into. The player only builds one when Play is pressed, so
+ * without this the first notes of a session race a cold fetch — and lose,
+ * leaving the model standing in for a guitar the listener chose.
+ */
+export function prefetchSample(url: string): void {
+  // A runtime without fetch has nothing to warm, and calling it would throw
+  // synchronously — before there is a promise to catch it.
+  if (typeof fetch !== 'function') return
+  try {
+    // The body has to be read for the cache entry to complete; it is then
+    // dropped. A failed response is left alone rather than cached as garbage.
+    void fetch(url)
+      .then((response) => (response.ok ? response.arrayBuffer() : null))
+      .catch(() => {
+        // Best effort — the engine fetches the pitch for real when it needs it.
+      })
+  } catch {
+    // As above: warming is never worth an error of its own.
+  }
+}
+
 export function createPlayerAudio({
   createContext = () => new AudioContext(),
   fetchSample = async (url) => {
@@ -181,18 +204,22 @@ export function createPlayerAudio({
     if (disposed) throw new Error('Player audio was disposed')
   }
 
-  /** The buffer, tone and body for a pitch under the current voice. */
+  /**
+   * The buffer, tone and body for a pitch under the current voice. Each
+   * voice carries its own level, so a note sounds at the same volume whether
+   * its recording has arrived or the model is still standing in for it.
+   */
   function resolve(midi: number): { buffer: AudioBuffer; synth: SynthVoice | null; level: number } {
     const voice = voiceById(voiceId)
     if (voice.kind === 'sampled') {
       const sample = sampleCache.get(sampleUrl(voice.instrument, midi))
-      if (sample) return { buffer: sample, synth: null, level: voice.level }
+      if (sample) return { buffer: sample, synth: null, level: voiceLevel(voice) }
       loadSample(voice.instrument, midi)
       const fallback = voiceById(voice.fallback)
       const synth = fallback.kind === 'synth' ? fallback : (voiceById('nylon') as SynthVoice)
-      return { buffer: synthBuffer(synth, midi), synth, level: synth.level }
+      return { buffer: synthBuffer(synth, midi), synth, level: voiceLevel(synth) }
     }
-    return { buffer: synthBuffer(voice, midi), synth: voice, level: voice.level }
+    return { buffer: synthBuffer(voice, midi), synth: voice, level: voiceLevel(voice) }
   }
 
   return {

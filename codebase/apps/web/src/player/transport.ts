@@ -1,5 +1,5 @@
-import { createPlayerAudio, type PlayerAudio } from '../audio/engine'
-import { DEFAULT_VOICE, type VoiceId } from '../audio/voices'
+import { createPlayerAudio, prefetchSample, type PlayerAudio } from '../audio/engine'
+import { DEFAULT_VOICE, sampleUrl, voiceById, type VoiceId } from '../audio/voices'
 import { midisOf, passBeats, type TabNote } from '../content'
 import {
   createRun,
@@ -56,6 +56,8 @@ export interface TransportOptions {
   tempoBpm: number
   repeat?: number | null
   createAudio?: () => PlayerAudio
+  /** How a recording is pulled into the browser's cache before Play (a test seam). */
+  warmSample?: (url: string) => void
   /** Wall clock in ms, used only when audio is unavailable. */
   now?: () => number
   setInterval?: typeof globalThis.setInterval
@@ -107,6 +109,7 @@ export function createTransport({
   tempoBpm,
   repeat = null,
   createAudio = () => createPlayerAudio(),
+  warmSample = prefetchSample,
   now = () => performance.now(),
   setInterval = globalThis.setInterval.bind(globalThis),
   clearInterval = globalThis.clearInterval.bind(globalThis),
@@ -145,6 +148,9 @@ export function createTransport({
   let transposeSemitones = 0
   // Bumped on every play/pause so a late resume() cannot revive a paused run.
   let generation = 0
+  // Recordings already pulled into the browser's cache, and whether a warming pass is pending.
+  const warmed = new Set<string>()
+  let warming = false
 
   function emit(patch: Partial<TransportSnapshot>): void {
     snapshot = { ...snapshot, ...patch }
@@ -184,7 +190,36 @@ export function createTransport({
 
   /** Get the guitar's recordings loading before they are needed. */
   function primeVoice(): void {
-    if (snapshot.voice) audio?.prime(pitches.map((pitch) => pitch + transposeSemitones))
+    if (!snapshot.voice) return
+    if (audio) {
+      audio.prime(pitches.map((pitch) => pitch + transposeSemitones))
+      return
+    }
+    warmSamples()
+  }
+
+  /**
+   * Warm the recordings while there is still no audio context to decode them
+   * into — one is only built when Play is pressed, which leaves a count-in to
+   * fetch a file per pitch. The work waits a microtask so that the settings a
+   * mounting player applies one after another (voice, then guitar, then
+   * transpose) warm one instrument rather than each in turn.
+   */
+  function warmSamples(): void {
+    if (warming) return
+    warming = true
+    queueMicrotask(() => {
+      warming = false
+      if (disposed || audio || !snapshot.voice) return
+      const voice = voiceById(snapshot.guitar)
+      if (voice.kind !== 'sampled') return
+      for (const midi of new Set(pitches.map((pitch) => pitch + transposeSemitones))) {
+        const url = sampleUrl(voice.instrument, midi)
+        if (warmed.has(url)) continue
+        warmed.add(url)
+        warmSample(url)
+      }
+    })
   }
 
   function clearTimer(): void {

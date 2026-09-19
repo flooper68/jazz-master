@@ -26,10 +26,24 @@ export interface BodyResonance {
   gainDb: number
 }
 
-export interface SynthVoice {
-  kind: 'synth'
+interface VoiceCommon {
   id: VoiceId
   label: string
+  /**
+   * How loud this voice actually is, measured rather than judged: the mean
+   * RMS of the first half second of one note through its whole chain — the
+   * model or the recording, then the amp, tone and body — rendered at a level
+   * of 1 and averaged over MIDI 40 to 74. Playback divides
+   * `TARGET_LOUDNESS` by it, which is what keeps a synthesized guitar and the
+   * recording it stands in for at the same volume. Change the model or the
+   * filters and this number is stale: re-render the chain in an
+   * `OfflineAudioContext` and average that RMS across the same pitches again.
+   */
+  loudness: number
+}
+
+export interface SynthVoice extends VoiceCommon {
+  kind: 'synth'
   /** Roughly how long the open string rings before it is gone, seconds. */
   decaySeconds: number
   /** Loop filter blend 0..0.5: smaller keeps more highs (a brighter, wirier string). */
@@ -43,22 +57,35 @@ export interface SynthVoice {
   body: BodyResonance[]
   /** Amp drive 0..1: 0 is clean, 1 saturates hard. */
   drive?: number
-  /** Level relative to the click. */
-  level: number
 }
 
-export interface SampledVoice {
+export interface SampledVoice extends VoiceCommon {
   kind: 'sampled'
-  id: VoiceId
-  label: string
   /** Soundfont instrument folder name. */
   instrument: string
   /** Synth voice used while a sample has not loaded (or cannot). */
   fallback: VoiceId
-  level: number
 }
 
 export type Voice = SynthVoice | SampledVoice
+
+/**
+ * The one loudness every guitar is levelled to. It is where the sampled
+ * voices already sat, so bringing the synthesized ones into line left the
+ * play-along sounding as it did rather than turning the whole thing down.
+ */
+export const TARGET_LOUDNESS: number = 0.0245
+
+/**
+ * What to multiply a voice's output by so it sounds as loud as every other
+ * voice. Levels are derived, never authored: a plucked-string model is
+ * normalized to a fixed peak and then given body — a synthesized voice ran
+ * 15 to 24 dB over the recording it stood in for, which is exactly what you
+ * heard on the first note of a session, before the recordings had loaded.
+ */
+export function voiceLevel(voice: Voice): number {
+  return TARGET_LOUDNESS / voice.loudness
+}
 
 export const VOICES: readonly Voice[] = [
   {
@@ -74,7 +101,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 105, q: 4, gainDb: 5 },
       { frequency: 210, q: 3, gainDb: 3 },
     ],
-    level: 0.9,
+    loudness: 0.13246,
   },
   {
     kind: 'synth',
@@ -89,7 +116,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 98, q: 5, gainDb: 4 },
       { frequency: 230, q: 3, gainDb: 2.5 },
     ],
-    level: 0.75,
+    loudness: 0.12727,
   },
   {
     kind: 'synth',
@@ -104,7 +131,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 120, q: 3, gainDb: 6 },
       { frequency: 260, q: 2, gainDb: 3 },
     ],
-    level: 1,
+    loudness: 0.17361,
   },
   {
     kind: 'synth',
@@ -119,7 +146,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 180, q: 2, gainDb: 2 },
       { frequency: 2600, q: 1.5, gainDb: 3 },
     ],
-    level: 0.7,
+    loudness: 0.14887,
   },
   {
     kind: 'synth',
@@ -135,7 +162,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 1800, q: 1.2, gainDb: 4 },
     ],
     drive: 0.45,
-    level: 0.55,
+    loudness: 0.89973,
   },
   {
     kind: 'synth',
@@ -151,7 +178,7 @@ export const VOICES: readonly Voice[] = [
       { frequency: 1200, q: 1, gainDb: 5 },
     ],
     drive: 0.85,
-    level: 0.45,
+    loudness: 1.18105,
   },
   {
     kind: 'sampled',
@@ -159,7 +186,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Nylon (sampled)',
     instrument: 'acoustic_guitar_nylon',
     fallback: 'nylon',
-    level: 0.85,
+    loudness: 0.03214,
   },
   {
     kind: 'sampled',
@@ -167,7 +194,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Steel string (sampled)',
     instrument: 'acoustic_guitar_steel',
     fallback: 'steel',
-    level: 0.8,
+    loudness: 0.02842,
   },
   {
     kind: 'sampled',
@@ -175,7 +202,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Jazz guitar (sampled)',
     instrument: 'electric_guitar_jazz',
     fallback: 'jazz',
-    level: 0.9,
+    loudness: 0.02869,
   },
   {
     kind: 'sampled',
@@ -183,7 +210,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Electric clean (sampled)',
     instrument: 'electric_guitar_clean',
     fallback: 'electric-clean',
-    level: 0.8,
+    loudness: 0.03068,
   },
   {
     kind: 'sampled',
@@ -191,7 +218,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Overdriven (sampled)',
     instrument: 'overdriven_guitar',
     fallback: 'electric-crunch',
-    level: 0.6,
+    loudness: 0.03677,
   },
   {
     kind: 'sampled',
@@ -199,7 +226,7 @@ export const VOICES: readonly Voice[] = [
     label: 'Distortion (sampled)',
     instrument: 'distortion_guitar',
     fallback: 'electric-lead',
-    level: 0.5,
+    loudness: 0.04882,
   },
 ]
 

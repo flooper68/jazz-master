@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createPlayerAudio, driveCurve, midiToFrequency, renderPluck, type EngineAudioContext } from './engine'
-import { sampleUrl, VOICES, voiceById, type SynthVoice } from './voices'
+import { sampleUrl, VOICES, voiceById, voiceLevel, type SynthVoice } from './voices'
 
 interface Scheduled {
   kind: 'click' | 'pluck'
@@ -14,6 +14,8 @@ interface Scheduled {
 export function fakeContext() {
   const scheduled: Scheduled[] = []
   const buffers: Array<{ id: number; length: number; decoded?: boolean }> = []
+  /** The level each gain node opens at, in creation order. */
+  const gains: number[] = []
   const clock = { now: 0 }
   let nextBuffer = 1
   const makeBuffer = (length: number, decoded = false) => {
@@ -25,6 +27,7 @@ export function fakeContext() {
   const context = {
     scheduled,
     buffers,
+    gains,
     clock,
     closed: false,
     state: 'running' as AudioContextState,
@@ -39,15 +42,20 @@ export function fakeContext() {
     async close() {
       context.closed = true
     },
-    createGain: () =>
-      ({
+    createGain: () => {
+      let opened = false
+      return {
         gain: {
-          setValueAtTime() {},
+          setValueAtTime(value: number) {
+            if (!opened) gains.push(value)
+            opened = true
+          },
           exponentialRampToValueAtTime() {},
           linearRampToValueAtTime() {},
         },
         connect() {},
-      }) as unknown as GainNode,
+      } as unknown as GainNode
+    },
     createWaveShaper: () => {
       const shaper = {
         type: 'waveshaper',
@@ -188,6 +196,16 @@ describe('voices', () => {
     expect(sampleUrl('x', 40)).toMatch(/E2\.mp3$/)
   })
 
+  // That a voice's declared loudness is the loudness it actually has can only
+  // be checked with Web Audio, which jsdom has not: e2e/voiceLevels.spec.ts
+  // renders the chain and holds every synth voice to the shared target.
+  it('never asks for gain above unity to reach the target loudness', () => {
+    for (const voice of VOICES) {
+      expect(voiceLevel(voice)).toBeGreaterThan(0)
+      expect(voiceLevel(voice)).toBeLessThanOrEqual(1)
+    }
+  })
+
   it('offers synthesized and sampled guitars, every sampled one with a synth fallback', () => {
     expect(VOICES.filter((v) => v.kind === 'synth')).toHaveLength(6)
     expect(VOICES.filter((v) => v.kind === 'sampled')).toHaveLength(6)
@@ -263,6 +281,28 @@ describe('createPlayerAudio', () => {
     audio.pluck(2, 64, 1, 1)
     expect(fetched).toContain(sampleUrl('electric_guitar_jazz', 64))
     expect(fetched).toHaveLength(3)
+  })
+
+  it('levels a note by the voice sounding it, so a stand-in does not jump', async () => {
+    const ctx = fakeContext()
+    const audio = createPlayerAudio({
+      createContext: () => ctx,
+      voice: 'jazz-sampled',
+      fetchSample: async () => new ArrayBuffer(16),
+    })
+
+    // The model stands in while the recording is still on its way.
+    audio.pluck(0, 60, 1, 1)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    audio.pluck(1, 60, 1, 1)
+
+    expect(ctx.scheduled[0].filters).toContain('lowpass')
+    expect(ctx.scheduled[1].filters).toEqual([])
+    // Each is levelled by the voice that actually sounded it, not by whichever
+    // voice was asked for — the two differ by 15 dB of declared loudness.
+    const [standingIn, recorded] = ctx.gains
+    expect(standingIn).toBeCloseTo(voiceLevel(voiceById('jazz')), 5)
+    expect(recorded).toBeCloseTo(voiceLevel(voiceById('jazz-sampled')), 5)
   })
 
   it('keeps playing the synth when a sample cannot be fetched', async () => {
