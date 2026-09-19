@@ -207,16 +207,12 @@ async function planInputs(stores: GoalStores & { runs: RunRepository }, clerkUse
   return { runs, catalog, goals, priorities }
 }
 
-/** What the scheduler knows about every exercise, and whether the paths have run out today. */
-export async function exerciseState(
-  stores: GoalStores,
-  clerkUserId: string,
-  today: Date = new Date(),
-): Promise<ExerciseStateResult> {
+/** What the scheduler knows about every exercise. */
+export async function exerciseState(stores: GoalStores, clerkUserId: string): Promise<ExerciseStateResult> {
   if (!stores.runs) return { status: 'unconfigured' }
   try {
     const { runs, catalog, goals, priorities } = await planInputs({ ...stores, runs: stores.runs }, clerkUserId)
-    return exerciseStateAnswer(runs, catalog, goals, priorities, today)
+    return exerciseStateAnswer(runs, catalog, goals, priorities)
   } catch {
     return { status: 'error', message: 'Goal read failed' }
   }

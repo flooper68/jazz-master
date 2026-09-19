@@ -1,13 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { exerciseCosts, lastRunEnded } from '../appData/cost'
-import type { Stage } from '../appData/goal'
 import { foldRuns } from '../appData/memory'
 import { planNextSession, planSeed } from '../appData/nextSession'
 import { pathsProgress } from '../appData/path'
 import { recoveryState } from '../appData/recovery'
 import { mutedIds, priorityMap, resolveTargets } from '../appData/targets'
-import { exhaustion } from '../appData/expansion'
 import { sessionBudgetSeconds, type SessionPlan } from '../appData/quickRun'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useQuickRunSettings } from './useQuickRunSettings'
@@ -29,10 +27,6 @@ export interface NextSessionResult {
   pending: boolean
   /** The runs could not be read; the plan stands, but it knows nothing of the history. */
   failed: boolean
-  /** Every open stage of every path has been played today (appData/expansion). */
-  exhausted?: boolean
-  /** The stage the app offers to add when a path has run out; null when the pack has nothing that fits. */
-  expansion?: Stage | null
 }
 
 export function useNextSession(): NextSessionResult {
@@ -70,7 +64,6 @@ export function useNextSession(): NextSessionResult {
       plan,
       pending: isPending,
       failed: !isPending && runs === null,
-      ...exhaustion(paths, state, exercises, today),
     }
   }, [settings, exercises, runs, isPending, today, goals, priorities])
 }

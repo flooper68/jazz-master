@@ -3,7 +3,6 @@ import { exerciseCosts, lastRunEnded } from '../appData/cost'
 import { foldRuns } from '../appData/memory'
 import { recoveryState } from '../appData/recovery'
 import { planNextSession, planSeed } from '../appData/nextSession'
-import { exhaustion } from '../appData/expansion'
 import { goalInputSchema, PRIORITIES, type ExercisePriority, type Goal } from '../appData/goal'
 import type { ExerciseState } from '../appData/memory'
 import { pathsProgress } from '../appData/path'
@@ -116,21 +115,15 @@ export function goalsAnswer(
   }
 }
 
-/**
- * What get_exercise_state answers with: the fold, flattened, plus whether the
- * paths have run out today and what the app would offer to add.
- */
+/** What get_exercise_state answers with: the fold, flattened. */
 export function exerciseStateAnswer(
   runs: readonly ExerciseRun[],
   catalog: readonly Exercise[],
   goals: readonly Goal[],
   priorities: readonly ExercisePriority[],
-  today: Date = new Date(),
 ) {
   const targets = resolveTargets(catalog, goals, priorities)
   const state = foldRuns(runs, catalog, undefined, targets)
-  const paths = pathsProgress(goals, state, undefined, mutedIds(priorities))
-  const { exhausted, expansion } = exhaustion(paths, state, catalog, today)
   return {
     status: 'ok' as const,
     exercises: catalog.flatMap((exercise) => {
@@ -152,8 +145,6 @@ export function exerciseStateAnswer(
         },
       ]
     }),
-    exhausted,
-    expansion,
   }
 }
 
@@ -284,7 +275,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
   {
     name: 'set_path',
     title: 'Replace a goal\u2019s stages',
-    description: `Replace the stages of an existing goal, leaving its title, status and weight alone — the usual way to extend a path the user has outgrown, or to accept an expansion the app offered. Send the full new list of stages. Returns the stored goal, or \`not_found\` when the user has no goal with that id. ${PATH_FORMAT}`,
+    description: `Replace the stages of an existing goal, leaving its title, status and weight alone — the usual way to extend a path the user has outgrown. Send the full new list of stages. Returns the stored goal, or \`not_found\` when the user has no goal with that id. ${PATH_FORMAT}`,
     inputSchema: objectSchema(
       { ...goalIdArgument, stages: z.toJSONSchema(goalInputSchema, { io: 'input' }).properties?.stages ?? { type: 'array' } },
       ['goalId', 'stages'],
@@ -310,7 +301,7 @@ export const LIBRARY_TOOL_DESCRIPTORS: readonly (AgentToolDescriptor & { name: L
     name: 'get_exercise_state',
     title: 'What the scheduler knows about each exercise',
     description:
-      "What the scheduler has worked out about every exercise from the signed-in user's runs: its band (new, stuck, hard, fine, easy), the days between reviews, the day it is next due, the fastest it has been played, how that compares with the tempo it is judged against, and how it last felt. Also says whether the user's paths have run out for today and what stage the app would offer to add. Nothing is stored and calling it changes nothing.",
+      "What the scheduler has worked out about every exercise from the signed-in user's runs: its band (new, stuck, hard, fine, easy), the days between reviews, the day it is next due, the fastest it has been played, how that compares with the tempo it is judged against, and how it last felt. Nothing is stored and calling it changes nothing.",
     inputSchema: objectSchema({}, []),
     annotations: READS_USER_TEXT,
   },

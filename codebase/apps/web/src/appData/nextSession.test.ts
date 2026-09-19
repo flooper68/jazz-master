@@ -671,6 +671,17 @@ describe('a session with goals in it', () => {
     expect(ids(planned(runs, catalog, [goal]))).toContain('d')
   })
 
+  it('still has something to play when every open item has been played today', () => {
+    // The day the path has nothing new left. There is no special state for it
+    // (the expansion offer was removed on 2026-09-19): stages gate only what is
+    // new, so the session fills ahead of schedule like any other short day.
+    const catalog = ['a', 'b', 'c', 'd'].map((id) => exercise(id))
+    const goal = goalOf('g1', [['a', 'b'], ['c', 'd']])
+    // Both open items played today, once — so neither is solid and stage 2 stays shut.
+    const runs = [run('a', '2026-04-10'), run('b', '2026-04-10')]
+    expect(ids(planned(runs, catalog, [goal])).length).toBeGreaterThan(0)
+  })
+
   it('offers the whole pack when no goal is active, exactly as before', () => {
     const catalog = ['a', 'b', 'c'].map((id) => exercise(id))
     expect(ids(planned([], catalog, [])).sort()).toEqual(['a', 'b', 'c'])

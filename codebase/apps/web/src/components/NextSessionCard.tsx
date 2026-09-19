@@ -29,10 +29,6 @@ interface NextSessionCardProps {
   pending?: boolean
   /** The runs could not be read; the plan stands but knows nothing of the history. */
   failed?: boolean
-  /** Every open stage of every path has been played today — the good problem (§9). */
-  exhausted?: boolean
-  /** More of the same, offered rather than left to the user to think of; null when the pack has nothing that fits. */
-  onExpand?: (() => void) | null
 }
 
 function totalMinutes(plan: SessionPlan): string {
@@ -46,8 +42,6 @@ export function NextSessionCard({
   onMinutesChange,
   pending = false,
   failed = false,
-  exhausted = false,
-  onExpand = null,
 }: NextSessionCardProps) {
   const headingId = useId()
   const [open, setOpen] = useState(false)
@@ -72,24 +66,6 @@ export function NextSessionCard({
       </p>
       {count > 0 && !waiting && (
         <p className="mt-0.5 text-sm opacity-75 tabular-nums">About {totalMinutes(plan)}</p>
-      )}
-      {/* Everything the paths had for today is done. That is the good problem,
-          and the answer is more of the same rather than an empty card. */}
-      {exhausted && !waiting && (
-        <p className="mt-3 rounded-xl bg-on-accent/10 px-3 py-2 text-sm">
-          You have played everything your goals asked for today.{' '}
-          {onExpand ? (
-            <button
-              type="button"
-              onClick={onExpand}
-              className="cursor-pointer font-semibold underline decoration-on-accent/40 underline-offset-4 hover:decoration-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-accent"
-            >
-              Add more like it
-            </button>
-          ) : (
-            'Rest, or play something for the pleasure of it.'
-          )}
-        </p>
       )}
       <LengthPicker minutes={minutes} onChange={onMinutesChange} />
       {/* The controls hold the foot of the card, however tall its neighbour makes it. */}

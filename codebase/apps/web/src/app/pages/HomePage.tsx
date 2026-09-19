@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { formatDuration, summarizeRuns, type ActivityDay, type Dashboard } from '../../appData/dashboard'
 import { firstPicks } from '../../appData/firstPicks'
@@ -11,7 +11,6 @@ import { NextSessionCard } from '../../components/NextSessionCard'
 import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
-import { useGoals } from '../useGoals'
 import { useNextSession } from '../useNextSession'
 import { useQuickRunSettings } from '../useQuickRunSettings'
 import { useTRPC } from '../trpc'
@@ -32,22 +31,8 @@ export default function HomePage() {
   const runs = data?.status === 'ok' ? data.runs : []
   const failed = !isPending && data?.status !== 'ok'
   const { exercises, byId } = useExerciseCatalog()
-  const { plan, pending: planPending, failed: planFailed, exhausted, expansion } = useNextSession()
+  const { plan, pending: planPending, failed: planFailed } = useNextSession()
   const settings = useQuickRunSettings()
-  const { goals } = useGoals()
-  const queryClient = useQueryClient()
-  const { mutateAsync: updateGoal } = useMutation(trpc.goals.update.mutationOptions())
-  // Accepting the offer appends the stage to the goal it was worked out for,
-  // which is the first active one — the same one the offer came from.
-  const growing = goals.find((goal) => goal.status === 'active')
-  const expand =
-    expansion && growing
-      ? async () => {
-          const { id: _id, ...rest } = growing
-          await updateGoal({ goalId: growing.id, goal: { ...rest, stages: [...growing.stages, expansion] } })
-          await queryClient.invalidateQueries({ queryKey: trpc.goals.list.queryKey() })
-        }
-      : null
   const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
 
   return (
@@ -72,8 +57,6 @@ export default function HomePage() {
           plan={plan}
           pending={planPending}
           failed={planFailed}
-          exhausted={exhausted ?? false}
-          onExpand={expand ? () => void expand() : null}
           minutes={settings.sessionMinutes}
           onMinutesChange={(sessionMinutes) => setQuickRunSettings({ ...quickRunSettings(), sessionMinutes })}
           onStart={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
