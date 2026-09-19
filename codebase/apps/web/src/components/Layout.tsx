@@ -168,11 +168,15 @@ export function Layout({ exercises, routines, next, onStartNext }: LayoutProps) 
           </div>
         </nav>
         <div className={`ml-auto min-w-0 md:mt-auto md:ml-0 ${collapsed ? 'md:flex md:justify-center' : 'md:px-2'}`}>
-          {usePlaywrightAccountStub ? (
-            <span className={`text-xs font-medium text-muted ${collapsed ? 'md:sr-only' : ''}`}>Test account</span>
-          ) : (
-            <AccountMenu theme={theme} onToggleTheme={toggleTheme} onOpenAccount={() => void navigate({ to: '/account' })} showName={!collapsed} />
-          )}
+          {/* The stubbed sign-in has no Clerk to ask, but the menu is still the
+              menu — its theme and player settings are what local dev tests. */}
+          <AccountMenu
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenAccount={() => void navigate({ to: '/account' })}
+            showName={!collapsed}
+            stubName={usePlaywrightAccountStub ? 'Test account' : undefined}
+          />
         </div>
         {!collapsed && (
           <div

@@ -14,12 +14,40 @@
     opacity: 0;
   }
 }
+/*
+ * One step of a practice session giving way to the next: the exercise that is
+ * done steps aside to the left, and what follows arrives from the right.
+ */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+@keyframes step-out {
+  to {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
 .drawer-in {
   animation: drawer-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .fade-in {
   animation: fade-in 260ms ease-out;
 }
+.step-in {
+  animation: step-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 180ms is also ExerciseRunner's STEP_OUT_MS, which waits this out before moving on. */
+.step-out {
+  animation: step-out 180ms ease-in forwards;
+}
+/*
+ * `step-in`/`step-out` are deliberately absent here: the session hand-over keeps
+ * its 10px slide even under reduced motion (owner's call), and ExerciseRunner
+ * waits the slide out either way.
+ */
 @media (prefers-reduced-motion: reduce) {
   .drawer-in,
   .fade-in {

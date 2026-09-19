@@ -13,6 +13,23 @@ bun run dev      # start the dev server
 bun run check    # typecheck + lint + test + build
 ```
 
+## Signing in locally
+
+`bun run --cwd codebase dev` runs the real Clerk test instance, so the app asks
+you to sign in like production does. Copy
+`codebase/apps/web/.env.development.example` to
+`codebase/apps/web/.env.development` and fill in the Clerk keys; the same file
+carries the shared test account (`CLERK_TEST_USER_EMAIL` /
+`CLERK_TEST_USER_PASSWORD`) — a Clerk *test* user on a development instance,
+deliberately public. Clerk's breach protection may refuse the password and ask
+for an emailed code instead; either way you land on `/app`.
+
+The e2e suite does not sign in at all: `PLAYWRIGHT_TEST_AUTH=1` lets a request
+name its own user through the `x-jazz-master-e2e-user` header, which the
+Playwright fixture adds to every same-origin request. That path is for tests —
+a browser without the header is still sent to sign-in — and it is refused
+outright in a production runtime.
+
 ## Local Postgres
 
 Server-side database work uses a local PostgreSQL service for development. It is

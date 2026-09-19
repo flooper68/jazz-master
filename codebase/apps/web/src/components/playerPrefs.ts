@@ -1,54 +1,54 @@
-import { DEFAULT_VOICE, isVoiceId, type VoiceId } from '../audio/voices'
-import type { ScoreView } from '../score/Score'
+import { DEFAULT_PLAYER_PREFS, parsePlayerPrefs, type PlayerPrefs } from '../appData/playerPrefs'
 
-/** Player preferences that outlive any one exercise: sound and view. */
-export interface PlayerPrefs {
-  click: boolean
-  voice: boolean
-  countIn: boolean
-  view: ScoreView
-  /** Which guitar plays the line along. */
-  guitar: VoiceId
-  /** Score magnification, 1 = engraved size. */
-  zoom: number
-}
+/**
+ * Where the player's preferences are kept in this browser, and the one copy
+ * of them the app reads. The shape itself lives in `appData/playerPrefs`,
+ * which the server validates against too.
+ */
 
-export const ZOOM_MIN = 0.8
-export const ZOOM_MAX = 2
-export const ZOOM_STEP = 0.1
-
-export function clampZoom(zoom: number): number {
-  if (!Number.isFinite(zoom)) return 1
-  return Math.round(Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX) * 10) / 10
-}
-
-export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
-  click: true,
-  voice: false,
-  countIn: true,
-  view: 'both',
-  guitar: DEFAULT_VOICE,
-  zoom: 1.2,
-}
+export { clampZoom, DEFAULT_PLAYER_PREFS, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '../appData/playerPrefs'
+export type { PlayerPrefs } from '../appData/playerPrefs'
 
 export const PLAYER_PREFS_KEY = 'jazz-master.player-prefs'
+/**
+ * Set the moment a choice is made here and cleared only when the account has
+ * confirmed it. It is what stops a change made in the last moment before a
+ * reload — or one whose write failed — from being quietly overwritten by the
+ * account's older copy on the next visit.
+ */
+export const PLAYER_PREFS_UNSAVED_KEY = 'jazz-master.player-prefs.unsaved'
 
-const VIEWS: ScoreView[] = ['tab', 'notation', 'both']
+export function markPlayerPrefsUnsaved(): void {
+  try {
+    safeStorage()?.setItem(PLAYER_PREFS_UNSAVED_KEY, '1')
+  } catch {
+    // Nothing to remember it with; the change still holds for this run.
+  }
+}
+
+export function markPlayerPrefsSaved(): void {
+  try {
+    safeStorage()?.removeItem(PLAYER_PREFS_UNSAVED_KEY)
+  } catch {
+    // As above.
+  }
+}
+
+/** True when this browser holds a choice the account has not confirmed. */
+export function playerPrefsUnsaved(): boolean {
+  try {
+    return safeStorage()?.getItem(PLAYER_PREFS_UNSAVED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 /** The last saved preferences, or the defaults; storage that is missing or broken is ignored. */
 export function loadPlayerPrefs(storage: Pick<Storage, 'getItem'> | null = safeStorage()): PlayerPrefs {
   try {
     const raw = storage?.getItem(PLAYER_PREFS_KEY)
     if (!raw) return DEFAULT_PLAYER_PREFS
-    const parsed = JSON.parse(raw) as Partial<Record<keyof PlayerPrefs, unknown>>
-    return {
-      click: typeof parsed.click === 'boolean' ? parsed.click : DEFAULT_PLAYER_PREFS.click,
-      voice: typeof parsed.voice === 'boolean' ? parsed.voice : DEFAULT_PLAYER_PREFS.voice,
-      countIn: typeof parsed.countIn === 'boolean' ? parsed.countIn : DEFAULT_PLAYER_PREFS.countIn,
-      view: VIEWS.includes(parsed.view as ScoreView) ? (parsed.view as ScoreView) : DEFAULT_PLAYER_PREFS.view,
-      guitar: isVoiceId(parsed.guitar) ? parsed.guitar : DEFAULT_PLAYER_PREFS.guitar,
-      zoom: typeof parsed.zoom === 'number' ? clampZoom(parsed.zoom) : DEFAULT_PLAYER_PREFS.zoom,
-    }
+    return parsePlayerPrefs(JSON.parse(raw))
   } catch {
     return DEFAULT_PLAYER_PREFS
   }
@@ -68,4 +68,41 @@ function safeStorage(): Storage | null {
   } catch {
     return null
   }
+}
+
+/**
+ * The preferences are one set per app, not one per component: the player's
+ * Advanced panel and the account menu's Player settings both write them, and
+ * a player already on screen must follow at once. Read through `playerPrefs`,
+ * written through `setPlayerPrefs`.
+ */
+let current: PlayerPrefs | null = null
+const listeners = new Set<() => void>()
+
+export function playerPrefs(): PlayerPrefs {
+  if (current === null) current = loadPlayerPrefs()
+  return current
+}
+
+export function setPlayerPrefs(prefs: PlayerPrefs): void {
+  current = prefs
+  savePlayerPrefs(prefs)
+  for (const listener of listeners) listener()
+}
+
+export function subscribePlayerPrefs(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/**
+ * Forget what was read, so a test (or a fresh sign-in) starts from storage
+ * again. It resets this module only: a mounted `usePlayerPrefsSync` keeps
+ * whatever it already knows about the account.
+ */
+export function resetPlayerPrefs(): void {
+  current = null
+  for (const listener of listeners) listener()
 }

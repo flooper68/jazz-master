@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
@@ -8,7 +8,8 @@ import { ExerciseThumb } from './ExerciseThumb'
 import { FeelInput } from './FeelInput'
 import { CheckIcon } from './icons'
 import { RatingInput } from './RatingInput'
-import { loadPlayerPrefs, savePlayerPrefs, type PlayerPrefs } from './playerPrefs'
+import { setPlayerPrefs } from './playerPrefs'
+import { usePlayerPrefs } from './usePlayerPrefs'
 import { useViewFocus } from './useViewFocus'
 
 /**
@@ -25,11 +26,14 @@ const BUTTON_SECONDARY =
   'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 const HEADING =
   'font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+/** How long the summary takes to step aside — the `step-out` animation's own duration. */
+const STEP_OUT_MS = 180
 
 /**
  * Where this exercise sits in a practice session, and how to move on from it.
- * In a session there is no summary per exercise: finishing moves straight on,
- * and the session sums everything up (and takes the answers) at its end.
+ * In a session the summary is where the exercise is answered while it is still
+ * fresh; Next exercise moves on. The session sums the whole sitting up at its
+ * end, where every answer can still be changed.
  */
 export interface RunnerSession {
   id: string
@@ -64,9 +68,13 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
   const [run, setRun] = useState<ExerciseRun | null>(null)
   // Play again is a fresh player: the key resets transport, timer and cursor.
   const [round, setRound] = useState(0)
-  // Sound and view choices are remembered across exercises and reloads.
-  const [prefs, setPrefs] = useState<PlayerPrefs>(loadPlayerPrefs)
-  useEffect(() => savePlayerPrefs(prefs), [prefs])
+  // The summary on its way out, while the next exercise of the session arrives.
+  const [leaving, setLeaving] = useState(false)
+  const stepOut = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => void (stepOut.current && clearTimeout(stepOut.current)), [])
+  // Sound and view choices are remembered across exercises and reloads, and
+  // they are the app's — the account menu sets the same ones.
+  const prefs = usePlayerPrefs()
   // ISSUE-002: the summary replacing the stage (and back) is a same-route view
   // swap; move focus to the incoming heading, and on mount (the page is the runner).
   const headingRef = useViewFocus<HTMLHeadingElement>(
@@ -84,9 +92,33 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
       sessionId: session?.id ?? null,
     }
     if (finishedRun) onRunChange(finishedRun)
-    if (session) return session.onContinue()
+    // A session stops on the summary only when there is something to answer and
+    // somewhere to go next. Nothing played, nothing to ask; last step, and the
+    // session's own closing screen is about to say all of this anyway.
+    if (session && (!finishedRun || session.step >= session.total)) return session.onContinue()
     setRun(finishedRun)
     setFinished(true)
+  }
+
+  /**
+   * On to the next exercise: the summary steps aside, then the session moves on.
+   * Moving on normally replaces this runner, but nothing in `onContinue`'s
+   * contract promises that — so the summary comes back rather than being left
+   * faded out and unreachable.
+   *
+   * The step is the one animation in the app that plays under
+   * `prefers-reduced-motion` too (owner's call): it is a 10px slide, and the
+   * hand-over reads as a jump cut without it.
+   */
+  function continueToNext(): void {
+    const onContinue = session?.onContinue
+    if (!onContinue || leaving) return
+    setLeaving(true)
+    stepOut.current = setTimeout(() => {
+      stepOut.current = null
+      setLeaving(false)
+      onContinue()
+    }, STEP_OUT_MS)
   }
 
   /** Either answer, saved the moment it is given; the run already exists. */
@@ -99,8 +131,9 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
 
   if (finished) {
     return (
-      <section className="flex flex-1 items-start justify-center overflow-y-auto px-2 py-8 md:items-center md:px-8">
-        <div className="w-full max-w-lg">
+      <section className="flex flex-1 items-start justify-center overflow-x-hidden overflow-y-auto px-2 py-8 md:items-center md:px-8">
+        {/* `inert` while leaving: pointer-events alone would still leave the buttons on Tab. */}
+        <div inert={leaving} className={`w-full max-w-lg ${leaving ? 'step-out' : 'step-in'}`}>
           <div className="flex items-center gap-3">
             <span
               aria-hidden="true"
@@ -112,8 +145,11 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
               <h1 ref={headingRef} tabIndex={-1} className={HEADING}>
                 Exercise complete
               </h1>
-              <p className="text-sm text-muted">
-                {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              <p className="text-sm text-muted tabular-nums">
+                {/* In a session, where it stands matters more here than the date does. */}
+                {session
+                  ? `${session.label} · ${session.step} of ${session.total}`
+                  : new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
             </div>
           </div>
@@ -143,20 +179,40 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <button type="button" onClick={onExit} className={BUTTON_PRIMARY}>
-              Back to exercises
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRound((current) => current + 1)
-                setFinished(false)
-              }}
-              className={BUTTON_SECONDARY}
-            >
-              Play again
-            </button>
+          <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            {session ? (
+              <button type="button" onClick={continueToNext} className={BUTTON_PRIMARY}>
+                Next exercise
+              </button>
+            ) : (
+              <button type="button" onClick={onExit} className={BUTTON_PRIMARY}>
+                Back to exercises
+              </button>
+            )}
+            {/* Play again only off a session: mid-session it would mint a second run
+                for the same step and drop the answer just given. */}
+            {!session && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRound((current) => current + 1)
+                  setFinished(false)
+                }}
+                className={BUTTON_SECONDARY}
+              >
+                Play again
+              </button>
+            )}
+            {/* A session is never a trap: the way out is on the summary too. */}
+            {session && (
+              <button
+                type="button"
+                onClick={onExit}
+                className="cursor-pointer text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+              >
+                {session.endLabel}
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -164,34 +220,37 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
   }
 
   return (
-    <ExercisePlayer
-      key={round}
-      exercise={exercise}
-      prefs={prefs}
-      onPrefsChange={setPrefs}
-      onFinish={finish}
-      startTempoBpm={startTempoBpm}
-      headingRef={headingRef}
-      // On its own an exercise needs no way out in the header — the navigation
-      // is right there; a session says where it stands and how to end it.
-      headerAction={
-        session && (
-          <span className="flex items-baseline gap-3 text-xs text-muted">
-            <span className="tabular-nums">
-              {session.label} · {session.step} of {session.total}
+    // Keyed on the round so Play again arrives the same way a new exercise does.
+    // It clips because the stage slides in from 10px right of where it lands.
+    <div key={round} className="step-in flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ExercisePlayer
+        exercise={exercise}
+        prefs={prefs}
+        onPrefsChange={setPlayerPrefs}
+        onFinish={finish}
+        startTempoBpm={startTempoBpm}
+        headingRef={headingRef}
+        // On its own an exercise needs no way out in the header — the navigation
+        // is right there; a session says where it stands and how to end it.
+        headerAction={
+          session && (
+            <span className="flex items-baseline gap-3 text-xs text-muted">
+              <span className="tabular-nums">
+                {session.label} · {session.step} of {session.total}
+              </span>
+              <button
+                type="button"
+                onClick={onExit}
+                className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+              >
+                {session.endLabel}
+              </button>
             </span>
-            <button
-              type="button"
-              onClick={onExit}
-              className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-            >
-              {session.endLabel}
-            </button>
-          </span>
-        )
-      }
-      createAudio={createAudio}
-      now={now}
-    />
+          )
+        }
+        createAudio={createAudio}
+        now={now}
+      />
+    </div>
   )
 }

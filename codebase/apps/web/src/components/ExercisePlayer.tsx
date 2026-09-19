@@ -1,7 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
 import type { RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
-import { VOICES } from '../audio/voices'
 import { clampTransposition, DEFAULT_BEATS_PER_BAR, homeLabel, noteIndexAt, transposeExercise, transposeRange, type Exercise } from '../content'
 import { formatBarBeat, formatSeconds } from '../player/formatting'
 import type { LoopRegion, TempoLadder } from '../player/plan'
@@ -10,21 +9,17 @@ import { usePlayerTransport } from '../player/usePlayerTransport'
 import { Score, type ScoreHandle } from '../score/Score'
 import { useAgentPlayerTools } from '../webmcp/useAgentPlayerTools'
 import { AboutPanel } from './AboutPanel'
+import { PlayerSettingsPanel, SettingsRow, SettingsSection } from './PlayerSettingsPanel'
 import { SourceTag } from './SourceTag'
-import { Select } from './ui/Select'
+import { Modal } from './ui/Modal'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   BarIcon,
-  BothIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClearIcon,
-  ClickIcon,
-  CountInIcon,
   FullscreenIcon,
-  GuitarIcon,
-  GuitarPickIcon,
   InfoIcon,
   SlidersIcon,
   LoopEndIcon,
@@ -32,18 +27,15 @@ import {
   LoopStartIcon,
   MinusIcon,
   NextIcon,
-  NotesIcon,
   PauseIcon,
   PlayIcon,
   PlusIcon,
   RampIcon,
-  RepeatIcon,
   ResetIcon,
   SkipBackIcon,
-  TabIcon,
 } from './icons'
 import { keyLabel } from './facetLabels'
-import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type PlayerPrefs } from './playerPrefs'
+import type { PlayerPrefs } from './playerPrefs'
 
 /**
  * The stage for one exercise: the score as a canvas, with the readouts,
@@ -72,17 +64,10 @@ interface ExercisePlayerProps {
 }
 
 const REPEAT_CHOICES: Array<number | null> = [null, 2, 4, 8, 16]
-const GUITAR_OPTIONS = VOICES.map((voice) => ({
-  value: voice.id,
-  label: voice.label,
-  group: voice.kind === 'synth' ? 'Synthesized' : 'Sampled',
-}))
 const TEMPO_STEP = 4
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 // Base without a background: the "on" state sets its own, so neither wins by stylesheet order.
 const ICON_BASE = `inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-line text-fg hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`
-const ICON_BUTTON = `${ICON_BASE} bg-panel hover:bg-panel-2`
-const ICON_ON = `${ICON_BASE} border-fg bg-fg text-panel hover:border-fg`
 const PLAY_BUTTON = `inline-flex h-10 w-16 cursor-pointer items-center justify-center rounded-xl bg-cta text-cta-fg hover:bg-cta-hover ${FOCUS}`
 const FLOAT = 'rounded-2xl border border-line bg-panel/90 shadow-lg backdrop-blur-md'
 const TOGGLE_ON = 'border-fg bg-fg text-panel'
@@ -121,6 +106,9 @@ export function ExercisePlayer({
   const transposeBy = (step: number) => setSemitones((current) => clampTransposition(exercise, current + step))
   // The About drawer waits behind its button; nothing opens on its own.
   const [aboutOpen, setAboutOpen] = useState(false)
+  // The rest of the controls live behind Advanced: the stage shows the tempo
+  // and the loop, and nothing else until it is asked for.
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const toggleMenu = (id: MenuId) => setOpenMenu((current) => (current === id ? null : id))
   const stageRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -293,6 +281,9 @@ export function ExercisePlayer({
   }
 
   function onKeyDown(event: React.KeyboardEvent): void {
+    // The Advanced dialog owns the keyboard while it is open — Escape included,
+    // which the dialog itself handles.
+    if (advancedOpen) return
     const target = event.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') return
     // Cmd+T, Ctrl+L and friends belong to the browser.
@@ -324,6 +315,9 @@ export function ExercisePlayer({
     event.preventDefault()
     handler()
   }
+
+  // Something behind the door is set: the button says so without naming it.
+  const somethingAdvanced = snapshot.ladder !== null || snapshot.repeat !== null || semitones !== 0
 
   const passLabel =
     snapshot.repeat === null
@@ -391,25 +385,91 @@ export function ExercisePlayer({
           }`}
         />
 
+        {fullscreenAvailable && (
+          <div className="absolute top-3 right-3 z-10">
+            <IconButton
+              onClick={toggleFullscreen}
+              pressed={fullscreen}
+              label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              shortcut="F"
+              className={`h-9 w-9 ${FLOAT} border-line`}
+            >
+              <FullscreenIcon exit={fullscreen} />
+            </IconButton>
+          </div>
+        )}
+
         {/* Everything floats in one bar at the bottom, icons only, grouped by job; menus open upward. */}
+        {/* One row along the bottom of the stage: the readouts at one edge and
+            About at the other, and in the middle the controls in one cluster —
+            the tempo, the transport, the loop and the rest, each beside its
+            neighbour. Equal side columns (minmax 0) keep Play at the centre.
+            Menus open upward. From lg up the four side tracks are equal
+            (minmax 0), so Play sits at the exact centre of the bar whatever
+            stands beside it; below that there is no room for five tracks and
+            the groups wrap instead of climbing over each other. */}
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
-          <div className={`${FLOAT} pointer-events-auto flex w-full flex-col items-stretch gap-1.5 px-3 py-2`}>
-            {/* Main lane: readouts left, transport dead centre (Play in the middle of the screen), About right. */}
-            {/* Equal side columns (minmax 0) so the transport, and Play, sit at the exact centre. */}
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3" data-lane="main">
-              <div className="flex justify-start">
-                <Group label="Readouts">
-                  <Readout
-                    label="Position"
-                    value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
-                    data-tip="Bar and beat under the cursor"
-                  />
-                  <Readout label="Passes" value={passLabel} data-tip="Passes through the loop so far" live />
-                  {secondsLeft !== null && (
-                    <Readout label="Time left" value={formatSeconds(secondsLeft)} data-tip="Playing time left on this exercise" />
-                  )}
-                </Group>
-              </div>
+          <div
+            className={`${FLOAT} pointer-events-auto flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-3 py-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_minmax(0,1fr)_minmax(0,1fr)]`}
+            data-lane="main"
+          >
+            <div className="flex min-w-0 justify-start">
+              <Group label="Readouts">
+                <Readout
+                  label="Position"
+                  value={playing ? barBeat : formatBarBeat(transport.position().beat, beatsPerBar)}
+                  data-tip="Bar and beat under the cursor"
+                />
+                <Readout label="Passes" value={passLabel} data-tip="Passes through the loop so far" live />
+                {secondsLeft !== null && (
+                  <Readout label="Time left" value={formatSeconds(secondsLeft)} data-tip="Playing time left on this exercise" />
+                )}
+              </Group>
+            </div>
+
+            {/* The tempo hugs Play from the left, the loop and Advanced from
+                the right: beside the transport, not out at the edges. */}
+            <div className="flex min-w-0 justify-end">
+              <Group label="Tempo">
+                <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" data-tip={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
+                <label htmlFor={ids.tempo} className="sr-only">
+                  Tempo in BPM
+                </label>
+                <input
+                  id={ids.tempo}
+                  type="number"
+                  min={MIN_TEMPO}
+                  max={MAX_TEMPO}
+                  value={snapshot.tempoBpm}
+                  data-tip="Tempo in beats per minute"
+                  onChange={(event) => transport.setTempo(Number(event.target.value))}
+                  className={`${FIELD} h-7 w-14 text-center font-display text-sm font-semibold`}
+                />
+                <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)} label="Faster" data-tip={`Faster by ${TEMPO_STEP} BPM`} shortcut="+"><PlusIcon /></IconButton>
+                {snapshot.tempoBpm !== exercise.tempoBpm && (
+                  <IconButton onClick={() => transport.setTempo(exercise.tempoBpm)} label={`Reset to ${exercise.tempoBpm}`} data-tip={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}><ResetIcon /></IconButton>
+                )}
+                {/* The ramp switches on and off here, where the tempo is; its
+                    step, passes and target live in Advanced. */}
+                <IconButton
+                  onClick={() => setLadder(snapshot.ladder ? null : {})}
+                  pressed={snapshot.ladder !== null}
+                  label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
+                  data-tip={`Tempo ramp ${snapshot.ladder ? `on: +${snapshot.ladder.stepBpm} BPM every ${snapshot.ladder.everyPasses} passes up to ${snapshot.ladder.toBpm}` : 'off'}. Raise the tempo every few passes`}
+                >
+                  <RampIcon />
+                </IconButton>
+                {snapshot.ladder && tempoNow !== snapshot.tempoBpm && (
+                  <span className="text-xs text-accent-text tabular-nums" data-tip="Tempo of the current pass on the ramp">
+                    now {tempoNow}
+                  </span>
+                )}
+              </Group>
+            </div>
+
+            {/* Wrapped, so the group is a first child and draws no divider:
+                its leading border and padding would push Play off centre. */}
+            <div className="flex justify-center">
               <Group label="Transport">
                 <IconButton onClick={() => transport.stop()} label="Back to the start" shortcut="Home" className="h-9 w-9"><SkipBackIcon /></IconButton>
                 <IconButton onClick={() => seekBars(-1)} label="Previous bar" shortcut="←" className="h-9 w-9"><ChevronLeftIcon /></IconButton>
@@ -433,272 +493,86 @@ export function ExercisePlayer({
                   <NextIcon />
                 </IconButton>
               </Group>
-              <div className="flex min-w-0 justify-end">
+            </div>
+
+            <div className="flex min-w-0 justify-start">
+              <Group label="Practice">
+                <Menu
+                  id="loop"
+                  label="Loop"
+                  icon={<LoopIcon />}
+                  value={snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'whole'}
+                  badge={snapshot.loop ? `${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : null}
+                  data-tip={`Loop: ${snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'the whole exercise'}. Loop a part for detailed practice`}
+                  active={snapshot.loop !== null}
+                  open={openMenu === 'loop'}
+                  onToggle={toggleMenu}
+                >
+                  <p className="text-xs text-muted">Press or drag on the bar numbers above the score, or:</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <button type="button" onClick={loopCurrentBar} data-tip="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
+                      <BarIcon /> This bar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => markLoop('start')}
+                      className={`${CHIP} ${TOGGLE_OFF}`}
+                      aria-label="Set loop start at cursor"
+                      data-tip="Start the loop at the cursor ([)"
+                    >
+                      <LoopStartIcon /> Start here
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => markLoop('end')}
+                      className={`${CHIP} ${TOGGLE_OFF}`}
+                      aria-label="Set loop end at cursor"
+                      data-tip="End the loop at the cursor (])"
+                    >
+                      <LoopEndIcon /> End here
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLoop(null)}
+                      disabled={!snapshot.loop}
+                      data-tip="Play the whole exercise again (⇧L)"
+                      className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
+                    >
+                      <ClearIcon /> Clear
+                    </button>
+                  </div>
+                </Menu>
+
+                {/* One door for everything else: the stage stays a stage, and
+                    the settings are one press away. */}
                 <button
                   type="button"
-                  onClick={() => setAboutOpen((open) => !open)}
-                  aria-pressed={aboutOpen}
-                  aria-label="About this exercise"
-                  data-tip="About this exercise: the theory and the shape on the neck (I)"
-                  className={`${ICON_BASE} h-10 w-10 rounded-xl ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
+                  onClick={() => setAdvancedOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={advancedOpen}
+                  aria-label={somethingAdvanced ? 'Advanced — settings changed' : 'Advanced'}
+                  data-tip="Advanced: transpose, repeat, ramp steps, sound and view"
+                  className={`${ICON_BASE} relative bg-panel hover:bg-panel-2`}
                 >
-                  <InfoIcon size={20} />
+                  <SlidersIcon />
+                  {somethingAdvanced && (
+                    <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-accent" aria-hidden="true" data-advanced-dot />
+                  )}
                 </button>
-              </div>
+              </Group>
             </div>
-            {/* Second lane: tempo first, then the rest, smaller, one click each. */}
-            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5" data-lane="more">
-            <Group label="Tempo">
-              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm - TEMPO_STEP)} label="Slower" data-tip={`Slower by ${TEMPO_STEP} BPM`} shortcut="−"><MinusIcon /></IconButton>
-              <label htmlFor={ids.tempo} className="sr-only">
-                Tempo in BPM
-              </label>
-              <input
-                id={ids.tempo}
-                type="number"
-                min={MIN_TEMPO}
-                max={MAX_TEMPO}
-                value={snapshot.tempoBpm}
-                data-tip="Tempo in beats per minute"
-                onChange={(event) => transport.setTempo(Number(event.target.value))}
-                className={`${FIELD} h-7 w-14 text-center font-display text-sm font-semibold`}
-              />
-              <IconButton onClick={() => transport.setTempo(snapshot.tempoBpm + TEMPO_STEP)} label="Faster" data-tip={`Faster by ${TEMPO_STEP} BPM`} shortcut="+"><PlusIcon /></IconButton>
-              {snapshot.tempoBpm !== exercise.tempoBpm && (
-                <IconButton onClick={() => transport.setTempo(exercise.tempoBpm)} label={`Reset to ${exercise.tempoBpm}`} data-tip={`Back to the exercise tempo, ${exercise.tempoBpm} BPM`}><ResetIcon /></IconButton>
-              )}
-              <IconButton
-                onClick={() => setLadder(snapshot.ladder ? null : {})}
-                pressed={snapshot.ladder !== null}
-                label={`Tempo ramp: ${snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}`}
-                data-tip={`Tempo ramp ${snapshot.ladder ? `on: +${snapshot.ladder.stepBpm} BPM every ${snapshot.ladder.everyPasses} passes up to ${snapshot.ladder.toBpm}` : 'off'}. Raise the tempo every few passes`}
-              >
-                <RampIcon />
-              </IconButton>
-              <Menu
-                id="ramp"
-                label="Tempo ramp settings"
-                icon={<SlidersIcon />}
-                value={snapshot.ladder ? `+${snapshot.ladder.stepBpm}/${snapshot.ladder.everyPasses} → ${snapshot.ladder.toBpm}` : 'off'}
-                badge={null}
-                data-tip="Tempo ramp settings: step, passes per step and target"
-                active={false}
-                open={openMenu === 'ramp'}
-                onToggle={toggleMenu}
-              >
-                <p className="text-xs text-muted">Raise the tempo by a step every few passes, up to a target.</p>
-                <div className="mt-2 flex items-center gap-1.5 text-sm text-fg-2" data-ramp-settings>
-                  <span>+</span>
-                  <NumberField label="BPM per step" data-tip="BPM added at each step" value={snapshot.ladder?.stepBpm ?? 4} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
-                  <span>every</span>
-                  <NumberField label="Passes per step" data-tip="Passes between steps" value={snapshot.ladder?.everyPasses ?? 2} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
-                  <span>passes →</span>
-                  <NumberField label="Target tempo" data-tip="Tempo the ramp stops at" value={snapshot.ladder?.toBpm ?? Math.min(snapshot.tempoBpm + 40, MAX_TEMPO)} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
-                </div>
-                <p className="mt-2 text-[11px] text-muted">Changing a setting switches the ramp on.</p>
-              </Menu>
-              {snapshot.ladder && tempoNow !== snapshot.tempoBpm && (
-                <span className="text-xs text-accent-text tabular-nums" data-tip="Tempo of the current pass on the ramp">
-                  now {tempoNow}
-                </span>
-              )}
-            </Group>
-            <Group label="Transpose">
-              <IconButton
-                onClick={() => transposeBy(-1)}
-                disabled={semitones <= transposable.min}
-                label="Transpose down a semitone"
-                data-tip={semitones <= transposable.min ? 'The shape is as low on the neck as it goes' : 'Slide the shape down a fret'}
-                shortcut="Shift+T"
-              >
-                <ArrowDownIcon />
-              </IconButton>
-              <span
-                className={`min-w-12 text-center text-xs font-semibold tabular-nums ${semitones === 0 ? 'text-muted' : 'text-accent-text'}`}
-                aria-live="polite"
-                data-tip="Transposition: the key the exercise sounds in, and how far the shape has moved"
-                data-transpose-readout
-              >
-                <span aria-hidden="true">
-                  {[shown.key ? keyLabel(shown.key) : null, semitones === 0 && shown.key ? null : formatSemitones(semitones)].filter(Boolean).join(' ')}
-                </span>
-                <span className="sr-only">{spokenTransposition(shown.key, semitones)}</span>
-              </span>
-              <IconButton
-                onClick={() => transposeBy(1)}
-                disabled={semitones >= transposable.max}
-                label="Transpose up a semitone"
-                data-tip={semitones >= transposable.max ? 'The shape is as high on the neck as it goes' : 'Slide the shape up a fret'}
-                shortcut="T"
-              >
-                <ArrowUpIcon />
-              </IconButton>
-              {/* Always there, so the row does not shift under the pointer on the first step. */}
-              <IconButton
-                onClick={() => setSemitones(0)}
-                disabled={semitones === 0}
-                label="Back to the written key"
-                data-tip={`Back to the written key${homeLabel(exercise) ? `, ${keyLabel(homeLabel(exercise) ?? '')}` : ''}`}
-              >
-                <ResetIcon />
-              </IconButton>
-            </Group>
-            <Group label="Practice">
-              <Menu
-                id="loop"
-                label="Loop"
-                icon={<LoopIcon />}
-                value={snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'whole'}
-                badge={snapshot.loop ? `${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : null}
-                data-tip={`Loop: ${snapshot.loop ? `beats ${snapshot.loop.startBeat + 1}–${snapshot.loop.endBeat}` : 'the whole exercise'}. Loop a part for detailed practice`}
-                active={snapshot.loop !== null}
-                open={openMenu === 'loop'}
-                onToggle={toggleMenu}
-              >
-                <p className="text-xs text-muted">Press or drag on the bar numbers above the score, or:</p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <button type="button" onClick={loopCurrentBar} data-tip="Loop the bar under the cursor (L)" className={`${CHIP} ${TOGGLE_OFF}`}>
-                    <BarIcon /> This bar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => markLoop('start')}
-                    className={`${CHIP} ${TOGGLE_OFF}`}
-                    aria-label="Set loop start at cursor"
-                    data-tip="Start the loop at the cursor ([)"
-                  >
-                    <LoopStartIcon /> Start here
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => markLoop('end')}
-                    className={`${CHIP} ${TOGGLE_OFF}`}
-                    aria-label="Set loop end at cursor"
-                    data-tip="End the loop at the cursor (])"
-                  >
-                    <LoopEndIcon /> End here
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLoop(null)}
-                    disabled={!snapshot.loop}
-                    data-tip="Play the whole exercise again (⇧L)"
-                    className={`${CHIP} ${TOGGLE_OFF} disabled:cursor-not-allowed disabled:opacity-40`}
-                  >
-                    <ClearIcon /> Clear
-                  </button>
-                </div>
-              </Menu>
 
-              <Menu
-                id="repeat"
-                label="Repeat"
-                icon={<RepeatIcon />}
-                value={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
-                badge={snapshot.repeat === null ? '∞' : `${snapshot.repeat}×`}
-                data-tip={`Repeat: ${snapshot.repeat === null ? 'until you stop' : `${snapshot.repeat} passes`}. How many passes to play before stopping`}
-                active={snapshot.repeat !== null}
-                open={openMenu === 'repeat'}
-                onToggle={toggleMenu}
+            <div className="flex min-w-0 justify-end">
+              <button
+                type="button"
+                onClick={() => setAboutOpen((open) => !open)}
+                aria-pressed={aboutOpen}
+                aria-label="About this exercise"
+                data-tip="About this exercise: the theory and the shape on the neck (I)"
+                className={`${ICON_BASE} h-10 w-10 rounded-xl ${aboutOpen ? 'border-accent bg-accent text-on-accent' : 'border-accent/60 bg-accent/15 text-accent-text hover:bg-accent/25'}`}
               >
-                <p className="text-xs text-muted">Passes through the loop before the player stops.</p>
-                <div className="mt-2 flex items-center gap-1.5">
-                  {REPEAT_CHOICES.map((choice) => (
-                    <button
-                      key={choice ?? 'loop'}
-                      type="button"
-                      onClick={() => transport.setRepeat(choice)}
-                      aria-pressed={snapshot.repeat === choice}
-                      data-tip={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
-                      className={`${CHIP} ${snapshot.repeat === choice ? TOGGLE_ON : TOGGLE_OFF}`}
-                    >
-                      {choice === null ? '∞' : `${choice}×`}
-                    </button>
-                  ))}
-                  <label htmlFor={ids.repeat} className="sr-only">
-                    Custom repeat count
-                  </label>
-                  <input
-                    id={ids.repeat}
-                    type="number"
-                    min={1}
-                    max={99}
-                    value={snapshot.repeat ?? ''}
-                    placeholder="n"
-                    data-tip="Any number of passes"
-                    onChange={(event) =>
-                      transport.setRepeat(event.target.value === '' ? null : Number(event.target.value))
-                    }
-                    className={`${FIELD} w-14 text-center`}
-                  />
-                </div>
-              </Menu>
-            </Group>
-
-            <Group label="Sound">
-              <Toggle label="Click" icon={<ClickIcon />} data-tip="Click: metronome on every beat" checked={prefs.click} onChange={(click) => onPrefsChange({ ...prefs, click })} />
-              <Toggle label="Count-in" icon={<CountInIcon />} data-tip="Count-in: one bar of clicks before the music starts" checked={prefs.countIn} onChange={(countIn) => onPrefsChange({ ...prefs, countIn })} />
-              <Toggle label="Play along" icon={<GuitarIcon />} data-tip="Play along: a guitar plays the line with you" checked={prefs.voice} onChange={(voice) => onPrefsChange({ ...prefs, voice })} />
-              <Select
-                options={GUITAR_OPTIONS}
-                value={prefs.guitar}
-                onChange={(guitar) => onPrefsChange({ ...prefs, guitar })}
-                aria-label="Guitar"
-                data-tip="Guitar for playing along"
-                placement="above"
-                icon={<GuitarPickIcon />}
-              />
-            </Group>
-
-            <Group label="View">
-              <div className="flex items-center gap-1" role="radiogroup" aria-label="Score view">
-                {(
-                  [
-                    ['tab', 'Tab', <TabIcon key="tab" />, 'Tablature only'],
-                    ['notation', 'Notes', <NotesIcon key="notes" />, 'Standard notation only'],
-                    ['both', 'Both', <BothIcon key="both" />, 'Notation over tablature'],
-                  ] as const
-                ).map(([choice, text, icon, description]) => (
-                  <button
-                    key={choice}
-                    type="button"
-                    role="radio"
-                    aria-checked={prefs.view === choice}
-                    aria-label={text}
-                    data-tip={`${text}: ${description}`}
-                    onClick={() => onPrefsChange({ ...prefs, view: choice })}
-                    className={prefs.view === choice ? ICON_ON : ICON_BUTTON}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
-              <IconButton
-                onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom - ZOOM_STEP) })}
-                disabled={prefs.zoom <= ZOOM_MIN}
-                label="Smaller score"
-              >
-                <MinusIcon />
-              </IconButton>
-              <span className="w-10 text-center text-xs font-semibold text-fg tabular-nums" aria-live="polite" data-tip="Score magnification">
-                {Math.round(prefs.zoom * 100)}%
-              </span>
-              <IconButton
-                onClick={() => onPrefsChange({ ...prefs, zoom: clampZoom(prefs.zoom + ZOOM_STEP) })}
-                disabled={prefs.zoom >= ZOOM_MAX}
-                label="Larger score"
-              >
-                <PlusIcon />
-              </IconButton>
-            </Group>
-
-            <Group label="Help">
-              {fullscreenAvailable && (
-                <IconButton onClick={toggleFullscreen} pressed={fullscreen} label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} shortcut="F">
-                  <FullscreenIcon exit={fullscreen} />
-                </IconButton>
-              )}
-            </Group>
+                <InfoIcon size={20} />
+              </button>
             </div>
           </div>
         </div>
@@ -716,6 +590,109 @@ export function ExercisePlayer({
             </div>
           </>
         )}
+
+        {/* Everything the stage no longer shows, in one dialog: inside the
+            stage, so it is still there when the stage is fullscreen. */}
+        {advancedOpen && (
+          <Modal
+            title="Advanced"
+            description="The rest of the player — how it moves, how it sounds, how it reads. Sound and view are remembered for every exercise."
+            onClose={() => setAdvancedOpen(false)}
+          >
+            <div className="space-y-5">
+              <SettingsSection title="This exercise">
+                <SettingsRow label="Transpose" hint="Slide the shape up or down the neck.">
+                  <div className="flex items-center gap-1">
+                    <IconButton
+                      onClick={() => transposeBy(-1)}
+                      disabled={semitones <= transposable.min}
+                      label="Transpose down a semitone"
+                      data-tip={semitones <= transposable.min ? 'The shape is as low on the neck as it goes' : 'Slide the shape down a fret'}
+                      shortcut="Shift+T"
+                    >
+                      <ArrowDownIcon />
+                    </IconButton>
+                    <span
+                      className={`min-w-12 text-center text-xs font-semibold tabular-nums ${semitones === 0 ? 'text-muted' : 'text-accent-text'}`}
+                      aria-live="polite"
+                      data-tip="Transposition: the key the exercise sounds in, and how far the shape has moved"
+                      data-transpose-readout
+                    >
+                      <span aria-hidden="true">
+                        {[shown.key ? keyLabel(shown.key) : null, semitones === 0 && shown.key ? null : formatSemitones(semitones)].filter(Boolean).join(' ')}
+                      </span>
+                      <span className="sr-only">{spokenTransposition(shown.key, semitones)}</span>
+                    </span>
+                    <IconButton
+                      onClick={() => transposeBy(1)}
+                      disabled={semitones >= transposable.max}
+                      label="Transpose up a semitone"
+                      data-tip={semitones >= transposable.max ? 'The shape is as high on the neck as it goes' : 'Slide the shape up a fret'}
+                      shortcut="T"
+                    >
+                      <ArrowUpIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setSemitones(0)}
+                      disabled={semitones === 0}
+                      label="Back to the written key"
+                      data-tip={`Back to the written key${homeLabel(exercise) ? `, ${keyLabel(homeLabel(exercise) ?? '')}` : ''}`}
+                    >
+                      <ResetIcon />
+                    </IconButton>
+                  </div>
+                </SettingsRow>
+
+                <SettingsRow label="Repeat" hint="Passes through the loop before the player stops.">
+                  <div className="flex items-center gap-1.5">
+                    {REPEAT_CHOICES.map((choice) => (
+                      <button
+                        key={choice ?? 'loop'}
+                        type="button"
+                        onClick={() => transport.setRepeat(choice)}
+                        aria-pressed={snapshot.repeat === choice}
+                        data-tip={choice === null ? 'Loop until you stop' : `Play ${choice} times`}
+                        className={`${CHIP} ${snapshot.repeat === choice ? TOGGLE_ON : TOGGLE_OFF}`}
+                      >
+                        {choice === null ? '∞' : `${choice}×`}
+                      </button>
+                    ))}
+                    <label htmlFor={ids.repeat} className="sr-only">
+                      Custom repeat count
+                    </label>
+                    <input
+                      id={ids.repeat}
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={snapshot.repeat ?? ''}
+                      placeholder="n"
+                      data-tip="Any number of passes"
+                      onChange={(event) => transport.setRepeat(event.target.value === '' ? null : Number(event.target.value))}
+                      className={`${FIELD} w-14 text-center`}
+                    />
+                  </div>
+                </SettingsRow>
+
+                <SettingsRow
+                  label="Tempo ramp"
+                  hint="Raise the tempo by a step every few passes, up to a target. Changing a number switches the ramp on; the switch itself is beside the tempo."
+                >
+                  <div className="flex items-center gap-1.5" data-ramp-settings>
+                    <span className="text-xs text-muted">+</span>
+                    <NumberField label="BPM per step" data-tip="BPM added at each step" value={snapshot.ladder?.stepBpm ?? 4} min={1} max={60} onChange={(stepBpm) => setLadder({ stepBpm })} />
+                    <span className="text-xs text-muted">every</span>
+                    <NumberField label="Passes per step" data-tip="Passes between steps" value={snapshot.ladder?.everyPasses ?? 2} min={1} max={20} onChange={(everyPasses) => setLadder({ everyPasses })} />
+                    <span className="text-xs text-muted">→</span>
+                    <NumberField label="Target tempo" data-tip="Tempo the ramp stops at" value={snapshot.ladder?.toBpm ?? Math.min(snapshot.tempoBpm + 40, MAX_TEMPO)} min={MIN_TEMPO} max={MAX_TEMPO} onChange={(toBpm) => setLadder({ toBpm })} />
+                  </div>
+                </SettingsRow>
+              </SettingsSection>
+
+              <PlayerSettingsPanel prefs={prefs} onPrefsChange={onPrefsChange} />
+            </div>
+          </Modal>
+        )}
       </div>
 
       {snapshot.audioUnavailable && (
@@ -727,7 +704,7 @@ export function ExercisePlayer({
   )
 }
 
-type MenuId = 'loop' | 'repeat' | 'ramp' | 'view'
+type MenuId = 'loop'
 
 /** A labelled popover: the button shows the setting's current value, the panel holds its controls. */
 function Menu({
@@ -864,27 +841,6 @@ function Readout({ label, value, 'data-tip': tip, live = false }: { label: strin
   )
 }
 
-function Toggle({
-  label,
-  icon,
-  'data-tip': tip,
-  checked,
-  onChange,
-}: {
-  label: string
-  icon: ReactNode
-  'data-tip': string
-  checked: boolean
-  onChange: (on: boolean) => void
-}) {
-  return (
-    <label className={checked ? ICON_ON : ICON_BUTTON} data-tip={tip}>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" aria-label={label} />
-      <span className={checked ? 'text-accent' : 'text-muted'}>{icon}</span>
-    </label>
-  )
-}
-
 /** A numeric field that keeps what is being typed and commits only whole, in-range values. */
 function NumberField({
   label,
@@ -921,7 +877,7 @@ function NumberField({
         if (event.target.value !== '' && Number.isInteger(next) && next >= min && next <= max) onChange(next)
       }}
       onBlur={() => setText(String(value))}
-      className={`${FIELD} h-7 w-12 text-center text-xs`}
+      className={`${FIELD} h-7 w-14 text-center text-xs`}
     />
   )
 }

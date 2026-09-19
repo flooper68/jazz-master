@@ -1,5 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { PersonIcon, SignOutIcon, SlidersIcon, ThemeIcon } from '../components/icons'
+import { PlayerSettingsPanel } from '../components/PlayerSettingsPanel'
+import { setPlayerPrefs } from '../components/playerPrefs'
 import type { Theme } from '../components/theme'
+import { usePlayerPrefs } from '../components/usePlayerPrefs'
+import { Modal } from '../components/ui/Modal'
 import { Button } from '../components/ui/Primitives'
 import type { ClerkUser } from './clerkTypes'
 import { useClerkUser } from './useClerkUser'
@@ -14,14 +19,33 @@ function displayName(user: ClerkUser | null): string {
   return user?.fullName || user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Account'
 }
 
-const ITEM = 'w-full text-fg'
+const ITEM = 'w-full gap-2.5 text-fg'
 
-export function AccountMenu({ theme, onToggleTheme, onOpenAccount, showName }: { theme: Theme; onToggleTheme: () => void; onOpenAccount: () => void; showName: boolean }) {
+export function AccountMenu({
+  theme,
+  onToggleTheme,
+  onOpenAccount,
+  showName,
+  stubName,
+}: {
+  theme: Theme
+  onToggleTheme: () => void
+  onOpenAccount: () => void
+  showName: boolean
+  /** Local dev and e2e sign in without Clerk: who the menu says you are. */
+  stubName?: string
+}) {
   const { clerk, user } = useClerkUser()
   const [open, setOpen] = useState(false)
+  // The player's own sound and view choices, reachable when no player is open.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const prefs = usePlayerPrefs()
   const root = useRef<HTMLDivElement | null>(null)
+  // The menu item that opens the settings is gone by the time they close, so
+  // focus goes back to the account button that opened the menu.
+  const trigger = useRef<HTMLButtonElement | null>(null)
   const menuId = useId()
-  const name = displayName(user)
+  const name = user ? displayName(user) : (stubName ?? displayName(user))
   const email = user?.primaryEmailAddress?.emailAddress
 
   useEffect(() => {
@@ -40,6 +64,7 @@ export function AccountMenu({ theme, onToggleTheme, onOpenAccount, showName }: {
   return (
     <div ref={root} className="relative min-w-0">
       <button
+        ref={trigger}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -80,16 +105,43 @@ export function AccountMenu({ theme, onToggleTheme, onOpenAccount, showName }: {
                 onOpenAccount()
               }}
             >
+              <PersonIcon />
               Account
             </Button>
+            <Button
+              variant="quiet"
+              align="start"
+              role="menuitem"
+              className={ITEM}
+              onClick={() => {
+                setOpen(false)
+                setSettingsOpen(true)
+              }}
+            >
+              <SlidersIcon />
+              Player settings
+            </Button>
             <Button variant="quiet" align="start" role="menuitem" className={ITEM} onClick={onToggleTheme}>
+              <ThemeIcon dark={theme !== 'dark'} />
               {theme === 'dark' ? 'Light theme' : 'Dark theme'}
             </Button>
             <Button variant="quiet" align="start" role="menuitem" className={ITEM} disabled={!clerk} onClick={() => void clerk?.signOut({ redirectUrl: '/' })}>
+              <SignOutIcon />
               Sign out
             </Button>
           </div>
         </div>
+      )}
+
+      {settingsOpen && (
+        <Modal
+          title="Player settings"
+          description="What the player sounds like and what it shows. They hold for every exercise, and the player's own Advanced panel sets the same ones."
+          onClose={() => setSettingsOpen(false)}
+          returnFocusTo={trigger}
+        >
+          <PlayerSettingsPanel prefs={prefs} onPrefsChange={setPlayerPrefs} />
+        </Modal>
       )}
     </div>
   )

@@ -272,6 +272,12 @@ describe('appRouter.users.ensure', () => {
         }
       },
       async deleteUser() {},
+      async readPlayerPrefs() {
+        return null
+      },
+      async writePlayerPrefs(_clerkUserId, prefs) {
+        return prefs
+      },
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -321,6 +327,12 @@ describe('appRouter.users.ensure', () => {
         return created
       },
       async deleteUser() {},
+      async readPlayerPrefs() {
+        return null
+      },
+      async writePlayerPrefs(_clerkUserId, prefs) {
+        return prefs
+      },
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -351,6 +363,12 @@ describe('appRouter.users.ensure', () => {
         }
       },
       async deleteUser() {},
+      async readPlayerPrefs() {
+        return null
+      },
+      async writePlayerPrefs(_clerkUserId, prefs) {
+        return prefs
+      },
     } satisfies UserRepository
     const caller = createCaller(
       createContext({
@@ -621,6 +639,12 @@ describe('appRouter.users.deleteData', () => {
       async deleteUser(clerkUserId: string) {
         deleted.push(clerkUserId)
       },
+      async readPlayerPrefs() {
+        return null
+      },
+      async writePlayerPrefs(_clerkUserId, prefs) {
+        return prefs
+      },
     } satisfies UserRepository
     const caller = createCaller(createContext({ auth: { clerkUserId: 'user_wes' }, users }))
 
@@ -641,6 +665,12 @@ describe('appRouter.users.deleteData', () => {
       },
       async deleteUser() {
         throw new Error('connection refused')
+      },
+      async readPlayerPrefs() {
+        return null
+      },
+      async writePlayerPrefs(_clerkUserId, prefs) {
+        return prefs
       },
     } satisfies UserRepository
     const caller = createCaller(createContext({ auth: { clerkUserId: 'user_wes' }, users }))

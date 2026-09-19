@@ -5,6 +5,7 @@ import {
   resolveDatabaseConnectionString,
   type HyperdriveConnection,
 } from './connection'
+import { parsePlayerPrefs, type PlayerPrefs } from '../../appData/playerPrefs'
 import { schema, users } from './schema'
 
 export interface AppUser {
@@ -15,6 +16,10 @@ export interface AppUser {
 
 export interface UserRepository {
   ensureUser(clerkUserId: string): Promise<AppUser>
+  /** How the user has the player set, or null when they have never changed it. */
+  readPlayerPrefs(clerkUserId: string): Promise<PlayerPrefs | null>
+  /** Save the whole set; the row is created if this is the user's first write. */
+  writePlayerPrefs(clerkUserId: string, prefs: PlayerPrefs): Promise<PlayerPrefs>
   /** Delete the user and, by cascade, everything saved under them: runs, exercises, routines. */
   deleteUser(clerkUserId: string): Promise<void>
 }
@@ -63,6 +68,41 @@ export function createUserRepository({
         }
 
         return serializeUser(row)
+      } finally {
+        await db.$client.end()
+      }
+    },
+
+    async readPlayerPrefs(clerkUserId) {
+      const db = drizzle(connectionString, { schema })
+
+      try {
+        const [row] = await db
+          .select({ playerPrefs: users.playerPrefs })
+          .from(users)
+          .where(eq(users.clerkUserId, clerkUserId))
+          .limit(1)
+
+        return row?.playerPrefs == null ? null : parsePlayerPrefs(row.playerPrefs)
+      } finally {
+        await db.$client.end()
+      }
+    },
+
+    async writePlayerPrefs(clerkUserId, prefs) {
+      const db = drizzle(connectionString, { schema })
+
+      try {
+        const [row] = await db
+          .insert(users)
+          .values({ clerkUserId, playerPrefs: prefs })
+          .onConflictDoUpdate({
+            target: users.clerkUserId,
+            set: { playerPrefs: prefs, updatedAt: new Date() },
+          })
+          .returning({ playerPrefs: users.playerPrefs })
+
+        return parsePlayerPrefs(row?.playerPrefs ?? prefs)
       } finally {
         await db.$client.end()
       }

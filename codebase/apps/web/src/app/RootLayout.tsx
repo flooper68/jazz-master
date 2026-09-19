@@ -6,6 +6,7 @@ import { exerciseSeconds } from '../content'
 import { useAgentTools } from '../webmcp/useAgentTools'
 import { useExerciseCatalog } from './useExerciseCatalog'
 import { useNextSession } from './useNextSession'
+import { usePlayerPrefsSync } from './usePlayerPrefsSync'
 import { useRoutines } from './useRoutines'
 
 /**
@@ -20,6 +21,8 @@ export function RootLayout() {
   const { routines } = useRoutines()
   const { plan } = useNextSession()
   useAgentTools()
+  // The player's settings follow the account, not this browser.
+  usePlayerPrefsSync()
   const next = {
     label: plan.routine?.name ?? 'Next session',
     count: plan.slots.length,

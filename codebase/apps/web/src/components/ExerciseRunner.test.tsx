@@ -5,6 +5,7 @@ import type { ExerciseRun } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
 import { ExerciseRunner } from './ExerciseRunner'
+import { resetPlayerPrefs } from './playerPrefs'
 
 /** Clocked: one minute on the timer. */
 const clocked: Exercise = {
@@ -114,14 +115,33 @@ async function finish(user: User, title: string) {
   await user.click(screen.getByRole('button', { name: `Finish ${title}` }))
 }
 
-/** The advanced controls sit behind menus; open one by its label. */
-async function openMenu(user: User, label: 'Loop' | 'Repeat' | 'Tempo ramp settings') {
+/** The loop controls sit behind a menu on the stage; open it by its label. */
+async function openMenu(user: User, label: 'Loop') {
   const button = screen.getByRole('button', { name: new RegExp(`^${label}: `) })
   if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
 }
 
+/**
+ * Everything but the tempo and the loop lives behind Advanced: open the
+ * dialog. The name grows a suffix once something behind it is set.
+ */
+function advancedButton() {
+  return screen.getByRole('button', { name: /^Advanced/ })
+}
+
+async function openAdvanced(user: User) {
+  const button = advancedButton()
+  if (button.getAttribute('aria-expanded') !== 'true') await user.click(button)
+}
+
+async function closeAdvanced(user: User) {
+  await user.click(screen.getByRole('button', { name: 'Close advanced' }))
+}
+
 async function disableCountIn(user: User) {
+  await openAdvanced(user)
   await user.click(screen.getByRole('checkbox', { name: 'Count-in' }))
+  await closeAdvanced(user)
 }
 
 /** The cursor polls on animation frames; jsdom needs a nudge after the clock moves. */
@@ -146,6 +166,7 @@ describe('ExerciseRunner', () => {
   beforeEach(() => {
     clock.ms = 0
     localStorage.clear()
+    resetPlayerPrefs()
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -215,12 +236,14 @@ describe('ExerciseRunner', () => {
   it('lets the player silence the click and play the line along, keeping the choice for the next round', async () => {
     const user = userEvent.setup()
     const { audio } = renderRunner()
-    await disableCountIn(user)
+    await openAdvanced(user)
+    await user.click(screen.getByRole('checkbox', { name: 'Count-in' }))
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
     await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
-    await user.click(screen.getByRole('combobox', { name: /^Guitar: / }))
+    await user.click(screen.getByRole('combobox', { name: 'Guitar' }))
     await user.click(screen.getByRole('option', { name: 'Steel string (synth)' }))
-    expect(screen.getByRole('combobox', { name: 'Guitar: Steel string (synth)' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Guitar' })).toHaveTextContent('Steel string (synth)')
+    await closeAdvanced(user)
     expect(audio.log.filter((entry) => entry.startsWith('guitar')).at(-1)).toBeUndefined()
 
     await play(user, 'C major — open position')
@@ -232,6 +255,7 @@ describe('ExerciseRunner', () => {
 
     await finish(user, 'C major — open position')
     await user.click(screen.getByRole('button', { name: 'Play again' }))
+    await openAdvanced(user)
     expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Play along' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Count-in' })).not.toBeChecked()
@@ -245,9 +269,11 @@ describe('ExerciseRunner', () => {
   })
 
   it('opens with the remembered view', async () => {
+    const user = userEvent.setup()
     localStorage.setItem('jazz-master.player-prefs', JSON.stringify({ view: 'tab' }))
     renderRunner()
     expect(document.querySelector('[data-staff="notation"]')).toBeNull()
+    await openAdvanced(user)
     expect(screen.getByRole('radio', { name: 'Tab' })).toHaveAttribute('aria-checked', 'true')
   })
 
@@ -329,25 +355,43 @@ describe('ExerciseRunner', () => {
     expect(tempo).toHaveValue(60)
     expect(screen.queryByRole('button', { name: 'Reset to 60' })).toBeNull()
 
-    await openMenu(user, 'Repeat')
-    await user.click(screen.getByRole('button', { name: '4×' }))
-    expect(screen.getByRole('button', { name: '4×' })).toHaveAttribute('aria-pressed', 'true')
-    expect(readout('Passes')).toBe('Pass 1 of 4')
-    expect(screen.getByRole('button', { name: 'Repeat: 4×' })).toHaveAttribute('aria-expanded', 'true')
-
-    // The ramp is a direct toggle; its settings live in their own menu.
+    // The ramp switches on beside the tempo; its steps live behind Advanced.
     await user.click(screen.getByRole('button', { name: 'Tempo ramp: off' }))
     expect(screen.getByRole('button', { name: 'Tempo ramp: +4/2 → 100' })).toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: /^Tempo ramp settings: / }))
-    expect(document.querySelector('[data-ramp-settings]')).not.toBeNull()
+
+    await openAdvanced(user)
+    await user.click(screen.getByRole('button', { name: '4×' }))
+    expect(screen.getByRole('button', { name: '4×' })).toHaveAttribute('aria-pressed', 'true')
     await user.clear(screen.getByRole('spinbutton', { name: 'BPM per step' }))
     await user.type(screen.getByRole('spinbutton', { name: 'BPM per step' }), '10')
+    await closeAdvanced(user)
+
     expect(screen.getByRole('button', { name: 'Tempo ramp: +10/2 → 100' })).toBeInTheDocument()
+    expect(readout('Passes')).toBe('Pass 1 of 4')
+    // The stage says, without naming it, that something behind the door is set.
+    expect(document.querySelector('[data-advanced-dot]')).not.toBeNull()
   })
 
-  it('magnifies the score from the View menu and remembers it', async () => {
+  it('gives Advanced the keyboard, and hands it back on Escape', async () => {
     const user = userEvent.setup()
     renderRunner()
+    await openAdvanced(user)
+
+    // The stage's shortcuts belong to the dialog while it is open: Space in it
+    // must not start the exercise behind it.
+    await user.keyboard(' ')
+    expect(screen.getByRole('button', { name: 'Play C major — open position' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Advanced' })).toBeNull()
+    // Focus goes back where it came from, not to the top of the page.
+    expect(advancedButton()).toHaveFocus()
+  })
+
+  it('magnifies the score from the Advanced panel and remembers it', async () => {
+    const user = userEvent.setup()
+    renderRunner()
+    await openAdvanced(user)
     const svg = document.querySelector('[data-score-scroller] svg')!
     // The engraving gets bigger: two neighbouring notes sit further apart on screen.
     const noteGapPx = () => {
@@ -367,6 +411,7 @@ describe('ExerciseRunner', () => {
     renderRunner()
     const frets = () => [...document.querySelectorAll('[data-note] text')].map((t) => t.textContent)
     const readout = () => document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent
+    await openAdvanced(user)
     expect(frets()).toEqual(['3', '0', '2', '3', '0', '2'])
     expect(document.querySelector('[data-key-signature]')?.children).toHaveLength(0)
     expect(readout()).toBe('C')
@@ -390,15 +435,20 @@ describe('ExerciseRunner', () => {
   it('transposes from the keyboard and stops at the top of the neck', async () => {
     const user = userEvent.setup()
     renderRunner()
-    screen.getByRole('heading', { level: 1 }).focus()
+    // The shortcuts are the stage's; the title says where the shape now sits.
+    const heading = () => screen.getByRole('heading', { level: 1 })
+    heading().focus()
     await user.keyboard('ttt')
-    expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('E♭ +3')
-    // Said in words for a screen reader, which reads ♭ and − unreliably.
-    expect(document.querySelector('[data-transpose-readout] .sr-only')?.textContent).toBe('E flat major, 3 semitones up')
+    expect(heading()).toHaveTextContent('in E♭ major, +3')
     await user.keyboard('{Shift>}T{/Shift}')
-    expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('D +2')
+    expect(heading()).toHaveTextContent('in D major, +2')
     await user.keyboard('tttttttttttttttt')
+    expect(heading()).toHaveTextContent('in B major, +11')
+
+    await openAdvanced(user)
     expect(document.querySelector('[data-transpose-readout] [aria-hidden]')?.textContent).toBe('B +11')
+    // Said in words for a screen reader, which reads ♭ and − unreliably.
+    expect(document.querySelector('[data-transpose-readout] .sr-only')?.textContent).toBe('B major, 11 semitones up')
     expect(screen.getByRole('button', { name: 'Transpose up a semitone' })).toBeDisabled()
   })
 
@@ -406,9 +456,11 @@ describe('ExerciseRunner', () => {
     const user = userEvent.setup()
     const audio = fakeAudio()
     renderRunner({ audio })
+    await openAdvanced(user)
     await user.click(screen.getByRole('button', { name: 'Transpose up a semitone' }))
     await user.click(screen.getByRole('checkbox', { name: 'Play along' }))
-    await disableCountIn(user)
+    await user.click(screen.getByRole('checkbox', { name: 'Count-in' }))
+    await closeAdvanced(user)
     await user.click(screen.getByRole('button', { name: /^Play / }))
     // The written line starts on C3 (m48); a semitone up it starts on D♭3.
     await waitFor(() => expect(audio.log.find((entry) => entry.startsWith('note'))).toBe('note m49'))
@@ -417,6 +469,7 @@ describe('ExerciseRunner', () => {
   it('switches between tab, notation and both', async () => {
     const user = userEvent.setup()
     renderRunner()
+    await openAdvanced(user)
     await user.click(screen.getByRole('radio', { name: 'Tab' }))
     expect(document.querySelector('[data-staff="notation"]')).toBeNull()
     expect(screen.getByRole('img', { name: 'C major — open position tab, 6 notes' })).toBeInTheDocument()

@@ -9,10 +9,13 @@ import type { GoalRepository } from '../server/db/goals'
 import type { NoteRepository } from '../server/db/notes'
 import type { RoutineRepository } from '../server/db/routines'
 import type { UserExerciseRepository } from '../server/db/userExercises'
+import type { UserRepository } from '../server/db/users'
+import type { PlayerPrefs } from '../appData/playerPrefs'
 import { createMemoryGoalRepository } from './memoryGoals'
 import { createMemoryNoteRepository } from './memoryNotes'
 import { createMemoryRoutineRepository } from './memoryRoutines'
 import { createMemoryUserExerciseRepository } from './memoryUserExercises'
+import { createMemoryUserRepository } from './memoryUsers'
 
 export const TEST_CLERK_USER_ID = 'user_test_123'
 
@@ -23,6 +26,10 @@ let routines: RoutineRepository = createMemoryRoutineRepository()
 let routinesRepositoryAvailable = true
 let notes: NoteRepository = createMemoryNoteRepository()
 let goals: GoalRepository = createMemoryGoalRepository()
+let users: UserRepository = createMemoryUserRepository()
+// The account is only asked about the player's settings once a test says the
+// user row exists; the rest run as they did before, with no user repository.
+let usersRepositoryAvailable = false
 
 export function resetTrpcTestData() {
   runs.clear()
@@ -32,6 +39,19 @@ export function resetTrpcTestData() {
   routinesRepositoryAvailable = true
   notes = createMemoryNoteRepository()
   goals = createMemoryGoalRepository()
+  users = createMemoryUserRepository()
+  usersRepositoryAvailable = false
+}
+
+/** Turn the account's stored player settings on, optionally with settings already saved. */
+export async function seedTrpcTestPlayerPrefs(prefs: PlayerPrefs | null = null) {
+  usersRepositoryAvailable = true
+  if (prefs) await users.writePlayerPrefs(TEST_CLERK_USER_ID, prefs)
+}
+
+/** What the account holds now, for asserting what a page wrote. */
+export function getTrpcTestPlayerPrefs() {
+  return users.readPlayerPrefs(TEST_CLERK_USER_ID)
 }
 
 /** Give the test user a goal; resolves to it as stored, id included. */
@@ -125,7 +145,7 @@ export const trpcTestFetch: typeof globalThis.fetch = (input, init) => {
         notes,
         routines: routinesRepositoryAvailable ? routines : null,
         userExercises,
-        users: null,
+        users: usersRepositoryAvailable ? users : null,
       }),
   })
 }

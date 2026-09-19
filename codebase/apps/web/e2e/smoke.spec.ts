@@ -102,7 +102,11 @@ test('Play starts the timer, the click, and the cursor; Play again starts over',
   await expect(page.getByText('2:00')).toBeVisible()
   await page.waitForTimeout(1_500)
   await expect(page.getByText('2:00')).toBeVisible()
+  // The sound settings live behind Advanced now, in a dialog over the stage.
+  await page.getByRole('button', { name: 'Advanced' }).click()
   await expect(page.getByRole('checkbox', { name: 'Click' })).toBeChecked()
+  await page.getByRole('button', { name: 'Close advanced' }).click()
+  await expect(page.getByRole('dialog', { name: 'Advanced' })).toHaveCount(0)
 
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await expect(page.getByText(/1:5\d/)).toBeVisible()

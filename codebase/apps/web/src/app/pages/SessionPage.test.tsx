@@ -20,12 +20,13 @@ afterEach(() => {
 })
 
 async function playAndFinish(user: User, title: string): Promise<void> {
-  await user.click(screen.getByRole('button', { name: `Play ${title}` }))
+  // Found, not got: an exercise reached through the session steps in, which takes a moment.
+  await user.click(await screen.findByRole('button', { name: `Play ${title}` }))
   await user.click(screen.getByRole('button', { name: `Finish ${title}` }))
 }
 
 describe('SessionPage', () => {
-  it('plays the exercises in the URL straight through, then sums up and answers the run on one screen', async () => {
+  it('sums each exercise up on the way through, then sums the sitting up on one screen', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
 
@@ -33,7 +34,13 @@ describe('SessionPage', () => {
     expect(screen.getByText('Next session · 1 of 2')).toBeInTheDocument()
     await playAndFinish(user, 'G major — open position')
 
-    // No summary in between: finishing moves straight to the next exercise.
+    // The exercise is summed up before the next one starts, and says where it stands.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exercise complete' })).toHaveFocus()
+    expect(screen.getByText('Next session · 1 of 2')).toBeInTheDocument()
+    // Not mid-session: a second go at one step would drop the answer just given.
+    expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Next exercise' }))
+
     expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toHaveFocus()
     expect(screen.getByText('Next session · 2 of 2')).toBeInTheDocument()
     await playAndFinish(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
@@ -61,6 +68,50 @@ describe('SessionPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
+  })
+
+  it('answers an exercise where it was played, and keeps that answer on the closing screen', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
+    await playAndFinish(user, 'G major — open position')
+
+    // How it went and how it felt, both asked while the exercise is still fresh.
+    await user.click(screen.getByRole('button', { name: 'Hard' }))
+    await user.click(screen.getByRole('button', { name: 'Loved it' }))
+    await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('hard'))
+    expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
+
+    await user.click(screen.getByRole('button', { name: 'Next exercise' }))
+    await playAndFinish(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
+
+    // The last exercise hands straight over: one closing screen, not two.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Next session complete' })).toHaveFocus()
+    const [first] = screen.getAllByRole('listitem')
+    expect(within(first).getByRole('button', { name: 'Hard for G major — open position' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    // And it can still be changed there.
+    await user.click(within(first).getByRole('button', { name: 'Good for G major — open position' }))
+    await waitFor(() => expect(getTrpcTestRuns().find((run) => run.exerciseId === 'scales-major-open-g')?.difficulty).toBe('good'))
+  })
+
+  it('lets the sitting be ended from the summary, not only from the stage', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
+    await playAndFinish(user, 'G major — open position')
+
+    await user.click(screen.getByRole('button', { name: 'End session' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
+  })
+
+  it('moves straight on from an exercise that was finished without playing', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
+    // Nothing was played, so there is nothing to answer for: no summary in between.
+    await user.click(screen.getByRole('button', { name: 'Finish G major — open position' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toHaveFocus()
   })
 
   it('answers how it felt beside how it went, and keeps the two apart', async () => {

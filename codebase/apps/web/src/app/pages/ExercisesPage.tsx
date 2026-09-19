@@ -8,7 +8,7 @@ import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseFilter } from '../../components/ExerciseFilter'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { ClickIcon, ClockIcon, GridIcon, PlayIcon, RowsIcon, StopIcon } from '../../components/icons'
-import { loadPlayerPrefs } from '../../components/playerPrefs'
+import { playerPrefs } from '../../components/playerPrefs'
 import { displayAccidentals } from '@jazz-master/theory'
 import { activeFilterCount, EVERYTHING, EXERCISE_AREAS, exerciseSeconds, filterExercises, homeLabel, type Exercise, type ExerciseQuery } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
@@ -112,7 +112,7 @@ export default function ExercisesPage() {
   }, [view])
   const { playingId, toggle } = useExercisePreview()
   // The guitar chosen in the player, read at each press so a change there is heard here.
-  const onPreview = useCallback((exercise: Exercise) => toggle(exercise, loadPlayerPrefs().guitar), [toggle])
+  const onPreview = useCallback((exercise: Exercise) => toggle(exercise, playerPrefs().guitar), [toggle])
 
   return (
     <div className={PAGE_WIDE}>

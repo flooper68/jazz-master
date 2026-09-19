@@ -145,3 +145,24 @@ export const GoalIcon = () => (
 export const RoutineIcon = () => (
   <Icon size={16}><path d="M4.5 1.5h7A1.5 1.5 0 0 1 13 3v10a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13V3a1.5 1.5 0 0 1 1.5-1.5zm0 1.5v10h7V3zm1.25 1.75h4.5v1.5h-4.5zm0 2.75h4.5V9h-4.5zm0 2.75h3v1.5h-3z" /></Icon>
 )
+
+/** A person: the account itself. */
+export const PersonIcon = () => (
+  <Icon size={16}><path d="M8 1.5a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5zm0 1.5a1.75 1.75 0 1 0 0 3.5A1.75 1.75 0 0 0 8 3zM2.5 14.5c0-2.9 2.46-5 5.5-5s5.5 2.1 5.5 5H12c0-2-1.74-3.5-4-3.5S4 12.5 4 14.5z" /></Icon>
+)
+
+/** The sun and the moon, for the theme the press switches to. */
+export const ThemeIcon = ({ dark }: { dark: boolean }) => (
+  <Icon size={16}>
+    {dark ? (
+      <path d="M9.6 1.7a6.5 6.5 0 1 0 4.7 9.9A5.5 5.5 0 0 1 7.4 4.3a6.6 6.6 0 0 1 2.2-2.6zM6.3 6.6a7 7 0 0 0 5.2 5.2 5 5 0 1 1-5.2-5.2z" />
+    ) : (
+      <path d="M7.25 1h1.5v2.25h-1.5zm0 11.75h1.5V15h-1.5zM1 7.25h2.25v1.5H1zm11.75 0H15v1.5h-2.25zM3.1 2.04l1.6 1.6-1.06 1.06-1.6-1.6zm8.2 8.2 1.6 1.6-1.06 1.06-1.6-1.6zm1.6-8.2 1.06 1.06-1.6 1.6-1.06-1.06zM4.7 12.36 3.64 13.42l-1.6-1.6L3.1 10.76zM8 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zm0 1.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+    )}
+  </Icon>
+)
+
+/** A door with an arrow out: the way out of the account. */
+export const SignOutIcon = () => (
+  <Icon size={16}><path d="M2.5 2h6v1.5h-4.5v9H8.5V14h-6zM10.2 4.44 13.76 8 10.2 11.56 9.14 10.5l1.74-1.75H6v-1.5h4.88L9.14 5.5z" /></Icon>
+)
