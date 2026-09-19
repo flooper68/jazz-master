@@ -4,10 +4,8 @@ import { AgentConfirmPrompt } from '../components/AgentConfirmPrompt'
 import { Layout } from '../components/Layout'
 import { exerciseSeconds } from '../content'
 import { useAgentTools } from '../webmcp/useAgentTools'
-import { useExerciseCatalog } from './useExerciseCatalog'
 import { useNextSession } from './useNextSession'
 import { usePlayerPrefsSync } from './usePlayerPrefsSync'
-import { useRoutines } from './useRoutines'
 
 /**
  * The app shell as every router mounts it: the layout, fed the catalog, the
@@ -17,8 +15,6 @@ import { useRoutines } from './useRoutines'
  */
 export function RootLayout() {
   const navigate = useNavigate()
-  const { exercises } = useExerciseCatalog()
-  const { routines } = useRoutines()
   const { plan } = useNextSession()
   useAgentTools()
   // The player's settings follow the account, not this browser.
@@ -32,8 +28,6 @@ export function RootLayout() {
   return (
     <>
       <Layout
-        exercises={exercises}
-        routines={routines}
         next={next}
         onStartNext={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
       />

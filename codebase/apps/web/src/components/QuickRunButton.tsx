@@ -1,26 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
-import { quickRunSettings, routineExercises, setQuickRunSettings } from '../appData/quickRun'
-import type { Routine } from '../appData/routine'
-import type { Exercise } from '../content'
+import { useEffect, useId, useRef, useState } from 'react'
+import { quickRunSettings, SESSION_MINUTES, setQuickRunSettings } from '../appData/quickRun'
 import { ChevronDownIcon, PlayIcon } from './icons'
 
 /**
  * The primary action: one press plays what the app decided — the next session
  * worked out from the run history, with a reason behind every slot. The
- * chevron beside it opens the one override there is: a practice routine
- * played as prepared instead, which is remembered.
+ * chevron beside it asks the only question worth asking first: how long have
+ * you got. The answer is remembered, and it is the same one the home card
+ * takes, because a session is a length of time before it is a list (JM-5).
  */
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 
 export interface QuickRunButtonProps {
-  exercises: readonly Exercise[]
-  /** The user's practice routines, offered as what to play instead of the next session. */
-  routines: readonly Routine[]
   /**
    * What is on offer: its name, how many exercises, roughly how long, and the
-   * routine it came from — the page has already resolved the override, so the
-   * panel marks what is actually going to play.
+   * routine it came from — the page has already resolved which it is, so the
+   * panel can say what is actually going to play.
    */
   next: { label: string; count: number; seconds: number; routineId: string | null }
   /** Called when the user presses Play; the page works out the plan afresh. */
@@ -29,9 +25,10 @@ export interface QuickRunButtonProps {
   iconOnly?: boolean
 }
 
-export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = false }: QuickRunButtonProps) {
+export function QuickRunButton({ next, onStart, iconOnly = false }: QuickRunButtonProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const lengthName = useId()
 
   // The panel closes on a press outside it and on Escape, like the player's menus.
   useEffect(() => {
@@ -52,8 +49,9 @@ export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = 
 
   const { label, count } = next
   const minutes = Math.max(Math.round(next.seconds / 60), 1)
-  // The plan has already decided whether the named routine still stands.
-  const routine = next.routineId === null ? null : (routines.find((item) => item.id === next.routineId) ?? null)
+  const chosenMinutes = quickRunSettings().sessionMinutes
+  // A routine named on its own page plays as prepared; its length is not ours to set.
+  const isRoutine = next.routineId !== null
 
   return (
     <div ref={rootRef} className="relative flex">
@@ -78,7 +76,7 @@ export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = 
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        aria-label="What to play next"
+        aria-label="How long have you got?"
         aria-expanded={open}
         aria-haspopup="dialog"
         className={`inline-flex cursor-pointer items-center rounded-r-lg border-l border-on-accent/20 bg-accent px-2.5 text-on-accent hover:bg-accent-hover ${FOCUS} ${
@@ -90,48 +88,39 @@ export function QuickRunButton({ exercises, routines, next, onStart, iconOnly = 
       {open && (
         <div
           role="dialog"
-          aria-label="What to play next"
+          aria-label="How long have you got?"
           className="fade-in absolute top-full right-0 z-30 mt-2 w-72 rounded-2xl border border-line bg-panel p-4 text-left shadow-lg shadow-shade md:right-auto md:left-0"
         >
           <fieldset>
-            <legend className="float-left mb-2 w-full text-sm font-medium text-fg">Play</legend>
-            <div className="clear-both space-y-1.5">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-2">
-                <input
-                  type="radio"
-                  name="quick-run-source"
-                  className="accent-cta"
-                  checked={routine === null}
-                  onChange={() => setQuickRunSettings({ ...quickRunSettings(), routineId: null })}
-                />
-                The next session
-              </label>
-              {routines.map((item) => {
-                const playable = routineExercises(item, exercises).length
+            <legend className="float-left mb-2 w-full text-sm font-medium text-fg">How long have you got?</legend>
+            <div className="clear-both flex flex-wrap gap-1.5">
+              {SESSION_MINUTES.map((option) => {
+                const chosen = option === chosenMinutes
                 return (
-                  <label key={item.id} className={`flex items-center gap-2 text-sm ${playable > 0 ? 'cursor-pointer text-fg-2' : 'text-muted'}`}>
+                  <label
+                    key={option}
+                    className={`cursor-pointer rounded-lg px-2.5 py-1 text-sm font-semibold tabular-nums focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-fg ${
+                      chosen ? 'bg-cta text-cta-fg' : 'bg-panel-2 text-fg-2 hover:text-fg'
+                    }`}
+                  >
                     <input
                       type="radio"
-                      name="quick-run-source"
-                      className="accent-cta"
-                      disabled={playable === 0}
-                      checked={routine?.id === item.id}
-                      onChange={() => setQuickRunSettings({ ...quickRunSettings(), routineId: item.id })}
+                      name={lengthName}
+                      value={option}
+                      checked={chosen}
+                      onChange={() => setQuickRunSettings({ ...quickRunSettings(), sessionMinutes: option })}
+                      className="sr-only"
                     />
-                    <span className="truncate">{item.name}</span>
-                    <span className="ml-auto text-xs text-muted tabular-nums">{playable}</span>
+                    {option} min
                   </label>
                 )
               })}
             </div>
-            {routines.length === 0 && (
-              <p className="mt-2 text-xs text-muted">No routines yet — put one together under Routines and it shows up here.</p>
-            )}
           </fieldset>
 
           <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
-            {routine
-              ? `${routine.name}, as prepared: ${count} ${count === 1 ? 'exercise' : 'exercises'} in order — about ${minutes} min.`
+            {isRoutine
+              ? `${label}, as prepared: ${count} ${count === 1 ? 'exercise' : 'exercises'} in order — about ${minutes} min. Its length is its own.`
               : count === 0
                 ? 'Nothing to practise yet — add an exercise and it shows up here.'
                 : `Worked out from what you have played: ${count} ${count === 1 ? 'exercise' : 'exercises'} — about ${minutes} min. Home says why each one is there.`}

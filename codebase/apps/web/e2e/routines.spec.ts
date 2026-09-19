@@ -20,10 +20,8 @@ test('a routine made in the app is stored, played in its order, and offered as w
   await page.reload()
   await expect(page.getByRole('listitem', { name: 'E2E warm-up' })).toBeVisible()
 
-  // It can be named as what to play instead of the next session.
-  await page.getByRole('button', { name: 'What to play next' }).click()
-  await page.getByRole('dialog', { name: 'What to play next' }).getByRole('radio', { name: /^E2E warm-up/ }).check()
-  await page.getByRole('button', { name: /^Play E2E warm-up: 2 exercises/ }).click()
+  // A routine is started from its own card: it plays as prepared, in its order.
+  await page.getByRole('listitem', { name: 'E2E warm-up' }).getByRole('button', { name: 'Start E2E warm-up' }).click()
 
   // The routine's order, not easier-first: the line comes before the scale.
   await expect(page.getByText('E2E warm-up · 1 of 2')).toBeVisible()

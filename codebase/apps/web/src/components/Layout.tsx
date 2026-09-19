@@ -9,10 +9,8 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import type { Exercise } from '../content'
 import { GoalIcon, HistoryIcon, HomeIcon, ListIcon, RoutineIcon, SidebarIcon } from './icons'
 
-import type { Routine } from '../appData/routine'
 import { QuickRunButton } from './QuickRunButton'
 import {
   clampSidebarWidth,
@@ -37,15 +35,12 @@ const NAV = [
 /** The app shell: brand, navigation and the account control beside (on phones, above) the page. */
 interface LayoutProps {
   /** The catalog: the pack, joined by the user's own exercises once the app has them. */
-  exercises: readonly Exercise[]
-  /** The user's practice routines, one of which can be named as what to play next. */
-  routines: readonly Routine[]
   /** What Play offers, worked out by the page. */
   next: { label: string; count: number; seconds: number; routineId: string | null }
   onStartNext: () => void
 }
 
-export function Layout({ exercises, routines, next, onStartNext }: LayoutProps) {
+export function Layout({ next, onStartNext }: LayoutProps) {
   const usePlaywrightAccountStub =
     import.meta.env.PUBLIC_PLAYWRIGHT_TEST_AUTH === '1'
   const { theme, toggleTheme } = useTheme()
@@ -158,13 +153,7 @@ export function Layout({ exercises, routines, next, onStartNext }: LayoutProps) 
           ))}
           {/* The primary action: first in the sidebar, above the links; at the end of the phone row. */}
           <div className="ml-auto md:@container md:order-first md:mb-2 md:ml-0">
-            <QuickRunButton
-              exercises={exercises}
-              routines={routines}
-              next={next}
-              iconOnly={collapsed}
-              onStart={onStartNext}
-            />
+            <QuickRunButton next={next} iconOnly={collapsed} onStart={onStartNext} />
           </div>
         </nav>
         <div className={`ml-auto min-w-0 md:mt-auto md:ml-0 ${collapsed ? 'md:flex md:justify-center' : 'md:px-2'}`}>
