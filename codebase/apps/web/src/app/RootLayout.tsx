@@ -2,7 +2,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { sessionSearch } from '../appData/quickRun'
 import { AgentConfirmPrompt } from '../components/AgentConfirmPrompt'
 import { Layout } from '../components/Layout'
-import { exerciseSeconds } from '../content'
 import { useAgentTools } from '../webmcp/useAgentTools'
 import { useNextSession } from './useNextSession'
 import { usePlayerPrefsSync } from './usePlayerPrefsSync'
@@ -22,7 +21,10 @@ export function RootLayout() {
   const next = {
     label: 'Next session',
     count: plan.slots.length,
-    seconds: plan.slots.reduce((sum, slot) => sum + exerciseSeconds(slot.exercise), 0),
+    // The plan's own estimate, which is what the card says and what the run
+    // clock counts to — summing the written lengths here gave the sidebar a
+    // third, shorter number for the same session.
+    seconds: plan.plannedSeconds,
   }
   return (
     <>

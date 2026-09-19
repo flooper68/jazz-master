@@ -58,7 +58,7 @@ export default function HomePage() {
       <p className="mt-1 text-sm text-fg-2">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
         {summary.todaySessions > 0 &&
-          ` · ${summary.todaySessions} ${summary.todaySessions === 1 ? 'session' : 'sessions'} · ${formatDuration(summary.todaySeconds)}`}
+          ` · ${summary.todaySessions} ${summary.todaySessions === 1 ? 'practice run' : 'practice runs'} · ${formatDuration(summary.todaySeconds)}`}
         {summary.streakDays > 1 && ` · ${summary.streakDays} days in a row`}
       </p>
       {failed && (
@@ -91,10 +91,11 @@ export default function HomePage() {
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="This week" value={formatDuration(summary.weekSeconds)} note={`${summary.weekRuns} ${summary.weekRuns === 1 ? 'run' : 'runs'}`} />
+        {/* Exercises, not runs: a run is a sitting everywhere else now (ADR-021 / the history). */}
+        <Stat label="This week" value={formatDuration(summary.weekSeconds)} note={`${summary.weekRuns} ${summary.weekRuns === 1 ? 'exercise' : 'exercises'}`} />
         <Stat label="Streak" value={`${summary.streakDays} ${summary.streakDays === 1 ? 'day' : 'days'}`} note={summary.streakDays === 0 ? 'Play today to start one' : 'Keep it going'} />
         <Stat label="Felt this week" value={summary.weekDifficulty === null ? '—' : DIFFICULTY_LABELS[summary.weekDifficulty]} note={summary.weekDifficulty === null ? 'Nothing answered yet' : 'How it mostly went'} />
-        <Stat label="All time" value={formatDuration(summary.totalSeconds)} note={`${summary.totalRuns} ${summary.totalRuns === 1 ? 'run' : 'runs'}`} />
+        <Stat label="All time" value={formatDuration(summary.totalSeconds)} note={`${summary.totalRuns} ${summary.totalRuns === 1 ? 'exercise' : 'exercises'}`} />
       </dl>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-2">
@@ -134,7 +135,7 @@ function WeekChart({ week }: { week: ActivityDay[] }) {
       {week.map((day, index) => {
         const today = index === week.length - 1
         const name = day.date.toLocaleDateString(undefined, { weekday: 'short' })
-        const value = `${formatDuration(day.seconds)} · ${day.runs} ${day.runs === 1 ? 'run' : 'runs'}`
+        const value = `${formatDuration(day.seconds)} · ${day.runs} ${day.runs === 1 ? 'exercise' : 'exercises'}`
         return (
           <li key={day.day} className="flex h-full min-w-0 flex-col items-center justify-end gap-1.5">
             <span
@@ -175,7 +176,7 @@ function RecentRuns({ summary, byId }: { summary: Dashboard; byId: ReadonlyMap<s
       </div>
       {summary.recent.length === 0 ? (
         <p className="mt-3 rounded-2xl border border-dashed border-line-strong p-6 text-center text-sm text-muted">
-          Nothing played yet — your runs show up here.
+          Nothing played yet — what you play shows up here.
         </p>
       ) : (
         <ul className={`mt-3 divide-y divide-line ${CARD}`}>

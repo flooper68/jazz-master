@@ -44,7 +44,7 @@ describe('HomePage', () => {
     expect(slots.length).toBeGreaterThan(1)
     expect(plan.getAllByText('New — not played yet')).toHaveLength(slots.length)
     await user.keyboard('{Escape}')
-    expect(await screen.findByText('Nothing played yet — your runs show up here.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing played yet — what you play shows up here.')).toBeInTheDocument()
     expect(stat('Streak')).toHaveTextContent('0 days')
     expect(stat('Felt this week')).toHaveTextContent('—')
 
@@ -68,7 +68,7 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Next session' })).toBeInTheDocument()
     expect(await screen.findByText(/· 2 days in a row$/)).toBeInTheDocument()
     expect(stat('This week')).toHaveTextContent('8 min')
-    expect(stat('This week')).toHaveTextContent('2 runs')
+    expect(stat('This week')).toHaveTextContent('2 exercises')
     expect(stat('Streak')).toHaveTextContent('2 days')
     // One Hard and one Easy: the tie falls to the harder answer.
     expect(stat('Felt this week')).toHaveTextContent('Hard')
@@ -76,8 +76,8 @@ describe('HomePage', () => {
     // The chart says each day's value without the hover.
     const chart = within(screen.getByRole('list', { name: 'Minutes played per day, oldest first' }))
     expect(chart.getAllByRole('listitem')).toHaveLength(7)
-    expect(chart.getByLabelText(/: 5 min · 1 run$/)).toBeInTheDocument()
-    expect(chart.getAllByLabelText(/: 0 min · 0 runs$/)).toHaveLength(5)
+    expect(chart.getByLabelText(/: 5 min · 1 exercise$/)).toBeInTheDocument()
+    expect(chart.getAllByLabelText(/: 0 min · 0 exercises$/)).toHaveLength(5)
 
     const recent = within(screen.getByRole('region', { name: 'Recently played' }))
     const [latest] = recent.getAllByRole('listitem')
