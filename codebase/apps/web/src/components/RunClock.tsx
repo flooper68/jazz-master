@@ -14,14 +14,22 @@ import { formatSeconds } from '../player/formatting'
 export function RunClock({ startedAt, plannedSeconds, now = Date.now }: RunClockProps) {
   const [elapsed, setElapsed] = useState(() => secondsSince(startedAt, now()))
   useEffect(() => {
+    // A new run resets the clock outright; the tick only ever moves it on. A
+    // device clock that resyncs mid-run (either way) must not rewind a sitting
+    // that did happen, so the reading is the high-water mark.
     setElapsed(secondsSince(startedAt, now()))
-    const tick = setInterval(() => setElapsed(secondsSince(startedAt, now())), 1000)
+    const tick = setInterval(
+      () => setElapsed((previous) => Math.max(previous, secondsSince(startedAt, now()))),
+      1000,
+    )
     return () => clearInterval(tick)
   }, [startedAt, now])
 
+  const label = runClockLabel(elapsed, plannedSeconds)
   return (
-    <span className="tabular-nums" aria-label={`Practice run: ${runClockLabel(elapsed, plannedSeconds)}`}>
-      {runClockLabel(elapsed, plannedSeconds)}
+    // role="timer" is a live region and, unlike a bare span, may carry a name.
+    <span role="timer" className="tabular-nums" aria-label={`Practice run: ${label}`}>
+      {label}
     </span>
   )
 }

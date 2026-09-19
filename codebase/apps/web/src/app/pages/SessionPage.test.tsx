@@ -250,6 +250,21 @@ describe('SessionPage', () => {
     expect(await screen.findByLabelText('Practice run: 0:00')).toBeInTheDocument()
   })
 
+  it('starts the clock again when the plan is played again', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-c&m=20')
+    const clock = await screen.findByRole('timer')
+    await playAndFinish(user, 'C major — open position')
+    await screen.findByRole('dialog')
+
+    // The sitting's total stands on the closing dialog while the run is over.
+    await user.click(within(dialog()).getByRole('button', { name: 'Play it again' }))
+    expect(await screen.findByText('Next session · 1 of 1')).toBeInTheDocument()
+    // A second sitting, a second clock: the reading is of the new run, not the old one.
+    expect(screen.getByRole('timer')).not.toBe(clock)
+    expect(screen.getByRole('timer')).toHaveTextContent('0:00 of ~20 min')
+  })
+
   it('offers the same plan again at the end, as a session of its own', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-c')

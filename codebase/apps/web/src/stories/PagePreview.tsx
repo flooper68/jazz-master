@@ -53,7 +53,7 @@ export function PagePreview({ path = '/', scenario = 'ready' }: { path?: string;
       createRoute({ getParentRoute: () => root, path: '/exercises', component: ExercisesPage }),
       createRoute({ getParentRoute: () => root, path: '/exercises/$exerciseId', component: ExercisePage }),
       createRoute({ getParentRoute: () => root, path: '/history', component: HistoryPage }),
-      createRoute({ getParentRoute: () => root, path: '/session', component: SessionPage, validateSearch: (search: Record<string, unknown>): { x: string } => ({ x: typeof search.x === 'string' ? search.x : '' }) }),
+      createRoute({ getParentRoute: () => root, path: '/session', component: SessionPage, validateSearch: (search: Record<string, unknown>): { x: string; m?: number } => ({ x: typeof search.x === 'string' ? search.x : '', ...(Number.isInteger(Number(search.m)) ? { m: Number(search.m) } : {}) }) }),
       createRoute({ getParentRoute: () => root, path: '/not-found', component: NotFoundPage }),
     ]
     const router = createRouter({ routeTree: root.addChildren(routes), history: createMemoryHistory({ initialEntries: [path] }) })

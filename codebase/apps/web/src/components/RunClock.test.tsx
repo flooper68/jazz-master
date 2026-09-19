@@ -27,9 +27,14 @@ describe('the practice run clock', () => {
     act(() => vi.advanceTimersByTime(1000))
     expect(screen.getByText('1:05 of ~5 min')).toBeInTheDocument()
 
-    // The device clock jumps backwards mid-run; the run has not un-happened.
+    // The device clock resyncs backwards mid-run; the run has not un-happened.
+    now = start + 20_000
+    act(() => vi.advanceTimersByTime(1000))
+    expect(screen.getByText('1:05 of ~5 min')).toBeInTheDocument()
+
+    // Even a clock that lands before the run began leaves the reading where it was.
     now = start - 30_000
     act(() => vi.advanceTimersByTime(1000))
-    expect(screen.getByText('0:00 of ~5 min')).toBeInTheDocument()
+    expect(screen.getByText('1:05 of ~5 min')).toBeInTheDocument()
   })
 })

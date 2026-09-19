@@ -13,9 +13,9 @@ import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { SessionNoteInput } from '../../components/SessionNoteInput'
-import { RunClock } from '../../components/RunClock'
 import { Modal } from '../../components/ui/Modal'
 import { CheckIcon, ResetIcon } from '../../components/icons'
+import { formatSeconds } from '../../player/formatting'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { useGoBack } from '../useGoBack'
@@ -93,6 +93,10 @@ function SessionStage({ steps, plannedSeconds }: { steps: SessionStep[]; planned
     setIndex(0)
   }
   const done = index >= steps.length
+  // The run is over on the closing dialog, so what it shows is a total, not a
+  // clock: a second ticker over a finished sitting would still be counting
+  // when the dialog is left open over lunch.
+  const ranFor = done ? Math.max(Math.floor((Date.now() - startedAt) / 1000), 0) : 0
 
   /**
    * What closes the sitting: a sentence about it, and the ways on. It lives on
@@ -174,7 +178,7 @@ function SessionStage({ steps, plannedSeconds }: { steps: SessionStep[]; planned
               {label} complete
             </h2>
             <p className="rise-in [animation-delay:140ms] mt-1 text-sm text-muted">
-              {runs.size} of {steps.length} played · <RunClock startedAt={startedAt} plannedSeconds={plannedSeconds} />
+              {runs.size} of {steps.length} played · <span className="tabular-nums">{formatSeconds(ranFor)}</span>
             </p>
           </div>
 
