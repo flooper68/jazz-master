@@ -1,8 +1,10 @@
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { renderRoute } from '../../test/renderRoute'
 import {
   resetTrpcTestData,
+  seedTrpcTestNote,
   seedTrpcTestRuns,
   setTrpcTestRunsRepositoryAvailable,
 } from '../../test/trpcTestFetch'
@@ -11,11 +13,13 @@ beforeEach(() => {
   resetTrpcTestData()
 })
 
-const at = (daysAgo: number, hour: number) => {
+const at = (daysAgo: number, hour: number, minute = 0) => {
   const date = new Date(Date.now() - daysAgo * 86_400_000)
-  date.setHours(hour, 0, 0, 0)
+  date.setHours(hour, minute, 0, 0)
   return date.toISOString()
 }
+
+const SITTING = '33333333-3333-4333-8333-333333333333'
 
 describe('HistoryPage', () => {
   it('invites a first run when nothing was played', async () => {
@@ -24,33 +28,51 @@ describe('HistoryPage', () => {
     expect(screen.getByRole('link', { name: 'Pick an exercise' })).toHaveAttribute('href', '/app/exercises')
   })
 
-  it('lists runs a day at a time with what was played, how it went, and a way back in', async () => {
+  it('lists practice runs a day at a time, and opens one onto the exercises it held', async () => {
+    const user = userEvent.setup()
     seedTrpcTestRuns([
-      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, feel: null, sessionId: '33333333-3333-4333-8333-333333333333' },
+      { id: '11111111-1111-4111-8111-111111111111', exerciseId: 'lines-ii-v-i-f-line', startedAt: at(0, 9), durationSeconds: 96, tempoBpm: 90, passes: 4, completed: true, difficulty: 'hard' as const, feel: null, sessionId: SITTING },
+      { id: '44444444-4444-4444-8444-444444444444', exerciseId: 'scales-major-open-c', startedAt: at(0, 9, 5), durationSeconds: 24, tempoBpm: 60, passes: 1, completed: false, difficulty: 'hard' as const, feel: 'loved' as const, sessionId: SITTING },
       { id: '22222222-2222-4222-8222-222222222222', exerciseId: 'scales-major-open-g', startedAt: at(1, 18), durationSeconds: 45, tempoBpm: 60, passes: 1, completed: false, difficulty: null, feel: null, sessionId: null },
     ])
+    await seedTrpcTestNote(SITTING, 'Hands cold, second half better.')
     await renderRoute('/history')
 
+    // Today's sitting is one row, not two — the two exercises are inside it.
     const today = within(await screen.findByRole('region', { name: 'Today' }))
-    const line = within(today.getByRole('listitem'))
-    expect(line.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
-    expect(line.getByText('Lines')).toBeInTheDocument()
-    expect(line.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
-    expect(line.getByText('Hard')).toBeInTheDocument()
-    // Play again means play it again: a session of that exercise alone.
-    expect(line.getByRole('link', { name: 'Play Gm7 – C7 – Fmaj7 — a bebop line again' })).toHaveAttribute(
+    const rows = today.getAllByRole('listitem')
+    expect(rows).toHaveLength(1)
+    const sitting = within(rows[0])
+    expect(sitting.getByText(/2 exercises$/)).toBeInTheDocument()
+    expect(sitting.getByText(/^2:00 played · 1 ended early$/)).toBeInTheDocument()
+    expect(sitting.getByText('Hard')).toBeInTheDocument()
+    expect(sitting.getByText('Loved it')).toBeInTheDocument()
+    // What was written at the end of that sitting belongs to the sitting.
+    expect(sitting.getByText('“Hands cold, second half better.”')).toBeInTheDocument()
+    // The whole run is what Play again plays, in its order.
+    expect(sitting.getByRole('link', { name: /^Play this run again/ })).toHaveAttribute(
+      'href',
+      '/app/session?x=lines-ii-v-i-f-line%2Cscales-major-open-c',
+    )
+    // Until it is opened, the exercises are not the list.
+    expect(sitting.queryByRole('heading', { level: 3 })).toBeNull()
+
+    await user.click(sitting.getByRole('button', { expanded: false }))
+    expect(sitting.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
+    expect(sitting.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
+    expect(sitting.getByText(/0:24 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
+    expect(sitting.getByRole('link', { name: 'Play Gm7 – C7 – Fmaj7 — a bebop line again' })).toHaveAttribute(
       'href',
       '/app/session?x=lines-ii-v-i-f-line',
     )
 
-    const yesterday = within(within(screen.getByRole('region', { name: 'Yesterday' })).getByRole('listitem'))
-    expect(yesterday.getByText(/0:45 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
-    expect(yesterday.getByText('Not answered')).toBeInTheDocument()
-    expect(yesterday.queryByText('Quick run')).toBeNull()
+    // A run recorded before sittings were the only way to play is a run of one.
+    const yesterday = within(within(screen.getByRole('region', { name: 'Yesterday' })).getAllByRole('listitem')[0])
+    expect(yesterday.getByText(/1 exercise$/)).toBeInTheDocument()
 
-    // The totals across everything listed.
-    expect(screen.getByText('Runs').nextElementSibling).toHaveTextContent('2')
-    expect(screen.getByText('Time played').nextElementSibling).toHaveTextContent('2 min')
+    // The totals count sittings, not exercises.
+    expect(screen.getByText('Practice runs').nextElementSibling).toHaveTextContent('2')
+    expect(screen.getByText('Time played').nextElementSibling).toHaveTextContent('3 min')
     expect(screen.getByText('Days').nextElementSibling).toHaveTextContent('2')
   })
 

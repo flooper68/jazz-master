@@ -69,6 +69,11 @@ export async function seedTrpcTestGoal(goal: Parameters<GoalRepository['createGo
   return goals.createGoal(TEST_CLERK_USER_ID, goal)
 }
 
+/** Put a note on one of the test user's sittings, as the closing dialog would. */
+export function seedTrpcTestNote(sessionId: string, text: string) {
+  return notes.saveNote(TEST_CLERK_USER_ID, sessionId, text)
+}
+
 /** The notes the test user has written, for asserting what a page saved. */
 export function getTrpcTestNotes() {
   return notes.listNotes(TEST_CLERK_USER_ID)

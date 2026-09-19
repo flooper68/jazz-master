@@ -1,11 +1,11 @@
-import type { ExerciseRun } from './run'
+import type { PracticeRun } from './practiceRun'
 
-/** Runs of one calendar day, newest first, under the label the history shows. */
+/** The practice runs of one calendar day, newest first, under the label the history shows. */
 export interface HistoryDay {
   /** Local calendar day, `YYYY-MM-DD` — stable as a key. */
   day: string
   label: string
-  runs: ExerciseRun[]
+  runs: PracticeRun[]
 }
 
 function dayKey(date: Date): string {
@@ -28,8 +28,8 @@ export function dayLabel(date: Date, now: Date): string {
   })
 }
 
-/** Group runs by the local day they started on; days and runs both newest first. */
-export function groupRunsByDay(runs: readonly ExerciseRun[], now = new Date()): HistoryDay[] {
+/** Group practice runs by the local day they started on; days and runs both newest first. */
+export function groupRunsByDay(runs: readonly PracticeRun[], now = new Date()): HistoryDay[] {
   const sorted = [...runs].sort(
     (a, b) => new Date(b.startedAt).valueOf() - new Date(a.startedAt).valueOf(),
   )

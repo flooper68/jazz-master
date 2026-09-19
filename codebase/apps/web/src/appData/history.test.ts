@@ -1,22 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { dayLabel, groupRunsByDay } from './history'
-import type { ExerciseRun } from './run'
+import type { PracticeRun } from './practiceRun'
 
 const now = new Date(2026, 8, 17, 15, 0)
 
-function run(id: string, startedAt: Date): ExerciseRun {
-  return {
-    id,
-    exerciseId: 'ex',
-    startedAt: startedAt.toISOString(),
-    durationSeconds: 60,
-    tempoBpm: 60,
-    passes: 1,
-    completed: true,
-    difficulty: null,
-    feel: null,
-    sessionId: null,
-  }
+/** A sitting as the history lists it; what is inside it is practiceRun.test's business. */
+function sitting(id: string, startedAt: Date): PracticeRun {
+  return { id, startedAt: startedAt.toISOString(), seconds: 60, runs: [], completed: 1 }
 }
 
 describe('history', () => {
@@ -28,12 +18,12 @@ describe('history', () => {
     expect(dayLabel(new Date(2025, 11, 31, 12, 0), now)).toMatch(/2025/)
   })
 
-  it('groups runs by local day, days and runs newest first', () => {
+  it('groups practice runs by local day, days and runs newest first', () => {
     const days = groupRunsByDay(
       [
-        run('yesterday', new Date(2026, 8, 16, 20, 0)),
-        run('morning', new Date(2026, 8, 17, 8, 0)),
-        run('noon', new Date(2026, 8, 17, 12, 0)),
+        sitting('yesterday', new Date(2026, 8, 16, 20, 0)),
+        sitting('morning', new Date(2026, 8, 17, 8, 0)),
+        sitting('noon', new Date(2026, 8, 17, 12, 0)),
       ],
       now,
     )
