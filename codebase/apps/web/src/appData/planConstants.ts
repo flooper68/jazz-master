@@ -40,7 +40,11 @@ export interface PlanConstants {
   easyQualifyingDays: number
   /** How solid the previous stage must be before a stage opens. Unused until paths (step 4). */
   stageSolidThreshold: number
-  /** Lengths the user chooses between, in minutes, and the one a new user starts on. */
+  /**
+   * Lengths the user chooses between, in minutes, and the one a new user
+   * starts on. Five is the floor: shorter than that and the overhead of
+   * picking the guitar up is most of it.
+   */
   sessionMinutes: readonly number[]
   defaultSessionMinutes: number
   /**
@@ -101,7 +105,7 @@ export const PLAN_CONSTANTS: PlanConstants = {
   solidQualifyingDays: 2,
   easyQualifyingDays: 2,
   stageSolidThreshold: 2 / 3,
-  sessionMinutes: [10, 20, 40, 60],
+  sessionMinutes: [5, 10, 20, 40, 60],
   defaultSessionMinutes: 20,
   exerciseOverheadSeconds: 30,
   warmUpBudgetFraction: 0.15,

@@ -347,6 +347,24 @@ describe('the shape of a session', () => {
     }
   })
 
+  it('is still a session at the shortest length on offer: work, not only garnish', () => {
+    // Five minutes is the floor (PLAN_CONSTANTS.sessionMinutes). The arc may
+    // open on something solid, but it may not become the whole sitting.
+    const catalog = [exercise('wall'), exercise('known'), exercise('loved-one')]
+    const runs = [
+      run('wall', '2026-01-05', { tempoBpm: 70 }),
+      ...solid('known'),
+      ...solid('loved-one').map((item) => ({ ...item, difficulty: 'easy' as const, feel: 'loved' as const })),
+    ]
+    const session = arc(runs, catalog, '2026-01-10', { budgetSeconds: 5 * 60 })
+
+    expect(session.work.length).toBeGreaterThan(0)
+    // Measured on the planner's own costs, so the two halves of the comparison agree.
+    const costs = exerciseCosts(runs, catalog)
+    const workSeconds = session.work.reduce((sum, slot) => sum + (costs.get(slot.exercise.id) ?? 0), 0)
+    expect(workSeconds).toBeGreaterThanOrEqual(session.plannedSeconds / 2)
+  })
+
   it('never puts more than three stuck items in one session', () => {
     const catalog = Array.from({ length: 8 }, (_, index) => exercise(`stuck-${index}`))
     const runs = catalog.flatMap((item) =>

@@ -29,6 +29,9 @@ const firstVisit = planned([], 20)
 /** The busy day the whole budget exists for: a warm-up, one piece of work, something to end on. */
 const tenMinutes = planned(runs, 10)
 
+/** The shortest run on offer: no room for garnish, so it is mostly the work. */
+const fiveMinutes = planned(runs, 5)
+
 /** An hour to spend, which is a long plan rather than a different kind of one. */
 const anHour = planned(runs, 60)
 
@@ -54,8 +57,10 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const FromHistory: Story = {}
+/** Five minutes is the shortest thing the app offers, and still a session. */
+export const FiveMinutes: Story = { args: { plan: fiveMinutes, minutes: SESSION_MINUTES[0] } }
 /** Ten minutes on a busy day is a real session, not a skipped one. */
-export const TenMinutes: Story = { args: { plan: tenMinutes, minutes: SESSION_MINUTES[0] } }
+export const TenMinutes: Story = { args: { plan: tenMinutes, minutes: 10 } }
 export const AnHour: Story = { args: { plan: anHour, minutes: 60 } }
 export const FirstVisit: Story = { args: { plan: firstVisit } }
 /** Nothing in the catalog at all: the card says so rather than offering an empty session. */
