@@ -5,12 +5,11 @@ import { formatDuration } from '../../appData/dashboard'
 import { groupRunsByDay } from '../../appData/history'
 import type { SessionNote } from '../../appData/note'
 import { practiceRuns, runDifficulty, runFeel, type PracticeRun } from '../../appData/practiceRun'
-import { plannedMinutes } from '../../appData/quickRun'
 import { DIFFICULTY_LABELS, FEEL_LABELS, type ExerciseRun } from '../../appData/run'
 import { DIFFICULTY_BADGE, FEEL_BADGE } from '../../components/answerBadges'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
-import { ChevronDownIcon, ChevronRightIcon, RepeatIcon } from '../../components/icons'
+import { ChevronDownIcon, ChevronRightIcon } from '../../components/icons'
 import { formatSeconds } from '../../player/formatting'
 import { useTRPC } from '../trpc'
 import type { Exercise } from '../../content'
@@ -26,6 +25,10 @@ const CHIP = 'rounded-full px-2 py-0.5 text-[11px] font-medium'
  * Every practice run, newest first, a day at a time. The list is sittings —
  * what the user actually did on a given evening — and each one opens onto the
  * exercises it was made of. The exercise runs are the detail, not the index.
+ *
+ * Nothing here starts anything. History is the record; what to play next is
+ * the app's answer, on the home card (owner decision 2026-09-19 — picking an
+ * old sitting to repeat is the authored-list habit ADR-021 removed).
  */
 export default function HistoryPage() {
   const trpc = useTRPC()
@@ -173,15 +176,6 @@ function PracticeRunRow({
             </span>
           </span>
         </button>
-        <Link
-          to="/session"
-          search={replaySearch(run)}
-          aria-label={`Play this run again: ${title}`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-        >
-          <RepeatIcon />
-          <span className="hidden sm:inline">Play again</span>
-        </Link>
       </div>
       {note && <p className="mt-1.5 ml-7 text-[13px] text-fg-2 italic">“{note}”</p>}
       {open && (
@@ -193,18 +187,6 @@ function PracticeRunRow({
       )}
     </li>
   )
-}
-
-/**
- * The same sitting again: its exercises in order, each at the tempo it was
- * actually played at — not the written one, which for anything the scheduler
- * had taken down would make the replay harder than the run being repeated —
- * and the length it came to, so the clock has the same target.
- */
-function replaySearch(run: PracticeRun): { x: string; m?: number } {
-  const x = run.runs.map((exercise) => `${exercise.exerciseId}@${exercise.tempoBpm}`).join(',')
-  const m = plannedMinutes(run.seconds)
-  return m === null ? { x } : { x, m }
 }
 
 /** One exercise inside a practice run: the detail the list used to be. */
@@ -235,17 +217,6 @@ function ExerciseRunRow({ run, exercise }: { run: ExerciseRun; exercise: Exercis
           </span>
         )}
       </div>
-      {exercise && (
-        <Link
-          to="/session"
-          search={{ x: exercise.id }}
-          aria-label={`Play ${exercise.title} again`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2 py-1 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-        >
-          <RepeatIcon />
-          <span className="sr-only">Play again</span>
-        </Link>
-      )}
     </li>
   )
 }

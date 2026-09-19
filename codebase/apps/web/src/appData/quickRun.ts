@@ -55,7 +55,7 @@ export function sessionSearch(plan: SessionPlan): { x: string; m?: number } {
 }
 
 /** The whole minutes a plan comes to, or null when it comes to nothing worth counting to. */
-export function plannedMinutes(plannedSeconds: number): number | null {
+function plannedMinutes(plannedSeconds: number): number | null {
   const minutes = Math.round(plannedSeconds / 60)
   return minutes >= 1 && minutes <= LONGEST_SESSION_MINUTES ? minutes : null
 }

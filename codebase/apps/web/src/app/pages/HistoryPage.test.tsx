@@ -49,11 +49,6 @@ describe('HistoryPage', () => {
     expect(sitting.getByText('Loved it')).toBeInTheDocument()
     // What was written at the end of that sitting belongs to the sitting.
     expect(sitting.getByText('“Hands cold, second half better.”')).toBeInTheDocument()
-    // The whole run is what Play again plays: its order, its tempos, its length.
-    expect(sitting.getByRole('link', { name: /^Play this run again/ })).toHaveAttribute(
-      'href',
-      '/app/session?x=lines-ii-v-i-f-line%4090%2Cscales-major-open-c%4060&m=2',
-    )
     // Until it is opened, the exercises are not the list.
     expect(sitting.queryByRole('heading', { level: 3 })).toBeNull()
 
@@ -61,10 +56,8 @@ describe('HistoryPage', () => {
     expect(sitting.getByRole('heading', { level: 3, name: 'Gm7 – C7 – Fmaj7 — a bebop line' })).toBeInTheDocument()
     expect(sitting.getByText(/1:36 played · 90 BPM · 4 passes$/)).toBeInTheDocument()
     expect(sitting.getByText(/0:24 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
-    expect(sitting.getByRole('link', { name: 'Play Gm7 – C7 – Fmaj7 — a bebop line again' })).toHaveAttribute(
-      'href',
-      '/app/session?x=lines-ii-v-i-f-line',
-    )
+    // History starts nothing: it is the record, and what to play next is the home card's answer.
+    expect(sitting.queryByRole('link')).toBeNull()
 
     // A run recorded before sittings were the only way to play is a run of one,
     // and a sitting nobody answered says so rather than showing nothing.
@@ -75,10 +68,6 @@ describe('HistoryPage', () => {
     expect(yesterday.getByText('Not answered')).toBeInTheDocument()
     await user.click(yesterday.getByRole('button', { expanded: false }))
     expect(yesterday.getByText(/0:45 played · 60 BPM · 1 pass · ended early$/)).toBeInTheDocument()
-    expect(yesterday.getByRole('link', { name: 'Play G major — open position again' })).toHaveAttribute(
-      'href',
-      '/app/session?x=scales-major-open-g',
-    )
 
     // The totals count sittings, not exercises.
     expect(screen.getByText('Practice runs').nextElementSibling).toHaveTextContent('2')
