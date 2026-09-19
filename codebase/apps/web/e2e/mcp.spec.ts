@@ -37,6 +37,10 @@ test('an exercise created over MCP shows up in the app and plays', async ({ page
   await expect(card.getByText('Yours')).toBeVisible()
   await card.getByRole('link', { name: `Start ${exercise.title}` }).click()
   await expect(page).toHaveURL(new RegExp(`/app/exercises/${created.result.structuredContent.exercise?.id}$`))
+  // The exercise reads first; Play from here makes a session of it alone.
+  await expect(page.getByRole('heading', { level: 1, name: exercise.title })).toBeVisible()
+  await page.getByRole('button', { name: 'Start session' }).click()
+  await expect(page).toHaveURL(/\/app\/session\?x=/)
   await expect(page.getByRole('button', { name: `Play ${exercise.title}` })).toBeVisible()
 })
 

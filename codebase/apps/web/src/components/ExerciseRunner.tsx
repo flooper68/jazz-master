@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ExerciseRun, RunOutcome } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
@@ -6,7 +6,7 @@ import { AREA_BADGE, AREA_LABELS } from './areaLabels'
 import { ExercisePlayer } from './ExercisePlayer'
 import { ExerciseThumb } from './ExerciseThumb'
 import { FeelInput } from './FeelInput'
-import { CheckIcon, NextIcon, ResetIcon, SignOutIcon } from './icons'
+import { CheckIcon, MinusIcon, NextIcon, SignOutIcon } from './icons'
 import { RatingInput } from './RatingInput'
 import { VoiceAnswer, type VoiceAnswerProps } from './VoiceAnswer'
 import { setPlayerPrefs } from './playerPrefs'
@@ -15,29 +15,37 @@ import { Modal } from './ui/Modal'
 import { useViewFocus } from './useViewFocus'
 
 /**
- * One exercise, start to finish: the practice stage (ExercisePlayer), then a
- * short summary where the run can be rated. A run exists once it reaches the
- * summary having been played; every change to it (its arrival, its answer)
- * is handed to the page to save. Player preferences (click, voice, view)
- * outlive any one exercise and live here.
+ * One exercise of a practice session, start to finish: the stage
+ * (ExercisePlayer), then a summary over it where the run is answered. A run
+ * exists once it reaches the summary having been played; every change to it
+ * (its arrival, its answer) is handed to the page to save.
+ *
+ * There is no such thing as an exercise played outside a session — starting
+ * one from the library makes a session of it alone — so this component always
+ * has a session to report to.
  */
 
 // Every way on from the summary wears its icon in front of the words.
 const BUTTON_BASE =
   'inline-flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg [&>svg]:h-3.5 [&>svg]:w-3.5'
 const BUTTON_PRIMARY = `${BUTTON_BASE} bg-cta text-cta-fg hover:bg-cta-hover`
-const BUTTON_SECONDARY = `${BUTTON_BASE} border border-line bg-panel text-fg hover:border-line-strong`
 const BUTTON_QUIET = `${BUTTON_BASE} text-muted hover:text-fg`
 const HEADING =
   'font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
 /** How long the summary takes to step aside — the `step-out` animation's own duration. */
 const STEP_OUT_MS = 180
+/**
+ * How long both answers stay on screen before the session moves itself on. Long
+ * enough to read the second press as landing, short enough not to be a wait —
+ * and cancelled the moment an answer is taken back.
+ */
+const ANSWERED_PAUSE_MS = 900
 
 /**
- * Where this exercise sits in a practice session, and how to move on from it.
- * In a session the summary is where the exercise is answered while it is still
- * fresh; Next exercise moves on. The session sums the whole sitting up at its
- * end, where every answer can still be changed.
+ * Where this exercise sits in its session, and how to move on from it. The
+ * summary is where the exercise is answered while it is still fresh; the
+ * session sums the whole sitting up at its end, where every answer can still
+ * be changed.
  */
 export interface RunnerSession {
   id: string
@@ -49,6 +57,12 @@ export interface RunnerSession {
   step: number
   total: number
   onContinue: () => void
+  /**
+   * What closes the whole sitting, when this exercise's summary is also its
+   * end — a session of one, where a second dialog saying the same thing would
+   * only be in the way. Set, this replaces the way on.
+   */
+  outro?: ReactNode
 }
 
 interface ExerciseRunnerProps {
@@ -56,8 +70,8 @@ interface ExerciseRunnerProps {
   /** The run as it now stands — called when it reaches the summary, and again when rated. */
   onRunChange: (run: ExerciseRun) => void
   onExit: () => void
-  /** Set when the exercise is one step of a practice session (a quick run). */
-  session?: RunnerSession
+  /** Which step of which session this is; every exercise is played inside one. */
+  session: RunnerSession
   /** What the session's plan asked this exercise to be played at; the written tempo otherwise. */
   startTempoBpm?: number
   /** Test seam: the browser's Web Audio engine, swapped for a fake in jsdom. */
@@ -72,19 +86,25 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
   const [finished, setFinished] = useState(false)
   // Null on the summary when Finish came before any Play: nothing to record or rate.
   const [run, setRun] = useState<ExerciseRun | null>(null)
-  // Play again is a fresh player: the key resets transport, timer and cursor.
-  const [round, setRound] = useState(0)
   // The summary on its way out, while the next exercise of the session arrives.
   const [leaving, setLeaving] = useState(false)
   const stepOut = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => void (stepOut.current && clearTimeout(stepOut.current)), [])
+  // Both answers in: the beat before the session moves itself on.
+  const answeredPause = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (stepOut.current) clearTimeout(stepOut.current)
+      if (answeredPause.current) clearTimeout(answeredPause.current)
+    },
+    [],
+  )
   // Sound and view choices are remembered across exercises and reloads, and
   // they are the app's — the account menu sets the same ones.
   const prefs = usePlayerPrefs()
-  // ISSUE-002: Play again swaps the stage for a fresh one without navigating,
-  // so focus moves to the incoming heading — and on mount, since the page is
-  // the runner. The summary is a dialog now and takes the keyboard itself.
-  const headingRef = useViewFocus<HTMLHeadingElement>(`stage-${round}`, { focusOnMount: true })
+  // ISSUE-002: the session swaps one stage for the next without navigating, so
+  // focus goes to the incoming heading on mount — the runner is the page. The
+  // summary is a dialog over it and takes the keyboard itself.
+  const headingRef = useViewFocus<HTMLHeadingElement>('stage', { focusOnMount: true })
 
   function finish(outcome: RunOutcome | null): void {
     const finishedRun = outcome && {
@@ -96,10 +116,8 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
       sessionId: session?.id ?? null,
     }
     if (finishedRun) onRunChange(finishedRun)
-    // A session stops on the summary only when there is something to answer and
-    // somewhere to go next. Nothing played, nothing to ask; last step, and the
-    // session's own closing screen is about to say all of this anyway.
-    if (session && (!finishedRun || session.step >= session.total)) return session.onContinue()
+    // Every exercise ends on its own summary, played or not: an exercise that
+    // was skipped says so and offers nothing to answer.
     setRun(finishedRun)
     setFinished(true)
   }
@@ -115,33 +133,44 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
    * hand-over reads as a jump cut without it.
    */
   function continueToNext(): void {
-    const onContinue = session?.onContinue
-    if (!onContinue || leaving) return
+    if (leaving) return
+    if (answeredPause.current) clearTimeout(answeredPause.current)
+    answeredPause.current = null
+    const { onContinue } = session
     setLeaving(true)
     stepOut.current = setTimeout(() => {
       stepOut.current = null
       setLeaving(false)
+      setFinished(false)
       onContinue()
     }, STEP_OUT_MS)
   }
 
-  /** Either answer, saved the moment it is given; the run already exists. */
+  /**
+   * Either answer, saved the moment it is given; the run already exists. Both
+   * answers given is the whole ask, so the session moves itself on — after a
+   * beat, and only while both still stand.
+   */
   function answer(part: Partial<Pick<ExerciseRun, 'difficulty' | 'feel'>>): void {
     if (!run) return
     const answered = { ...run, ...part }
     setRun(answered)
     onRunChange(answered)
+    if (answeredPause.current) clearTimeout(answeredPause.current)
+    answeredPause.current = null
+    // A session of one ends here rather than moving on, so it waits for a press.
+    if (session.outro || !answered.difficulty || !answered.feel) return
+    answeredPause.current = setTimeout(continueToNext, ANSWERED_PAUSE_MS)
   }
 
-  // Escape, or a press outside: the dialog's default way on, not a way to
-  // dismiss it — behind it the exercise is over and there is nothing to do.
-  const moveOn = session ? continueToNext : onExit
+  // The last exercise hands over to the session's closing screen rather than
+  // to another stage, and says so.
+  const lastStep = session.step >= session.total
 
   return (
     <>
-      {/* Keyed on the round so Play again arrives the same way a new exercise does.
-          It clips because the stage slides in from 10px right of where it lands. */}
-      <div key={round} className="step-in flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* It clips because the stage slides in from 10px right of where it lands. */}
+      <div className="step-in flex min-h-0 flex-1 flex-col overflow-hidden">
         <ExercisePlayer
           exercise={exercise}
           prefs={prefs}
@@ -152,21 +181,19 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
           // On its own an exercise needs no way out in the header — the navigation
           // is right there; a session says where it stands and how to end it.
           headerAction={
-            session && (
-              <span className="flex items-baseline gap-3 text-xs text-muted">
-                <span className="tabular-nums">
-                  {session.label} · {session.step} of {session.total}
-                </span>
-                <button
-                  type="button"
-                  onClick={onExit}
-                  data-tip="Leave the session here"
-                  className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-                >
-                  {session.endLabel}
-                </button>
+            <span className="flex items-baseline gap-3 text-xs text-muted">
+              <span className="tabular-nums">
+                {session.label} · {session.step} of {session.total}
               </span>
-            )
+              <button
+                type="button"
+                onClick={onExit}
+                data-tip="Leave the session here"
+                className="cursor-pointer hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+              >
+                {session.endLabel}
+              </button>
+            </span>
           }
           createAudio={createAudio}
           now={now}
@@ -180,23 +207,26 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
           title="Exercise complete"
           header={false}
           fit="content"
-          onClose={moveOn}
+          onClose={continueToNext}
           className={`max-w-lg ${leaving ? 'step-out' : ''}`}
         >
           <div className="flex flex-col items-center text-center">
             <span aria-hidden="true" className="relative inline-flex h-14 w-14 shrink-0 items-center justify-center">
               {/* One ring out from under the tick as it lands, then gone. */}
-              <span className="ring-out absolute inset-0 rounded-full bg-success-soft" />
-              <span className="land-in relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-6 [&>svg]:w-6">
-                <CheckIcon />
+              {run && <span className="ring-out absolute inset-0 rounded-full bg-success-soft" />}
+              <span
+                className={`land-in relative inline-flex h-14 w-14 items-center justify-center rounded-full [&>svg]:h-6 [&>svg]:w-6 ${
+                  run ? 'bg-success-soft text-success-text' : 'bg-panel-2 text-muted'
+                }`}
+              >
+                {run ? <CheckIcon /> : <MinusIcon />}
               </span>
             </span>
-            <h2 className={`rise-in [animation-delay:90ms] mt-3.5 ${HEADING}`}>Exercise complete</h2>
+            <h2 className={`rise-in [animation-delay:90ms] mt-3.5 ${HEADING}`}>
+              {run ? 'Exercise complete' : 'Exercise skipped'}
+            </h2>
             <p className="rise-in [animation-delay:140ms] mt-1 text-sm text-muted tabular-nums">
-              {/* In a session, where it stands matters more here than the date does. */}
-              {session
-                ? `${session.label} · ${session.step} of ${session.total}`
-                : new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              {session.label} · {session.step} of {session.total}
             </p>
           </div>
 
@@ -209,7 +239,7 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
                     {AREA_LABELS[exercise.area]}
                   </span>
-                  Done today
+                  {run ? 'Done today' : 'Not played'}
                 </p>
               </div>
             </li>
@@ -229,42 +259,21 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
             </div>
           )}
 
-          <div className="rise-in [animation-delay:310ms] mt-6 flex flex-wrap items-center justify-center gap-2.5">
-            {session ? (
+          {session.outro ? (
+            <div className="rise-in [animation-delay:310ms]">{session.outro}</div>
+          ) : (
+            <div className="rise-in [animation-delay:310ms] mt-6 flex flex-wrap items-center justify-center gap-2.5">
               <button
                 type="button"
                 onClick={continueToNext}
                 disabled={leaving}
-                data-tip="On to the next exercise of the session"
+                data-tip={lastStep ? 'See how the whole sitting went' : 'On to the next exercise of the session'}
                 className={BUTTON_PRIMARY}
               >
-                <NextIcon />
-                Next exercise
+                {lastStep ? <CheckIcon /> : <NextIcon />}
+                {lastStep ? 'Finish session' : 'Next exercise'}
               </button>
-            ) : (
-              <button type="button" onClick={onExit} data-tip="Back to where you came from" className={BUTTON_PRIMARY}>
-                <CheckIcon />
-                Done
-              </button>
-            )}
-            {/* Play again only off a session: mid-session it would mint a second run
-                for the same step and drop the answer just given. */}
-            {!session && (
-              <button
-                type="button"
-                onClick={() => {
-                  setRound((current) => current + 1)
-                  setFinished(false)
-                }}
-                data-tip="Play this exercise again, from the top"
-                className={BUTTON_SECONDARY}
-              >
-                <ResetIcon />
-                Play again
-              </button>
-            )}
-            {/* A session is never a trap: the way out is on the summary too. */}
-            {session && (
+              {/* A session is never a trap: the way out is on the summary too. */}
               <button
                 type="button"
                 onClick={onExit}
@@ -275,8 +284,8 @@ export function ExerciseRunner({ exercise, onRunChange, onExit, session, startTe
                 <SignOutIcon />
                 {session.endLabel}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </Modal>
       )}
     </>

@@ -88,23 +88,30 @@ test('a session is answered on four buttons, and the plan takes the answer', asy
 
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Next session complete' })).toBeVisible()
 
+  // One exercise is one dialog: its summary is also the end of the sitting.
+  const summary = page.getByRole('dialog')
+  await expect(summary.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeVisible()
   // Anki's four, hardest first, with nothing chosen for the player.
-  const answers = page.getByRole('group', { name: /^How did it go\?/ }).getByRole('button')
+  const answers = summary.getByRole('group', { name: /^How did it go\?/ }).getByRole('button')
   await expect(answers).toHaveText(['Again', 'Hard', 'Good', 'Easy'])
   await Promise.all([
     page.waitForResponse(
       (response) => response.url().includes('runs.save') && (response.request().postData() ?? '').includes('"difficulty":"again"'),
     ),
-    page.getByRole('button', { name: /^Again for /, exact: false }).first().click(),
+    summary.getByRole('button', { name: 'Again', exact: true }).click(),
   ])
+
+  await expect(summary.getByRole('button', { name: 'Finish session' })).toHaveCount(0)
+  await expect(summary.getByRole('button', { name: 'Done' })).toBeVisible()
 
   const runs = await listStoredRuns(page)
   expect(runs).toHaveLength(1)
   expect(runs[0]).toMatchObject({ exerciseId: 'scales-major-open-c', difficulty: 'again' })
 
   // Back home the plan has read the answer: the exercise is no longer new.
+  // The dialog holds the page until it is closed, which is what Done is for.
+  await summary.getByRole('button', { name: 'Done' }).click()
   await page.getByRole('link', { name: 'Home' }).first().click()
   const card = page.getByRole('region', { name: 'Next session' })
   await card.getByRole('button', { name: /^What/ }).click()
@@ -117,10 +124,10 @@ test('an exercise the player loved ends the next session, and the note survives 
   await page.goto('/app/session?x=scales-major-open-c')
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Next session complete' })).toBeVisible()
 
-  // How it went and how it felt are two separate questions on the summary.
-  const feel = page.getByRole('group', { name: /^How did it feel\?/ })
+  // How it went and how it felt are two separate questions on the exercise's summary.
+  const summary = page.getByRole('dialog')
+  const feel = summary.getByRole('group', { name: /^How did it feel\?/ })
   await expect(feel.getByRole('button')).toHaveText(['Dragged', 'Fine', 'Loved it'])
   await Promise.all([
     page.waitForResponse(
@@ -129,8 +136,8 @@ test('an exercise the player loved ends the next session, and the note survives 
     feel.getByRole('button', { name: /^Loved it/ }).click(),
   ])
 
-  // A sentence about the whole sitting, written away when the box is left.
-  const note = page.getByLabel(/^Anything worth remembering\?/)
+  // A sentence about the whole sitting, on the same dialog, written away when the box is left.
+  const note = summary.getByLabel(/^Anything worth remembering\?/)
   await note.fill('The ii–V finally sat in the pocket.')
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('notes.save')),
@@ -138,6 +145,7 @@ test('an exercise the player loved ends the next session, and the note survives 
   ])
 
   // Back home, the plan ends on the thing the player loved.
+  await summary.getByRole('button', { name: 'Done' }).click()
   await page.getByRole('link', { name: 'Home' }).first().click()
   const card = page.getByRole('region', { name: 'Next session' })
   await card.getByRole('button', { name: /^What/ }).click()

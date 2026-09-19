@@ -1,18 +1,22 @@
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
-import { parseSessionSearch, sessionSearch } from '../../appData/quickRun'
-import type { Difficulty, ExerciseRun, Feel } from '../../appData/run'
+import { parseSessionSearch } from '../../appData/quickRun'
+import {
+  DIFFICULTY_LABELS,
+  DIFFICULTY_MEANINGS,
+  FEEL_LABELS,
+  FEEL_MEANINGS,
+  type ExerciseRun,
+} from '../../appData/run'
+import { DIFFICULTY_BADGE, FEEL_BADGE } from '../../components/answerBadges'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
-import { FeelInput } from '../../components/FeelInput'
-import { RatingInput } from '../../components/RatingInput'
 import { SessionNoteInput } from '../../components/SessionNoteInput'
-import { CheckIcon, ResetIcon, ShuffleIcon } from '../../components/icons'
-import { useViewFocus } from '../../components/useViewFocus'
+import { Modal } from '../../components/ui/Modal'
+import { CheckIcon, ResetIcon } from '../../components/icons'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
-import { useNextSession } from '../useNextSession'
 import { useRoutines } from '../useRoutines'
 import { useGoBack } from '../useGoBack'
 import { STAGE_FRAME, UnsavedRunAlert, useNoteSaver, useRunSaver } from '../useRunSaver'
@@ -23,6 +27,8 @@ const BUTTON_BASE =
   'inline-flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg [&>svg]:h-3.5 [&>svg]:w-3.5'
 const BUTTON_PRIMARY = `${BUTTON_BASE} bg-cta text-cta-fg hover:bg-cta-hover`
 const BUTTON_SECONDARY = `${BUTTON_BASE} border border-line bg-panel text-fg hover:border-line-strong`
+/** An answer already given, read back on the closing dialog — not a control. */
+const ANSWER_CHIP = 'rounded-full px-2 py-0.5 text-[11px] font-medium'
 
 /**
  * A practice session — the scheduler's next session, or a practice routine:
@@ -56,10 +62,8 @@ interface SessionStep {
 }
 
 function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: string | null }) {
-  const navigate = useNavigate()
   const goBack = useGoBack()
   const { routines } = useRoutines()
-  const { plan } = useNextSession()
   // The routine's name arrives with the routines; until then (or if it is gone) the session is simply a routine.
   const routineName = routineId === null ? null : (routines.find((routine) => routine.id === routineId)?.name ?? 'Routine')
   const label = routineName ?? 'Next session'
@@ -82,129 +86,133 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
     setIndex(0)
   }
   const done = index >= steps.length
-  const headingRef = useViewFocus<HTMLHeadingElement>(done ? 'done' : 'playing')
 
-  if (done) {
-    return (
-      <div className={STAGE_FRAME}>
-        <UnsavedRunAlert unsaved={unsaved} onRetry={save} />
-        <section className="flex flex-1 items-start justify-center overflow-y-auto px-2 py-8 md:items-center md:px-8">
-          <div className="w-full max-w-xl">
-            <div className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-4 [&>svg]:w-4"
-              >
-                <CheckIcon />
-              </span>
-              <div>
-                <h1
-                  ref={headingRef}
-                  tabIndex={-1}
-                  className="font-display text-xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
-                >
-                  {label} complete
-                </h1>
-                <p className="text-sm text-muted">
-                  {runs.size} of {steps.length} played ·{' '}
-                  {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-                </p>
-              </div>
-            </div>
-
-            <ol className="mt-5 space-y-2.5">
-              {steps.map(({ exercise }, step) => {
-                const run = runs.get(step)
-                return (
-                  <li key={exercise.id} className="rounded-2xl border border-line bg-panel p-2">
-                    <div className="flex items-center gap-4">
-                      <ExerciseThumb exercise={exercise} className="h-14 w-28 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-display font-semibold tracking-tight text-fg">{exercise.title}</p>
-                        <p className="mt-1 flex items-center gap-2 text-sm text-muted">
-                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
-                            {AREA_LABELS[exercise.area]}
-                          </span>
-                          {run ? 'Done' : 'Skipped'}
-                        </p>
-                      </div>
-                    </div>
-                    {run && (
-                      <div className="mt-3 space-y-4 border-t border-line px-1.5 pt-3 pb-1">
-                        <RatingInput
-                          value={run.difficulty}
-                          subject={exercise.title}
-                          onChange={(difficulty: Difficulty | null) => record(step, { ...run, difficulty })}
-                        />
-                        {/* How it went moves the schedule; how it felt never does. */}
-                        <FeelInput
-                          value={run.feel}
-                          subject={exercise.title}
-                          onChange={(feel: Feel | null) => record(step, { ...run, feel })}
-                        />
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ol>
-
-            {/* One note for the whole sitting, once there is a sitting to note. */}
-            {runs.size > 0 && (
-              <div className="mt-5 rounded-2xl border border-line bg-panel p-3.5">
-                <SessionNoteInput
-                  value={note}
-                  onChange={setNote}
-                  onCommit={() => saveNote(sessionId, note)}
-                  failed={noteFailed}
-                />
-              </div>
-            )}
-
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              <button type="button" onClick={goBack} data-tip="Back to where you came from" className={BUTTON_PRIMARY}>
-                <CheckIcon />
-                Done
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // After a routine: the same routine again, from the top. Otherwise: whatever the scheduler says now.
-                  if (routineId !== null) return restart()
-                  void navigate({ to: '/session', search: sessionSearch(plan) })
-                }}
-                data-tip={routineId !== null ? 'Play this routine again, from the top' : 'Plan another session from where you are now'}
-                className={BUTTON_SECONDARY}
-              >
-                {routineId !== null ? <ResetIcon /> : <ShuffleIcon />}
-                {routineId !== null ? 'Play it again' : 'What now?'}
-              </button>
-            </div>
+  /**
+   * What closes the sitting: a sentence about it, and the ways on. It lives on
+   * the closing dialog — or, for a session of one, on that exercise's own
+   * summary, because two dialogs saying the same thing is one too many.
+   */
+  const outro = (
+    <>
+        {/* One note for the whole sitting, once there is a sitting to note. */}
+        {runs.size > 0 && (
+          <div className="rise-in [animation-delay:250ms] mt-3 rounded-2xl border border-line bg-panel-2/60 p-3.5">
+            <SessionNoteInput
+              value={note}
+              onChange={setNote}
+              onCommit={() => saveNote(sessionId, note)}
+              failed={noteFailed}
+            />
           </div>
-        </section>
-      </div>
-    )
-  }
+        )}
+
+        <div className="rise-in [animation-delay:310ms] mt-6 flex flex-wrap items-center justify-center gap-2.5">
+          <button type="button" onClick={goBack} data-tip="Back to where you came from" className={BUTTON_PRIMARY}>
+            <CheckIcon />
+            Done
+          </button>
+          {/* The same plan from the top. Playing one exercise is a session of
+              one, so this is also how a single exercise is played twice. */}
+          <button
+            type="button"
+            onClick={restart}
+            data-tip={routineId !== null ? 'Play this routine again, from the top' : 'Play the same again, from the top'}
+            className={BUTTON_SECONDARY}
+          >
+            <ResetIcon />
+            Play it again
+          </button>
+        </div>
+    </>
+  )
+
+  // The sitting closes on a dialog over the stage it was played on, the same way
+  // each exercise did — never a screen of its own.
+  const alone = steps.length === 1
+  const stepIndex = Math.min(index, steps.length - 1)
+  const step = steps[stepIndex]
 
   return (
     <div className={STAGE_FRAME}>
       <UnsavedRunAlert unsaved={unsaved} onRetry={save} />
-      {/* Keyed on the step so each exercise gets a fresh runner. */}
+      {/* Keyed on the step so each exercise gets a fresh runner; once the session
+          is done the last stage simply stays put behind the closing dialog. */}
       <ExerciseRunner
-        key={index}
-        exercise={steps[index].exercise}
-        startTempoBpm={steps[index].tempoBpm}
+        key={`${sessionId}:${stepIndex}`}
+        exercise={step.exercise}
+        startTempoBpm={step.tempoBpm}
         session={{
           id: sessionId,
           label,
           endLabel: routineId !== null ? 'End routine' : 'End session',
-          step: index + 1,
+          step: stepIndex + 1,
           total: steps.length,
           onContinue: () => setIndex((current) => current + 1),
+          // One exercise is one dialog: its summary is also the sitting's end.
+          outro: alone ? outro : undefined,
         }}
-        onRunChange={(run) => record(index, run)}
+        onRunChange={(run) => record(stepIndex, run)}
         onExit={goBack}
       />
+      {done && !alone && (
+        <Modal title={`${label} complete`} header={false} fit="content" className="max-w-xl" onClose={goBack}>
+          <div className="flex flex-col items-center text-center">
+            <span aria-hidden="true" className="relative inline-flex h-14 w-14 shrink-0 items-center justify-center">
+              <span className="ring-out absolute inset-0 rounded-full bg-success-soft" />
+              <span className="land-in relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success-text [&>svg]:h-6 [&>svg]:w-6">
+                <CheckIcon />
+              </span>
+            </span>
+            <h2 className="rise-in [animation-delay:90ms] mt-3.5 font-display text-xl font-bold tracking-tight">
+              {label} complete
+            </h2>
+            <p className="rise-in [animation-delay:140ms] mt-1 text-sm text-muted">
+              {runs.size} of {steps.length} played ·{' '}
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+
+          <ol className="rise-in [animation-delay:190ms] mt-6 space-y-2.5">
+            {steps.map(({ exercise }, step) => {
+              const run = runs.get(step)
+              return (
+                <li key={exercise.id} className="rounded-2xl border border-line bg-panel-2/60 p-2">
+                  <div className="flex items-center gap-4">
+                    <ExerciseThumb exercise={exercise} className="h-14 w-28 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-display font-semibold tracking-tight text-fg">{exercise.title}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${AREA_BADGE[exercise.area]}`}>
+                          {AREA_LABELS[exercise.area]}
+                        </span>
+                        {run ? 'Done' : 'Skipped'}
+                        {/* Answered on the way past, so here it is only read back. */}
+                        {run?.difficulty && (
+                          <span
+                            className={`${ANSWER_CHIP} ${DIFFICULTY_BADGE[run.difficulty]}`}
+                            data-tip={DIFFICULTY_MEANINGS[run.difficulty]}
+                          >
+                            <span className="sr-only">How it went: </span>
+                            {DIFFICULTY_LABELS[run.difficulty]}
+                          </span>
+                        )}
+                        {run?.feel && (
+                          <span className={`${ANSWER_CHIP} ${FEEL_BADGE[run.feel]}`} data-tip={FEEL_MEANINGS[run.feel]}>
+                            <span className="sr-only">How it felt: </span>
+                            {FEEL_LABELS[run.feel]}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+
+          {outro}
+        </Modal>
+      )}
     </div>
   )
 }

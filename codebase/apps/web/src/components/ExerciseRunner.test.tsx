@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseRun } from '../appData/run'
 import type { PlayerAudio } from '../audio/engine'
 import type { Exercise } from '../content'
-import { ExerciseRunner } from './ExerciseRunner'
+import { ExerciseRunner, type RunnerSession } from './ExerciseRunner'
 import { resetPlayerPrefs } from './playerPrefs'
 
 /** Clocked: one minute on the timer. */
@@ -77,16 +77,28 @@ function fakeAudio() {
   return { audio, log }
 }
 
+/** Every exercise is played inside a session; on its own it is a session of one. */
+function sessionOfOne(onContinue: () => void, step = 1, total = 1): RunnerSession {
+  return { id: 'session-1', label: 'Next session', endLabel: 'End session', step, total, onContinue }
+}
+
 function renderRunner({
   exercise = clocked,
   onRunChange = vi.fn(),
   onExit = vi.fn(),
+  onContinue = vi.fn(),
+  step = 1,
+  total = 1,
   audio = fakeAudio(),
   audioAvailable = true,
 }: {
   exercise?: Exercise
   onRunChange?: (run: ExerciseRun) => void
   onExit?: () => void
+  onContinue?: () => void
+  /** Where in its session this exercise sits; a session of one by default. */
+  step?: number
+  total?: number
   audio?: ReturnType<typeof fakeAudio>
   audioAvailable?: boolean
 } = {}) {
@@ -95,6 +107,7 @@ function renderRunner({
       exercise={exercise}
       onRunChange={onRunChange}
       onExit={onExit}
+      session={sessionOfOne(onContinue, step, total)}
       createAudio={() => {
         if (!audioAvailable) throw new Error('no audio')
         return audio.audio
@@ -102,7 +115,7 @@ function renderRunner({
       now={() => clock.ms}
     />,
   )
-  return { ...view, onRunChange, onExit, audio }
+  return { ...view, onRunChange, onExit, onContinue, audio }
 }
 
 type User = ReturnType<typeof userEvent.setup>
@@ -235,7 +248,8 @@ describe('ExerciseRunner', () => {
 
   it('lets the player silence the click and play the line along, keeping the choice for the next round', async () => {
     const user = userEvent.setup()
-    const { audio } = renderRunner()
+    const view = renderRunner()
+    const { audio } = view
     await openAdvanced(user)
     await user.click(screen.getByRole('checkbox', { name: 'Count-in' }))
     await user.click(screen.getByRole('checkbox', { name: 'Click' }))
@@ -253,8 +267,9 @@ describe('ExerciseRunner', () => {
     // The chosen guitar reached the audio, primed for the exercise's six pitches.
     expect(audio.log.slice(0, 2)).toEqual(['guitar steel', 'prime 6'])
 
-    await finish(user, 'C major — open position')
-    await user.click(screen.getByRole('button', { name: 'Play again' }))
+    // A fresh stage — the next exercise of the session — opens on the same choices.
+    view.unmount()
+    renderRunner()
     await openAdvanced(user)
     expect(screen.getByRole('checkbox', { name: 'Click' })).not.toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Play along' })).toBeChecked()
@@ -527,9 +542,10 @@ describe('ExerciseRunner', () => {
     )
   })
 
-  it('sums the exercise up on Finish, then plays it again or leaves', async () => {
+  it('sums the exercise up on Finish, then hands over to the session or leaves it', async () => {
     const user = userEvent.setup()
-    const { onExit, audio } = renderRunner()
+    const onContinue = vi.fn()
+    const { onExit, audio } = renderRunner({ onContinue })
 
     await play(user, 'C major — open position')
     await advanceClock(2_500)
@@ -545,15 +561,24 @@ describe('ExerciseRunner', () => {
     // The stage stays behind the dialog, so the audio is silenced rather than disposed.
     expect(audio.log).toContain('silence')
 
-    // Play again is a fresh stage: the timer and the cursor start over.
-    await user.click(screen.getByRole('button', { name: 'Play again' }))
-    expect(screen.getByRole('heading', { level: 1, name: /^C major — open position/ })).toHaveFocus()
-    expect(readout('Time left')).toBe('1:00')
-    expect(currentNote()).toBeNull()
-
-    await finish(user, 'C major — open position')
-    await user.click(screen.getByRole('button', { name: 'Done' }))
+    // The last step of the session, so the way on is its closing screen.
+    await user.click(within(summary).getByRole('button', { name: 'End session' }))
     expect(onExit).toHaveBeenCalledTimes(1)
+    expect(onContinue).not.toHaveBeenCalled()
+  })
+
+  it('hands the session on when the summary is finished with', async () => {
+    const user = userEvent.setup()
+    const { onContinue } = renderRunner({ step: 2, total: 4 })
+
+    await play(user, 'C major — open position')
+    await finish(user, 'C major — open position')
+    const summary = screen.getByRole('dialog')
+    expect(within(summary).getByText('Next session · 2 of 4')).toBeInTheDocument()
+
+    await user.click(within(summary).getByRole('button', { name: 'Next exercise' }))
+    // The summary steps aside first, so the hand-over is not instant.
+    await waitFor(() => expect(onContinue).toHaveBeenCalledTimes(1))
   })
 
   it('records the run when it reaches the summary: when, how long, how fast, and that it was cut short', async () => {
@@ -597,27 +622,24 @@ describe('ExerciseRunner', () => {
     expect(within(answer).getByRole('button', { name: 'Hard' })).toHaveAttribute('aria-pressed', 'true')
     const [first, answered] = vi.mocked(onRunChange).mock.calls.map(([run]) => run)
     expect(answered).toEqual({ ...first, difficulty: 'hard' })
-    expect(first.sessionId).toBeNull()
+    // Every run belongs to the session it was played in.
+    expect(first.sessionId).toBe('session-1')
 
     // Pressing the chosen answer again takes it back.
     await user.click(within(answer).getByRole('button', { name: 'Hard' }))
     expect(onRunChange).toHaveBeenLastCalledWith({ ...first, difficulty: null })
-
-    // Play again is a new run with its own identity.
-    await user.click(screen.getByRole('button', { name: 'Play again' }))
-    await play(user, 'C major — open position')
-    await finish(user, 'C major — open position')
-    const again = vi.mocked(onRunChange).mock.calls.at(-1)![0]
-    expect(again.id).not.toBe(first.id)
-    expect(again.difficulty).toBeNull()
   })
 
   it('records nothing, and asks nothing, when Finish comes before any Play', async () => {
     const user = userEvent.setup()
     const { onRunChange } = renderRunner()
     await finish(user, 'C major — open position')
-    expect(screen.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
+
+    // Every exercise ends on its summary; this one says it was skipped.
+    const summary = screen.getByRole('dialog')
+    expect(within(summary).getByRole('heading', { level: 2, name: 'Exercise skipped' })).toBeInTheDocument()
+    expect(within(summary).getByText('Not played')).toBeInTheDocument()
+    expect(within(summary).queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
     expect(onRunChange).not.toHaveBeenCalled()
   })
 

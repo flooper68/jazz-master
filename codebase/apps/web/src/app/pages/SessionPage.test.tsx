@@ -19,10 +19,37 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** Whatever dialog is open — an exercise's summary, or the session's own. There is only ever one. */
+function dialog(): HTMLElement {
+  return screen.getByRole('dialog')
+}
+
+/**
+ * The last exercise's summary hands over to the session's closing dialog. A
+ * session of one has no such hand-over: the two dialogs are one.
+ */
+async function finishSession(user: User, label = 'Next session'): Promise<void> {
+  await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Finish session' }))
+  // It steps aside before the session closes, so wait for what replaces it.
+  await screen.findByRole('heading', { level: 2, name: `${label} complete` })
+}
+
+/** On to the next exercise, waiting out the step. */
+async function nextExercise(user: User, nextTitle: string): Promise<void> {
+  await user.click(within(dialog()).getByRole('button', { name: 'Next exercise' }))
+  await screen.findByRole('heading', { level: 1, name: new RegExp(`^${nextTitle}`) })
+}
+
 async function playAndFinish(user: User, title: string): Promise<void> {
   // Found, not got: an exercise reached through the session steps in, which takes a moment.
   await user.click(await screen.findByRole('button', { name: `Play ${title}` }))
   await user.click(screen.getByRole('button', { name: `Finish ${title}` }))
+}
+
+/** Finish without playing: the summary says it was skipped and offers nothing to answer. */
+async function skip(user: User, title: string): Promise<void> {
+  await user.click(await screen.findByRole('button', { name: `Finish ${title}` }))
+  await screen.findByRole('heading', { level: 2, name: 'Exercise skipped' })
 }
 
 describe('SessionPage', () => {
@@ -38,7 +65,11 @@ describe('SessionPage', () => {
     // The summary is a dialog over the stage; it takes the keyboard itself.
     const summary = await screen.findByRole('dialog')
     expect(within(summary).getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
+    // The dialog takes the keyboard before anything in it is pressed.
     expect(summary).toHaveFocus()
+    await user.click(within(summary).getByRole('button', { name: 'Good' }))
+    // One answer is not the whole ask, so it waits.
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
     // The stage behind says the same, so read the position off the dialog.
     expect(within(summary).getByText('Next session · 1 of 2')).toBeInTheDocument()
     // Not mid-session: a second go at one step would drop the answer just given.
@@ -48,17 +79,19 @@ describe('SessionPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toHaveFocus()
     expect(screen.getByText('Next session · 2 of 2')).toBeInTheDocument()
     await playAndFinish(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
+    await finishSession(user)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Next session complete' })).toHaveFocus()
-    expect(screen.getByText(/^2 of 2 played/)).toBeInTheDocument()
-    const [first, second] = screen.getAllByRole('listitem')
+    const closing = screen.getByRole('dialog')
+    expect(closing).toHaveFocus()
+    expect(within(closing).getByText(/^2 of 2 played/)).toBeInTheDocument()
+    const [first, second] = within(closing).getAllByRole('listitem')
     expect(within(first).getByText('G major — open position')).toBeInTheDocument()
     expect(within(second).getByText('Gm7 – C7 – Fmaj7 — a bebop line')).toBeInTheDocument()
 
-    // Each played exercise is answered here, on its own four buttons.
-    await user.click(within(first).getByRole('button', { name: 'Good for G major — open position' }))
-    expect(within(first).getByText('Clean, with effort')).toBeInTheDocument()
-    expect(within(second).getByRole('button', { name: 'Again for Gm7 – C7 – Fmaj7 — a bebop line' })).toBeEnabled()
+    // Nothing is asked twice: the closing dialog reads back what was answered on the way.
+    expect(within(closing).queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
+    expect(within(first).getByText('Good')).toBeInTheDocument()
+    expect(within(second).getByText('Done')).toBeInTheDocument()
 
     // Both runs are saved under one session, the answer on the right one.
     await waitFor(() =>
@@ -70,7 +103,7 @@ describe('SessionPage', () => {
     expect([...sessionIds][0]).toMatch(/^[0-9a-f-]{36}$/)
     expect(getTrpcTestRuns().find((run) => run.exerciseId === 'lines-ii-v-i-f-line')?.difficulty).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Done' }))
+    await user.click(within(closing).getByRole('button', { name: 'Done' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 
@@ -86,20 +119,31 @@ describe('SessionPage', () => {
     await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('hard'))
     expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
 
-    await user.click(within(summary).getByRole('button', { name: 'Next exercise' }))
+    await nextExercise(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
     await playAndFinish(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
+    await finishSession(user)
 
-    // The last exercise hands straight over: one closing screen, not two.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Next session complete' })).toHaveFocus()
-    const [first] = screen.getAllByRole('listitem')
-    expect(within(first).getByRole('button', { name: 'Hard for G major — open position' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    const closing = screen.getByRole('dialog')
+    const [first] = within(closing).getAllByRole('listitem')
+    expect(within(first).getByText('Hard')).toBeInTheDocument()
+    expect(within(first).getByText('Loved it')).toBeInTheDocument()
+    // Read back, not asked again.
+    expect(within(closing).queryByRole('button', { name: 'Hard' })).toBeNull()
+  })
 
-    // And it can still be changed there.
-    await user.click(within(first).getByRole('button', { name: 'Good for G major — open position' }))
-    await waitFor(() => expect(getTrpcTestRuns().find((run) => run.exerciseId === 'scales-major-open-g')?.difficulty).toBe('good'))
+  it('moves itself on once both answers are given', async () => {
+    const user = userEvent.setup()
+    await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
+    await playAndFinish(user, 'G major — open position')
+
+    const summary = await screen.findByRole('dialog')
+    await user.click(within(summary).getByRole('button', { name: 'Hard' }))
+    await user.click(within(summary).getByRole('button', { name: 'Loved it' }))
+
+    // Both answered is the whole ask, so nothing is left to press.
+    expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toBeInTheDocument()
+    await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('hard'))
+    expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
   })
 
   it('lets the sitting be ended from the summary, not only from the stage', async () => {
@@ -112,12 +156,17 @@ describe('SessionPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 
-  it('moves straight on from an exercise that was finished without playing', async () => {
+  it('says an exercise was skipped, and asks nothing about it', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
-    // Nothing was played, so there is nothing to answer for: no summary in between.
-    await user.click(screen.getByRole('button', { name: 'Finish G major — open position' }))
-    expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toHaveFocus()
+
+    // Every exercise ends on its summary; one that was not played has nothing to answer.
+    await skip(user, 'G major — open position')
+    expect(within(dialog()).getByText('Not played')).toBeInTheDocument()
+    expect(within(dialog()).queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
+
+    await nextExercise(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
+    expect(getTrpcTestRuns()).toEqual([])
   })
 
   it('answers how it felt beside how it went, and keeps the two apart', async () => {
@@ -125,21 +174,22 @@ describe('SessionPage', () => {
     await renderRoute('/session?x=scales-major-open-c')
     await playAndFinish(user, 'C major — open position')
 
-    // Two questions on the summary, and neither is answered for the user.
-    expect(screen.getByRole('group', { name: /^How did it go\?/ })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: /^How did it feel\?/ })).toBeInTheDocument()
+    // Two questions on the exercise's own summary, and neither is answered for the user.
+    const summary = await screen.findByRole('dialog')
+    expect(within(summary).getByRole('group', { name: /^How did it go\?/ })).toBeInTheDocument()
+    expect(within(summary).getByRole('group', { name: /^How did it feel\?/ })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Loved it for C major — open position' }))
+    await user.click(within(summary).getByRole('button', { name: 'Loved it' }))
     await waitFor(() => expect(getTrpcTestRuns()[0]?.feel).toBe('loved'))
     // Saying how it felt says nothing about how it went.
     expect(getTrpcTestRuns()[0]?.difficulty).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Good for C major — open position' }))
+    await user.click(within(summary).getByRole('button', { name: 'Good' }))
     await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('good'))
     expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
 
     // Pressing the chosen answer again clears it.
-    await user.click(screen.getByRole('button', { name: 'Loved it for C major — open position' }))
+    await user.click(within(summary).getByRole('button', { name: 'Loved it' }))
     await waitFor(() => expect(getTrpcTestRuns()[0]?.feel).toBeNull())
   })
 
@@ -148,7 +198,8 @@ describe('SessionPage', () => {
     await renderRoute('/session?x=scales-major-open-c')
     await playAndFinish(user, 'C major — open position')
 
-    const note = screen.getByLabelText(/^Anything worth remembering\?/)
+    // One exercise, one dialog: the sitting's note is on the exercise's own summary.
+    const note = within(await screen.findByRole('dialog')).getByLabelText(/^Anything worth remembering\?/)
     await user.type(note, 'The ii–V finally sat in the pocket.')
     // Written away when the box is left, not on every keypress.
     expect(await getTrpcTestNotes()).toEqual([])
@@ -161,26 +212,26 @@ describe('SessionPage', () => {
   it('offers no note for a sitting where nothing was played', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-c')
-    await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
-    expect(screen.queryByLabelText(/^Anything worth remembering\?/)).toBeNull()
-  })
-
-  it('marks an exercise finished without playing as skipped', async () => {
-    const user = userEvent.setup()
-    await renderRoute('/session?x=scales-major-open-c')
-    await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
-    expect(screen.getByText(/^0 of 1 played/)).toBeInTheDocument()
-    expect(within(screen.getByRole('listitem')).getByText('Skipped')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
+    await skip(user, 'C major — open position')
+    expect(within(dialog()).queryByLabelText(/^Anything worth remembering\?/)).toBeNull()
     expect(getTrpcTestRuns()).toEqual([])
   })
 
-  it('asks the scheduler what now from the summary', async () => {
+  it('ends a session of one on a single dialog, not two', async () => {
     const user = userEvent.setup()
     await renderRoute('/session?x=scales-major-open-c')
-    await user.click(screen.getByRole('button', { name: 'Finish C major — open position' }))
-    await user.click(screen.getByRole('button', { name: 'What now?' }))
-    expect(await screen.findByText(/^Next session · 1 of \d+$/)).toBeInTheDocument()
+    await playAndFinish(user, 'C major — open position')
+
+    const only = await screen.findByRole('dialog')
+    expect(within(only).getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
+    // It is the exercise's summary and the sitting's end at once.
+    expect(within(only).getByRole('group', { name: /^How did it go\?/ })).toBeInTheDocument()
+    expect(within(only).getByRole('button', { name: 'Done' })).toBeInTheDocument()
+    expect(within(only).getByRole('button', { name: 'Play it again' })).toBeInTheDocument()
+    expect(within(only).queryByRole('button', { name: 'Finish session' })).toBeNull()
+
+    await user.click(within(only).getByRole('button', { name: 'Done' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 
   it('starts each exercise at the tempo the plan asked for', async () => {
@@ -196,13 +247,14 @@ describe('SessionPage', () => {
 
     expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
     await playAndFinish(user, 'C major — open position')
-    expect(screen.getByRole('heading', { level: 1, name: 'Warm-up complete' })).toHaveFocus()
+    expect(await screen.findByRole('dialog')).toHaveFocus()
     await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(1))
     const first = getTrpcTestRuns()[0].sessionId
 
-    await user.click(screen.getByRole('button', { name: 'Play it again' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Play it again' }))
     expect(await screen.findByText('Warm-up · 1 of 1')).toBeInTheDocument()
     await playAndFinish(user, 'C major — open position')
+    await screen.findByRole('dialog')
     // A second time through is a session of its own.
     await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(2))
     expect(new Set(getTrpcTestRuns().map((run) => run.sessionId)).size).toBe(2)

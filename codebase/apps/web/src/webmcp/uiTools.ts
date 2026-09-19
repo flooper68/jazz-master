@@ -85,7 +85,7 @@ export function uiPageTools({ location, go, exercises, routines, player, confirm
     {
       name: 'navigate',
       title: 'Go to a page',
-      description: 'Show one of the app\'s pages: `home`, `exercises` (the catalog), `routines`, `new_routine` (the empty routine form) or `history` (past practice). To play something use open_exercise or start_routine instead. Where leaving would lose the user something unsaved, they are asked first.',
+      description: 'Show one of the app\'s pages: `home`, `exercises` (the catalog), `routines`, `new_routine` (the empty routine form) or `history` (past practice). To play something use start_exercise or start_routine instead. Where leaving would lose the user something unsaved, they are asked first.',
       inputSchema: z.toJSONSchema(pageInput, { io: 'input' }),
       annotations: MOVES,
       async execute(args, { signal }) {
@@ -99,7 +99,7 @@ export function uiPageTools({ location, go, exercises, routines, player, confirm
     {
       name: 'open_exercise',
       title: 'Open an exercise',
-      description: 'Put one exercise on the stage, ready to play: its notation, tab and the player. It does not start playing; call player_play for that.',
+      description: 'Show one exercise to read: its notation and tab, what it trains, and how long it takes. This is not a player — to practise it, call start_exercise.',
       inputSchema: z.toJSONSchema(exerciseInput, { io: 'input' }),
       annotations: MOVES,
       async execute(args, { signal }) {
@@ -109,6 +109,23 @@ export function uiPageTools({ location, go, exercises, routines, player, confirm
         if (!exercise) return { status: 'not_found', message: 'No exercise has that id. List them with list_builtin_exercises and list_exercises.' }
         if (!(await mayLeave(signal))) return STAYED
         await go({ exerciseId: exercise.id })
+        return { status: 'ok', exercise: { id: exercise.id, title: exercise.title } }
+      },
+    },
+    {
+      name: 'start_exercise',
+      title: 'Practise one exercise',
+      description:
+        'Practise one exercise, as its Play button does. Nothing is played outside a practice session, so this makes a session of that exercise alone and puts it on the stage. It does not start playing; call player_play for that.',
+      inputSchema: z.toJSONSchema(exerciseInput, { io: 'input' }),
+      annotations: MOVES,
+      async execute(args, { signal }) {
+        const parsed = exerciseInput.safeParse(args)
+        if (!parsed.success) return { status: 'invalid', problems: ['exerciseId: give the id of the exercise to practise'] }
+        const exercise = (await exercises()).find((candidate) => candidate.id === parsed.data.exerciseId)
+        if (!exercise) return { status: 'not_found', message: 'No exercise has that id. List them with list_builtin_exercises and list_exercises.' }
+        if (!(await mayLeave(signal))) return STAYED
+        await go({ session: { x: exercise.id } })
         return { status: 'ok', exercise: { id: exercise.id, title: exercise.title } }
       },
     },

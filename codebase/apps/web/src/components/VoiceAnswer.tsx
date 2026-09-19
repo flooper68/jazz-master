@@ -17,7 +17,7 @@ import { loadVoiceAnswerOn, saveVoiceAnswerOn } from './voiceAnswerPrefs'
  */
 
 /** What the screen is doing, which is also what it tells the player. */
-type Phase = 'checking' | 'unsupported' | 'downloadable' | 'installing' | 'off' | 'listening' | 'failed'
+type Phase = 'off' | 'checking' | 'unsupported' | 'downloadable' | 'installing' | 'listening' | 'failed'
 
 export interface VoiceAnswerProps {
   /** Either answer, or both, as they are heard. */
@@ -34,19 +34,23 @@ const FAILURE_TEXT: Record<SpeechFailure, string> = {
 }
 
 export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: VoiceAnswerProps) {
-  const [phase, setPhase] = useState<Phase>('checking')
+  // Off until the player asks, because finding out costs a call that can take
+  // the renderer down with it (see voiceAnswerPrefs). A browser that has said
+  // yes once is asked again on its own.
+  const [phase, setPhase] = useState<Phase>(() => (loadVoiceAnswerOn() ? 'checking' : 'off'))
   const [failure, setFailure] = useState<SpeechFailure | null>(null)
   // The last thing heard that answered something, said back so the player knows it landed.
   const [heard, setHeard] = useState<string | null>(null)
-  const [wanted, setWanted] = useState(loadVoiceAnswerOn)
   // Answering re-renders the summary; the listener must not be torn down for that.
   const answer = useRef(onAnswer)
   answer.current = onAnswer
   const engine = useRef<SpeechEngine | null>(null)
   if (engine.current === null) engine.current = createEngine(SPOKEN_ANSWER_PHRASES)
 
-  // What this browser can do is asked once, of the browser itself — an Effect.
+  // What this browser can do is asked of the browser itself — an Effect, and
+  // only while `checking`, which nothing but an explicit yes can bring about.
   useEffect(() => {
+    if (phase !== 'checking') return
     let current = true
     const speech = engine.current
     if (!speech) {
@@ -58,12 +62,12 @@ export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: Vo
       if (availability === 'unavailable') return setPhase('unsupported')
       if (availability === 'downloadable') return setPhase('downloadable')
       // 'downloading' still ends up listening: start() waits for the pack.
-      setPhase(loadVoiceAnswerOn() ? 'listening' : 'off')
+      setPhase('listening')
     })
     return () => {
       current = false
     }
-  }, [])
+  }, [phase])
 
   // The microphone itself: opened while listening, closed the moment it is not.
   useEffect(() => {
@@ -87,20 +91,20 @@ export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: Vo
       onEnd: () => setPhase((current) => (current === 'listening' ? 'off' : current)),
     })
     listener.start()
+    saveVoiceAnswerOn(true)
     return () => listener.stop()
   }, [phase])
 
   function toggle(): void {
     if (phase === 'listening') {
-      setWanted(false)
       saveVoiceAnswerOn(false)
       setPhase('off')
       return
     }
-    setWanted(true)
-    saveVoiceAnswerOn(true)
+    // Saying yes is what licenses the availability call; it is remembered only
+    // once this browser has come back from it alive.
     setFailure(null)
-    setPhase('listening')
+    setPhase('checking')
   }
 
   async function install(): Promise<void> {
@@ -111,7 +115,13 @@ export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: Vo
     setPhase(installed ? 'listening' : 'unsupported')
   }
 
-  if (phase === 'checking') return null
+  if (phase === 'checking' || phase === 'installing') {
+    return (
+      <p className="mt-3 text-center text-xs text-muted" role="status">
+        Looking for on-device speech recognition…
+      </p>
+    )
+  }
 
   if (phase === 'unsupported') {
     return (
@@ -121,17 +131,16 @@ export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: Vo
     )
   }
 
-  if (phase === 'downloadable' || phase === 'installing') {
+  if (phase === 'downloadable') {
     return (
       <div className="mt-3 text-center">
         <button
           type="button"
           onClick={() => void install()}
-          disabled={phase === 'installing'}
           className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-medium text-fg hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg [&>svg]:h-3.5 [&>svg]:w-3.5"
         >
           <MicIcon />
-          {phase === 'installing' ? 'Getting the voice pack…' : 'Answer out loud'}
+          Get the voice pack
         </button>
         <p className="mt-1.5 text-xs text-muted">
           A one-off download, after which nothing you say leaves this device.
@@ -167,9 +176,7 @@ export function VoiceAnswer({ onAnswer, createEngine = browserSpeechEngine }: Vo
           ? FAILURE_TEXT[failure]
           : listening
             ? (heard ?? 'Listening — say how it went, and how it felt')
-            : wanted
-              ? 'Press the mic to answer out loud'
-              : 'Voice answers are off'}
+            : 'Answer out loud instead of tapping'}
       </p>
     </div>
   )

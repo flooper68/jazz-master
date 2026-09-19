@@ -62,8 +62,9 @@ describe('app router', () => {
     expect(start).toHaveAttribute('href', `/app/exercises/${exercise.id}`)
 
     await user.click(start)
-    expect(await screen.findByRole('heading', stageHeading)).toHaveFocus()
-    // Playing an exercise is still being in Exercises.
+    // Start opens the exercise to read; Play from there makes a session of it.
+    expect(await screen.findByRole('heading', { level: 1, name: exercise.title })).toHaveFocus()
+    // Being in an exercise is still being in Exercises.
     expect(screen.getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Exercises' }))

@@ -49,12 +49,13 @@ describe('the user’s own exercises, in the app', () => {
     expect(pack.getByRole('img', { name: 'Level 1' }).children).toHaveLength(5)
   })
 
-  it('opens one in the player by its id', async () => {
+  it('opens one by its id, and says whose it is', async () => {
     const [stored] = await seedTrpcTestLibrary([chords])
     await renderRoute(`/exercises/${stored.id}`)
-    expect(await screen.findByRole('button', { name: `Play ${chords.title}` })).toBeInTheDocument()
-    // The player says whose it is, too.
-    expect(within(screen.getByRole('region', { name: `${chords.title} player` })).getByText('Yours')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: chords.title })).toBeInTheDocument()
+    expect(screen.getByText('Yours')).toBeInTheDocument()
+    // Playing it is a session of one, started from here.
+    expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument()
   })
 
   it('says not found for a library id that is not in the library, once the library has answered', async () => {

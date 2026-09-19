@@ -38,7 +38,8 @@ test('a routine made in the app is stored, played in its order, and offered as w
   await expect(page.getByText('E2E warm-up · 2 of 2')).toBeVisible()
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'E2E warm-up complete' })).toBeVisible()
+  await page.getByRole('dialog').getByRole('button', { name: 'Finish session' }).click()
+  await expect(page.getByRole('dialog').getByRole('heading', { level: 2, name: 'E2E warm-up complete' })).toBeVisible()
 
   // Both runs are saved through one serialized queue; wait for the store, not for a response.
   await expect

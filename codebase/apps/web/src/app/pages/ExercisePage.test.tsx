@@ -1,13 +1,9 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISES } from '../../content'
 import { renderRoute } from '../../test/renderRoute'
-import {
-  getTrpcTestRuns,
-  resetTrpcTestData,
-  setTrpcTestRunsRepositoryAvailable,
-} from '../../test/trpcTestFetch'
+import { resetTrpcTestData } from '../../test/trpcTestFetch'
 
 const exercise = EXERCISES[0]
 
@@ -22,83 +18,42 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/**
- * The unsaved-run banner, told apart from the player's own audio notice: the
- * stage stays mounted behind the summary dialog, so both alerts are on screen.
- */
-function unsavedAlert(): HTMLElement | null {
-  return screen.queryAllByRole('alert').find((node) => node.textContent?.startsWith('This run was not saved.')) ?? null
-}
-
 describe('ExercisePage', () => {
-  it('plays the exercise named in the URL, sums it up, and goes back to the list', async () => {
-    const user = userEvent.setup()
+  it('reads as the exercise before it is played: what it is, how it is written, and one Play', async () => {
     await renderRoute(`/exercises/${exercise.id}`)
 
-    await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
-    await user.click(screen.getByRole('button', { name: `Finish ${exercise.title}` }))
+    expect(screen.getByRole('heading', { level: 1, name: exercise.title })).toBeInTheDocument()
+    expect(screen.getByText(`${exercise.tempoBpm} BPM`)).toBeInTheDocument()
+    expect(screen.getByText(`Level ${exercise.level}`)).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Exercise complete' }),
+      screen.getByRole('img', { name: `${exercise.title} score, ${exercise.notes.length} notes` }),
     ).toBeInTheDocument()
-    // The stage is still behind the dialog, so the title is on screen twice.
-    expect(within(screen.getByRole('dialog')).getByText(exercise.title)).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Done' }))
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Exercises' }),
-    ).toBeInTheDocument()
+    // Reading, not playing: the transport belongs to the session.
+    expect(screen.queryByRole('button', { name: `Finish ${exercise.title}` })).toBeNull()
   })
 
-  it('saves the run when it reaches the summary, and again with its answer', async () => {
-    const user = userEvent.setup()
-    await renderRoute(`/exercises/${exercise.id}`)
-    await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
-    await user.click(screen.getByRole('button', { name: `Finish ${exercise.title}` }))
-
-    await waitFor(() => expect(getTrpcTestRuns()).toHaveLength(1))
-    expect(getTrpcTestRuns()[0]).toMatchObject({
-      exerciseId: exercise.id,
-      tempoBpm: exercise.tempoBpm,
-      completed: false,
-      difficulty: null,
-    })
-
-    const answer = screen.getByRole('group', { name: /^How did it go\?/ })
-    await user.click(within(answer).getByRole('button', { name: 'Good' }))
-    await waitFor(() => expect(getTrpcTestRuns()[0].difficulty).toBe('good'))
-    expect(getTrpcTestRuns()).toHaveLength(1)
-    expect(unsavedAlert()).toBeNull()
+  it('tells the story of the exercise where it has one', async () => {
+    const withAbout = EXERCISES.find((item) => (item.about?.length ?? 0) > 0)!
+    await renderRoute(`/exercises/${withAbout.id}`)
+    expect(screen.getByRole('heading', { level: 2, name: 'About this exercise' })).toBeInTheDocument()
+    expect(screen.getByText(withAbout.about![0])).toBeInTheDocument()
   })
 
-  it('saves nothing for a run left from the stage', async () => {
+  it('plays the exercise as a session of one — nothing plays outside a session', async () => {
     const user = userEvent.setup()
     await renderRoute(`/exercises/${exercise.id}`)
-    await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
-    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Exercises' }))
-    await screen.findByRole('heading', { level: 1, name: 'Exercises' })
-    expect(getTrpcTestRuns()).toEqual([])
-  })
 
-  it('says so when the run was not saved, and sends it again on request', async () => {
-    setTrpcTestRunsRepositoryAvailable(false)
-    const user = userEvent.setup()
-    await renderRoute(`/exercises/${exercise.id}`)
-    await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
-    await user.click(screen.getByRole('button', { name: `Finish ${exercise.title}` }))
+    // Preview hears it; Start session practises it.
+    expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Start session' }))
 
-    await waitFor(() => expect(unsavedAlert()).not.toBeNull())
-    expect(getTrpcTestRuns()).toEqual([])
-
-    setTrpcTestRunsRepositoryAvailable(true)
-    await user.click(within(unsavedAlert()!).getByRole('button', { name: 'Try again' }))
-    await waitFor(() => expect(unsavedAlert()).toBeNull())
-    expect(getTrpcTestRuns()).toHaveLength(1)
+    // The session stage, with this exercise as its only step.
+    expect(await screen.findByText('Next session · 1 of 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `Play ${exercise.title}` })).toBeInTheDocument()
   })
 
   it('renders not found for an unknown exercise', async () => {
     await renderRoute('/exercises/nope')
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Page not found' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument()
   })
 })

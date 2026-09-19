@@ -35,14 +35,20 @@ describe('an agent in the user\'s browser', () => {
     const view = await renderApp('/routines')
     await screen.findByRole('heading', { level: 1, name: 'Routines' })
     const names = await agent().names()
-    expect(names).toEqual(expect.arrayContaining(['list_routines', 'create_routine', 'delete_routine', 'get_current_view', 'navigate', 'open_exercise', 'start_routine']))
+    expect(names).toEqual(expect.arrayContaining(['list_routines', 'create_routine', 'delete_routine', 'get_current_view', 'navigate', 'open_exercise', 'start_exercise', 'start_routine']))
     expect(names).not.toContain('player_play')
     expect(new Set(names).size).toBe(names.length)
 
+    // Opening one is reading it: there is no player on the exercise page.
     expect(await agent().call('open_exercise', { exerciseId: 'scales-major-open-c' })).toMatchObject({ status: 'ok' })
+    await screen.findByRole('heading', { level: 1, name: 'C major — open position' })
+    expect(await agent().names()).not.toContain('player_play')
+
+    // Practising it makes a session of one, and that is where the player lives.
+    expect(await agent().call('start_exercise', { exerciseId: 'scales-major-open-c' })).toMatchObject({ status: 'ok' })
     await screen.findByRole('button', { name: /^Play C major/ })
     expect(await agent().names()).toContain('player_play')
-    expect(await agent().call('get_current_view')).toMatchObject({ page: 'exercise', path: '/exercises/scales-major-open-c', player: { exerciseId: 'scales-major-open-c', playing: false } })
+    expect(await agent().call('get_current_view')).toMatchObject({ page: 'session', path: '/session', player: { exerciseId: 'scales-major-open-c', playing: false } })
 
     expect(await agent().call('navigate', { page: 'history' })).toMatchObject({ status: 'ok' })
     await screen.findByRole('heading', { level: 1, name: 'History' })

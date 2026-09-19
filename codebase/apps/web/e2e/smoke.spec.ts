@@ -53,6 +53,13 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
     page.getByRole('img', { name: /^C major — open position score, \d+ notes$/ }),
   ).toBeVisible()
 
+  // Preview hears it without practising it; Start session is how it is played.
+  await expect(page.getByRole('button', { name: 'Preview' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Play C major/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Start session' }).click()
+  await expect(page).toHaveURL(/\/app\/session\?x=scales-major-open-c$/)
+  await expect(page.getByText('Next session · 1 of 1')).toBeVisible()
+
   await finishCurrentExercise(page)
   // The summary is a dialog over the stage — which stays behind it, title and all.
   const summary = page.getByRole('dialog')
@@ -74,11 +81,12 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
   ])
   await expect(page.getByRole('alert')).toHaveCount(0)
 
-  // Done goes back to wherever the player came from — the list, in this case.
+  // One exercise is one dialog: this summary is also the end of the sitting.
+  await expect(summary.getByRole('button', { name: 'Finish session' })).toHaveCount(0)
+
+  // Done goes back to where the player came from — the exercise, in this case.
   await summary.getByRole('button', { name: 'Done' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Exercises', level: 1 }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: new RegExp(`^${FIRST_EXERCISE}`), level: 1 })).toBeVisible()
 
   const runs = await listStoredRuns(page)
   expect(runs).toHaveLength(1)
@@ -90,7 +98,7 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
 })
 
 test('a run left from the stage is not stored', async ({ page }) => {
-  await page.goto('/app/exercises/scales-major-open-c')
+  await page.goto('/app/session?x=scales-major-open-c')
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Exercises' }).click()
   await expect(
@@ -99,8 +107,8 @@ test('a run left from the stage is not stored', async ({ page }) => {
   expect(await listStoredRuns(page)).toEqual([])
 })
 
-test('Play starts the timer, the click, and the cursor; Play again starts over', async ({ page }) => {
-  await page.goto('/app/exercises/scales-major-open-c')
+test('Play starts the timer, the click, and the cursor; Play it again starts over', async ({ page }) => {
+  await page.goto('/app/session?x=scales-major-open-c')
 
   await expect(page.getByText('2:00')).toBeVisible()
   await page.waitForTimeout(1_500)
@@ -123,7 +131,8 @@ test('Play starts the timer, the click, and the cursor; Play again starts over',
   })
 
   await page.getByRole('button', { name: /^Finish / }).click()
-  await page.getByRole('button', { name: 'Play again' }).click()
+  // The one dialog that ends a session of one offers the same plan again.
+  await page.getByRole('dialog').getByRole('button', { name: 'Play it again' }).click()
   await expect(
     page.getByRole('heading', { name: new RegExp(`^${FIRST_EXERCISE}`), level: 1 }),
   ).toBeFocused()
