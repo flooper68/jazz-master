@@ -147,6 +147,11 @@ export const GoalIcon = () => (
   <Icon size={16}><path d="M8 1a7 7 0 1 0 7 7h-1.5A5.5 5.5 0 1 1 8 2.5zm0 3a4 4 0 1 0 4 4h-1.5A2.5 2.5 0 1 1 8 5.5zm0 2.75A1.25 1.25 0 1 0 9.25 9L13 5.25V3h-2.25L7 6.75A1.25 1.25 0 0 0 8 6.75z" /></Icon>
 )
 
+/** Two speech bubbles: a conversation with the teacher. */
+export const LessonIcon = () => (
+  <Icon size={16}><path d="M2 3.25A1.25 1.25 0 0 1 3.25 2h6.5A1.25 1.25 0 0 1 11 3.25v4.5A1.25 1.25 0 0 1 9.75 9H6.2L3.5 11.2V9h-.25A1.25 1.25 0 0 1 2 7.75zm1.5.25v4H5v1.55L6.05 8h3.45V3.5zm9 2.5H14a.5.5 0 0 1 .5.5v5.25a1.25 1.25 0 0 1-1.25 1.25H13v2.05L10.6 13H7.25A1.25 1.25 0 0 1 6 11.75v-.25h1.5v.5h3.6L12.5 13v-1.5h.5V6z" /></Icon>
+)
+
 /** A person: the account itself. */
 export const PersonIcon = () => (
   <Icon size={16}><path d="M8 1.5a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5zm0 1.5a1.75 1.75 0 1 0 0 3.5A1.75 1.75 0 0 0 8 3zM2.5 14.5c0-2.9 2.46-5 5.5-5s5.5 2.1 5.5 5H12c0-2-1.74-3.5-4-3.5S4 12.5 4 14.5z" /></Icon>

@@ -9,7 +9,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { GoalIcon, HistoryIcon, HomeIcon, ListIcon, SidebarIcon } from './icons'
+import { GoalIcon, HistoryIcon, HomeIcon, LessonIcon, ListIcon, SidebarIcon } from './icons'
 
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -28,6 +28,7 @@ const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/exercises', label: 'Exercises', icon: ListIcon },
   { to: '/goals', label: 'Goals', icon: GoalIcon },
+  { to: '/lesson', label: 'Lesson', icon: LessonIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
 
