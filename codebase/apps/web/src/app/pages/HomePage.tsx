@@ -79,7 +79,7 @@ export default function HomePage() {
           onStart={() => void navigate({ to: '/session', search: sessionSearch(plan) })}
         />
 
-        <section className={`${CARD} min-w-0 p-4 lg:col-span-2`} aria-labelledby="home-week">
+        <section className={`${CARD} flex min-w-0 flex-col p-4 lg:col-span-2`} aria-labelledby="home-week">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4">
             <h2 id="home-week" className={SECTION_TITLE}>
               Last 7 days
@@ -121,11 +121,16 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
  * One series, seven columns: minutes per day on one baseline. Each column is
  * its own hover and focus target carrying the exact value; today's label is
  * the only one in strong ink.
+ *
+ * It grows to fill its card rather than standing at a fixed height: the card
+ * shares a stretched grid row with the next-session card, which is the taller
+ * of the two, and a chart that keeps its own height leaves the baseline
+ * floating in the middle of the card.
  */
 function WeekChart({ week }: { week: ActivityDay[] }) {
   const peak = Math.max(...week.map((day) => day.seconds), 60)
   return (
-    <ol className="mt-3 grid h-28 grid-cols-7 items-end gap-2" aria-label="Minutes played per day, oldest first">
+    <ol className="mt-3 grid min-h-28 flex-1 grid-cols-7 items-end gap-2" aria-label="Minutes played per day, oldest first">
       {week.map((day, index) => {
         const today = index === week.length - 1
         const name = day.date.toLocaleDateString(undefined, { weekday: 'short' })
