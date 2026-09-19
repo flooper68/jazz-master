@@ -35,11 +35,15 @@ describe('SessionPage', () => {
     await playAndFinish(user, 'G major — open position')
 
     // The exercise is summed up before the next one starts, and says where it stands.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Exercise complete' })).toHaveFocus()
-    expect(screen.getByText('Next session · 1 of 2')).toBeInTheDocument()
+    // The summary is a dialog over the stage; it takes the keyboard itself.
+    const summary = await screen.findByRole('dialog')
+    expect(within(summary).getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
+    expect(summary).toHaveFocus()
+    // The stage behind says the same, so read the position off the dialog.
+    expect(within(summary).getByText('Next session · 1 of 2')).toBeInTheDocument()
     // Not mid-session: a second go at one step would drop the answer just given.
-    expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Next exercise' }))
+    expect(within(summary).queryByRole('button', { name: 'Play again' })).toBeNull()
+    await user.click(within(summary).getByRole('button', { name: 'Next exercise' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toHaveFocus()
     expect(screen.getByText('Next session · 2 of 2')).toBeInTheDocument()
@@ -66,7 +70,7 @@ describe('SessionPage', () => {
     expect([...sessionIds][0]).toMatch(/^[0-9a-f-]{36}$/)
     expect(getTrpcTestRuns().find((run) => run.exerciseId === 'lines-ii-v-i-f-line')?.difficulty).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 
@@ -76,12 +80,13 @@ describe('SessionPage', () => {
     await playAndFinish(user, 'G major — open position')
 
     // How it went and how it felt, both asked while the exercise is still fresh.
-    await user.click(screen.getByRole('button', { name: 'Hard' }))
-    await user.click(screen.getByRole('button', { name: 'Loved it' }))
+    const summary = await screen.findByRole('dialog')
+    await user.click(within(summary).getByRole('button', { name: 'Hard' }))
+    await user.click(within(summary).getByRole('button', { name: 'Loved it' }))
     await waitFor(() => expect(getTrpcTestRuns()[0]?.difficulty).toBe('hard'))
     expect(getTrpcTestRuns()[0]?.feel).toBe('loved')
 
-    await user.click(screen.getByRole('button', { name: 'Next exercise' }))
+    await user.click(within(summary).getByRole('button', { name: 'Next exercise' }))
     await playAndFinish(user, 'Gm7 – C7 – Fmaj7 — a bebop line')
 
     // The last exercise hands straight over: one closing screen, not two.
@@ -102,7 +107,8 @@ describe('SessionPage', () => {
     await renderRoute('/session?x=scales-major-open-g,lines-ii-v-i-f-line')
     await playAndFinish(user, 'G major — open position')
 
-    await user.click(screen.getByRole('button', { name: 'End session' }))
+    // The stage behind has its own way out; this is the one on the summary.
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'End session' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Exercises' })).toBeInTheDocument()
   })
 

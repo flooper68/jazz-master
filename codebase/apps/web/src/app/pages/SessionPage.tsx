@@ -8,19 +8,21 @@ import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { FeelInput } from '../../components/FeelInput'
 import { RatingInput } from '../../components/RatingInput'
 import { SessionNoteInput } from '../../components/SessionNoteInput'
-import { CheckIcon } from '../../components/icons'
+import { CheckIcon, ResetIcon, ShuffleIcon } from '../../components/icons'
 import { useViewFocus } from '../../components/useViewFocus'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
 import { useNextSession } from '../useNextSession'
 import { useRoutines } from '../useRoutines'
+import { useGoBack } from '../useGoBack'
 import { STAGE_FRAME, UnsavedRunAlert, useNoteSaver, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
 
-const BUTTON_PRIMARY =
-  'rounded-lg bg-cta px-3.5 py-1.5 text-sm font-medium text-cta-fg hover:bg-cta-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
-const BUTTON_SECONDARY =
-  'rounded-lg border border-line bg-panel px-3.5 py-1.5 text-sm font-medium text-fg hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
+// The same iconed buttons the exercise summary closes with.
+const BUTTON_BASE =
+  'inline-flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg [&>svg]:h-3.5 [&>svg]:w-3.5'
+const BUTTON_PRIMARY = `${BUTTON_BASE} bg-cta text-cta-fg hover:bg-cta-hover`
+const BUTTON_SECONDARY = `${BUTTON_BASE} border border-line bg-panel text-fg hover:border-line-strong`
 
 /**
  * A practice session — the scheduler's next session, or a practice routine:
@@ -55,6 +57,7 @@ interface SessionStep {
 
 function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: string | null }) {
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const { routines } = useRoutines()
   const { plan } = useNextSession()
   // The routine's name arrives with the routines; until then (or if it is gone) the session is simply a routine.
@@ -159,8 +162,9 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
             )}
 
             <div className="mt-5 flex flex-wrap gap-2.5">
-              <button type="button" onClick={() => void navigate({ to: '/exercises' })} className={BUTTON_PRIMARY}>
-                Back to exercises
+              <button type="button" onClick={goBack} data-tip="Back to where you came from" className={BUTTON_PRIMARY}>
+                <CheckIcon />
+                Done
               </button>
               <button
                 type="button"
@@ -169,8 +173,10 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
                   if (routineId !== null) return restart()
                   void navigate({ to: '/session', search: sessionSearch(plan) })
                 }}
+                data-tip={routineId !== null ? 'Play this routine again, from the top' : 'Plan another session from where you are now'}
                 className={BUTTON_SECONDARY}
               >
+                {routineId !== null ? <ResetIcon /> : <ShuffleIcon />}
                 {routineId !== null ? 'Play it again' : 'What now?'}
               </button>
             </div>
@@ -197,7 +203,7 @@ function SessionStage({ steps, routineId }: { steps: SessionStep[]; routineId: s
           onContinue: () => setIndex((current) => current + 1),
         }}
         onRunChange={(run) => record(index, run)}
-        onExit={() => void navigate({ to: '/exercises' })}
+        onExit={goBack}
       />
     </div>
   )

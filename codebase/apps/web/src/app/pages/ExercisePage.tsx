@@ -1,7 +1,8 @@
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { useParams } from '@tanstack/react-router'
 import { ExerciseRunner } from '../../components/ExerciseRunner'
 import type { Exercise } from '../../content'
 import { isLibraryExerciseId, useExerciseCatalog } from '../useExerciseCatalog'
+import { useGoBack } from '../useGoBack'
 import { STAGE_FRAME, UnsavedRunAlert, useRunSaver } from '../useRunSaver'
 import NotFoundPage from './NotFoundPage'
 
@@ -24,7 +25,7 @@ export default function ExercisePage() {
 }
 
 function ExerciseStage({ exercise }: { exercise: Exercise }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const { save, unsaved } = useRunSaver()
 
   return (
@@ -33,7 +34,7 @@ function ExerciseStage({ exercise }: { exercise: Exercise }) {
       <ExerciseRunner
         exercise={exercise}
         onRunChange={save}
-        onExit={() => void navigate({ to: '/exercises' })}
+        onExit={goBack}
       />
     </div>
   )

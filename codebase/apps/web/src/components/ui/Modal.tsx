@@ -32,9 +32,29 @@ export interface ModalProps {
    * gone by then — a menu item that closed its own menu on the way here.
    */
   returnFocusTo?: RefObject<HTMLElement | null>
+  /**
+   * How tall the panel is. `screen` fills the height, which is what a pile of
+   * settings wants; `content` is only as tall as what is in it and sits in the
+   * middle, which is what a short answer-this-and-move-on dialog wants.
+   */
+  fit?: 'screen' | 'content'
+  /**
+   * The title bar with its close button. Turn it off where the panel says its
+   * own name — `title` still names the dialog for a screen reader.
+   */
+  header?: boolean
 }
 
-export function Modal({ title, description, onClose, children, className = 'max-w-3xl', returnFocusTo }: ModalProps) {
+export function Modal({
+  title,
+  description,
+  onClose,
+  children,
+  className = 'max-w-3xl',
+  returnFocusTo,
+  fit = 'screen',
+  header = true,
+}: ModalProps) {
   const panel = useRef<HTMLDivElement>(null)
   // A press that began inside the panel and ended on the backdrop (a drag off
   // a slider, a text selection) is not a press on the backdrop.
@@ -104,7 +124,9 @@ export function Modal({ title, description, onClose, children, className = 'max-
 
   return createPortal(
     <div
-      className="fade-in fixed inset-0 z-50 flex items-stretch justify-center bg-fg/25 p-3 backdrop-blur-[2px] md:p-6"
+      className={`fade-in fixed inset-0 z-50 flex justify-center bg-fg/25 p-3 backdrop-blur-[2px] md:p-6 ${
+        fit === 'screen' ? 'items-stretch' : 'items-center overflow-y-auto'
+      }`}
       onPointerDown={(event) => {
         pressedBackdrop.current = event.target === event.currentTarget && event.button === 0
       }}
@@ -116,12 +138,14 @@ export function Modal({ title, description, onClose, children, className = 'max-
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={ids.title}
-        aria-describedby={description ? ids.description : undefined}
+        aria-label={header ? undefined : title}
+        aria-labelledby={header ? ids.title : undefined}
+        aria-describedby={description && header ? ids.description : undefined}
         tabIndex={-1}
         onKeyDown={onPanelKeyDown}
-        className={`flex h-full w-full ${className} flex-col rounded-2xl border border-line bg-panel text-left shadow-lg shadow-shade outline-none`}
+        className={`flex w-full ${fit === 'screen' ? 'h-full' : 'max-h-full'} ${className} flex-col rounded-2xl border border-line bg-panel text-left shadow-lg shadow-shade outline-none`}
       >
+        {header && (
         <div className="flex items-start gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0 flex-1">
             <h2 id={ids.title} className="font-display text-base font-semibold tracking-tight text-fg">
@@ -142,6 +166,7 @@ export function Modal({ title, description, onClose, children, className = 'max-
             <CloseIcon />
           </button>
         </div>
+        )}
         {/* The settings scroll; the heading and the way out stay put. */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>

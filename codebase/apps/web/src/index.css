@@ -39,6 +39,77 @@
 .step-in {
   animation: step-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/*
+ * A finished exercise arrives a piece at a time: the tick lands first, then the
+ * words, the card and the questions rise under it. `both` holds each piece
+ * hidden until its own delay is up, so the screen assembles rather than appears.
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes land-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* The ring the tick lands in, once. */
+@keyframes ring-out {
+  from {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+.rise-in {
+  animation: rise-in 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.land-in {
+  animation: land-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.ring-out {
+  animation: ring-out 720ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
+}
+/* The mic while it is listening: a ring out of it on every breath, and the button itself breathing. */
+@keyframes mic-ring {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
+@keyframes mic-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+.mic-ring {
+  animation: mic-ring 1.9s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+.mic-ring-late {
+  animation: mic-ring 1.9s cubic-bezier(0.2, 0.8, 0.2, 1) 950ms infinite;
+}
+.mic-breathe {
+  animation: mic-breathe 1.9s ease-in-out infinite;
+}
 /* 180ms is also ExerciseRunner's STEP_OUT_MS, which waits this out before moving on. */
 .step-out {
   animation: step-out 180ms ease-in forwards;

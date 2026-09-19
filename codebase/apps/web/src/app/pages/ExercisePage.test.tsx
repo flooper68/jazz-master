@@ -22,6 +22,14 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/**
+ * The unsaved-run banner, told apart from the player's own audio notice: the
+ * stage stays mounted behind the summary dialog, so both alerts are on screen.
+ */
+function unsavedAlert(): HTMLElement | null {
+  return screen.queryAllByRole('alert').find((node) => node.textContent?.startsWith('This run was not saved.')) ?? null
+}
+
 describe('ExercisePage', () => {
   it('plays the exercise named in the URL, sums it up, and goes back to the list', async () => {
     const user = userEvent.setup()
@@ -30,11 +38,12 @@ describe('ExercisePage', () => {
     await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
     await user.click(screen.getByRole('button', { name: `Finish ${exercise.title}` }))
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Exercise complete' }),
+      screen.getByRole('heading', { level: 2, name: 'Exercise complete' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(exercise.title)).toBeInTheDocument()
+    // The stage is still behind the dialog, so the title is on screen twice.
+    expect(within(screen.getByRole('dialog')).getByText(exercise.title)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Exercises' }),
     ).toBeInTheDocument()
@@ -58,7 +67,7 @@ describe('ExercisePage', () => {
     await user.click(within(answer).getByRole('button', { name: 'Good' }))
     await waitFor(() => expect(getTrpcTestRuns()[0].difficulty).toBe('good'))
     expect(getTrpcTestRuns()).toHaveLength(1)
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(unsavedAlert()).toBeNull()
   })
 
   it('saves nothing for a run left from the stage', async () => {
@@ -77,13 +86,12 @@ describe('ExercisePage', () => {
     await user.click(screen.getByRole('button', { name: `Play ${exercise.title}` }))
     await user.click(screen.getByRole('button', { name: `Finish ${exercise.title}` }))
 
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('This run was not saved.')
+    await waitFor(() => expect(unsavedAlert()).not.toBeNull())
     expect(getTrpcTestRuns()).toEqual([])
 
     setTrpcTestRunsRepositoryAvailable(true)
-    await user.click(within(alert).getByRole('button', { name: 'Try again' }))
-    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    await user.click(within(unsavedAlert()!).getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(unsavedAlert()).toBeNull())
     expect(getTrpcTestRuns()).toHaveLength(1)
   })
 

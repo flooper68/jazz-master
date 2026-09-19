@@ -54,12 +54,14 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
   ).toBeVisible()
 
   await finishCurrentExercise(page)
-  const summary = page.getByRole('heading', { name: 'Exercise complete', level: 1 })
+  // The summary is a dialog over the stage — which stays behind it, title and all.
+  const summary = page.getByRole('dialog')
   await expect(summary).toBeFocused()
-  await expect(page.getByText(FIRST_EXERCISE)).toBeVisible()
+  await expect(summary.getByRole('heading', { name: 'Exercise complete', level: 2 })).toBeVisible()
+  await expect(summary.getByText(FIRST_EXERCISE)).toBeVisible()
 
   for (const answer of ['Again', 'Hard', 'Good', 'Easy']) {
-    await expect(page.getByRole('button', { name: answer, exact: true })).toHaveAttribute('aria-pressed', 'false')
+    await expect(summary.getByRole('button', { name: answer, exact: true })).toHaveAttribute('aria-pressed', 'false')
   }
   await Promise.all([
     // Two saves are in play — the run arriving, then its answer; wait for the answered one.
@@ -68,11 +70,12 @@ test('happy path: pick an exercise, play it, rate it, and the run is stored', as
         response.url().includes('runs.save') &&
         (response.request().postData() ?? '').includes('"difficulty":"good"'),
     ),
-    page.getByRole('button', { name: 'Good', exact: true }).click(),
+    summary.getByRole('button', { name: 'Good', exact: true }).click(),
   ])
   await expect(page.getByRole('alert')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Back to exercises' }).click()
+  // Done goes back to wherever the player came from — the list, in this case.
+  await summary.getByRole('button', { name: 'Done' }).click()
   await expect(
     page.getByRole('heading', { name: 'Exercises', level: 1 }),
   ).toBeVisible()

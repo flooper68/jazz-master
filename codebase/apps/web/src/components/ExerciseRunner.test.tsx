@@ -176,7 +176,7 @@ describe('ExerciseRunner', () => {
     renderRunner()
     expect(screen.getByRole('heading', { level: 1, name: 'C major — open position 4/4 · 60 BPM' })).toHaveFocus()
     // Leaving is the navigation's job: the stage itself carries no way out.
-    expect(screen.queryByRole('button', { name: 'Back to exercises' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull()
     expect(readout('Time left')).toBe('1:00')
     expect(readout('Position')).toBe('1.1')
     expect(screen.getByRole('img', { name: 'C major — open position score, 6 notes' })).toBeInTheDocument()
@@ -502,7 +502,7 @@ describe('ExerciseRunner', () => {
     expect(readout('Time left')).toBe('0:58')
 
     act(() => vi.advanceTimersByTime(58_500))
-    expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
     vi.useRealTimers()
   })
 
@@ -519,7 +519,7 @@ describe('ExerciseRunner', () => {
     await advanceClock(1_000)
 
     await waitFor(() =>
-      expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toHaveFocus(),
+      expect(screen.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument(),
     )
     expect(onRunChange).toHaveBeenCalledTimes(1)
     expect(onRunChange).toHaveBeenLastCalledWith(
@@ -535,11 +535,15 @@ describe('ExerciseRunner', () => {
     await advanceClock(2_500)
     await finish(user, 'C major — open position')
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toHaveFocus()
-    const done = screen.getByRole('listitem')
+    // The summary is a dialog over the stage, and it takes the keyboard.
+    const summary = screen.getByRole('dialog')
+    expect(summary).toHaveFocus()
+    expect(within(summary).getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
+    const done = within(summary).getByRole('listitem')
     expect(within(done).getByText('C major — open position')).toBeInTheDocument()
     expect(within(done).getByText('Done today')).toBeInTheDocument()
-    expect(audio.log).toContain('dispose')
+    // The stage stays behind the dialog, so the audio is silenced rather than disposed.
+    expect(audio.log).toContain('silence')
 
     // Play again is a fresh stage: the timer and the cursor start over.
     await user.click(screen.getByRole('button', { name: 'Play again' }))
@@ -548,7 +552,7 @@ describe('ExerciseRunner', () => {
     expect(currentNote()).toBeNull()
 
     await finish(user, 'C major — open position')
-    await user.click(screen.getByRole('button', { name: 'Back to exercises' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(onExit).toHaveBeenCalledTimes(1)
   })
 
@@ -612,7 +616,7 @@ describe('ExerciseRunner', () => {
     const user = userEvent.setup()
     const { onRunChange } = renderRunner()
     await finish(user, 'C major — open position')
-    expect(screen.getByRole('heading', { level: 1, name: 'Exercise complete' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: /^How did it go\?/ })).toBeNull()
     expect(onRunChange).not.toHaveBeenCalled()
   })

@@ -103,6 +103,11 @@ export const InfoIcon = ({ size = 14 }: { size?: number }) => (
 export const CloseIcon = () => (
   <Icon size={12}><path d="M3.6 2.5 8 6.9l4.4-4.4 1.1 1.1L9.1 8l4.4 4.4-1.1 1.1L8 9.1l-4.4 4.4-1.1-1.1L6.9 8 2.5 3.6z" /></Icon>
 )
+export const MicIcon = () => (
+  <Icon>
+    <path d="M8 1.5a2 2 0 0 1 2 2v4a2 2 0 0 1-4 0v-4a2 2 0 0 1 2-2zM3.5 7h1.4a3.1 3.1 0 0 0 6.2 0h1.4a4.5 4.5 0 0 1-3.75 4.43V14h-1.5v-2.57A4.5 4.5 0 0 1 3.5 7z" />
+  </Icon>
+)
 export const CheckIcon = () => <Icon size={12}><path d="M6.4 12.3 2 7.9l1.4-1.4 3 3 6.2-6.2L14 4.7z" /></Icon>
 export const FullscreenIcon = ({ exit }: { exit: boolean }) => (
   <Icon>

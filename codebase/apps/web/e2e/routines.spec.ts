@@ -30,10 +30,11 @@ test('a routine made in the app is stored, played in its order, and offered as w
   await expect(page.getByRole('heading', { level: 1, name: /^Gm7 – C7 – Fmaj7 — a bebop line/ })).toBeVisible()
   await page.getByRole('button', { name: /^Play Gm7/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
-  // Each exercise is summed up and answered before the next one starts.
-  await expect(page.getByRole('heading', { level: 1, name: 'Exercise complete' })).toBeVisible()
-  await expect(page.getByText('E2E warm-up · 1 of 2')).toBeVisible()
-  await page.getByRole('button', { name: 'Next exercise' }).click()
+  // Each exercise is summed up and answered, in a dialog over the stage, before the next one starts.
+  const summary = page.getByRole('dialog')
+  await expect(summary.getByRole('heading', { level: 2, name: 'Exercise complete' })).toBeVisible()
+  await expect(summary.getByText('E2E warm-up · 1 of 2')).toBeVisible()
+  await summary.getByRole('button', { name: 'Next exercise' }).click()
   await expect(page.getByText('E2E warm-up · 2 of 2')).toBeVisible()
   await page.getByRole('button', { name: /^Play C major/ }).click()
   await page.getByRole('button', { name: /^Finish / }).click()
