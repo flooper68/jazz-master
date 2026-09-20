@@ -10,23 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SessionRouteImport } from './routes/session'
-import { Route as LessonRouteImport } from './routes/lesson'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as GoalsIndexRouteImport } from './routes/goals.index'
+import { Route as TeacherIndexRouteImport } from './routes/teacher.index'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
-import { Route as GoalsGoalIdRouteImport } from './routes/goals.$goalId'
+import { Route as TeacherGoalIdRouteImport } from './routes/teacher.$goalId'
 import { Route as ExercisesExerciseIdRouteImport } from './routes/exercises.$exerciseId'
 
 const SessionRoute = SessionRouteImport.update({
   id: '/session',
   path: '/session',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LessonRoute = LessonRouteImport.update({
-  id: '/lesson',
-  path: '/lesson',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -44,9 +38,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GoalsIndexRoute = GoalsIndexRouteImport.update({
-  id: '/goals/',
-  path: '/goals/',
+const TeacherIndexRoute = TeacherIndexRouteImport.update({
+  id: '/teacher/',
+  path: '/teacher/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
@@ -54,9 +48,9 @@ const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   path: '/exercises/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GoalsGoalIdRoute = GoalsGoalIdRouteImport.update({
-  id: '/goals/$goalId',
-  path: '/goals/$goalId',
+const TeacherGoalIdRoute = TeacherGoalIdRouteImport.update({
+  id: '/teacher/$goalId',
+  path: '/teacher/$goalId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExercisesExerciseIdRoute = ExercisesExerciseIdRouteImport.update({
@@ -69,35 +63,32 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
-  '/lesson': typeof LessonRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
-  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/teacher/$goalId': typeof TeacherGoalIdRoute
   '/exercises/': typeof ExercisesIndexRoute
-  '/goals/': typeof GoalsIndexRoute
+  '/teacher/': typeof TeacherIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
-  '/lesson': typeof LessonRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
-  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/teacher/$goalId': typeof TeacherGoalIdRoute
   '/exercises': typeof ExercisesIndexRoute
-  '/goals': typeof GoalsIndexRoute
+  '/teacher': typeof TeacherIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
-  '/lesson': typeof LessonRoute
   '/session': typeof SessionRoute
   '/exercises/$exerciseId': typeof ExercisesExerciseIdRoute
-  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/teacher/$goalId': typeof TeacherGoalIdRoute
   '/exercises/': typeof ExercisesIndexRoute
-  '/goals/': typeof GoalsIndexRoute
+  '/teacher/': typeof TeacherIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -105,46 +96,42 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/history'
-    | '/lesson'
     | '/session'
     | '/exercises/$exerciseId'
-    | '/goals/$goalId'
+    | '/teacher/$goalId'
     | '/exercises/'
-    | '/goals/'
+    | '/teacher/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
     | '/history'
-    | '/lesson'
     | '/session'
     | '/exercises/$exerciseId'
-    | '/goals/$goalId'
+    | '/teacher/$goalId'
     | '/exercises'
-    | '/goals'
+    | '/teacher'
   id:
     | '__root__'
     | '/'
     | '/account'
     | '/history'
-    | '/lesson'
     | '/session'
     | '/exercises/$exerciseId'
-    | '/goals/$goalId'
+    | '/teacher/$goalId'
     | '/exercises/'
-    | '/goals/'
+    | '/teacher/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   HistoryRoute: typeof HistoryRoute
-  LessonRoute: typeof LessonRoute
   SessionRoute: typeof SessionRoute
   ExercisesExerciseIdRoute: typeof ExercisesExerciseIdRoute
-  GoalsGoalIdRoute: typeof GoalsGoalIdRoute
+  TeacherGoalIdRoute: typeof TeacherGoalIdRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
-  GoalsIndexRoute: typeof GoalsIndexRoute
+  TeacherIndexRoute: typeof TeacherIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -154,13 +141,6 @@ declare module '@tanstack/react-router' {
       path: '/session'
       fullPath: '/session'
       preLoaderRoute: typeof SessionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lesson': {
-      id: '/lesson'
-      path: '/lesson'
-      fullPath: '/lesson'
-      preLoaderRoute: typeof LessonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -184,11 +164,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/goals/': {
-      id: '/goals/'
-      path: '/goals'
-      fullPath: '/goals/'
-      preLoaderRoute: typeof GoalsIndexRouteImport
+    '/teacher/': {
+      id: '/teacher/'
+      path: '/teacher'
+      fullPath: '/teacher/'
+      preLoaderRoute: typeof TeacherIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/': {
@@ -198,11 +178,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/goals/$goalId': {
-      id: '/goals/$goalId'
-      path: '/goals/$goalId'
-      fullPath: '/goals/$goalId'
-      preLoaderRoute: typeof GoalsGoalIdRouteImport
+    '/teacher/$goalId': {
+      id: '/teacher/$goalId'
+      path: '/teacher/$goalId'
+      fullPath: '/teacher/$goalId'
+      preLoaderRoute: typeof TeacherGoalIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/$exerciseId': {
@@ -219,12 +199,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   HistoryRoute: HistoryRoute,
-  LessonRoute: LessonRoute,
   SessionRoute: SessionRoute,
   ExercisesExerciseIdRoute: ExercisesExerciseIdRoute,
-  GoalsGoalIdRoute: GoalsGoalIdRoute,
+  TeacherGoalIdRoute: TeacherGoalIdRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
-  GoalsIndexRoute: GoalsIndexRoute,
+  TeacherIndexRoute: TeacherIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

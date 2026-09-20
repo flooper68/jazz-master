@@ -27,10 +27,10 @@ const path = {
   ],
 }
 
-describe('the goals page', () => {
+describe('the teacher page', () => {
   it('shows each goal with how far along its stages are, and which are open', async () => {
     await seedTrpcTestGoal(path)
-    await renderRoute('/goals')
+    await renderRoute('/teacher')
 
     expect(await screen.findByText('Play a blues in F')).toBeInTheDocument()
     // Nothing played, so the first stage is open at nothing and the second waits.
@@ -38,12 +38,14 @@ describe('the goals page', () => {
     expect(screen.getByText('The line · locked')).toBeInTheDocument()
   })
 
-  it('says so, and points at the assistant, when there are no goals', async () => {
-    await renderRoute('/goals')
-    const empty = await screen.findByText('No goals yet')
+  it('says so, and points at the first lesson, when there is no path', async () => {
+    await renderRoute('/teacher')
+    const empty = await screen.findByText('No path yet')
     expect(empty).toBeInTheDocument()
-    // The way out of the empty state is the assistant, since paths are written and not filled in.
-    expect(empty.nextElementSibling).toHaveTextContent(/assistant/)
+    // The way out of the empty state is the lesson, since paths are written and not filled in.
+    expect(empty.nextElementSibling).toHaveTextContent(/lesson/)
+    // And the conversation opens as a first lesson, not a check-in.
+    expect(screen.getByText('What do you want to be able to play?')).toBeInTheDocument()
   })
 })
 
@@ -51,7 +53,7 @@ describe('one goal’s path', () => {
   it('reorders an exercise within its stage', async () => {
     const user = userEvent.setup()
     const goal = await seedTrpcTestGoal(path)
-    await renderRoute(`/goals/${goal.id}`)
+    await renderRoute(`/teacher/${goal.id}`)
 
     const [shapes] = await screen.findAllByRole('listitem')
     const before = within(shapes)
@@ -69,7 +71,7 @@ describe('one goal’s path', () => {
   it('removes an exercise from the path', async () => {
     const user = userEvent.setup()
     const goal = await seedTrpcTestGoal(path)
-    await renderRoute(`/goals/${goal.id}`)
+    await renderRoute(`/teacher/${goal.id}`)
 
     await user.click(await screen.findByRole('button', { name: 'Remove G major — open position from this path' }))
     expect(screen.queryByText('G major — open position')).toBeNull()
@@ -79,7 +81,7 @@ describe('one goal’s path', () => {
   it('changes the tempo an exercise is wanted at, and saves it when the field is left', async () => {
     const user = userEvent.setup()
     const goal = await seedTrpcTestGoal(path)
-    await renderRoute(`/goals/${goal.id}`)
+    await renderRoute(`/teacher/${goal.id}`)
 
     const target = await screen.findByLabelText('Target tempo for C major — open position')
     await user.clear(target)
@@ -91,7 +93,7 @@ describe('one goal’s path', () => {
   it('pauses a goal, so it stops asking anything of the practice', async () => {
     const user = userEvent.setup()
     const goal = await seedTrpcTestGoal(path)
-    await renderRoute(`/goals/${goal.id}`)
+    await renderRoute(`/teacher/${goal.id}`)
 
     await user.click(await screen.findByRole('button', { name: 'Pause this goal' }))
     await waitFor(() => expect(screen.getByText(/asks nothing of your practice/)).toBeInTheDocument())
@@ -99,7 +101,7 @@ describe('one goal’s path', () => {
   })
 
   it('is a not-found page for a goal that is not this user’s', async () => {
-    await renderRoute('/goals/00000000-0000-4000-8000-000000009999')
+    await renderRoute('/teacher/00000000-0000-4000-8000-000000009999')
     expect(await screen.findByText(/not found/i)).toBeInTheDocument()
   })
 })

@@ -1,18 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { PAGE_READING } from '../../components/pageFrame'
 import type { LessonKind } from '../../server/lesson/lesson'
-import { useGoals } from '../useGoals'
 import { useLesson } from '../useLesson'
 
 /**
- * The lesson: a chat with the teacher that ends in a path
- * (docs/product/next-session-design.md §10).
+ * The conversation with the teacher (docs/product/next-session-design.md §10),
+ * as a column the Teacher page places beside the paths it writes.
  *
- * Which script runs is decided by what the player already has, not by a menu:
- * somebody with no goal is having their first lesson, and everybody else is
- * checking in. The practice is reachable throughout — a lesson is something
- * you go to, never something you are blocked on.
+ * Which script runs is the page's call, made from what the player already has:
+ * no goal means a first lesson, otherwise a check-in. The practice is reachable
+ * throughout — a lesson is something you go to, never something you are
+ * blocked on.
  */
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg'
@@ -36,10 +34,8 @@ const DOING: Record<string, string> = {
   create_exercise: 'Adding an exercise for you',
 }
 
-export default function LessonPage() {
-  const { goals, pending } = useGoals()
+export function TeacherChat({ kind, pending }: { kind: LessonKind; pending: boolean }) {
   const queryClient = useQueryClient()
-  const kind: LessonKind = goals.length === 0 ? 'first_lesson' : 'check_in'
   const lesson = useLesson(kind)
   const [draft, setDraft] = useState('')
   const foot = useRef<HTMLDivElement>(null)
@@ -49,13 +45,13 @@ export default function LessonPage() {
   // should agree with it by the time the player looks at them.
   const settled = lesson.messages.length
   useEffect(() => {
-    if (!lesson.thinking && settled > 0) {
-      void queryClient.invalidateQueries()
-    }
+    if (!lesson.thinking && settled > 0) void queryClient.invalidateQueries()
   }, [lesson.thinking, settled, queryClient])
 
   useEffect(() => {
-    foot.current?.scrollIntoView({ block: 'end' })
+    // Only once there is a conversation to follow: a fresh page should not jump.
+    // jsdom has no scrollIntoView, hence the optional call.
+    if (lesson.messages.length > 0) foot.current?.scrollIntoView?.({ block: 'end' })
   }, [lesson.streaming, lesson.messages.length, lesson.actions.length])
 
   function submit(event: React.FormEvent) {
@@ -66,16 +62,13 @@ export default function LessonPage() {
   }
 
   return (
-    <div className={PAGE_READING}>
-      <h1 className="font-display text-2xl font-bold tracking-tight">Lesson</h1>
-      <p className="mt-1 max-w-xl text-sm text-fg-2">
-        {kind === 'first_lesson'
-          ? 'Tell the teacher what you want to play, and it will write you a path to it.'
-          : 'A catch-up: how practice has been going, and what should change.'}
-      </p>
+    <section aria-labelledby="teacher-chat" className="min-w-0">
+      <h2 id="teacher-chat" className="sr-only">
+        The conversation
+      </h2>
 
       {!said && (
-        <div className={`${CARD} mt-7 p-6`}>
+        <div className={`${CARD} p-6`}>
           <p className="font-medium text-fg">
             {pending
               ? 'Looking at what you are working on…'
@@ -92,15 +85,11 @@ export default function LessonPage() {
       )}
 
       {said && (
-        <ol className="mt-7 space-y-4" aria-label="The conversation so far">
+        <ol className="space-y-4" aria-label="The conversation so far">
           {lesson.messages.map((message, index) => (
             <li
               key={index}
-              className={
-                message.role === 'user'
-                  ? `${CARD} ml-auto max-w-[85%] bg-panel-2 p-4`
-                  : 'max-w-[92%] whitespace-pre-wrap text-fg'
-              }
+              className={message.role === 'user' ? `${CARD} ml-auto max-w-[85%] bg-panel-2 p-4` : 'max-w-[92%] text-fg'}
             >
               <p className="sr-only">{message.role === 'user' ? 'You said' : 'The teacher said'}</p>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
@@ -138,7 +127,7 @@ export default function LessonPage() {
         </p>
       )}
 
-      <form onSubmit={submit} className="mt-6">
+      <form onSubmit={submit} className="mt-5">
         <label htmlFor="lesson-say" className="sr-only">
           What you want to say
         </label>
@@ -178,6 +167,6 @@ export default function LessonPage() {
       )}
 
       <div ref={foot} />
-    </div>
+    </section>
   )
 }

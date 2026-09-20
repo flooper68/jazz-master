@@ -184,8 +184,8 @@ function GoalEditor({ goal }: { goal: Goal }) {
         ))}
       </ol>
 
-      <button type="button" onClick={() => void navigate({ to: '/goals' })} className={`mt-5 ${QUIET}`}>
-        Back to goals
+      <button type="button" onClick={() => void navigate({ to: '/teacher' })} className={`mt-5 ${QUIET}`}>
+        Back to the teacher
       </button>
     </div>
   )

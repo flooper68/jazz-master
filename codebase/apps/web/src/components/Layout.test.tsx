@@ -92,10 +92,10 @@ describe('Layout shell', () => {
     for (const [path, label] of [
       ['/', 'Home'],
       ['/exercises', 'Exercises'],
-      ['/goals', 'Goals'],
+      ['/teacher', 'Teacher'],
       ['/history', 'History'],
-      // A goal is still Goals, the way an exercise is still Exercises.
-      ['/goals/tone', 'Goals'],
+      // A path is still the Teacher, the way an exercise is still Exercises.
+      ['/teacher/tone', 'Teacher'],
     ] as const) {
       const { unmount } = await renderRoute(path)
       expect(currentLink(), path).toBe(label)

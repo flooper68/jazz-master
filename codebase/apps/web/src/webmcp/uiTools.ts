@@ -13,8 +13,9 @@ import type { PlayerState } from './playerTools'
 
 export const APP_PAGES = {
   home: '/',
+  // Goals and the lesson became one screen, the teacher's (JM-S-28); the page is named for it.
+  teacher: '/teacher',
   exercises: '/exercises',
-  goals: '/goals',
   history: '/history',
 } as const
 

@@ -18,7 +18,7 @@ function setUp(overrides: Partial<UiToolDeps> = {}) {
 
 describe('the app tools', () => {
   it('say where the user is, and that no player is up', async () => {
-    expect(await setUp().call('get_current_view')).toMatchObject({ status: 'ok', page: 'exercises', path: '/exercises', player: null, pages: ['home', 'exercises', 'goals', 'history'] })
+    expect(await setUp().call('get_current_view')).toMatchObject({ status: 'ok', page: 'exercises', path: '/exercises', player: null, pages: ['home', 'teacher', 'exercises', 'history'] })
     const onStage = setUp({ location: () => ({ path: '/session', search: { x: 'a,b' } }) })
     expect(await onStage.call('get_current_view')).toMatchObject({ page: 'session', search: { x: 'a,b' } })
     expect(await setUp({ location: () => ({ path: '/exercises/abc', search: {} }) }).call('get_current_view')).toMatchObject({ page: 'exercise' })

@@ -8,9 +8,11 @@ import { DIFFICULTY_LABELS } from '../../appData/run'
 import { AREA_BADGE, AREA_LABELS } from '../../components/areaLabels'
 import { ExerciseThumb } from '../../components/ExerciseThumb'
 import { NextSessionCard } from '../../components/NextSessionCard'
+import { TeacherCard } from '../../components/TeacherCard'
 import type { Exercise } from '../../content'
 import { SourceTag } from '../../components/SourceTag'
 import { useExerciseCatalog } from '../useExerciseCatalog'
+import { useGoals } from '../useGoals'
 import { useNextSession } from '../useNextSession'
 import { useQuickRunSettings } from '../useQuickRunSettings'
 import { useTRPC } from '../trpc'
@@ -32,6 +34,9 @@ export default function HomePage() {
   const failed = !isPending && data?.status !== 'ok'
   const { exercises, byId } = useExerciseCatalog()
   const { plan, pending: planPending, failed: planFailed } = useNextSession()
+  const { goals, pending: goalsPending } = useGoals()
+  const { data: goalsData } = useQuery(trpc.goals.list.queryOptions())
+  const goalsProgress = goalsData?.status === 'ok' ? goalsData.goals : []
   const settings = useQuickRunSettings()
   const summary = summarizeRuns(runs, exercises.map((exercise) => exercise.id))
 
@@ -52,7 +57,12 @@ export default function HomePage() {
         </p>
       )}
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+      {/* The path before the day: it is why the day looks the way it does. */}
+      <div className="mt-5">
+        <TeacherCard goals={goals} progress={goalsProgress} pending={goalsPending} />
+      </div>
+
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
         <NextSessionCard
           plan={plan}
           pending={planPending}

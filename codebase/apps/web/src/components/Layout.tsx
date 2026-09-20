@@ -9,7 +9,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { GoalIcon, HistoryIcon, HomeIcon, LessonIcon, ListIcon, SidebarIcon } from './icons'
+import { HistoryIcon, HomeIcon, LessonIcon, ListIcon, SidebarIcon } from './icons'
 
 import { QuickRunButton } from './QuickRunButton'
 import {
@@ -26,9 +26,9 @@ import { useTheme } from './theme'
 
 const NAV = [
   { to: '/', label: 'Home', icon: HomeIcon },
+  // The core flow sits second: the path you are on, and the teacher who writes it (JM-S-28).
+  { to: '/teacher', label: 'Teacher', icon: LessonIcon },
   { to: '/exercises', label: 'Exercises', icon: ListIcon },
-  { to: '/goals', label: 'Goals', icon: GoalIcon },
-  { to: '/lesson', label: 'Lesson', icon: LessonIcon },
   { to: '/history', label: 'History', icon: HistoryIcon },
 ] as const
 
