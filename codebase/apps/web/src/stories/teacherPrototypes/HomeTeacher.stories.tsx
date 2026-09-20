@@ -1,19 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useEffect, useState } from 'react'
-import { Conversation, SayIt, Shell, StageChips } from './Chrome'
+import { Conversation, Shell, StageChips } from './Chrome'
 import { GOALS, useScript, type Exchange } from './mock'
 
 /**
  * Home — start the session first, the goals beside it, the analytics below
- * (owner decision 2026-09-20). Plus a teacher strip with one purpose: it is
- * where the teacher's *offers* live — "how did that go?" after a session, a
- * weekly check-in when one is due — and a quick word can be had right there.
- * Anything longer continues on the Teacher page.
+ * (owner decisions 2026-09-20). The session card is the size of what it says,
+ * not the size of the column. The teacher strip beneath is where the teacher's
+ * offers live — "how did that go?" after a session, a check-in when due — and
+ * a quick word can be had right there; anything longer continues on the
+ * Teacher page.
  */
 
 /** The short exchange a home strip is for: the after-session offer, answered. */
 const QUICK: Exchange[] = [
-  { who: 'teacher', text: 'That was 11 minutes — the C7 got through at 72 again. How did it feel?' },
+  { who: 'teacher', doing: ['Reading your practice'], text: 'That was 11 minutes — the C7 got through at 72 again. How did it feel?' },
   { who: 'you', text: 'Better. Still slow on the maj7.' },
   {
     who: 'teacher',
@@ -42,20 +43,23 @@ function HomeTeacher({ speed = 1, offer = 'after_session' }: { speed?: number; o
         <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
         <p className="mt-1 text-sm text-fg-2">Sunday, September 20 · 2 practice runs · 11 min</p>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          {/* The primary action, as it is today. */}
-          <section className="rounded-2xl bg-accent p-5 text-accent-fg">
-            <h2 className="font-display text-xl font-semibold tracking-tight">Next session</h2>
-            <p className="mt-1 text-sm opacity-90">6 exercises, put together from what you have played. About 11 min.</p>
-            <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
+        <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
+          {/* The primary action: its own height, one line of minutes, one Play. */}
+          <section className="rounded-2xl bg-accent p-4 text-accent-fg">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-lg font-semibold tracking-tight">Next session</h2>
+              <span className="text-xs opacity-90">6 exercises · about 11 min</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
               {['5', '10', '20', '40', '60'].map((minutes) => (
-                <span key={minutes} className={`rounded-md px-2.5 py-1 font-medium ${minutes === '20' ? 'bg-fg text-canvas' : 'bg-accent-fg/15'}`}>
-                  {minutes} min
+                <span key={minutes} className={`rounded-md px-2 py-1 font-medium ${minutes === '20' ? 'bg-fg text-canvas' : 'bg-accent-fg/15'}`}>
+                  {minutes}
                 </span>
               ))}
+              <span className="ml-1 text-[11px] opacity-80">min</span>
             </div>
-            <div className="mt-5 flex items-center gap-4">
-              <span className="rounded-xl bg-fg px-5 py-2.5 text-sm font-semibold text-canvas">▶ Play</span>
+            <div className="mt-3 flex items-center gap-4">
+              <span className="rounded-xl bg-fg px-5 py-2 text-sm font-semibold text-canvas">▶ Play</span>
               <span className="text-sm underline underline-offset-4">What’s in it</span>
             </div>
           </section>
@@ -95,10 +99,7 @@ function HomeTeacher({ speed = 1, offer = 'after_session' }: { speed?: number; o
           ) : (
             <div>
               <p className="text-[11px] uppercase tracking-wide text-accent-text">After that session · a quick word</p>
-              <div className="mt-3">
-                <Conversation script={script} exchanges={QUICK} />
-              </div>
-              <SayIt placeholder="Anything else?" compact />
+              <Conversation script={script} exchanges={QUICK} placeholder="Anything else?" className="mt-3 max-h-[22rem]" />
               {script.done && (
                 <p className="mt-3 text-xs text-muted">
                   Written to your practice log. <span className="underline underline-offset-4">Continue with the teacher →</span>
@@ -136,7 +137,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Start the session stays the primary action; the current goals sit beside it; the analytics drop to one quiet row. The teacher strip under them is where the teacher’s offers live — after a session, or when a check-in is due — and a quick word happens right there; anything longer continues on the Teacher page. The story plays the after-session offer being taken.',
+          'Start the session stays the primary action, now the size of what it says; the current goals sit beside it; the analytics drop to one quiet row. The teacher strip beneath is where the teacher’s offers live and a quick word happens right there; anything longer continues on the Teacher page. The story plays the after-session offer being taken.',
       },
     },
   },

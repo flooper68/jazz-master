@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Conversation, SayIt, Shell, StageChips } from './Chrome'
+import { Markdown } from '../../components/chat/Markdown'
+import { Conversation, Shell, StageChips } from './Chrome'
 import { CHECK_IN, GOALS, GOAL_AFTER, LOG, useScript } from './mock'
 
 /**
  * The teacher's screen — chat first (the shape the owner chose, 2026-09-20).
  *
- * The conversation is the screen. On the right: the current goals, each with
- * its stages and rewritten in front of you as the teacher works, and the last
- * summary. Who the player is — the bio — lives on the Practice log page now,
- * not here.
+ * The conversation is the screen, drawn with the app's own chat pieces: steps
+ * stay with their turn, text streams in place, the thread follows only while
+ * you are at the bottom. On the right: the current goals, rewritten in front
+ * of you as the teacher works, and the last summary.
  */
 function Teacher({ speed = 1 }: { speed?: number }) {
   const script = useScript(CHECK_IN, { speed })
@@ -20,10 +21,7 @@ function Teacher({ speed = 1 }: { speed?: number }) {
         <p className="mt-1 text-sm text-fg-2">A check-in. It has read your practice already.</p>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <section className="min-w-0">
-            <Conversation script={script} exchanges={CHECK_IN} />
-            <SayIt placeholder="How has it been going?" />
-          </section>
+          <Conversation script={script} exchanges={CHECK_IN} placeholder="How has it been going?" className="h-[calc(100vh-13rem)] min-h-[24rem]" />
 
           <aside className="min-w-0 space-y-5">
             <section>
@@ -49,12 +47,9 @@ function Teacher({ speed = 1 }: { speed?: number }) {
             <section className="rounded-2xl border border-line bg-panel p-4">
               <h2 className="text-sm font-semibold">Last summary</h2>
               <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted">{LOG[1].period}</p>
-              <p className="mt-2 text-xs leading-relaxed text-fg-2">
-                <span className="font-medium text-fg">Focus.</span> {LOG[1].focus}
-              </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-fg-2">
-                <span className="font-medium text-fg">Learned.</span> {LOG[1].learned}
-              </p>
+              <div className="mt-2 [&_p]:text-xs [&_li]:text-xs">
+                <Markdown text={LOG[1].summary} />
+              </div>
               <button type="button" className="mt-2 text-xs text-muted underline-offset-4 hover:underline">
                 Practice log →
               </button>
@@ -74,7 +69,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'The chosen shape. The conversation is the screen; on the right the current goals, rewritten in front of you as the teacher works, and the last summary. The story plays a scripted check-in when opened; reload to watch it again. The speed control slows the typing.',
+          'The chosen shape, on the app’s own chat pieces (components/chat, RES-022). The conversation is the screen; on the right the current goals, rewritten in front of you as the teacher works, and the last summary. The story plays a scripted check-in when opened; reload to watch it again.',
       },
     },
   },

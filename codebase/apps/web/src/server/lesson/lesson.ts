@@ -36,6 +36,8 @@ export interface LessonTurn {
 
 export type LessonEvent =
   | { type: 'text'; text: string }
+  /** A tool is about to run; the page shows it running until its `tool` event lands. */
+  | { type: 'tool_start'; name: string }
   | { type: 'tool'; name: string; ok: boolean }
   | { type: 'done' }
   | { type: 'error'; message: string }
@@ -127,6 +129,7 @@ export async function* runLessonTurn(
         yield { type: 'tool', name: call.name, ok: false }
         continue
       }
+      yield { type: 'tool_start', name: call.name }
       try {
         const answer = await tool.call(call.input ?? {}, deps.tools)
         const text = answer.content.map((part) => part.text).join('\n')

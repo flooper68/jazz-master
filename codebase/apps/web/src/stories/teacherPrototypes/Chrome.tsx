@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { HistoryIcon, HomeIcon, LessonIcon, ListIcon } from '../../components/icons'
-import type { Exchange, MockGoal, Script } from './mock'
+import { AssistantTurn, ChatThread, Composer, PlayerTurn } from '../../components/chat/Chat'
+import { stepsOf, type Exchange, type MockGoal, type Script } from './mock'
 
 /** The app shell, mocked: enough sidebar to place a prototype in the real frame. */
 export function Shell({ current, children, phone = false }: { current: string; children: ReactNode; phone?: boolean }) {
@@ -52,60 +53,25 @@ export function Shell({ current, children, phone = false }: { current: string; c
   )
 }
 
-/** One line of the conversation, as the app draws it: the player in a card, the teacher plain. */
-export function Bubble({ line, live = false }: { line: Exchange; live?: boolean }) {
-  return (
-    <li className={line.who === 'you' ? 'ml-auto max-w-[85%] rounded-2xl border border-line bg-panel-2 p-3.5' : 'max-w-[92%]'}>
-      {line.who === 'teacher' && line.doing && !live && (
-        <ul className="mb-1.5 space-y-0.5 text-[11px] text-muted">
-          {line.doing.map((step) => (
-            <li key={step}>· {step}</li>
-          ))}
-        </ul>
-      )}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg">
-        {line.text}
-        {live && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-accent align-middle" aria-hidden="true" />}
-      </p>
-    </li>
-  )
-}
-
-/** The conversation, with the line being typed at the end. */
-export function Conversation({ script, exchanges, className = '' }: { script: Script; exchanges: Exchange[]; className?: string }) {
+/**
+ * The conversation, drawn with the app's own chat pieces (components/chat) so
+ * what the owner judges here is what the app draws: the teacher's steps stay
+ * with their turn, the text streams in place, the thread follows only while
+ * the reader is at the bottom.
+ */
+export function Conversation({ script, exchanges, placeholder = 'Say something…', className = '' }: { script: Script; exchanges: Exchange[]; placeholder?: string; className?: string }) {
   const next = exchanges[script.shown.length]
-  const live = next && script.typing.length > 0 ? { ...next, text: script.typing } : null
   return (
-    <ol className={`space-y-3 ${className}`} aria-label="The conversation">
-      {script.shown.map((line, index) => (
-        <Bubble key={index} line={line} />
-      ))}
-      {live && (
-        <>
-          {live.doing && (
-            <li className="text-[11px] text-muted">
-              {live.doing.map((step) => (
-                <span key={step} className="mr-3">
-                  · {step}
-                </span>
-              ))}
-            </li>
-          )}
-          <Bubble line={live} live />
-        </>
-      )}
-    </ol>
-  )
-}
-
-/** The reply box, inert: prototypes play a script, they do not send. */
-export function SayIt({ placeholder = 'Say something…', compact = false }: { placeholder?: string; compact?: boolean }) {
-  return (
-    <div className={`flex items-end gap-2 ${compact ? '' : 'mt-4'}`}>
-      <div className={`flex-1 rounded-xl border border-line bg-panel px-3 py-2 text-sm text-muted ${compact ? 'min-h-[2.5rem]' : 'min-h-[3.25rem]'}`}>{placeholder}</div>
-      <button type="button" className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-accent-fg opacity-60">
-        Say it
-      </button>
+    <div className={`flex min-h-0 flex-col ${className}`}>
+      <ChatThread follow={[script.shown.length, script.live?.text.length ?? 0, script.live?.steps.length ?? 0]} className="flex-1">
+        {script.shown.map((line, index) =>
+          line.who === 'you' ? <PlayerTurn key={index} text={line.text} /> : <AssistantTurn key={index} text={line.text} steps={stepsOf(line)} />,
+        )}
+        {script.live && next && <AssistantTurn text={script.live.text} steps={script.live.steps} streaming thinking />}
+      </ChatThread>
+      <div className="mt-3">
+        <Composer placeholder={placeholder} onSend={() => {}} inert />
+      </div>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ChatStep } from '../../components/chat/Chat'
 
 /**
  * Mock data and a scripted conversation for the four teacher prototypes
@@ -69,7 +70,13 @@ export const GOAL_AFTER: MockGoal = {
   ),
 }
 
-export const BIO = `Plays rock and blues, five or six years, mostly by ear. Came for jazz — wants to blow over changes and comp behind a singer. Knows open and barre chords, the minor pentatonic in two boxes, one major scale shape. No seventh arpeggios before this month; the m7 and 7 shapes are landing, the maj7 is not yet. Practises ten minutes at a time, several times a day, on the sofa. Bored by spider exercises; lit up by Autumn Leaves. Comfortable to about 80 BPM on anything new.`
+export const BIO = `Plays rock and blues, five or six years, mostly by ear. Came for jazz — wants to **blow over changes** and **comp behind a singer**.
+
+Knows open and barre chords, the minor pentatonic in two boxes, one major scale shape. No seventh arpeggios before this month; the m7 and 7 shapes are landing, the maj7 is not yet.
+
+Practises ten minutes at a time, several times a day, on the sofa. Comfortable to about 80 BPM on anything new.
+
+Bored by spider exercises. Lit up by *Autumn Leaves*.`
 
 /** A second goal, so "current goals" is plural in the prototypes. */
 export const GOAL_TWO: MockGoal = {
@@ -84,17 +91,17 @@ export const GOAL_TWO: MockGoal = {
 export const GOALS: MockGoal[] = [GOAL, GOAL_TWO]
 
 /**
- * One entry of the practice log: a *period*, summarised — what the focus was,
- * what the player learned, what changed — with the conversation behind it
- * readable on request (owner decision 2026-09-20).
+ * One entry of the practice log — a *sync*: the period it closed, summarised
+ * as one structured text in markdown (what the focus was, what the player
+ * learned, what changed), with the conversation behind it readable on request
+ * (owner decisions 2026-09-20).
  */
 export interface MockLogEntry {
   period: string
   kind: 'onboarding' | 'after_session' | 'on_demand' | 'check_in'
-  focus: string
-  learned: string
-  changed: string | null
+  /** Markdown. The teacher writes it; the practice log renders it. */
   summary: string
+  changedPath: boolean
   conversation?: Exchange[]
 }
 
@@ -102,26 +109,35 @@ export const LOG: MockLogEntry[] = [
   {
     period: 'Today · check-in',
     kind: 'check_in',
-    focus: 'Two weeks into the ii–V–I path.',
-    learned: 'The m7 and 7 shapes are solid at 72; the maj7 is not, and the stretch is the reason.',
-    changed: 'Autumn Leaves added to stage 2 as shell voicings at 96. Spider drills dropped. maj7 moved to the fifth-string root for a week.',
-    summary: 'Two weeks in. The three shapes are nearly solid; the maj7 lags. Asked for Autumn Leaves — added its changes to stage 2, and agreed to revisit comping once stage 2 opens fully.',
+    changedPath: true,
+    summary: `**Two weeks into the ii–V–I path.** The m7 and 7 shapes are solid at 72; the maj7 is not, and the sixth-string stretch is the reason.
+
+**What changed**
+- *Autumn Leaves* added to stage 2 as shell voicings at 96 — it is the same ii–V–I, in G minor.
+- The spider drills are out; they were a warm-up, not the work.
+- The maj7 moves to the fifth-string root for a week.
+
+**Next time:** comping the whole form, once stage 2 is mostly solid.`,
   },
   {
     period: '2 – 12 September · after a session',
     kind: 'after_session',
-    focus: 'Getting the three arpeggio shapes under the fingers.',
-    learned: 'C7 from the fifth-string root felt like a wall at 72; fine at 66. Tremolo drills are boring and were only ever a warm-up.',
-    changed: 'C7 target dropped to 66 for a week; tremolo out of the path.',
-    summary: 'The C7 arpeggio felt like a wall at 72. Dropped its target to 66 for a week; he said the tremolo drills are boring and could go.',
+    changedPath: true,
+    summary: `**Getting the three arpeggio shapes under the fingers.** The C7 from the fifth-string root felt like a wall at 72 and fine at 66; the tremolo drills were boring and only ever a warm-up.
+
+**What changed**
+- C7 target dropped to 66 for a week.
+- Tremolo out of the path.`,
   },
   {
     period: '1 September · first lesson',
     kind: 'onboarding',
-    focus: 'Where to start: what he can play, what he wants.',
-    learned: 'Rock and blues by ear for years; chords and pentatonics solid, no seventh arpeggios. A C major scale and an m7 shape both fine at 70.',
-    changed: 'A four-stage path written, from the three shapes to a line of his own.',
-    summary: 'First lesson. Wants to solo over a ii–V–I in F and comp standards. Probed with a C major scale and an m7 shape; both fine at 70. Wrote a four-stage path from arpeggio shapes to a line.',
+    changedPath: true,
+    summary: `**Where to start.** Rock and blues by ear for years; chords and pentatonics solid, no seventh arpeggios. Wants to solo over a ii–V–I in F and comp standards behind a singer.
+
+**Probed:** a C major scale and an m7 shape, both fine at 70.
+
+**What changed:** a four-stage path written, from the three shapes to a line of his own.`,
   },
 ]
 
@@ -188,66 +204,85 @@ export const FIRST_LESSON: Exchange[] = [
 ]
 
 export interface Script {
-  /** Exchanges revealed so far; the last may still be typing. */
+  /** Exchanges revealed so far, complete. */
   shown: Exchange[]
-  /** The text of the line being typed, when the teacher is mid-sentence. */
-  typing: string
+  /** The teacher's turn in progress, or null between turns. */
+  live: { text: string; steps: ChatStep[] } | null
   done: boolean
   /** Whether the path has been rewritten by a line that landed. */
   pathRewritten: boolean
   replay(): void
 }
 
+/** The player's line arrives whole after a beat; the teacher works, then types. */
+const BEATS = { step: 520, type: 16, afterTeacher: 1300, afterPlayer: 650, playerThinks: 900 }
+
 /**
- * Plays a scripted exchange as if it were happening: the teacher types, the
- * player answers after a beat. Autoplays on mount so a story is alive the
- * moment it opens, and a recording needs no clicks.
+ * Plays a scripted exchange as if it were happening. A teacher line with
+ * `doing` first shows its steps running one by one, then types; the player's
+ * line lands after a pause. Autoplays on mount so a story is alive the moment
+ * it opens, and a recording needs no clicks.
  */
 export function useScript(exchanges: Exchange[], { autoplay = true, speed = 1 } = {}): Script {
   const [index, setIndex] = useState(autoplay ? 0 : -1)
+  // How far into the current line: steps landed, then characters typed.
+  const [stepsDone, setStepsDone] = useState(0)
   const [typed, setTyped] = useState(0)
   const [run, setRun] = useState(0)
   const timer = useRef<number | null>(null)
 
   const current = index >= 0 && index < exchanges.length ? exchanges[index] : null
-  const pathRewritten = exchanges.slice(0, index).some((item) => item.rewritesPath) || (current?.rewritesPath === true && typed >= current.text.length)
+  const stepsOf = current?.doing ?? []
+  const inSteps = current?.who === 'teacher' && stepsDone < stepsOf.length
+  const finished = current !== null && !inSteps && typed >= current.text.length
+  const pathRewritten = exchanges.slice(0, index).some((item) => item.rewritesPath) || (current?.rewritesPath === true && finished)
 
   useEffect(() => {
     if (!current) return
-    const total = current.text.length
-    if (typed < total) {
-      // The teacher types; the player's line arrives whole after a pause.
-      const step = current.who === 'teacher' ? Math.max(1, Math.round(3 * speed)) : total
-      const delay = current.who === 'teacher' ? 18 / speed : 900 / speed
-      timer.current = window.setTimeout(() => setTyped((before) => Math.min(total, before + step)), delay)
+    let delay: number
+    let tick: () => void
+    if (inSteps) {
+      delay = BEATS.step / speed
+      tick = () => setStepsDone((before) => before + 1)
+    } else if (typed < current.text.length) {
+      const whole = current.who === 'you'
+      delay = (whole ? BEATS.playerThinks : BEATS.type) / speed
+      tick = () => setTyped((before) => (whole ? current.text.length : Math.min(current.text.length, before + 3)))
     } else {
-      const rest = current.who === 'teacher' ? 1400 / speed : 700 / speed
-      timer.current = window.setTimeout(() => {
+      delay = (current.who === 'teacher' ? BEATS.afterTeacher : BEATS.afterPlayer) / speed
+      tick = () => {
         setIndex((before) => before + 1)
+        setStepsDone(0)
         setTyped(0)
-      }, rest)
+      }
     }
+    timer.current = window.setTimeout(tick, delay)
     return () => {
       if (timer.current !== null) window.clearTimeout(timer.current)
     }
-  }, [current, typed, speed, run])
+  }, [current, inSteps, stepsDone, typed, speed, run])
 
   const replay = useCallback(() => {
     setIndex(0)
+    setStepsDone(0)
     setTyped(0)
     setRun((before) => before + 1)
   }, [])
 
   const shown = exchanges.slice(0, index)
-  const typing = current ? current.text.slice(0, typed) : ''
-  return { shown, typing: current && typed < current.text.length ? typing : '', done: index >= exchanges.length, pathRewritten, replay }
+  const live: Script['live'] =
+    current && current.who === 'teacher' && !finished
+      ? {
+          text: current.text.slice(0, typed),
+          steps: stepsOf.slice(0, Math.min(stepsOf.length, stepsDone + 1)).map((label, at): ChatStep => ({ label, state: at < stepsDone ? 'done' : 'running' })),
+        }
+      : null
+  return { shown, live, done: index >= exchanges.length, pathRewritten, replay }
 }
 
-/** The line being typed, as an exchange, so a prototype can render it in place. */
-export function typingLine(script: Script, exchanges: Exchange[]): Exchange | null {
-  const next = exchanges[script.shown.length]
-  if (!next || script.typing.length === 0) return null
-  return { ...next, text: script.typing }
+/** A finished teacher line's steps, all done, for the turn it belongs to. */
+export function stepsOf(line: Exchange): ChatStep[] {
+  return (line.doing ?? []).map((label) => ({ label, state: 'done' as const }))
 }
 
 LOG[0].conversation = CHECK_IN
