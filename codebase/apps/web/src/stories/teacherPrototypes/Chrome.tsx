@@ -4,10 +4,11 @@ import type { Exchange, MockGoal, Script } from './mock'
 
 /** The app shell, mocked: enough sidebar to place a prototype in the real frame. */
 export function Shell({ current, children, phone = false }: { current: string; children: ReactNode; phone?: boolean }) {
-  // When the teacher lives on Home (prototype 4) there is no second entry to add.
+  // The nav as the prototypes propose it: the teacher second, the practice log beside it.
   const nav = [
     { label: 'Home', icon: HomeIcon },
-    ...(current === 'Home' ? [] : [{ label: current, icon: LessonIcon }]),
+    { label: 'Teacher', icon: LessonIcon },
+    { label: 'Practice log', icon: HistoryIcon },
     { label: 'Exercises', icon: ListIcon },
     { label: 'History', icon: HistoryIcon },
   ]
@@ -136,4 +137,4 @@ export function SolidityBar({ value, open }: { value: number; open: boolean }) {
   )
 }
 
-export const REPLAY = 'rounded-lg border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 hover:border-line-strong'
+export const QUIET = 'rounded-lg border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 hover:border-line-strong'

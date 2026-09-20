@@ -71,31 +71,57 @@ export const GOAL_AFTER: MockGoal = {
 
 export const BIO = `Plays rock and blues, five or six years, mostly by ear. Came for jazz — wants to blow over changes and comp behind a singer. Knows open and barre chords, the minor pentatonic in two boxes, one major scale shape. No seventh arpeggios before this month; the m7 and 7 shapes are landing, the maj7 is not yet. Practises ten minutes at a time, several times a day, on the sofa. Bored by spider exercises; lit up by Autumn Leaves. Comfortable to about 80 BPM on anything new.`
 
+/** A second goal, so "current goals" is plural in the prototypes. */
+export const GOAL_TWO: MockGoal = {
+  title: 'Play jazz standards — comp, play the head, and walk a bass line',
+  stages: [
+    { title: 'The changes under your fingers', solidity: 0.33, open: true, items: [{ title: 'Shell voicings — root, third and seventh', target: 60, best: 60 }, { title: 'Dm7 – G7 – Cmaj7 — guide tones', target: 66, best: null }] },
+    { title: 'Comping a whole form', solidity: 0, open: false, items: [{ title: 'Dm7 – G7 – Cmaj7 — drop 2, one voice moving', target: 72, best: null }, { title: 'F blues — three-note voicings, four to the bar', target: 96, best: null }] },
+    { title: 'A tune, played through', solidity: 0, open: false, items: [{ title: 'Jazz blues in F — a solo study', target: 84, best: null }] },
+  ],
+}
+
+export const GOALS: MockGoal[] = [GOAL, GOAL_TWO]
+
+/**
+ * One entry of the practice log: a *period*, summarised — what the focus was,
+ * what the player learned, what changed — with the conversation behind it
+ * readable on request (owner decision 2026-09-20).
+ */
 export interface MockLogEntry {
-  when: string
+  period: string
   kind: 'onboarding' | 'after_session' | 'on_demand' | 'check_in'
+  focus: string
+  learned: string
+  changed: string | null
   summary: string
-  changedPath: boolean
+  conversation?: Exchange[]
 }
 
 export const LOG: MockLogEntry[] = [
   {
-    when: 'Today',
+    period: 'Today · check-in',
     kind: 'check_in',
-    summary: 'Two weeks in. The three shapes are nearly solid; the maj7 lags. Asked for Autumn Leaves — added its changes to stage 2 as shell voicings at 96, and agreed to revisit comping once stage 2 opens fully.',
-    changedPath: true,
+    focus: 'Two weeks into the ii–V–I path.',
+    learned: 'The m7 and 7 shapes are solid at 72; the maj7 is not, and the stretch is the reason.',
+    changed: 'Autumn Leaves added to stage 2 as shell voicings at 96. Spider drills dropped. maj7 moved to the fifth-string root for a week.',
+    summary: 'Two weeks in. The three shapes are nearly solid; the maj7 lags. Asked for Autumn Leaves — added its changes to stage 2, and agreed to revisit comping once stage 2 opens fully.',
   },
   {
-    when: 'Wed 11 Sep',
+    period: '2 – 12 September · after a session',
     kind: 'after_session',
+    focus: 'Getting the three arpeggio shapes under the fingers.',
+    learned: 'C7 from the fifth-string root felt like a wall at 72; fine at 66. Tremolo drills are boring and were only ever a warm-up.',
+    changed: 'C7 target dropped to 66 for a week; tremolo out of the path.',
     summary: 'The C7 arpeggio felt like a wall at 72. Dropped its target to 66 for a week; he said the tremolo drills are boring and could go.',
-    changedPath: true,
   },
   {
-    when: 'Sun 1 Sep',
+    period: '1 September · first lesson',
     kind: 'onboarding',
-    summary: 'First lesson. Wants to solo over a ii–V–I in F and comp standards. Knows chords and pentatonics, no arpeggios. Probed with a C major scale and an m7 shape; both fine at 70. Wrote a four-stage path from arpeggio shapes to a line.',
-    changedPath: true,
+    focus: 'Where to start: what he can play, what he wants.',
+    learned: 'Rock and blues by ear for years; chords and pentatonics solid, no seventh arpeggios. A C major scale and an m7 shape both fine at 70.',
+    changed: 'A four-stage path written, from the three shapes to a line of his own.',
+    summary: 'First lesson. Wants to solo over a ii–V–I in F and comp standards. Probed with a C major scale and an m7 shape; both fine at 70. Wrote a four-stage path from arpeggio shapes to a line.',
   },
 ]
 
@@ -223,3 +249,5 @@ export function typingLine(script: Script, exchanges: Exchange[]): Exchange | nu
   if (!next || script.typing.length === 0) return null
   return { ...next, text: script.typing }
 }
+
+LOG[0].conversation = CHECK_IN
