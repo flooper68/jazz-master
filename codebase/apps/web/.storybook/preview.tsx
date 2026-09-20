@@ -29,7 +29,7 @@ const preview: Preview = {
         desktop: { name: 'Desktop', styles: { width: '1280px', height: '800px' } },
       },
     },
-    options: { storySort: { order: ['Foundations', 'Pages', 'Primitives', 'Components', 'Public', 'Variants'] } },
+    options: { storySort: { order: ['Foundations', 'Pages', 'Prototypes', 'Primitives', 'Components', 'Public', 'Variants'] } },
   },
 }
 export default preview
