@@ -67,7 +67,7 @@ export function Conversation({ script, exchanges, placeholder = 'Say somethingâ€
         {script.shown.map((line, index) =>
           line.who === 'you' ? <PlayerTurn key={index} text={line.text} /> : <AssistantTurn key={index} text={line.text} steps={stepsOf(line)} />,
         )}
-        {script.live && next && <AssistantTurn text={script.live.text} steps={script.live.steps} streaming thinking />}
+        {script.live && next && <AssistantTurn text={script.live.text} steps={script.live.steps} streaming={!script.live.done} thinking={!script.live.done} />}
       </ChatThread>
       <div className="mt-3">
         <Composer placeholder={placeholder} onSend={() => {}} inert />

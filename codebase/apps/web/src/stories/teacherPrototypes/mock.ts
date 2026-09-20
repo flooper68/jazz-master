@@ -206,8 +206,8 @@ export const FIRST_LESSON: Exchange[] = [
 export interface Script {
   /** Exchanges revealed so far, complete. */
   shown: Exchange[]
-  /** The teacher's turn in progress, or null between turns. */
-  live: { text: string; steps: ChatStep[] } | null
+  /** The teacher's turn in progress — or finished and waiting its beat before it joins `shown`. Null between turns. */
+  live: { text: string; steps: ChatStep[]; done: boolean } | null
   done: boolean
   /** Whether the path has been rewritten by a line that landed. */
   pathRewritten: boolean
@@ -270,11 +270,14 @@ export function useScript(exchanges: Exchange[], { autoplay = true, speed = 1 } 
   }, [])
 
   const shown = exchanges.slice(0, index)
+  // A finished line stays live, drawn exactly as it will be once shown, until
+  // the index moves on — otherwise it vanishes for a beat and comes back.
   const live: Script['live'] =
-    current && current.who === 'teacher' && !finished
+    current && current.who === 'teacher'
       ? {
           text: current.text.slice(0, typed),
           steps: stepsOf.slice(0, Math.min(stepsOf.length, stepsDone + 1)).map((label, at): ChatStep => ({ label, state: at < stepsDone ? 'done' : 'running' })),
+          done: finished,
         }
       : null
   return { shown, live, done: index >= exchanges.length, pathRewritten, replay }

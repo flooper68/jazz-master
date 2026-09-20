@@ -20,9 +20,42 @@ const KIND: Record<MockLogEntry['kind'], string> = {
   check_in: 'Check-in',
 }
 
-function PracticeLog({ opened = 0 }: { opened?: number | null }) {
-  const [open, setOpen] = useState<number | null>(opened)
+function SyncPage({ entry, back }: { entry: MockLogEntry; back: () => void }) {
+  return (
+    <Shell current="Practice log">
+      <div className="mx-auto max-w-3xl">
+        <button type="button" onClick={back} className={`${QUIET} mb-4`}>
+          ← Practice log
+        </button>
+        <p className="text-[11px] uppercase tracking-wide text-muted">
+          {entry.period.split(' · ')[0]} · {KIND[entry.kind]}
+        </p>
+        <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">{entry.period.split(' · ')[0] === 'Today' ? 'Today’s check-in' : 'The sync'}</h1>
+        <section className="mt-5 rounded-2xl border border-line bg-panel p-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-semibold">Summary</h2>
+            {entry.changedPath && <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-text">changed the path</span>}
+          </div>
+          <div className="mt-2">
+            <Markdown text={entry.summary} />
+          </div>
+        </section>
+        <h2 className="mt-8 font-display text-base font-semibold tracking-tight">The conversation</h2>
+        <div className="mt-3 space-y-5">
+          {(entry.conversation ?? []).map((line, at) =>
+            line.who === 'you' ? <PlayerTurn key={at} text={line.text} /> : <AssistantTurn key={at} text={line.text} steps={stepsOf(line)} />,
+          )}
+          {!entry.conversation && <p className="text-sm text-muted">The conversation from this period.</p>}
+        </div>
+      </div>
+    </Shell>
+  )
+}
+
+function PracticeLog({ opened = null }: { opened?: number | null }) {
+  const [page, setPage] = useState<number | null>(opened)
   const [editing, setEditing] = useState(false)
+  if (page !== null) return <SyncPage entry={LOG[page]} back={() => setPage(null)} />
   return (
     <Shell current="Practice log">
       <div className="mx-auto max-w-6xl">
@@ -34,7 +67,7 @@ function PracticeLog({ opened = 0 }: { opened?: number | null }) {
             <h2 className="font-display text-base font-semibold tracking-tight">Syncs</h2>
             <ol className="mt-3 space-y-4">
               {LOG.map((entry, index) => (
-                <li key={entry.period} className={`rounded-2xl border bg-panel p-5 ${open === index ? 'border-accent/60' : 'border-line'}`}>
+                <li key={entry.period} className="rounded-2xl border border-line bg-panel p-5">
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-[11px] uppercase tracking-wide text-muted">
                       {entry.period.split(' · ')[0]} · {KIND[entry.kind]}
@@ -44,17 +77,9 @@ function PracticeLog({ opened = 0 }: { opened?: number | null }) {
                   <div className="mt-3">
                     <Markdown text={entry.summary} />
                   </div>
-                  <button type="button" onClick={() => setOpen(open === index ? null : index)} className={`mt-3 ${QUIET}`}>
-                    {open === index ? 'Hide the conversation' : 'Show the conversation'}
+                  <button type="button" onClick={() => setPage(index)} className={`mt-3 ${QUIET}`}>
+                    Open the conversation →
                   </button>
-                  {open === index && (
-                    <div className="mt-4 space-y-4 border-t border-line pt-4">
-                      {(entry.conversation ?? []).map((line, at) =>
-                        line.who === 'you' ? <PlayerTurn key={at} text={line.text} /> : <AssistantTurn key={at} text={line.text} steps={stepsOf(line)} />,
-                      )}
-                      {!entry.conversation && <p className="text-sm text-muted">The conversation from this period.</p>}
-                    </div>
-                  )}
                 </li>
               ))}
             </ol>
@@ -90,15 +115,15 @@ const meta = {
     docs: {
       description: {
         component:
-          'A page of its own. Left: the syncs — every conversation as a card summarising its period, one text in markdown, the conversation behind “Show”. Right: about you, one text you can correct. “Syncs” is the owner’s word, on trial as the heading.',
+          'A page of its own. Left: the syncs — every conversation as a card summarising its period, one text in markdown; the conversation opens as its own page. Right: about you, one text you can correct. “Syncs” is the owner’s word, on trial as the heading.',
       },
     },
   },
-  args: { opened: 0 },
-  argTypes: { opened: { control: { type: 'number', min: 0, max: 2 }, description: 'Which sync starts open (0 is today).' } },
+  args: { opened: null },
+  argTypes: { opened: { control: { type: 'number', min: 0, max: 2 }, description: 'Start on a sync’s page instead of the log (0 is today).' } },
 } satisfies Meta<typeof PracticeLog>
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const TodayOpen: Story = {}
-export const AllClosed: Story = { args: { opened: null } }
+export const TheLog: Story = {}
+export const TodaysSync: Story = { args: { opened: 0 } }
